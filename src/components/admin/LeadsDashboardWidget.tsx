@@ -78,9 +78,16 @@ export function LeadsDashboardWidget() {
             ))}
           </div>
         ) : recentLeads.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4 text-sm">
-            No leads yet. Leads are created automatically from forms.
-          </p>
+          <div className="text-center py-4 space-y-3">
+            <p className="text-muted-foreground text-sm">
+              No leads yet. Leads are created automatically from forms.
+            </p>
+            <LoadDemoDataButton
+              moduleId="leads"
+              invalidateKeys={[['leads'], ['leadStats']]}
+              label="Load demo contacts"
+            />
+          </div>
         ) : (
           <div className="space-y-2">
             {recentLeads.map((lead) => {

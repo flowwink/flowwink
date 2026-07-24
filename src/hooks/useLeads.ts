@@ -46,6 +46,20 @@ export function useLeads(options?: { status?: LeadStatus; needsReview?: boolean 
   });
 }
 
+export function useNewLeadCount() {
+  return useQuery({
+    queryKey: ['leads-new-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'lead');
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
 export function useLead(id: string | undefined) {
   return useQuery({
     queryKey: ['lead', id],

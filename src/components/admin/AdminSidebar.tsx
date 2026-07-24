@@ -84,7 +84,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { navigationGroups, type NavItem, type NavGroup } from './adminNavigation';
-import { PendingApprovalsBadge } from './PendingApprovalsBadge';
+import { SidebarBadge } from './SidebarBadge';
 import { AdminSearchCommand } from './AdminSearchCommand';
 import { useNavFeatureFlags, isFeatureFlagOn } from '@/hooks/useNavFeatureFlags';
 import { useRoleModuleAccess } from '@/hooks/useRoleModuleAccess';
@@ -267,7 +267,7 @@ export function AdminSidebar() {
                                      <Link to={item.href} onMouseEnter={() => prefetchRoute(item.href)} onFocus={() => prefetchRoute(item.href)}>
                                       <item.icon className="h-4 w-4" />
                                       <span>{item.name}</span>
-                                      {item.href === '/admin/approvals' && <PendingApprovalsBadge />}
+                                      <SidebarBadge href={item.href} />
                                     </Link>
                                   </SidebarMenuButton>
                                   <button
@@ -322,7 +322,7 @@ export function AdminSidebar() {
                                   <Link to={item.href} onMouseEnter={() => prefetchRoute(item.href)} onFocus={() => prefetchRoute(item.href)}>
                                     <item.icon className="h-4 w-4" />
                                     <span>{item.name}</span>
-                                    {item.href === '/admin/approvals' && <PendingApprovalsBadge />}
+                                    <SidebarBadge href={item.href} />
                                   </Link>
                                 </SidebarMenuButton>
                               </TooltipTrigger>

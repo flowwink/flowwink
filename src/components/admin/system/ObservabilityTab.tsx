@@ -156,9 +156,9 @@ function SkillAuditCard() {
       const [skillsRes, failuresRes] = await Promise.all([
         (supabase.from('agent_skills') as any).select('id, enabled, mcp_exposed, requires_staging'),
         (supabase.from('agent_audit_trail') as any)
-          .select('id, skill_name, status, created_at')
-          .eq('status', 'error')
-          .order('created_at', { ascending: false })
+          .select('id, skill_name, success, error_message, occurred_at')
+          .eq('success', false)
+          .order('occurred_at', { ascending: false })
           .limit(5),
       ]);
       const skills = (skillsRes.data ?? []) as any[];
@@ -214,7 +214,7 @@ function SkillAuditCard() {
                   {data!.recentFailures.map((f: any) => (
                     <li key={f.id} className="text-xs flex items-center justify-between gap-2">
                       <code className="font-mono truncate">{f.skill_name ?? 'unknown'}</code>
-                      <span className="text-muted-foreground shrink-0">{timeAgo(f.created_at)}</span>
+                      <span className="text-muted-foreground shrink-0">{timeAgo(f.occurred_at)}</span>
                     </li>
                   ))}
                 </ul>

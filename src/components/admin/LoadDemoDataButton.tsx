@@ -48,8 +48,8 @@ export function LoadDemoDataButton({
           ?.result ??
         (data as { detail?: Record<string, unknown> } | null)?.detail ??
         {};
-      const inserted = Object.values(detail).reduce(
-        (sum: number, v) => (typeof v === 'number' ? sum + v : sum),
+      const inserted = Object.values(detail).reduce<number>(
+        (sum, v) => (typeof v === 'number' ? sum + v : sum),
         0,
       );
       toast.success(

@@ -318,3 +318,18 @@ export function useCreateApplication() {
     onError: (e: Error) => toast({ title: 'Failed', description: e.message, variant: 'destructive' }),
   });
 }
+
+export function useNewApplicationCount() {
+  return useQuery({
+    queryKey: ['recruitment', 'new-application-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('applications')
+        .select('*', { count: 'exact', head: true })
+        .eq('stage', 'applied');
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+  });
+}

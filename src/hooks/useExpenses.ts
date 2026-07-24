@@ -404,3 +404,18 @@ export function useMarkExpenseReportPaid() {
     },
   });
 }
+
+export function usePendingExpenseReportCount() {
+  return useQuery({
+    queryKey: ['expenses', 'pending-report-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('expense_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'submitted');
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+  });
+}

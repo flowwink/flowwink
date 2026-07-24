@@ -96,6 +96,8 @@ import {
   ShieldCheck,
   Truck,
   Book,
+  ScrollText,
+  Calculator,
 } from 'lucide-react';
 import { ContentBlockType } from '@/types/cms';
 import { useAllBlockModuleStatus } from '@/hooks/useBlockModuleStatus';
@@ -222,6 +224,12 @@ const BLOCK_GROUPS: BlockGroup[] = [
         label: 'Consultant Matcher',
         icon: <FileUser className="h-5 w-5" />,
         description: 'AI-powered consultant matching from job descriptions',
+      },
+      {
+        type: 'sticky-scroll',
+        label: 'Sticky Scroll Story',
+        icon: <ScrollText className="h-5 w-5" />,
+        description: 'Chapters that update a sticky visual as you scroll',
       },
     ],
   },

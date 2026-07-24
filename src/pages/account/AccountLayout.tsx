@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Package, MapPin, Heart, User, LogOut, Loader2, CalendarOff, Receipt, Users, Target, Clock, GraduationCap, FileText, Sparkles } from 'lucide-react';
 import { useEmployeeSelf } from '@/hooks/useEmployeeSelf';
 import { useIsManager } from '@/hooks/useTeam';
-import { useIsModuleEnabled } from '@/hooks/useModules';
+import { useIsModuleEnabled, useModules } from '@/hooks/useModules';
 import { BuildBadge } from '@/components/BuildBadge';
 
 // Commerce-scoped portal sections — hidden when the ecommerce module is off
@@ -40,6 +40,7 @@ export default function AccountLayout() {
   const { isEmployee } = useEmployeeSelf();
   const { isManager } = useIsManager();
   const ecommerceEnabled = useIsModuleEnabled('ecommerce');
+  const { isLoading: modulesLoading } = useModules();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -51,7 +52,10 @@ export default function AccountLayout() {
     ...profileNav,
   ];
 
-  if (loading) {
+  // Also wait for module settings to hydrate — otherwise a cold navigation to
+  // `/account` on an ecommerce-enabled tenant briefly sees `ecommerceEnabled=false`
+  // (the default) and the guard below bounces the visitor to /assistant.
+  if (loading || modulesLoading) {
     return (
       <>
         <PublicNavigation />

@@ -433,6 +433,12 @@ const BLOCK_GROUPS: BlockGroup[] = [
         description: 'Pricing tiers and packages',
       },
       {
+        type: 'pricing-calculator',
+        label: 'Pricing Calculator',
+        icon: <Calculator className="h-5 w-5" />,
+        description: 'Interactive sliders that compute a live estimate',
+      },
+      {
         type: 'products',
         label: 'Products',
         icon: <ShoppingBag className="h-5 w-5" />,

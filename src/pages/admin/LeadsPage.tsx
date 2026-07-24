@@ -403,6 +403,7 @@ export default function LeadsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      )}
       </AdminPageContainer>
     </AdminLayout>
   );

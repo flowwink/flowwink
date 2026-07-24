@@ -9,6 +9,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { AdminThemeToggle } from './AdminThemeToggle';
 import { FlowPilotBriefingBell } from './FlowPilotBriefingBell';
+import { NotificationsBell } from './NotificationsBell';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { usePinnedPages } from '@/hooks/usePinnedPages';
 import { useVersionCheck } from '@/hooks/useVersionCheck';

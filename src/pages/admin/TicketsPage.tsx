@@ -17,6 +17,9 @@ import { LayoutGrid, List, Search, X, Users, AlarmClock } from "lucide-react";
 import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useOpenOnQueryParam } from "@/hooks/useOpenOnQueryParam";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadDemoDataButton } from "@/components/admin/LoadDemoDataButton";
+import { Ticket as TicketIcon } from "lucide-react";
 
 export default function TicketsPage() {
   const [view, setView] = useState<"kanban" | "table" | "teams" | "rules">("kanban");
@@ -147,7 +150,27 @@ export default function TicketsPage() {
           )}
 
           <TabsContent value="kanban" className="mt-0">
-            <TicketsKanban tickets={displayTickets} isLoading={isBusy} />
+            {!isBusy && tickets.length === 0 ? (
+              <EmptyState
+                icon={TicketIcon}
+                title="No tickets yet"
+                description="Tickets appear when customers reach out via contact form, email or chat. Load a demo queue to explore triage, canned responses and escalation rules."
+                action={
+                  <LoadDemoDataButton
+                    moduleId="tickets"
+                    invalidateKeys={[['tickets']]}
+                    label="Load demo tickets"
+                  />
+                }
+                secondaryAction={
+                  <Button variant="outline" onClick={() => setCreateOpen(true)}>
+                    New ticket
+                  </Button>
+                }
+              />
+            ) : (
+              <TicketsKanban tickets={displayTickets} isLoading={isBusy} />
+            )}
           </TabsContent>
 
           <TabsContent value="table" className="mt-0">

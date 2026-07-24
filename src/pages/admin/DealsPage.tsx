@@ -52,6 +52,8 @@ import { useDealTeams, useLatestExchangeRates, useBaseCurrency, convertAmount } 
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
 
 type ViewMode = 'kanban' | 'table';
 

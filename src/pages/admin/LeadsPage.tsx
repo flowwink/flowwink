@@ -257,6 +257,27 @@ export default function LeadsPage() {
         </Card>
       )}
 
+      {/* First-run empty state — surfaces demo seeder */}
+      {!leadsLoading && (leads?.length ?? 0) === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No contacts yet"
+          description="Leads are created automatically from forms and inbox scans. Load a set of demo contacts to explore the pipeline, AI scoring and review flow."
+          action={
+            <LoadDemoDataButton
+              moduleId="leads"
+              invalidateKeys={[['leads'], ['leadStats']]}
+              label="Load demo contacts"
+            />
+          }
+          secondaryAction={
+            <Button variant="outline" onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Contact
+            </Button>
+          }
+        />
+      ) : (
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex items-center justify-between gap-3">
           <TabsList>

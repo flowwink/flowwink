@@ -2156,6 +2156,484 @@ export const BLOCK_CREATION_TOOLS = [
         ]
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_parallax_section_block",
+      "description": "Create a Parallax Section section: Full-bleed section with a background image and slow-parallax scroll effect. Great for storytelling breakers between content sections.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Headline overlaid on the image",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Supporting text under the headline",
+            "type": "string"
+          },
+          "backgroundImage": {
+            "description": "Background image URL",
+            "type": "string"
+          },
+          "height": {
+            "description": "Section height",
+            "type": "string",
+            "enum": [
+              "sm",
+              "md",
+              "lg",
+              "xl"
+            ]
+          },
+          "textColor": {
+            "description": "Text color scheme",
+            "type": "string",
+            "enum": [
+              "light",
+              "dark"
+            ]
+          },
+          "overlayOpacity": {
+            "description": "Overlay opacity 0-100",
+            "type": "number"
+          },
+          "contentAlignment": {
+            "description": "Content alignment",
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_section_divider_block",
+      "description": "Create a Section Divider section: Decorative shape transition between two sections (wave, diagonal, curved, zigzag, triangle).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "description": "Divider shape",
+            "type": "string",
+            "enum": [
+              "wave",
+              "diagonal",
+              "curved",
+              "zigzag",
+              "triangle"
+            ]
+          },
+          "color": {
+            "description": "Foreground color (CSS color)",
+            "type": "string"
+          },
+          "bgColor": {
+            "description": "Background color (CSS color)",
+            "type": "string"
+          },
+          "height": {
+            "description": "Divider height",
+            "type": "string",
+            "enum": [
+              "sm",
+              "md",
+              "lg"
+            ]
+          },
+          "flip": {
+            "description": "Flip vertically",
+            "type": "boolean"
+          },
+          "invert": {
+            "description": "Invert colors",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shape"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_featured_carousel_block",
+      "description": "Create a Featured Carousel section: Full-bleed image slideshow with title/description/CTA per slide. Ideal for hero rotations, campaigns, or featured collections.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "slides": {
+            "description": "Slides [{ id, title, subtitle?, description?, image, ctaLabel?, ctaUrl?, ctaVariant?, textPosition?, overlayOpacity? }]",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "autoPlay": {
+            "description": "Auto-advance slides",
+            "type": "boolean"
+          },
+          "interval": {
+            "description": "Milliseconds per slide",
+            "type": "number"
+          },
+          "height": {
+            "description": "Carousel height",
+            "type": "string",
+            "enum": [
+              "sm",
+              "md",
+              "lg",
+              "full"
+            ]
+          },
+          "showArrows": {
+            "description": "Show prev/next arrows",
+            "type": "boolean"
+          },
+          "showDots": {
+            "description": "Show pagination dots",
+            "type": "boolean"
+          },
+          "pauseOnHover": {
+            "description": "Pause auto-play on hover",
+            "type": "boolean"
+          },
+          "transition": {
+            "description": "Transition style",
+            "type": "string",
+            "enum": [
+              "fade",
+              "slide"
+            ]
+          }
+        },
+        "required": [
+          "slides"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_sticky_scroll_block",
+      "description": "Create a Sticky Scroll Story section: Two-column narrative layout: chapters scroll on one side while a sticky visual pins on the other. Great for product tours, case studies, and step-by-step storytelling.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Section title",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Section subtitle",
+            "type": "string"
+          },
+          "eyebrow": {
+            "description": "Small label above the title",
+            "type": "string"
+          },
+          "visualSide": {
+            "description": "Which side pins the sticky visual",
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ]
+          },
+          "chapters": {
+            "description": "Chapters [{ id, title, body, eyebrow?, image?, videoUrl? }] — each chapter scrolls a new visual into the sticky pane",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "chapters"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_ai_faq_block",
+      "description": "Create a AI FAQ section: FAQ list with a semantic search box and an \"Ask AI\" button that answers via the assistant using site knowledge. Use for support hubs and product help pages.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Section title",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Section subtitle",
+            "type": "string"
+          },
+          "eyebrow": {
+            "description": "Small label above the title",
+            "type": "string"
+          },
+          "items": {
+            "description": "FAQ items [{ id, question, answer }] — answer is plain text/markdown",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "searchPlaceholder": {
+            "description": "Search/ask input placeholder",
+            "type": "string"
+          },
+          "askAiLabel": {
+            "description": "Ask AI button label",
+            "type": "string"
+          },
+          "emptyStateText": {
+            "description": "Text shown when no FAQ matches — invites the user to ask the AI",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_pricing_calculator_block",
+      "description": "Create a Pricing Calculator section: Interactive card with sliders that compute a live total based on variables (users, projects, storage, etc.). Use to give visitors an instant price estimate.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Calculator title",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Calculator subtitle",
+            "type": "string"
+          },
+          "eyebrow": {
+            "description": "Small label above the title",
+            "type": "string"
+          },
+          "basePrice": {
+            "description": "Fixed base price added to the variable total",
+            "type": "number"
+          },
+          "currencySymbol": {
+            "description": "Currency symbol prefix",
+            "type": "string"
+          },
+          "billingLabel": {
+            "description": "Suffix after the total (e.g. \"per month\")",
+            "type": "string"
+          },
+          "variables": {
+            "description": "Sliders [{ id, label, unit, min, max, step, unitPrice, defaultValue }] — total = basePrice + Σ(value × unitPrice)",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "primaryButton": {
+            "description": "CTA button { text, url }",
+            "type": "object"
+          },
+          "secondaryNote": {
+            "description": "Small print under the total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variables"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_quick_links_block",
+      "description": "Create a Quick Links section: Prominent row of primary/secondary link buttons under a heading. Use for navigation hubs, \"how can we help\" bars, or top-of-page tasks.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "description": "Heading shown next to the links",
+            "type": "string"
+          },
+          "links": {
+            "description": "Links [{ id, label, url, variant?, icon? }] — variant: \"primary\" | \"secondary\"",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "variant": {
+            "description": "Background variant",
+            "type": "string",
+            "enum": [
+              "dark",
+              "primary",
+              "muted"
+            ]
+          },
+          "layout": {
+            "description": "Layout style",
+            "type": "string",
+            "enum": [
+              "centered",
+              "split"
+            ]
+          }
+        },
+        "required": [
+          "links"
+        ]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_chat_launcher_block",
+      "description": "Create a Chat Launcher section: Chat input surface that opens the site AI assistant when the visitor submits a message. Use as an inline \"ask us anything\" section — NOT the floating widget.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Title above the input",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Supporting text",
+            "type": "string"
+          },
+          "placeholder": {
+            "description": "Input placeholder",
+            "type": "string"
+          },
+          "showQuickActions": {
+            "description": "Show suggested prompt chips",
+            "type": "boolean"
+          },
+          "quickActionCount": {
+            "description": "How many suggestions",
+            "type": "number"
+          },
+          "variant": {
+            "description": "Visual style",
+            "type": "string",
+            "enum": [
+              "minimal",
+              "card",
+              "hero-integrated"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_ai_assistant_block",
+      "description": "Create a AI Assistant section: Hero-scale AI assistant surface — a prominent search-style input with optional background image, badge, and suggested prompts. Use as the primary intent-capture section on landing pages.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Headline above the input",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Supporting text",
+            "type": "string"
+          },
+          "placeholder": {
+            "description": "Input placeholder",
+            "type": "string"
+          },
+          "variant": {
+            "description": "Visual style",
+            "type": "string",
+            "enum": [
+              "hero",
+              "card",
+              "minimal",
+              "split"
+            ]
+          },
+          "backgroundImage": {
+            "description": "Background image URL (hero variant)",
+            "type": "string"
+          },
+          "overlayOpacity": {
+            "description": "Overlay opacity 0-100",
+            "type": "number"
+          },
+          "suggestedPrompts": {
+            "description": "Array of prompt strings shown as suggestion chips",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "showBadge": {
+            "description": "Show badge (e.g. \"AI-powered\")",
+            "type": "boolean"
+          },
+          "badgeText": {
+            "description": "Badge label",
+            "type": "string"
+          },
+          "iconStyle": {
+            "description": "Input icon",
+            "type": "string",
+            "enum": [
+              "sparkles",
+              "shopping",
+              "search"
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_contact_block",
+      "description": "Create a Contact section: Contact section with heading and a contact form or contact-info card. Use as a page-level contact section.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Section title",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Section subtitle",
+            "type": "string"
+          }
+        }
+      }
+    }
   }
 ] as const;
 

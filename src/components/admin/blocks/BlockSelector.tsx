@@ -272,6 +272,12 @@ const BLOCK_GROUPS: BlockGroup[] = [
         description: 'Expandable questions and answers',
       },
       {
+        type: 'ai-faq',
+        label: 'AI FAQ',
+        icon: <Sparkles className="h-5 w-5" />,
+        description: 'FAQ with an "Ask AI" button that answers via FlowPilot',
+      },
+      {
         type: 'stats',
         label: 'Statistics',
         icon: <BarChart3 className="h-5 w-5" />,

@@ -182,6 +182,9 @@ type BlockDataMap = {
   'bento-grid': BentoGridBlockData;
   'section-divider': SectionDividerBlockData;
   'featured-carousel': FeaturedCarouselBlockData;
+  'sticky-scroll': StickyScrollBlockData;
+  'ai-faq': AiFaqBlockData;
+  'pricing-calculator': PricingCalculatorBlockData;
 };
 
 const DEFAULT_BLOCK_DATA: BlockDataMap = {

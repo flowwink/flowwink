@@ -73,6 +73,20 @@ export function useDeals(leadId?: string) {
   });
 }
 
+export function useActiveDealCount() {
+  return useQuery({
+    queryKey: ['deals-active-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('deals')
+        .select('*', { count: 'exact', head: true })
+        .in('stage', ACTIVE_STAGES);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
 export function useDeal(id: string | undefined) {
   return useQuery({
     queryKey: ['deal', id],

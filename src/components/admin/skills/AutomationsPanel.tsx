@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
-  Plus, Timer, Zap, Radio, Trash2, AlertCircle, Info, Play, Loader2,
+  Timer, Zap, Radio, Trash2, AlertCircle, Info, Play, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
-  useAutomations, useUpsertAutomation, useToggleAutomation, useDeleteAutomation,
-  useRunAutomationNow,
+  useAutomations, useToggleAutomation, useDeleteAutomation, useRunAutomationNow,
 } from '@/hooks/useAutomations';
 import { useSkills } from '@/hooks/useSkillHub';
 import type { AgentAutomation, AutomationTriggerType, AutomationExecutor } from '@/types/agent';
@@ -41,18 +40,15 @@ const executorLabels: Record<AutomationExecutor, string> = {
   external: 'External',
 };
 
-export function AutomationsPanel() {
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editing, setEditing] = useState<AgentAutomation | null>(null);
+interface AutomationsPanelProps {
+  onEdit: (automation: AgentAutomation) => void;
+}
 
+export function AutomationsPanel({ onEdit }: AutomationsPanelProps) {
   const { data: automations = [], isLoading } = useAutomations();
-  const upsert = useUpsertAutomation();
   const toggle = useToggleAutomation();
   const remove = useDeleteAutomation();
   const runNow = useRunAutomationNow();
-
-  const handleNew = () => { setEditing(null); setEditorOpen(true); };
-  const handleEdit = (a: AgentAutomation) => { setEditing(a); setEditorOpen(true); };
 
   return (
     <div className="space-y-4">
@@ -71,11 +67,6 @@ export function AutomationsPanel() {
           <span>·</span>
           <span>{automations.length} total</span>
         </div>
-        <div className="flex-1" />
-        <Button onClick={handleNew} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          New Automation
-        </Button>
       </div>
 
       {/* List */}
@@ -95,7 +86,7 @@ export function AutomationsPanel() {
             <AutomationCard
               key={auto.id}
               automation={auto}
-              onEdit={handleEdit}
+              onEdit={onEdit}
               onToggle={(id, enabled) => toggle.mutate({ id, enabled })}
               onDelete={(id) => remove.mutate(id)}
               onRun={(a) => runNow.mutate(a)}
@@ -104,13 +95,6 @@ export function AutomationsPanel() {
           ))}
         </div>
       )}
-
-      <AutomationEditorSheet
-        automation={editing}
-        open={editorOpen}
-        onClose={() => setEditorOpen(false)}
-        onSave={(data) => upsert.mutate(data)}
-      />
     </div>
   );
 }
@@ -247,7 +231,7 @@ function AutomationCard({
 
 // ─── Editor Sheet ─────────────────────────────────────────────────────────────
 
-function AutomationEditorSheet({
+export function AutomationEditorSheet({
   automation, open, onClose, onSave,
 }: {
   automation: AgentAutomation | null;

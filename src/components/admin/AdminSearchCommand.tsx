@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -25,6 +25,9 @@ import {
   ClipboardList,
   Clock,
   Image as ImageIcon,
+  History,
+  Lightbulb,
+  ArrowRight,
 } from 'lucide-react';
 import {
   CommandDialog,
@@ -35,12 +38,16 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useModules } from '@/hooks/useModules';
 import { useNavFeatureFlags, isFeatureFlagOn } from '@/hooks/useNavFeatureFlags';
 import { navigationGroups } from './adminNavigation';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppRole } from '@/types/cms';
+
+const RECENT_KEY = 'admin-search-recent';
+const MAX_RECENT = 5;
 
 const ENTITY_META: Record<string, { label: string; icon: any; group: string }> = {
   company:    { label: 'Company',    icon: Building2,     group: 'Companies' },
@@ -108,6 +115,32 @@ interface SearchHit {
   subtitle: string | null;
   url: string;
   rank: number;
+}
+
+interface RecentItem {
+  href: string;
+  title: string;
+  subtitle: string | null;
+  type: 'page' | 'entity' | 'create';
+}
+
+function readRecent(): RecentItem[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    return raw ? (JSON.parse(raw) as RecentItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecent(item: RecentItem) {
+  try {
+    const existing = readRecent().filter((r) => r.href !== item.href);
+    const next = [item, ...existing].slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // ignore storage errors
+  }
 }
 
 function useDebounced<T>(value: T, ms = 200): T {
@@ -207,12 +240,24 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
     return Array.from(map.entries());
   }, [hits]);
 
-  const handleSelect = (href: string) => {
-    onOpenChange(false);
-    navigate(href);
-  };
+  const [recent, setRecent] = useState<RecentItem[]>(() => readRecent());
+
+  useEffect(() => {
+    if (open) setRecent(readRecent());
+  }, [open]);
+
+  const handleSelect = useCallback(
+    (href: string, title: string, type: RecentItem['type'], subtitle: string | null = null) => {
+      writeRecent({ href, title, subtitle, type });
+      onOpenChange(false);
+      navigate(href);
+    },
+    [navigate, onOpenChange]
+  );
 
   const showingDataResults = debouncedQuery.trim().length >= 2;
+  const hasResults = hitsByGroup.length > 0;
+  const showRecent = !showingDataResults && recent.length > 0;
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -223,8 +268,62 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
       />
       <CommandList>
         <CommandEmpty>
-          {isFetching ? 'Searching…' : 'No results found.'}
+          {isFetching ? (
+            'Searching…'
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+              <p className="text-sm font-medium">No results found</p>
+              <p className="text-xs text-muted-foreground max-w-[260px]">
+                Try a different keyword, or jump to one of the common actions below.
+              </p>
+              {quickActions.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-2 mt-2">
+                  {quickActions.slice(0, 4).map((a) => (
+                    <button
+                      key={a.href}
+                      onClick={() => handleSelect(a.href, a.label, 'create')}
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                    >
+                      <a.icon className="h-3 w-3" />
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CommandEmpty>
+
+        {showRecent && (
+          <CommandGroup heading="Recent">
+            {recent.map((item) => {
+              const Icon =
+                quickActions.find((a) => a.href === item.href)?.icon ??
+                (item.type === 'entity' ? FileText : ArrowRight);
+              return (
+                <CommandItem
+                  key={item.href}
+                  value={`recent ${item.title} ${item.href}`}
+                  onSelect={() => handleSelect(item.href, item.title, item.type, item.subtitle)}
+                  className="cursor-pointer"
+                >
+                  <History className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate">{item.title}</span>
+                    {item.subtitle && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        {item.subtitle}
+                      </span>
+                    )}
+                  </div>
+                  <Icon className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
+        {showRecent && <CommandSeparator />}
 
         {quickActions.length > 0 && (
           <CommandGroup heading="Quick create">
@@ -232,7 +331,7 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
               <CommandItem
                 key={a.href}
                 value={`create new ${a.label}`}
-                onSelect={() => handleSelect(a.href)}
+                onSelect={() => handleSelect(a.href, a.label, 'create')}
                 className="cursor-pointer"
               >
                 <a.icon className="mr-2 h-4 w-4" />
@@ -244,8 +343,7 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
 
         {quickActions.length > 0 && <CommandSeparator />}
 
-
-        {showingDataResults &&
+        {showingDataResults && hasResults &&
           hitsByGroup.map(([group, items]) => (
             <CommandGroup key={`hit-${group}`} heading={group}>
               {items.map((hit) => {
@@ -255,11 +353,13 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
                   <CommandItem
                     key={`${hit.entity_type}-${hit.entity_id}`}
                     value={`${hit.entity_type} ${hit.title} ${hit.subtitle ?? ''} ${hit.entity_id}`}
-                    onSelect={() => handleSelect(hit.url)}
+                    onSelect={() =>
+                      handleSelect(hit.url, hit.title, 'entity', hit.subtitle)
+                    }
                     className="cursor-pointer"
                   >
                     <Icon className="mr-2 h-4 w-4 shrink-0" />
-                    <div className="flex flex-col min-w-0">
+                    <div className="flex flex-col min-w-0 flex-1">
                       <span className="truncate">{hit.title || '(untitled)'}</span>
                       {hit.subtitle && (
                         <span className="text-xs text-muted-foreground truncate">
@@ -267,20 +367,55 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
                         </span>
                       )}
                     </div>
+                    <Badge variant="outline" className="ml-2 text-[10px] font-normal shrink-0">
+                      {meta?.label ?? hit.entity_type}
+                    </Badge>
                   </CommandItem>
                 );
               })}
             </CommandGroup>
           ))}
 
-        {showingDataResults && hitsByGroup.length > 0 && <CommandSeparator />}
+        {showingDataResults && hasResults && <CommandSeparator />}
+
+        {!showingDataResults && (
+          <CommandGroup heading="Suggestions">
+            <CommandItem
+              value="suggestion open tickets"
+              onSelect={() => handleSelect('/admin/tickets', 'Tickets', 'page')}
+              className="cursor-pointer"
+            >
+              <Lightbulb className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Open tickets</span>
+            </CommandItem>
+            <CommandItem
+              value="suggestion new lead"
+              onSelect={() => handleSelect('/admin/leads?new=1', 'New lead', 'create')}
+              className="cursor-pointer"
+            >
+              <Lightbulb className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Create a lead</span>
+            </CommandItem>
+            <CommandItem
+              value="suggestion invoices"
+              onSelect={() => handleSelect('/admin/invoices', 'Invoices', 'page')}
+              className="cursor-pointer"
+            >
+              <Lightbulb className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Latest invoices</span>
+            </CommandItem>
+          </CommandGroup>
+        )}
+
+        {!showingDataResults && <CommandSeparator />}
 
         {filteredGroups.map((group) => (
           <CommandGroup key={group.label} heading={group.label}>
             {group.items.map((item) => (
               <CommandItem
                 key={item.href}
-                onSelect={() => handleSelect(item.href)}
+                value={`page ${item.name} ${group.label}`}
+                onSelect={() => handleSelect(item.href, item.name, 'page')}
                 className="cursor-pointer"
               >
                 <item.icon className="mr-2 h-4 w-4" />

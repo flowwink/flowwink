@@ -126,6 +126,20 @@ export function useTickets(statusFilter?: TicketStatus[]) {
   });
 }
 
+export function useOpenTicketCount() {
+  return useQuery({
+    queryKey: ['tickets-open-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['new', 'open', 'in_progress', 'waiting']);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
 export function useTicket(id: string | undefined) {
   return useQuery({
     queryKey: ['tickets', id],

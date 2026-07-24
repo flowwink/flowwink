@@ -214,7 +214,7 @@ function SkillAuditCard() {
                   {data!.recentFailures.map((f: any) => (
                     <li key={f.id} className="text-xs flex items-center justify-between gap-2">
                       <code className="font-mono truncate">{f.skill_name ?? 'unknown'}</code>
-                      <span className="text-muted-foreground shrink-0">{timeAgo(f.created_at)}</span>
+                      <span className="text-muted-foreground shrink-0">{timeAgo(f.occurred_at)}</span>
                     </li>
                   ))}
                 </ul>

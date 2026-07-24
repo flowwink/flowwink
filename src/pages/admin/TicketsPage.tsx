@@ -150,7 +150,27 @@ export default function TicketsPage() {
           )}
 
           <TabsContent value="kanban" className="mt-0">
-            <TicketsKanban tickets={displayTickets} isLoading={isBusy} />
+            {!isBusy && tickets.length === 0 ? (
+              <EmptyState
+                icon={TicketIcon}
+                title="No tickets yet"
+                description="Tickets appear when customers reach out via contact form, email or chat. Load a demo queue to explore triage, canned responses and escalation rules."
+                action={
+                  <LoadDemoDataButton
+                    moduleId="tickets"
+                    invalidateKeys={[['tickets']]}
+                    label="Load demo tickets"
+                  />
+                }
+                secondaryAction={
+                  <Button variant="outline" onClick={() => setCreateOpen(true)}>
+                    New ticket
+                  </Button>
+                }
+              />
+            ) : (
+              <TicketsKanban tickets={displayTickets} isLoading={isBusy} />
+            )}
           </TabsContent>
 
           <TabsContent value="table" className="mt-0">

@@ -71,6 +71,12 @@ const ConsultantMatcherBlock = lazy(() => import('./blocks/ConsultantMatcherBloc
 const FeaturedProductBlock = lazy(() => import('./blocks/FeaturedProductBlock').then(m => ({ default: m.FeaturedProductBlock })));
 const AiAssistantBlock = lazy(() => import('./blocks/AiAssistantBlock').then(m => ({ default: m.AiAssistantBlock })));
 const HandbookBlock = lazy(() => import('./blocks/HandbookBlock').then(m => ({ default: m.HandbookBlock })));
+const StickyScrollBlock = lazy(() => import('./blocks/StickyScrollBlock').then(m => ({ default: m.StickyScrollBlock })));
+const AiFaqBlock = lazy(() => import('./blocks/AiFaqBlock').then(m => ({ default: m.AiFaqBlock })));
+const PricingCalculatorBlock = lazy(() => import('./blocks/PricingCalculatorBlock').then(m => ({ default: m.PricingCalculatorBlock })));
+import type { StickyScrollBlockData } from './blocks/StickyScrollBlock';
+import type { AiFaqBlockData } from './blocks/AiFaqBlock';
+import type { PricingCalculatorBlockData } from './blocks/PricingCalculatorBlock';
 import type { ChatLauncherBlockData } from './blocks/ChatLauncherBlock';
 import type { KbHubBlockData } from './blocks/KbHubBlock';
 import type {
@@ -323,6 +329,12 @@ export function BlockRenderer({ block, pageId, index = 0, resolvedBackground }: 
         return <QuickLinksBlock data={block.data as unknown as QuickLinksBlockData} />;
       case 'handbook':
         return <HandbookBlock data={block.data as unknown as HandbookBlockData} />;
+      case 'sticky-scroll':
+        return <StickyScrollBlock data={block.data as unknown as StickyScrollBlockData} />;
+      case 'ai-faq':
+        return <AiFaqBlock data={block.data as unknown as AiFaqBlockData} />;
+      case 'pricing-calculator':
+        return <PricingCalculatorBlock data={block.data as unknown as PricingCalculatorBlockData} />;
       default:
         return null;
     }

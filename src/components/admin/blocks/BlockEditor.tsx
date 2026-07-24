@@ -83,6 +83,12 @@ import { SmartBookingBlockEditor } from './SmartBookingBlockEditor';
 import { ConsultantMatcherBlockEditor } from './ConsultantMatcherBlockEditor';
 import { HandbookBlockEditor } from './HandbookBlockEditor';
 import { QuickLinksBlockEditor } from './QuickLinksBlockEditor';
+import { StickyScrollBlockEditor } from './StickyScrollBlockEditor';
+import { AiFaqBlockEditor } from './AiFaqBlockEditor';
+import { PricingCalculatorBlockEditor } from './PricingCalculatorBlockEditor';
+import type { StickyScrollBlockData } from '@/components/public/blocks/StickyScrollBlock';
+import type { AiFaqBlockData } from '@/components/public/blocks/AiFaqBlock';
+import type { PricingCalculatorBlockData } from '@/components/public/blocks/PricingCalculatorBlock';
 import type { QuickLinksBlockData } from '@/components/public/blocks/QuickLinksBlock';
 import type { ProductsBlockData } from '@/components/public/blocks/ProductsBlock';
 import type { CartBlockData } from '@/components/public/blocks/CartBlock';
@@ -176,6 +182,9 @@ type BlockDataMap = {
   'bento-grid': BentoGridBlockData;
   'section-divider': SectionDividerBlockData;
   'featured-carousel': FeaturedCarouselBlockData;
+  'sticky-scroll': StickyScrollBlockData;
+  'ai-faq': AiFaqBlockData;
+  'pricing-calculator': PricingCalculatorBlockData;
 };
 
 const DEFAULT_BLOCK_DATA: BlockDataMap = {
@@ -544,6 +553,38 @@ const DEFAULT_BLOCK_DATA: BlockDataMap = {
     showDots: true,
     pauseOnHover: true,
     transition: 'fade',
+  },
+  'sticky-scroll': {
+    title: 'How it works',
+    subtitle: 'A short story, told as you scroll.',
+    eyebrow: 'JOURNEY',
+    visualSide: 'right',
+    chapters: [
+      { id: 'sc-1', title: 'Discover', body: 'Explore what matters most.', eyebrow: 'Step 1' },
+      { id: 'sc-2', title: 'Decide', body: 'Choose the path that fits.', eyebrow: 'Step 2' },
+      { id: 'sc-3', title: 'Deliver', body: 'Watch it come together.', eyebrow: 'Step 3' },
+    ],
+  },
+  'ai-faq': {
+    title: 'Questions? Ask away.',
+    subtitle: 'Search the FAQ — or ask the assistant directly.',
+    searchPlaceholder: 'Ask a question or search…',
+    askAiLabel: 'Ask AI',
+    items: [
+      { id: 'faq-1', question: 'How does it work?', answer: 'Describe the answer here.' },
+      { id: 'faq-2', question: 'How much does it cost?', answer: 'Describe the answer here.' },
+    ],
+  },
+  'pricing-calculator': {
+    title: 'Estimate your price',
+    subtitle: 'Drag the sliders to see what fits.',
+    basePrice: 0,
+    currencySymbol: '$',
+    billingLabel: 'per month',
+    variables: [
+      { id: 'pc-users', label: 'Users', unit: 'users', min: 1, max: 100, step: 1, unitPrice: 10, defaultValue: 10 },
+    ],
+    primaryButton: { text: 'Get started', url: '/contact' },
   },
 };
 
@@ -1169,6 +1210,30 @@ export function BlockEditor({ blocks, onChange, canEdit }: BlockEditorProps) {
         return (
           <QuickLinksBlockEditor
             data={block.data as unknown as QuickLinksBlockData}
+            onChange={(data) => handleUpdateBlock(block.id, data as unknown as Record<string, unknown>)}
+            isEditing={isEditing}
+          />
+        );
+      case 'sticky-scroll':
+        return (
+          <StickyScrollBlockEditor
+            data={block.data as unknown as StickyScrollBlockData}
+            onChange={(data) => handleUpdateBlock(block.id, data as unknown as Record<string, unknown>)}
+            isEditing={isEditing}
+          />
+        );
+      case 'ai-faq':
+        return (
+          <AiFaqBlockEditor
+            data={block.data as unknown as AiFaqBlockData}
+            onChange={(data) => handleUpdateBlock(block.id, data as unknown as Record<string, unknown>)}
+            isEditing={isEditing}
+          />
+        );
+      case 'pricing-calculator':
+        return (
+          <PricingCalculatorBlockEditor
+            data={block.data as unknown as PricingCalculatorBlockData}
             onChange={(data) => handleUpdateBlock(block.id, data as unknown as Record<string, unknown>)}
             isEditing={isEditing}
           />

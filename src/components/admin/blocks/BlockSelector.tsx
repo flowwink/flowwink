@@ -96,6 +96,8 @@ import {
   ShieldCheck,
   Truck,
   Book,
+  ScrollText,
+  Calculator,
 } from 'lucide-react';
 import { ContentBlockType } from '@/types/cms';
 import { useAllBlockModuleStatus } from '@/hooks/useBlockModuleStatus';
@@ -223,6 +225,12 @@ const BLOCK_GROUPS: BlockGroup[] = [
         icon: <FileUser className="h-5 w-5" />,
         description: 'AI-powered consultant matching from job descriptions',
       },
+      {
+        type: 'sticky-scroll',
+        label: 'Sticky Scroll Story',
+        icon: <ScrollText className="h-5 w-5" />,
+        description: 'Chapters that update a sticky visual as you scroll',
+      },
     ],
   },
   {
@@ -262,6 +270,12 @@ const BLOCK_GROUPS: BlockGroup[] = [
         label: 'Accordion/FAQ',
         icon: <HelpCircle className="h-5 w-5" />,
         description: 'Expandable questions and answers',
+      },
+      {
+        type: 'ai-faq',
+        label: 'AI FAQ',
+        icon: <Sparkles className="h-5 w-5" />,
+        description: 'FAQ with an "Ask AI" button that answers via FlowPilot',
       },
       {
         type: 'stats',
@@ -417,6 +431,12 @@ const BLOCK_GROUPS: BlockGroup[] = [
         label: 'Pricing',
         icon: <CreditCard className="h-5 w-5" />,
         description: 'Pricing tiers and packages',
+      },
+      {
+        type: 'pricing-calculator',
+        label: 'Pricing Calculator',
+        icon: <Calculator className="h-5 w-5" />,
+        description: 'Interactive sliders that compute a live estimate',
       },
       {
         type: 'products',

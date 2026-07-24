@@ -186,8 +186,30 @@ export default function DealsPage() {
         )}
 
 
+        {/* First-run empty state — surfaces demo seeder */}
+        {!isLoading && rawDeals.length === 0 && (
+          <EmptyState
+            icon={Briefcase}
+            title="No deals yet"
+            description="Deals appear when leads become opportunities. Load a demo pipeline to see the Kanban stages, weighted forecast and stale-deal alerts in action."
+            action={
+              <LoadDemoDataButton
+                moduleId="deals"
+                invalidateKeys={[['deals'], ['dealStats']]}
+                label="Load demo deals"
+              />
+            }
+            secondaryAction={
+              <Button variant="outline" onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Deal
+              </Button>
+            }
+          />
+        )}
+
         {/* Kanban View */}
-        {viewMode === 'kanban' && (
+        {viewMode === 'kanban' && rawDeals.length > 0 && (
           <>
             <PipelineSummary deals={deals} />
             <DealKanban

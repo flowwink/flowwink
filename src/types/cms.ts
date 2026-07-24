@@ -166,7 +166,10 @@ export type ContentBlockType =
   | 'shipping-info'
   | 'ai-assistant'
   | 'quick-links'
-  | 'handbook';
+  | 'handbook'
+  | 'sticky-scroll'
+  | 'ai-faq'
+  | 'pricing-calculator';
 
 // Form field types
 export type FormFieldType =

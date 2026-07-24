@@ -105,6 +105,7 @@ export function AdminContentHeader() {
 
       {/* Quick create + Briefing bell + Theme toggle */}
       <QuickCreateMenu />
+      <NotificationsBell />
       <FlowPilotBriefingBell />
       <AdminThemeToggle />
 

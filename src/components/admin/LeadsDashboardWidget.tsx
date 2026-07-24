@@ -8,6 +8,7 @@ import { getLeadStatusInfo } from '@/lib/lead-utils';
 import { UserCheck, TrendingUp, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
 
 export function LeadsDashboardWidget() {
   const { data: stats, isLoading: statsLoading } = useLeadStats();

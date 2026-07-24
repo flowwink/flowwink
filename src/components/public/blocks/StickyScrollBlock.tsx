@@ -48,8 +48,8 @@ export function StickyScrollBlock({ data }: Props) {
   if (chapters.length === 0) {
     return (
       <BlockSection>
-        <SectionHeading eyebrow={eyebrow} title={title || 'Sticky-scroll story'} />
-        <p className="text-center text-muted-foreground text-sm">No chapters yet.</p>
+        <SectionHeading eyebrow={eyebrow} title={title || 'Sticky-scroll story'} align="center" />
+        <p className="text-center text-muted-foreground text-sm mt-4">No chapters yet.</p>
       </BlockSection>
     );
   }
@@ -61,7 +61,7 @@ export function StickyScrollBlock({ data }: Props) {
     <BlockSection>
       {(title || subtitle || eyebrow) && (
         <div className="mb-12">
-          <SectionHeading eyebrow={eyebrow} title={title} subtitle={subtitle} />
+          <SectionHeading eyebrow={eyebrow} title={title || ''} lead={subtitle} align="center" />
         </div>
       )}
       <div className={cn('grid gap-8 md:gap-16 md:grid-cols-2', visualFirst && 'md:[&>*:first-child]:order-2')}>

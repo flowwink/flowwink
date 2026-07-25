@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { callSkill } from '@/lib/call-skill';
 import { useSearchParams, Link } from 'react-router-dom';
 import {

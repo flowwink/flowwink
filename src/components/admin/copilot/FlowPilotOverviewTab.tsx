@@ -386,6 +386,14 @@ export function FlowPilotOverviewTab() {
           </CardHeader>
           <CardContent className="space-y-1">
             <JumpLink to="/admin/flowpilot?tab=objectives" icon={Target} label="Objectives" />
+            <JumpLink to="/admin/flowpilot?tab=trace" icon={GitBranch} label="Trace" />
+            <JumpLink to="/admin/flowpilot?tab=persona" icon={Sparkles} label="Persona" />
+            <JumpLink to="/admin/flowpilot?tab=memory" icon={Cpu} label="Memory" />
+            <JumpLink to="/admin/flowpilot?tab=autonomy" icon={Clock} label="Autonomy" />
+            <JumpLink to="/admin/automations" icon={Workflow} label="Automations & Workflows" />
+            <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
+            <JumpLink to="/admin/developer?tab=mcp-activity" icon={Bot} label="Skills & MCP" />
+            <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
             <JumpLink to="/admin/automations" icon={Workflow} label="Automations & Workflows" />
             <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
           </CardContent>

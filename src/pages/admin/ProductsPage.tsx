@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useIsStripeConfigured } from '@/hooks/useIntegrationStatus';
 import { IntegrationWarning } from '@/components/admin/IntegrationWarning';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
 
 export default function ProductsPage() {

@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDocuments, useDeleteDocument, getDocumentSignedUrl, type Document } from "@/hooks/useDocuments";
 import { FileText, Trash2, ExternalLink, FolderOpen, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { AddDocumentDialog } from "@/components/admin/documents/AddDocumentDialog";
 import { DocumentTagsCell } from "@/components/admin/documents/DocumentTagsCell";
 import { DocumentDetailSheet } from "@/components/admin/documents/DocumentDetailSheet";
@@ -26,6 +26,7 @@ function formatSize(bytes: number | null) {
 }
 
 export default function DocumentsPage() {
+  const { formatDateTime } = usePlatformFormat();
   const [category, setCategory] = useState("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
@@ -137,7 +138,7 @@ export default function DocumentsPage() {
                           <TableCell>
                             <DocumentTagsCell documentId={doc.id} tags={doc.tags} />
                           </TableCell>
-                          <TableCell className="text-sm">{format(new Date(doc.created_at), "MMM d, yyyy")}</TableCell>
+                          <TableCell className="text-sm">{formatDateTime(doc.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-1">
                               {doc.file_url && (

@@ -19,7 +19,7 @@ import { CreateCompanyDialog } from '@/components/admin/CreateCompanyDialog';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
 import { DuplicateCompaniesPanel } from '@/components/admin/companies/DuplicateCompaniesPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +35,7 @@ import {
 type LifecycleFilter = 'all' | 'prospect' | 'customer' | 'churned';
 
 export default function CompaniesPage() {
+  const { formatDateTime } = usePlatformFormat();
   const [search, setSearch] = useState('');
   const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>('all');
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -212,7 +213,7 @@ export default function CompaniesPage() {
                                 <Sparkles className="h-4 w-4 text-primary/70" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Enriched {format(new Date(company.enriched_at), 'd MMM yyyy')}</p>
+                                <p>Enriched {formatDateTime(company.enriched_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -266,7 +267,7 @@ export default function CompaniesPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {company.customer_since
-                        ? format(new Date(company.customer_since), 'd MMM yyyy')
+                        ? formatDateTime(company.customer_since, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })
                         : <span className="text-xs italic opacity-60">—</span>}
                     </TableCell>
                     <TableCell>

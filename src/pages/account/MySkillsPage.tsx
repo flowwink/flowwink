@@ -19,9 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Award, GraduationCap } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 export default function MySkillsPage() {
+  const { formatDate } = usePlatformFormat();
   const { employee, isEmployee, loading } = useEmployeeSelf();
   const empId = employee?.id;
   const { data: skills } = useEmployeeSkills(empId);
@@ -151,7 +152,7 @@ export default function MySkillsPage() {
                       <p className="font-medium">{c.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {c.issuer && `${c.issuer} · `}
-                        {c.expires_at ? `expires ${format(new Date(c.expires_at), "MMM d, yyyy")}` : "no expiry"}
+                        {c.expires_at ? `expires ${formatDate(c.expires_at, { year: "numeric", month: "short", day: "numeric" })}` : "no expiry"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

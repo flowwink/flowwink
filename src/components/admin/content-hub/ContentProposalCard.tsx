@@ -1,4 +1,5 @@
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Calendar, Clock, MoreVertical, CheckCircle2, Sparkles, Trash2 } from 'lucide-react';
 import { ContentProposal, ChannelType } from '@/hooks/useContentProposals';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -30,6 +31,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export function ContentProposalCard({ proposal, onSelect, onApprove, onDelete }: ContentProposalCardProps) {
+  const { formatDateTime } = usePlatformFormat();
   const activeChannels = ALL_CHANNELS.filter(
     (channel) => proposal.channel_variants?.[channel as ChannelType]
   );
@@ -117,7 +119,7 @@ export function ContentProposalCard({ proposal, onSelect, onApprove, onDelete }:
           {proposal.scheduled_for && (
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {format(new Date(proposal.scheduled_for), 'MMM d')}
+              {formatDateTime(proposal.scheduled_for, { year: undefined, month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
             </div>
           )}
         </div>

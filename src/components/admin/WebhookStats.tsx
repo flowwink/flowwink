@@ -18,7 +18,8 @@ import {
   Legend
 } from 'recharts';
 import { CheckCircle2, XCircle, Clock, Activity, TrendingUp, Zap } from 'lucide-react';
-import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
+import { subDays, startOfDay, eachDayOfInterval } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { WEBHOOK_EVENT_LABELS } from '@/hooks/useWebhooks';
 import type { WebhookEvent } from '@/hooks/useWebhooks';
 
@@ -29,6 +30,7 @@ const COLORS = {
 };
 
 export function WebhookStats() {
+  const { formatDate } = usePlatformFormat();
   // Fetch all webhook logs for the last 7 days
   const { data: logs, isLoading } = useQuery({
     queryKey: ['webhook-stats'],
@@ -88,8 +90,8 @@ export function WebhookStats() {
       });
 
       return {
-        date: format(day, 'EEE'),
-        fullDate: format(day, 'd MMM'),
+        date: formatDate(day, { weekday: 'short', year: undefined, month: undefined, day: undefined }),
+        fullDate: formatDate(day, { year: undefined, month: 'short', day: 'numeric' }),
         success: dayLogs.filter(l => l.success).length,
         failed: dayLogs.filter(l => !l.success).length,
         total: dayLogs.length,
@@ -133,7 +135,7 @@ export function WebhookStats() {
       eventData,
       pieData,
     };
-  }, [logs]);
+  }, [logs, formatDate]);
 
   const webhookSummary = useMemo(() => {
     if (!webhooks) return { total: 0, active: 0, disabled: 0, autoDisabled: 0 };

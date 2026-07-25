@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Activity, AlertCircle, Cpu, TrendingUp, Zap } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
@@ -39,6 +39,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AiUsagePage() {
+  const { formatDateTime } = usePlatformFormat();
   const [days, setDays] = useState('7');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [modelFilter, setModelFilter] = useState<string>('all');
@@ -218,7 +219,7 @@ export default function AiUsagePage() {
                     {logs.data.map((row: AiUsageRow) => (
                       <TableRow key={row.id} className="text-xs">
                         <TableCell className="whitespace-nowrap text-muted-foreground">
-                          {format(new Date(row.created_at), 'MMM d HH:mm:ss')}
+                          {formatDateTime(row.created_at, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </TableCell>
                         <TableCell>
                           <code className="text-[11px] bg-muted px-1.5 py-0.5 rounded">{row.source}</code>

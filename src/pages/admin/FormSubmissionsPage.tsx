@@ -40,6 +40,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, Download, Trash2, Eye, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { toast } from 'sonner';
 
 interface FormSubmission {
@@ -82,6 +83,7 @@ function FileDownloadLink({ file }: { file: { path: string; name: string } }) {
 }
 
 export default function FormSubmissionsPage() {
+  const { formatDateTime } = usePlatformFormat();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterFormName, setFilterFormName] = useState<string>('all');
@@ -315,7 +317,7 @@ export default function FormSubmissionsPage() {
                 {filteredSubmissions.map((submission) => (
                   <TableRow key={submission.id}>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(submission.created_at), 'dd MMM yyyy HH:mm')}
+                      {formatDateTime(submission.created_at)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{submission.form_name || 'Unnamed'}</Badge>
@@ -364,7 +366,7 @@ export default function FormSubmissionsPage() {
                 <div>
                   <div className="text-muted-foreground">Date</div>
                   <div className="font-medium">
-                    {format(new Date(selectedSubmission.created_at), 'PPpp')}
+                    {formatDateTime(selectedSubmission.created_at, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </div>
                 </div>
                 <div>

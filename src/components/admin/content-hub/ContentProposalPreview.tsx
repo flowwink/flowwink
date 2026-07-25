@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { 
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import {
   CheckCircle2, 
   RefreshCw, 
   X, 
@@ -32,6 +32,7 @@ interface ContentProposalPreviewProps {
 }
 
 export function ContentProposalPreview({ proposal, onClose, onRegenerate }: ContentProposalPreviewProps) {
+  const { formatDateTime } = usePlatformFormat();
   const [activeChannel, setActiveChannel] = useState<ChannelType>('blog');
   const [showEditDialog, setShowEditDialog] = useState(false);
   const approveProposal = useApproveProposal();
@@ -82,12 +83,12 @@ export function ContentProposalPreview({ proposal, onClose, onRegenerate }: Cont
             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                Created {format(new Date(proposal.created_at), 'MMM d, yyyy')}
+                Created {formatDateTime(proposal.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
               </div>
               {proposal.scheduled_for && (
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  Scheduled {format(new Date(proposal.scheduled_for), 'MMM d')}
+                  Scheduled {formatDateTime(proposal.scheduled_for, { year: undefined, month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
                 </div>
               )}
             </div>

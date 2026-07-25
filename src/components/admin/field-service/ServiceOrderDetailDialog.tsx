@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, XCircle, Clock, PlayCircle, StopCircle, Signature, Link as LinkIcon, Package, Repeat } from 'lucide-react';
-import { format, formatDistanceStrict } from 'date-fns';
+import { formatDistanceStrict } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   useServiceOrder, useServiceVisits, type ServiceVisit,
 } from '@/hooks/useFieldService';
@@ -95,7 +96,9 @@ export function ServiceOrderDetailDialog({ orderId, onClose }: Props) {
 
 function VisitsSection({ visits }: { visits: ServiceVisit[] }) {
   const time$ = useRecordVisitTime();
+  const { formatDateTime } = usePlatformFormat();
   const [proofVisit, setProofVisit] = useState<ServiceVisit | null>(null);
+  const timeOnly = { year: undefined, month: undefined, day: undefined, hour: '2-digit', minute: '2-digit' } as const;
 
   if (visits.length === 0) return <div className="py-6 text-center text-sm text-muted-foreground">No visits scheduled.</div>;
   return (
@@ -110,7 +113,7 @@ function VisitsSection({ visits }: { visits: ServiceVisit[] }) {
               <div className="flex items-center justify-between">
                 <div className="text-sm">
                   <div className="font-medium">
-                    {format(new Date(v.scheduled_start), 'PP HH:mm')} – {format(new Date(v.scheduled_end), 'HH:mm')}
+                    {formatDateTime(v.scheduled_start)} – {formatDateTime(v.scheduled_end, timeOnly)}
                   </div>
                   <div className="text-xs text-muted-foreground capitalize">{v.status}</div>
                 </div>
@@ -133,8 +136,8 @@ function VisitsSection({ visits }: { visits: ServiceVisit[] }) {
               </div>
               {(v.actual_start || v.actual_end) && (
                 <div className="text-xs text-muted-foreground">
-                  {v.actual_start && <>Started {format(new Date(v.actual_start), 'PP HH:mm')}</>}
-                  {v.actual_end && <> · Ended {format(new Date(v.actual_end), 'HH:mm')}</>}
+                  {v.actual_start && <>Started {formatDateTime(v.actual_start)}</>}
+                  {v.actual_end && <> · Ended {formatDateTime(v.actual_end, timeOnly)}</>}
                 </div>
               )}
               {(v.signature_url || (v as any).signed_by) && (
@@ -230,6 +233,7 @@ function RecurrenceSection({ orderId, rule, until, nextAt }: {
   orderId: string; rule: string | null; until: string | null; nextAt: string | null;
 }) {
   const mut = useRecurrenceMutation();
+  const { formatDate, formatDateTime } = usePlatformFormat();
   const [ruleSel, setRuleSel] = useState<string>(rule ?? 'weekly');
   const [untilSel, setUntilSel] = useState<string>(until ?? '');
 
@@ -239,8 +243,8 @@ function RecurrenceSection({ orderId, rule, until, nextAt }: {
         {rule ? (
           <div className="text-sm">
             <Badge variant="secondary" className="mr-2"><Repeat className="h-3 w-3 mr-1" />{rule}</Badge>
-            {nextAt && <span className="text-muted-foreground">Next: {format(new Date(nextAt), 'PP')}</span>}
-            {until && <span className="text-muted-foreground ml-2">until {format(new Date(until), 'PP')}</span>}
+            {nextAt && <span className="text-muted-foreground">Next: {formatDateTime(nextAt, { hour: undefined, minute: undefined })}</span>}
+            {until && <span className="text-muted-foreground ml-2">until {formatDate(until)}</span>}
           </div>
         ) : (
           <div className="text-sm text-muted-foreground">Not recurring.</div>

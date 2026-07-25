@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
 import {
   Plus, GitBranch, Trash2, AlertCircle, Play, ArrowRight,
   ChevronDown, ChevronUp, GripVertical, Info,
 } from 'lucide-react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,6 +108,7 @@ function WorkflowCard({
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const { formatDateTime } = usePlatformFormat();
   const steps = (workflow.steps ?? []) as WorkflowStep[];
 
   return (
@@ -164,7 +165,7 @@ function WorkflowCard({
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {workflow.run_count > 0
-              ? `${workflow.run_count} runs · last ${workflow.last_run_at ? format(new Date(workflow.last_run_at), 'MMM d HH:mm') : '—'}`
+              ? `${workflow.run_count} runs · last ${workflow.last_run_at ? formatDateTime(workflow.last_run_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}`
               : 'Never run'}
           </span>
         </div>

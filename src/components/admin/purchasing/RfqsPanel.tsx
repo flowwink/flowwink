@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { Plus, FileText, Award, Trash2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +26,7 @@ export function RfqsPanel() {
   const { data: rfqs = [], isLoading } = useRfqs();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const { formatDate } = usePlatformFormat();
 
   return (
     <Card>
@@ -65,8 +65,8 @@ export function RfqsPanel() {
                   <TableCell className="font-mono text-xs">{r.rfq_number}</TableCell>
                   <TableCell>{r.title}</TableCell>
                   <TableCell><Badge variant={statusVariant[r.status]}>{r.status}</Badge></TableCell>
-                  <TableCell>{r.response_deadline ? format(new Date(r.response_deadline), 'PP') : '—'}</TableCell>
-                  <TableCell>{format(new Date(r.issue_date), 'PP')}</TableCell>
+                  <TableCell>{r.response_deadline ? formatDate(r.response_deadline) : '—'}</TableCell>
+                  <TableCell>{formatDate(r.issue_date)}</TableCell>
                   <TableCell><Button size="sm" variant="ghost">Open</Button></TableCell>
                 </TableRow>
               ))}
@@ -198,7 +198,7 @@ function RfqDetailDialog({ rfqId, onClose }: { rfqId: string | null; onClose: ()
   const updateStatus = useUpdateRfqStatus();
   const award = useAwardRfq();
   const submitBid = useSubmitBid();
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const [bidEditor, setBidEditor] = useState<string | null>(null);
 
   if (!rfqId) return null;
@@ -219,8 +219,8 @@ function RfqDetailDialog({ rfqId, onClose }: { rfqId: string | null; onClose: ()
             {data.rfq.description && <p className="text-sm text-muted-foreground">{data.rfq.description}</p>}
 
             <div className="flex gap-2 text-xs text-muted-foreground">
-              <span>Issued {format(new Date(data.rfq.issue_date), 'PP')}</span>
-              {data.rfq.response_deadline && <span>· Deadline {format(new Date(data.rfq.response_deadline), 'PP')}</span>}
+              <span>Issued {formatDate(data.rfq.issue_date)}</span>
+              {data.rfq.response_deadline && <span>· Deadline {formatDate(data.rfq.response_deadline)}</span>}
               <span>· {data.rfq.currency}</span>
             </div>
 

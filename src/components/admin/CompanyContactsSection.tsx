@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +62,7 @@ const STATUS_VARIANT: Record<Status, 'default' | 'secondary' | 'outline'> = {
 };
 
 export function CompanyContactsSection({ companyId }: { companyId: string }) {
+  const { formatDateTime } = usePlatformFormat();
   const qc = useQueryClient();
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -249,7 +250,7 @@ export function CompanyContactsSection({ companyId }: { companyId: string }) {
                     </Select>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(c.created_at), 'd MMM yyyy')}
+                    {formatDateTime(c.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
                   </TableCell>
                   <TableCell>
                     <AlertDialog>

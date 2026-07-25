@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Plus, Trash2, CalendarOff } from 'lucide-react';
 import {
   useAvailability,
@@ -23,6 +24,7 @@ import { Calendar } from '@/components/ui/calendar';
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function BookingAvailabilityTab() {
+  const { formatDate } = usePlatformFormat();
   const { data: availability, isLoading: loadingAvailability } = useAvailability();
   const { data: blockedDates, isLoading: loadingBlocked } = useBlockedDates();
   const { data: services } = useBookingServices();
@@ -149,7 +151,7 @@ export default function BookingAvailabilityTab() {
                 <Card key={blocked.id}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{format(new Date(blocked.date), 'EEEE, MMMM d, yyyy')}</p>
+                      <p className="font-medium">{formatDate(blocked.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                       {blocked.reason && <p className="text-sm text-muted-foreground">{blocked.reason}</p>}
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => deleteBlockedDate.mutate(blocked.id)}>

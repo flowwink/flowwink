@@ -27,7 +27,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { differenceInCalendarDays, format } from "date-fns";
+import { differenceInCalendarDays } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { LeaveBalanceCards } from "@/components/account/LeaveBalanceCards";
 import { toast } from "sonner";
 import {
@@ -99,6 +100,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function LeavePage() {
+  const { formatDate } = usePlatformFormat();
   const { employee, isEmployee, loading } = useEmployeeSelf();
   const qc = useQueryClient();
   const [leaveType, setLeaveType] = useState("vacation");
@@ -248,8 +250,8 @@ export default function LeavePage() {
             <StatusBadge status={r.status} />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {format(new Date(r.start_date), "MMM d")} –{" "}
-            {format(new Date(r.end_date), "MMM d, yyyy")} · {r.days} day
+            {formatDate(r.start_date, { month: "short", day: "numeric" })} –{" "}
+            {formatDate(r.end_date, { year: "numeric", month: "short", day: "numeric" })} · {r.days} day
             {r.days === 1 ? "" : "s"}
           </p>
           {r.reason && (
@@ -459,8 +461,8 @@ export default function LeavePage() {
               {cancelTarget && (
                 <>
                   {cancelTarget.leave_type} ·{" "}
-                  {format(new Date(cancelTarget.start_date), "MMM d")} –{" "}
-                  {format(new Date(cancelTarget.end_date), "MMM d, yyyy")}.
+                  {formatDate(cancelTarget.start_date, { month: "short", day: "numeric" })} –{" "}
+                  {formatDate(cancelTarget.end_date, { year: "numeric", month: "short", day: "numeric" })}.
                   This action cannot be undone.
                 </>
               )}

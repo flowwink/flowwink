@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProjectSchedule, type GanttTask } from "@/hooks/useProjectSchedule";
-import { format, differenceInCalendarDays, parseISO, addDays, min, max } from "date-fns";
+import { differenceInCalendarDays, parseISO, addDays, min, max } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 const STATUS_BAR: Record<string, string> = {
   todo: "bg-muted",
@@ -17,6 +18,7 @@ const ROW_H = 32;
 
 export function ProjectGantt({ projectId }: { projectId: string }) {
   const { data, isLoading } = useProjectSchedule(projectId);
+  const { formatDate } = usePlatformFormat();
 
   const range = useMemo(() => {
     if (!data) return null;
@@ -98,7 +100,7 @@ export function ProjectGantt({ projectId }: { projectId: string }) {
                       className="border-r text-[10px] text-muted-foreground flex items-center justify-center"
                       style={{ width: DAY_PX }}
                     >
-                      {isMonthStart ? format(d, "MMM d") : d.getDate()}
+                      {isMonthStart ? formatDate(d, { year: undefined, month: "short", day: "numeric" }) : d.getDate()}
                     </div>
                   );
                 })}

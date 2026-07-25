@@ -10,7 +10,8 @@ import {
   Phone, Mail, Users, MessageSquare, FileText, MailOpen, 
   MousePointer, RefreshCw, Trophy, XCircle, Plus, Check, Clock
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { cn } from '@/lib/utils';
 import { getActivityTypeInfo, type ActivityType } from '@/hooks/useActivities';
 
@@ -57,6 +58,7 @@ export function ActivityTimeline({
   title = 'Activity Timeline',
   description = 'Track calls, emails, meetings and notes',
 }: ActivityTimelineProps) {
+  const { formatDateTime } = usePlatformFormat();
   const [isAdding, setIsAdding] = useState(false);
   const [newActivity, setNewActivity] = useState({
     type: 'call' as ActivityType,
@@ -177,7 +179,7 @@ export function ActivityTimeline({
                       {isScheduled && (
                         <Badge variant="outline" className="text-xs flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {format(new Date(activity.scheduled_at!), 'MMM d, HH:mm')}
+                          {formatDateTime(activity.scheduled_at!, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </Badge>
                       )}
                       {isCompleted && (

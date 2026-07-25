@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useCompany, useCompanyLeads, useUpdateCompany, useDeleteCompany } from '@/hooks/useCompanies';
 import { CreateLeadDialog } from '@/components/admin/CreateLeadDialog';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { getLeadStatusInfo } from '@/lib/lead-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { callSkill } from '@/lib/call-skill';
@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function CompanyDetailPage() {
+  const { formatDateTime } = usePlatformFormat();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: company, isLoading: companyLoading } = useCompany(id);
@@ -367,12 +368,12 @@ export default function CompanyDetailPage() {
                   )}
                   
                   <div className="pt-4 border-t text-xs text-muted-foreground space-y-1">
-                    <p>Created: {format(new Date(company.created_at), 'd MMMM yyyy')}</p>
-                    <p>Updated: {format(new Date(company.updated_at), 'd MMMM yyyy')}</p>
+                    <p>Created: {formatDateTime(company.created_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}</p>
+                    <p>Updated: {formatDateTime(company.updated_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}</p>
                     {company.enriched_at && (
                       <p className="flex items-center gap-1 text-primary">
                         <Sparkles className="h-3 w-3" />
-                        Enriched: {format(new Date(company.enriched_at), 'd MMMM yyyy')}
+                        Enriched: {formatDateTime(company.enriched_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}
                       </p>
                     )}
                   </div>
@@ -448,7 +449,7 @@ export default function CompanyDetailPage() {
                           {lead.source}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {format(new Date(lead.created_at), 'd MMM yyyy')}
+                          {formatDateTime(lead.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
                         </TableCell>
                       </TableRow>
                     ))}

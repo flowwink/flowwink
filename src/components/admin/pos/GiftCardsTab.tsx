@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Plus, Search, Ban, Copy, Check } from 'lucide-react';
-import { format } from 'date-fns';
 import {
   useGiftCards,
   useIssueGiftCard,
@@ -31,7 +30,7 @@ const toCents = (s: string): number => {
 };
 
 export function GiftCardsTab() {
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const { data: cards = [], isLoading } = useGiftCards();
   const issue = useIssueGiftCard();
   const deactivate = useDeactivateGiftCard();
@@ -208,7 +207,7 @@ export function GiftCardsTab() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {issued ? format(new Date(issued), 'PP') : '—'}
+                          {issued ? formatDate(new Date(issued)) : '—'}
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, CalendarOff, ArrowLeft } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -31,6 +32,7 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function BookingAvailabilityPage() {
+  const { formatDate } = usePlatformFormat();
   const navigate = useNavigate();
   const { data: availability, isLoading: loadingAvailability } = useAvailability();
   const { data: blockedDates, isLoading: loadingBlocked } = useBlockedDates();
@@ -181,7 +183,7 @@ export default function BookingAvailabilityPage() {
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium">
-                        {format(new Date(blocked.date), 'EEEE, MMMM d, yyyy')}
+                        {formatDate(blocked.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </p>
                       {blocked.reason && (
                         <p className="text-sm text-muted-foreground">{blocked.reason}</p>

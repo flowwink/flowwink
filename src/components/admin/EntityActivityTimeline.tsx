@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Check, Clock, FileText, Mail, MessageSquare, Phone, Trash2, Users } from 'lucide-react';
 import {
   EntityActivityType,
@@ -32,6 +32,7 @@ export interface EntityActivityTimelineProps {
 }
 
 export function EntityActivityTimeline({ entityType, entityId, title = 'Activity', compact }: EntityActivityTimelineProps) {
+  const { formatDateTime } = usePlatformFormat();
   const { data: items = [], isLoading } = useEntityActivities(entityType, entityId);
   const create = useCreateEntityActivity();
   const toggle = useToggleActivityDone();
@@ -108,13 +109,13 @@ export function EntityActivityTimeline({ entityType, entityId, title = 'Activity
                   </span>
                   {a.due_at && (
                     <Badge variant={isOpen ? 'default' : 'outline'} className="text-xs">
-                      {format(new Date(a.due_at), 'MMM d HH:mm')}
+                      {formatDateTime(a.due_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </Badge>
                   )}
                 </div>
                 {a.body && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{a.body}</p>}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(a.created_at), 'MMM d, yyyy HH:mm')}
+                  {formatDateTime(a.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
               <div className="opacity-0 group-hover:opacity-100 flex gap-1">

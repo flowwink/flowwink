@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { useEmployees } from "@/hooks/useEmployees";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { useHrQuery, useHrMutation } from "@/hooks/useHrOps";
 
 type Record_ = {
@@ -46,6 +46,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "dest
 
 export function DisciplinaryPanel() {
   const { data: employees } = useEmployees();
+  const { formatDate, formatDateTime } = usePlatformFormat();
   const listQ = useHrQuery<{ records: Record_[] }>("manage_disciplinary", { p_action: "list" }, ["list"]);
   const invalidate: string[][] = [["manage_disciplinary", "list"]];
   const createMut = useHrMutation("manage_disciplinary", invalidate);
@@ -171,8 +172,8 @@ export function DisciplinaryPanel() {
                     <TableCell>{r.action_type.replace(/_/g, " ")}</TableCell>
                     <TableCell>{r.severity}</TableCell>
                     <TableCell className="max-w-xs truncate">{r.reason}</TableCell>
-                    <TableCell className="text-xs">{format(new Date(r.issued_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="text-xs">{r.follow_up_date ? format(new Date(r.follow_up_date), "MMM d") : "—"}</TableCell>
+                    <TableCell className="text-xs">{formatDateTime(r.issued_at, { year: "numeric", month: "short", day: "numeric", hour: undefined, minute: undefined })}</TableCell>
+                    <TableCell className="text-xs">{r.follow_up_date ? formatDate(r.follow_up_date, { year: undefined, month: "short", day: "numeric" }) : "—"}</TableCell>
                     <TableCell><Badge variant={STATUS_VARIANT[r.status]}>{r.status}</Badge></TableCell>
                     <TableCell className="text-right space-x-1">
                       {r.status === "open" && (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { Zap, Search, CheckCircle2, Clock, Info } from 'lucide-react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ export function EventsPanel() {
   const [filter, setFilter] = useState('');
   const { data: events = [], isLoading } = useAgentEvents(filter);
   const [openId, setOpenId] = useState<string | null>(null);
+  const { formatDateTime } = usePlatformFormat();
 
   return (
     <div className="space-y-4">
@@ -82,7 +83,7 @@ export function EventsPanel() {
                       </span>
                     )}
                     <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">
-                      {format(new Date(ev.created_at), 'MMM d HH:mm:ss')}
+                      {formatDateTime(ev.created_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </span>
                   </div>
 

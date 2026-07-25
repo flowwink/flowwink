@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, GripVertical, Building2, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { formatPrice } from '@/hooks/useProducts';
 import type { Deal } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ interface DealKanbanCardProps {
 }
 
 export function DealKanbanCard({ deal }: DealKanbanCardProps) {
+  const { formatDate } = usePlatformFormat();
   const {
     attributes,
     listeners,
@@ -92,7 +93,7 @@ export function DealKanbanCard({ deal }: DealKanbanCardProps) {
         {deal.expected_close && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            {format(new Date(deal.expected_close), 'MMM d, yyyy')}
+            {formatDate(deal.expected_close, { year: 'numeric', month: 'short', day: 'numeric' })}
           </div>
         )}
 

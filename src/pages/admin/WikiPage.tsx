@@ -21,7 +21,7 @@ import {
 } from '@/hooks/useWiki';
 import { WikiMarkdown } from '@/components/admin/wiki/WikiMarkdown';
 import { BookOpen, Edit3, Eye, Plus, Save, Search, Trash2, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function WikiPage() {
@@ -51,6 +51,7 @@ export default function WikiPage() {
 }
 
 function WikiPageInner() {
+  const { formatDateTime } = usePlatformFormat();
   const params = useParams<{ slug?: string }>();
   const navigate = useNavigate();
   const slug = params.slug || HOME_SLUG;
@@ -186,7 +187,7 @@ function WikiPageInner() {
                   </Badge>
                   {page && (
                     <span className="text-xs text-muted-foreground">
-                      Updated {format(new Date(page.updated_at), 'MMM d, yyyy HH:mm')}
+                      Updated {formatDateTime(page.updated_at)}
                     </span>
                   )}
                   {!page && !isLoading && (

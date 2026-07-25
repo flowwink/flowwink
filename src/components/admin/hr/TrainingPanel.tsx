@@ -11,8 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Check } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { useEmployees } from "@/hooks/useEmployees";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { useHrQuery, useHrMutation } from "@/hooks/useHrOps";
 
 type Course = {
@@ -50,6 +50,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "dest
 
 export function TrainingPanel() {
   const { data: employees } = useEmployees();
+  const { formatDate } = usePlatformFormat();
   const coursesQ = useHrQuery<{ courses: Course[] }>("manage_training", { p_action: "list_courses" }, ["courses"]);
   const enrollmentsQ = useHrQuery<{ enrollments: Enrollment[] }>("manage_training", { p_action: "list_enrollments" }, ["enrollments"]);
 
@@ -234,7 +235,7 @@ export function TrainingPanel() {
                     <TableCell className="font-medium">{e.employee}</TableCell>
                     <TableCell>{e.course}</TableCell>
                     <TableCell><Badge variant={STATUS_VARIANT[e.status] || "outline"}>{e.status}</Badge></TableCell>
-                    <TableCell>{e.due_date ? format(new Date(e.due_date), "MMM d, yyyy") : "—"}</TableCell>
+                    <TableCell>{e.due_date ? formatDate(e.due_date, { year: "numeric", month: "short", day: "numeric" }) : "—"}</TableCell>
                     <TableCell>{e.score ?? "—"}</TableCell>
                     <TableCell>
                       {e.status !== "completed" && e.status !== "cancelled" && (

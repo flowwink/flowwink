@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Star, Target, Calendar, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { useState } from "react";
 
 export default function PerformancePage() {
+  const { formatDate, formatDateTime } = usePlatformFormat();
   const { employee, isEmployee } = useEmployeeSelf();
 
   if (!isEmployee || !employee) {
@@ -102,7 +103,7 @@ export default function PerformancePage() {
                         </DialogContent>
                       </Dialog>
                     </div>
-                    {g.target_date && <p className="text-xs text-muted-foreground">Due {format(new Date(g.target_date), "MMM d, yyyy")}</p>}
+                    {g.target_date && <p className="text-xs text-muted-foreground">Due {formatDate(g.target_date, { year: "numeric", month: "short", day: "numeric" })}</p>}
                   </div>
                 ))}
             </CardContent>
@@ -117,7 +118,7 @@ export default function PerformancePage() {
                 meetings.map((m) => (
                   <div key={m.id} className="border rounded-lg p-3">
                     <div className="flex items-center justify-between">
-                      <div className="font-medium">{format(new Date(m.scheduled_at), "EEE MMM d, HH:mm")}</div>
+                      <div className="font-medium">{formatDateTime(m.scheduled_at, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
                       <Badge variant={m.status === "completed" ? "default" : "secondary"}>{m.status}</Badge>
                     </div>
                     {m.agenda && <p className="text-sm text-muted-foreground mt-1"><strong>Agenda:</strong> {m.agenda}</p>}
@@ -138,7 +139,7 @@ export default function PerformancePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium capitalize">{r.period_type} review</div>
-                        <p className="text-xs text-muted-foreground">{format(new Date(r.period_start), "MMM d")} – {format(new Date(r.period_end), "MMM d, yyyy")}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(r.period_start, { month: "short", day: "numeric" })} – {formatDate(r.period_end, { year: "numeric", month: "short", day: "numeric" })}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {r.overall_rating && <div className="flex items-center gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-4 w-4 ${i < r.overall_rating! ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}</div>}

@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Truck } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
@@ -19,7 +18,7 @@ interface Props {
 }
 
 export function LandedCostPanel({ purchaseOrderId, currency = 'SEK' }: Props) {
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'by_value' | 'by_qty'>('by_value');
@@ -146,7 +145,7 @@ export function LandedCostPanel({ purchaseOrderId, currency = 'SEK' }: Props) {
             <TableBody>
               {entries.map((e) => (
                 <TableRow key={e.id}>
-                  <TableCell className="text-sm">{format(new Date(e.created_at), 'MMM d, yyyy')}</TableCell>
+                  <TableCell className="text-sm">{formatDate(new Date(e.created_at))}</TableCell>
                   <TableCell className="text-sm">{e.description ?? '—'}</TableCell>
                   <TableCell className="text-sm">{e.method === 'by_qty' ? 'By qty' : 'By value'}</TableCell>
                   <TableCell className="text-right font-mono text-sm">{formatCurrency(e.amount_cents, currency)}</TableCell>

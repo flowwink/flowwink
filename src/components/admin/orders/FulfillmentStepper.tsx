@@ -1,6 +1,6 @@
 import { Check, PackageCheck, PackageOpen, Truck, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STEPS = [
   { key: 'unfulfilled', label: 'Unfulfilled', icon: PackageOpen, tsField: null },
@@ -27,6 +27,7 @@ export function FulfillmentStepper({
   deliveredAt,
   compact = false,
 }: FulfillmentStepperProps) {
+  const { formatDateTime } = usePlatformFormat();
   const timestamps: Record<string, string | null | undefined> = {
     picked_at: pickedAt,
     packed_at: packedAt,
@@ -94,7 +95,7 @@ export function FulfillmentStepper({
             {/* Timestamp */}
             {ts && (
               <p className="text-[10px] text-muted-foreground">
-                {format(new Date(ts), 'MMM d, HH:mm')}
+                {formatDateTime(ts, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             )}
           </div>

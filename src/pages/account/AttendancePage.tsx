@@ -9,8 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Play, Square } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 export default function AttendancePage() {
+  const { formatDateTime } = usePlatformFormat();
   const { isEmployee, loading } = useEmployeeSelf();
   const { data: open, isLoading: openLoading } = useOpenAttendance();
   const { data: history } = useMyAttendance(20);
@@ -89,7 +91,7 @@ export default function AttendancePage() {
               {history.map((e) => (
                 <div key={e.id} className="flex items-center justify-between border-b pb-2 last:border-0">
                   <div>
-                    <p className="font-medium">{format(new Date(e.clock_in), "EEE MMM d")}</p>
+                    <p className="font-medium">{formatDateTime(e.clock_in, { weekday: "short", month: "short", day: "numeric" })}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(e.clock_in), "HH:mm")} – {e.clock_out ? format(new Date(e.clock_out), "HH:mm") : "open"}
                       {e.break_minutes > 0 && ` · ${e.break_minutes}m break`}

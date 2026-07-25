@@ -45,10 +45,37 @@ export interface PlatformFormat {
     currency?: string | null,
     options?: Omit<Intl.NumberFormatOptions, 'style' | 'currency'>,
   ) => string;
-  /** Date-only value ("2026-07-08" or a Date) — never timezone-shifted. */
-  formatDate: (dateOnly: string | Date | null | undefined) => string;
-  /** Real timestamp — rendered in the platform timezone. */
-  formatDateTime: (timestamp: string | Date | null | undefined) => string;
+  /**
+   * Date-only value ("2026-07-08" or a Date) — never timezone-shifted.
+   *
+   * `options` tunes the SHAPE only. It must never set `timeZone` — the UTC
+   * anchor is what stops a date-only value drifting a day, so it is applied last.
+   *
+   * GOTCHA: options MERGE over the defaults (`year`,`month`,`day`); they do not
+   * replace them. To drop a field you must pass it as `undefined` explicitly:
+   *
+   *   formatDate(d, { month: 'short', day: 'numeric' })                  // "08 juli 2026"
+   *   formatDate(d, { year: undefined, month: 'short', day: 'numeric' }) // "8 juli"  ← compact
+   *
+   * Forgetting `year: undefined` is the usual cause of a chart axis or chip
+   * blowing out its width.
+   */
+  formatDate: (
+    dateOnly: string | Date | null | undefined,
+    options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
+  ) => string;
+  /**
+   * Real timestamp — rendered in the platform timezone.
+   *
+   * Same merge semantics as `formatDate`: pass `hour: undefined, minute: undefined`
+   * to render a timestamp as a bare day. Prefer that over `formatDate` for a
+   * timestamptz column — `formatDate` would take the UTC calendar date, which
+   * shows the PREVIOUS day for late-evening records in an eastward timezone.
+   */
+  formatDateTime: (
+    timestamp: string | Date | null | undefined,
+    options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
+  ) => string;
   formatNumber: (n: number | null | undefined, options?: Intl.NumberFormatOptions) => string;
 }
 
@@ -86,7 +113,10 @@ export function usePlatformFormat(): PlatformFormat {
       }
     };
 
-    const formatDate = (dateOnly: string | Date | null | undefined) => {
+    const formatDate = (
+      dateOnly: string | Date | null | undefined,
+      options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
+    ) => {
       if (!dateOnly) return '—';
       // Date-only must never shift across a timezone boundary: parse the
       // Y-M-D parts and render them literally (UTC anchor + UTC formatting).
@@ -106,6 +136,9 @@ export function usePlatformFormat(): PlatformFormat {
           year: 'numeric',
           month: 'short',
           day: '2-digit',
+          ...options,
+          // Applied LAST and non-overridable: the UTC anchor is the whole
+          // reason a date-only value cannot drift across a day boundary.
           timeZone: 'UTC',
         }).format(anchor);
       } catch {
@@ -113,7 +146,10 @@ export function usePlatformFormat(): PlatformFormat {
       }
     };
 
-    const formatDateTime = (timestamp: string | Date | null | undefined) => {
+    const formatDateTime = (
+      timestamp: string | Date | null | undefined,
+      options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
+    ) => {
       if (!timestamp) return '—';
       const dt = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
       if (Number.isNaN(dt.getTime())) return '—';
@@ -124,6 +160,9 @@ export function usePlatformFormat(): PlatformFormat {
           day: '2-digit',
           hour: '2-digit',
           minute: '2-digit',
+          ...options,
+          // Applied LAST: a timestamp must always render in the platform zone,
+          // otherwise two users would read the same instant differently.
           timeZone: tz,
         }).format(dt);
       } catch {

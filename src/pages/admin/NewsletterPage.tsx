@@ -19,7 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useIsResendConfigured } from "@/hooks/useIntegrationStatus";
 import { IntegrationWarning } from "@/components/admin/IntegrationWarning";
 import { NewsletterEditor } from "@/components/admin/NewsletterEditor";
@@ -66,6 +66,7 @@ interface LinkClick {
 }
 
 export default function NewsletterPage() {
+  const { formatDateTime } = usePlatformFormat();
   const queryClient = useQueryClient();
   const [newNewsletter, setNewNewsletter] = useState({ subject: "", content_html: "" });
   const [editingNewsletter, setEditingNewsletter] = useState<Newsletter | null>(null);
@@ -484,7 +485,7 @@ export default function NewsletterPage() {
                           {newsletter.status === "scheduled" && newsletter.scheduled_at && (
                             <div className="text-xs text-muted-foreground font-normal mt-0.5 flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {format(new Date(newsletter.scheduled_at), "MMM d, yyyy 'at' HH:mm")}
+                              {formatDateTime(newsletter.scheduled_at)}
                             </div>
                           )}
                         </TableCell>
@@ -522,7 +523,7 @@ export default function NewsletterPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(newsletter.created_at), "MMM d, yyyy")}
+                          {formatDateTime(newsletter.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -780,7 +781,7 @@ export default function NewsletterPage() {
                         <TableCell>{subscriber.name || "-"}</TableCell>
                         <TableCell>{statusBadge(subscriber.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(subscriber.created_at), "MMM d, yyyy")}
+                          {formatDateTime(subscriber.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
                         </TableCell>
                         <TableCell className="text-right">
                           <AlertDialog>
@@ -941,7 +942,7 @@ export default function NewsletterPage() {
                                 <TableCell>
                                   {open.opened_at ? (
                                     <span className="text-green-600">
-                                      {format(new Date(open.opened_at), "MMM d, HH:mm")}
+                                      {formatDateTime(open.opened_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                   ) : (
                                     <span className="text-muted-foreground">Not opened</span>
@@ -998,7 +999,7 @@ export default function NewsletterPage() {
                                 <TableCell>
                                   {click.clicked_at ? (
                                     <span className="text-green-600">
-                                      {format(new Date(click.clicked_at), "MMM d, HH:mm")}
+                                      {formatDateTime(click.clicked_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                   ) : (
                                     <span className="text-muted-foreground">-</span>

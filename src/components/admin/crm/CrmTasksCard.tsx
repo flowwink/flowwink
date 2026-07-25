@@ -10,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   Plus, CheckCircle2, Clock, AlertTriangle, Trash2, Calendar
 } from 'lucide-react';
-import { formatDistanceToNow, format, isPast, isToday } from 'date-fns';
+import { formatDistanceToNow, isPast, isToday } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { cn } from '@/lib/utils';
 import { 
   useCrmTasks, useCreateCrmTask, useCompleteCrmTask, useDeleteCrmTask,
@@ -197,6 +198,7 @@ function TaskItem({
   onDelete: () => void;
   isOverdue?: boolean;
 }) {
+  const { formatDateTime } = usePlatformFormat();
   const priorityConfig = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
   // Done-with-feedback (Odoo pattern): checking the box opens a small popover
   // for an optional note; the note lands on the record's timeline.
@@ -257,7 +259,7 @@ function TaskItem({
               isOverdue ? "text-red-500 font-medium" : "text-muted-foreground"
             )}>
               <Clock className="h-3 w-3" />
-              {format(new Date(task.due_date), 'MMM d, HH:mm')}
+              {formatDateTime(task.due_date, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
         </div>

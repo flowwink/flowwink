@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format, addDays, startOfWeek } from "date-fns";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useHrQuery, useHrMutation } from "@/hooks/useHrOps";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 type Shift = { id: string; date: string; start: string; end: string; role: string | null; location: string | null; status: string };
 type Row = { employee_id: string; employee: string; total_hours: number; shifts: Shift[] };
@@ -25,6 +26,7 @@ const ymd = (d: Date) => format(d, "yyyy-MM-dd");
 
 export function ShiftsPanel() {
   const { data: employees } = useEmployees();
+  const { formatDate } = usePlatformFormat();
   const [weekStart, setWeekStart] = useState<Date>(mondayOf(new Date()));
   const weekStartStr = ymd(weekStart);
 
@@ -94,7 +96,7 @@ export function ShiftsPanel() {
             <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setWeekStart(addDays(weekStart, -7))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <CardTitle className="text-base">Week of {format(weekStart, "MMM d, yyyy")}</CardTitle>
+            <CardTitle className="text-base">Week of {formatDate(weekStart, { year: "numeric", month: "short", day: "numeric" })}</CardTitle>
             <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => setWeekStart(addDays(weekStart, 7))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -137,7 +139,7 @@ export function ShiftsPanel() {
                 <div className="font-medium p-2">Employee</div>
                 {days.map((d) => (
                   <div key={d.toISOString()} className="font-medium p-2 text-center border-l border-border">
-                    {format(d, "EEE d")}
+                    {formatDate(d, { weekday: 'short', day: 'numeric', year: undefined, month: undefined })}
                   </div>
                 ))}
                 <div className="font-medium p-2 text-right">Hours</div>
@@ -189,7 +191,7 @@ export function ShiftsPanel() {
               {rosterQ.data.open_shifts.map((s) => (
                 <div key={s.id} className="flex items-center justify-between border border-border rounded p-2">
                   <div className="text-sm">
-                    <span className="font-medium">{format(new Date(s.date), "EEE MMM d")}</span>{" "}
+                    <span className="font-medium">{formatDate(s.date, { weekday: "short", year: undefined, month: "short", day: "numeric" })}</span>{" "}
                     <span>{s.start.slice(0, 5)}–{s.end.slice(0, 5)}</span>
                     {s.role && <Badge variant="outline" className="ml-2">{s.role}</Badge>}
                     {s.location && <span className="text-muted-foreground ml-2">· {s.location}</span>}
@@ -210,7 +212,7 @@ export function ShiftsPanel() {
           <div className="space-y-3">
             {assignTarget && (
               <p className="text-sm text-muted-foreground">
-                {format(new Date(assignTarget.date), "EEE MMM d")} · {assignTarget.start.slice(0, 5)}–{assignTarget.end.slice(0, 5)}
+                {formatDate(assignTarget.date, { weekday: "short", year: undefined, month: "short", day: "numeric" })} · {assignTarget.start.slice(0, 5)}–{assignTarget.end.slice(0, 5)}
               </p>
             )}
             <Select value={assignEmployee} onValueChange={setAssignEmployee}>

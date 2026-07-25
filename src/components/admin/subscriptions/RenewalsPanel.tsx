@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, Calendar, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Renewal {
@@ -25,7 +24,7 @@ interface Renewal {
 
 export function RenewalsPanel() {
   const qc = useQueryClient();
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
 
   const { data: renewals, isLoading } = useQuery({
     queryKey: ['upcoming-renewals'],
@@ -127,7 +126,7 @@ export function RenewalsPanel() {
                     <TableCell>{r.product_name || '—'}</TableCell>
                     <TableCell>{formatCurrency(r.unit_amount_cents, r.currency, { maximumFractionDigits: 0 })}</TableCell>
                     <TableCell>
-                      <div className="text-sm">{format(new Date(r.current_period_end), 'MMM d')}</div>
+                      <div className="text-sm">{formatDate(new Date(r.current_period_end), { year: undefined, month: 'short', day: 'numeric' })}</div>
                       <div className="text-xs text-muted-foreground">in {r.days_until_renewal}d</div>
                     </TableCell>
                     <TableCell>

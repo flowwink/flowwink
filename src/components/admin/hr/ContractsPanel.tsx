@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, FilePlus, ListChecks, CheckCircle2, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 function statusBadge(s: EmploymentContract["status"]) {
   const map: Record<string, string> = {
@@ -209,6 +209,7 @@ function ContractDetail({ c, employees }: { c: EmploymentContract; employees: an
   const [open, setOpen] = useState(false);
   const update = useUpdateEmploymentContract();
   const sign = useSignEmploymentContract();
+  const { formatDateTime } = usePlatformFormat();
   const emp = employees.find((e) => e.id === c.employee_id);
 
   return (
@@ -262,9 +263,9 @@ function ContractDetail({ c, employees }: { c: EmploymentContract; employees: an
             )}
           </div>
           <div className="text-xs text-muted-foreground space-y-1">
-            {c.signed_by_employee_at && <div className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" />Employee signed: {format(new Date(c.signed_by_employee_at), "PPp")}</div>}
-            {c.signed_by_employer_at && <div className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" />Employer signed: {format(new Date(c.signed_by_employer_at), "PPp")}</div>}
-            {c.sent_at && <div className="flex items-center gap-1"><Clock className="h-3 w-3" />Sent: {format(new Date(c.sent_at), "PPp")}</div>}
+            {c.signed_by_employee_at && <div className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" />Employee signed: {formatDateTime(c.signed_by_employee_at)}</div>}
+            {c.signed_by_employer_at && <div className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" />Employer signed: {formatDateTime(c.signed_by_employer_at)}</div>}
+            {c.sent_at && <div className="flex items-center gap-1"><Clock className="h-3 w-3" />Sent: {formatDateTime(c.sent_at)}</div>}
           </div>
         </div>
       </DialogContent>

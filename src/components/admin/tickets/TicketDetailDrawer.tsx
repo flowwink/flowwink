@@ -48,7 +48,8 @@ import {
 import { useCannedResponses, useIncrementCannedUsage } from "@/hooks/useCannedResponses";
 import { useTicketTeams } from "@/hooks/useTicketTeams";
 import { TicketTimeEntriesPanel } from "@/components/admin/tickets/TicketTimeEntriesPanel";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { MessageSquare, Send, Building2, User, Mail, Clock, Tag, X, Plus, MessageSquareQuote, Users } from "lucide-react";
 
 interface TicketDetailDrawerProps {
@@ -65,6 +66,7 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
   const { data: cannedResponses = [] } = useCannedResponses(true);
   const { data: teams = [] } = useTicketTeams();
   const incrementUsage = useIncrementCannedUsage();
+  const { formatDateTime } = usePlatformFormat();
   const [newComment, setNewComment] = useState("");
   const [tagInput, setTagInput] = useState("");
 
@@ -196,7 +198,7 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
             )}
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
-              <span>{format(new Date(ticket.created_at), "PPp")}</span>
+              <span>{formatDateTime(ticket.created_at)}</span>
             </div>
           </div>
 

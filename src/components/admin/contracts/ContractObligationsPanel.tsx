@@ -3,7 +3,7 @@
  * Uses contract_obligations_with_status view for auto is_overdue flag.
  */
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { AlertTriangle, Check, Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ const STATUS_STYLES: Record<ContractObligation['status'], string> = {
 };
 
 export function ContractObligationsPanel({ contractId }: { contractId: string }) {
+  const { formatDate, formatDateTime } = usePlatformFormat();
   const { data: obligations = [], isLoading } = useContractObligations(contractId);
   const create = useCreateObligation();
   const setStatus = useUpdateObligationStatus();
@@ -124,10 +125,10 @@ export function ContractObligationsPanel({ contractId }: { contractId: string })
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 flex gap-3">
-                      {o.due_date && <span>Due {format(new Date(o.due_date), 'MMM d, yyyy')}</span>}
+                      {o.due_date && <span>Due {formatDate(o.due_date, { year: 'numeric', month: 'short', day: 'numeric' })}</span>}
                       {o.responsible && <span>· {o.responsible}</span>}
                       {o.met_at && (
-                        <span>· Met {format(new Date(o.met_at), 'MMM d, yyyy')}</span>
+                        <span>· Met {formatDateTime(o.met_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}</span>
                       )}
                     </div>
                   </div>

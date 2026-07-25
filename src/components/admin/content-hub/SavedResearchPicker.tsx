@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { BookOpen, Trash2, ChevronDown, ChevronUp, Search, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ interface SavedResearchPickerProps {
 }
 
 export function SavedResearchPicker({ onSelect, onClose }: SavedResearchPickerProps) {
+  const { formatDateTime } = usePlatformFormat();
   const { savedResearch, isLoading, deleteResearch, isDeleting } = useSavedResearch();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -100,7 +101,7 @@ export function SavedResearchPicker({ onSelect, onClose }: SavedResearchPickerPr
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base truncate">{research.topic}</CardTitle>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <span>{format(new Date(research.created_at), 'MMM d, yyyy')}</span>
+                      <span>{formatDateTime(research.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}</span>
                       {research.industry && (
                         <>
                           <span>•</span>

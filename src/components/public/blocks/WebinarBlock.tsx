@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createLeadFromWebinar } from '@/lib/lead-utils';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface WebinarBlockData {
   title?: string;
@@ -179,6 +180,7 @@ function WebinarCard({
   blockId?: string;
   pageId?: string;
 }) {
+  const { formatDateTime } = usePlatformFormat();
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -242,10 +244,10 @@ function WebinarCard({
           {/* Date badge */}
           <div className="flex-shrink-0 text-center bg-primary/10 rounded-lg p-3 w-16">
             <div className="text-xs font-medium text-primary uppercase">
-              {format(new Date(webinar.date), 'MMM')}
+              {formatDateTime(webinar.date, { month: 'short' })}
             </div>
             <div className="text-2xl font-bold text-primary">
-              {format(new Date(webinar.date), 'd')}
+              {formatDateTime(webinar.date, { day: 'numeric' })}
             </div>
           </div>
 
@@ -270,7 +272,7 @@ function WebinarCard({
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
-                {format(new Date(webinar.date), 'PPP')}
+                {formatDateTime(webinar.date, { year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />

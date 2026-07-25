@@ -6,10 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTimeEntries, useCreateTimeEntry, useDeleteTimeEntry, useProjects, getWeekDates } from '@/hooks/useTimesheets';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function WeeklyTimesheetTab() {
+  const { formatDate } = usePlatformFormat();
   const [weekOffset, setWeekOffset] = useState(0);
   const { weekStart, weekEnd, days } = getWeekDates(weekOffset);
 
@@ -56,7 +58,7 @@ export function WeeklyTimesheetTab() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          Week of {format(parseISO(weekStart), 'MMM d')} – {format(parseISO(weekEnd), 'MMM d, yyyy')}
+          Week of {formatDate(weekStart, { month: 'short', day: 'numeric' })} – {formatDate(weekEnd, { year: 'numeric', month: 'short', day: 'numeric' })}
         </CardTitle>
         <div className="flex items-center gap-1">
           <Button variant="outline" size="icon" onClick={() => setWeekOffset((p) => p - 1)}>

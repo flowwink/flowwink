@@ -23,7 +23,7 @@ interface SmartBookingBlockProps {
 type BookingStep = 'service' | 'datetime' | 'details' | 'confirmed';
 
 export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockProps) {
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const [step, setStep] = useState<BookingStep>('service');
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -301,7 +301,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
           {selectedService && selectedDate && selectedSlot && (
             <div className="bg-muted/50 rounded-lg p-4 text-left space-y-2">
               <p><span className="font-medium">Service:</span> {selectedService.name}</p>
-              <p><span className="font-medium">Date:</span> {format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
+              <p><span className="font-medium">Date:</span> {formatDate(selectedDate, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
               <p><span className="font-medium">Time:</span> {selectedSlot}</p>
             </div>
           )}
@@ -411,7 +411,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm font-medium">
-                {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d, yyyy')}
+                {formatDate(weekStart, { month: 'short', day: 'numeric' })} - {formatDate(addDays(weekStart, 6), { year: 'numeric', month: 'short', day: 'numeric' })}
               </span>
               <Button
                 variant="ghost"
@@ -441,7 +441,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                       isToday(day) && !isSelected && 'ring-1 ring-primary'
                     )}
                   >
-                    <div className="text-xs font-medium">{format(day, 'EEE')}</div>
+                    <div className="text-xs font-medium">{formatDate(day, { weekday: 'short', year: undefined, month: undefined, day: undefined })}</div>
                     <div className="text-lg font-semibold">{format(day, 'd')}</div>
                   </button>
                 );
@@ -502,7 +502,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
             <div className="bg-muted/50 rounded-lg p-4 space-y-1">
               <p className="font-medium">{selectedService?.name}</p>
               <p className="text-sm text-muted-foreground">
-                {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedSlot}
+                {selectedDate && formatDate(selectedDate, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at {selectedSlot}
               </p>
               {serviceRequiresPayment && selectedService && (
                 <p className="text-sm font-medium text-primary flex items-center gap-1 mt-1">

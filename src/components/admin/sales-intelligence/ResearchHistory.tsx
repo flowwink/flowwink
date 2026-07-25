@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { History, Building2, Users, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 interface CompanyRow {
   id: string;
@@ -19,6 +19,7 @@ interface CompanyRow {
 export function ResearchHistory() {
   const [entries, setEntries] = useState<CompanyRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const { formatDateTime } = usePlatformFormat();
 
   useEffect(() => {
     async function load() {
@@ -80,7 +81,7 @@ export function ResearchHistory() {
                       {contactCount}
                     </span>
                     {c.enriched_at && (
-                      <span>{format(new Date(c.enriched_at), 'MMM d, HH:mm')}</span>
+                      <span>{formatDateTime(c.enriched_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                     )}
                     <ExternalLink className="h-3 w-3" />
                   </div>

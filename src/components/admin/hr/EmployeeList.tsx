@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Employee, useUpdateEmployee } from "@/hooks/useEmployees";
-import { format, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { OnboardingPanel } from "./OnboardingPanel";
 
@@ -23,6 +24,7 @@ function isRecentHire(startDate: string | null): boolean {
 export function EmployeeList({ employees }: { employees: Employee[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const update = useUpdateEmployee();
+  const { formatDate } = usePlatformFormat();
 
   if (!employees.length) {
     return <p className="text-muted-foreground text-center py-12">No employees yet. Add your first team member.</p>;
@@ -92,7 +94,7 @@ export function EmployeeList({ employees }: { employees: Employee[] }) {
                   </Select>
                 </TableCell>
                 <TableCell className="capitalize">{emp.employment_type.replace("_", " ")}</TableCell>
-                <TableCell>{emp.start_date ? format(new Date(emp.start_date), "MMM d, yyyy") : "—"}</TableCell>
+                <TableCell>{emp.start_date ? formatDate(emp.start_date, { year: "numeric", month: "short", day: "numeric" }) : "—"}</TableCell>
                 <TableCell>
                   {showOnboarding ? (
                     <OnboardingPanel employeeId={emp.id} compact />

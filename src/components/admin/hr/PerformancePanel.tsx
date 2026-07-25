@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Target, Calendar, MessageSquare, Star } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 export function PerformancePanel() {
   const { data: employees = [] } = useEmployees();
@@ -50,6 +50,7 @@ export function PerformancePanel() {
 function GoalsTab({ employeeId }: { employeeId: string }) {
   const { data: goals = [], isLoading } = useGoals(employeeId);
   const upsert = useUpsertGoal();
+  const { formatDate } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", category: "professional", target_date: "", weight: 3, progress_pct: 0, status: "active" });
 
@@ -110,7 +111,7 @@ function GoalsTab({ employeeId }: { employeeId: string }) {
                   <Progress value={g.progress_pct} className="flex-1" />
                   <span className="text-xs font-medium tabular-nums w-10 text-right">{g.progress_pct}%</span>
                 </div>
-                {g.target_date && <p className="text-xs text-muted-foreground">Due {format(new Date(g.target_date), "MMM d, yyyy")}</p>}
+                {g.target_date && <p className="text-xs text-muted-foreground">Due {formatDate(g.target_date, { year: "numeric", month: "short", day: "numeric" })}</p>}
               </div>
             ))}
       </CardContent>
@@ -121,6 +122,7 @@ function GoalsTab({ employeeId }: { employeeId: string }) {
 function OneOnOnesTab({ employeeId, employees }: { employeeId: string; employees: any[] }) {
   const { data: meetings = [], isLoading } = useOneOnOnes(employeeId);
   const upsert = useUpsertOneOnOne();
+  const { formatDateTime } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const emp = employees.find((e) => e.id === employeeId);
   const managerId = emp?.manager_id || "";
@@ -166,7 +168,7 @@ function OneOnOnesTab({ employeeId, employees }: { employeeId: string; employees
             meetings.map((m) => (
               <div key={m.id} className="border rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <div className="font-medium">{format(new Date(m.scheduled_at), "EEE MMM d, HH:mm")}</div>
+                  <div className="font-medium">{formatDateTime(m.scheduled_at, { weekday: "short", year: undefined, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
                   <Badge variant={m.status === "completed" ? "default" : "secondary"}>{m.status}</Badge>
                 </div>
                 {m.agenda && <p className="text-sm text-muted-foreground mt-1">{m.agenda}</p>}
@@ -181,6 +183,7 @@ function OneOnOnesTab({ employeeId, employees }: { employeeId: string; employees
 function ReviewsTab({ employeeId, employees }: { employeeId: string; employees: any[] }) {
   const { data: reviews = [], isLoading } = useReviews(employeeId);
   const upsert = useUpsertReview();
+  const { formatDate } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const year = new Date().getFullYear();
   const [form, setForm] = useState({
@@ -257,7 +260,7 @@ function ReviewsTab({ employeeId, employees }: { employeeId: string; employees: 
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium capitalize">{r.period_type} review</div>
-                    <p className="text-xs text-muted-foreground">{format(new Date(r.period_start), "MMM d")} – {format(new Date(r.period_end), "MMM d, yyyy")}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(r.period_start, { year: undefined, month: "short", day: "numeric" })} – {formatDate(r.period_end, { year: "numeric", month: "short", day: "numeric" })}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     {r.overall_rating && <div className="flex items-center gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-4 w-4 ${i < r.overall_rating! ? "fill-primary text-primary" : "text-muted-foreground"}`} />)}</div>}

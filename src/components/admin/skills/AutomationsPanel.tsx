@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import {
   Timer, Zap, Radio, Trash2, AlertCircle, Info, Play, Loader2,
 } from 'lucide-react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,6 +111,7 @@ function AutomationCard({
   onRun: (a: AgentAutomation) => void;
   isRunning: boolean;
 }) {
+  const { formatDateTime } = usePlatformFormat();
   const cfg = triggerConfig[automation.trigger_type];
   const TriggerIcon = cfg.icon;
   const cronExpr = automation.trigger_type === 'cron'
@@ -172,7 +173,7 @@ function AutomationCard({
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {automation.run_count > 0
-              ? `${automation.run_count} runs · last ${automation.last_triggered_at ? format(new Date(automation.last_triggered_at), 'MMM d HH:mm') : '—'}`
+              ? `${automation.run_count} runs · last ${automation.last_triggered_at ? formatDateTime(automation.last_triggered_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}`
               : 'Never run'}
           </span>
         </div>

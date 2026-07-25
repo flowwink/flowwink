@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
 import type { Contract } from "@/hooks/useContracts";
 import { DocumentsPanel } from "@/components/admin/documents/DocumentsPanel";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
@@ -21,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function ContractDetailDialog({ contract, open, onOpenChange }: Props) {
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
 
   if (!contract) return null;
 
@@ -56,11 +55,11 @@ export function ContractDetailDialog({ contract, open, onOpenChange }: Props) {
               <Field label="Value" value={formatValue(contract.value_cents, contract.currency)} />
               <Field
                 label="Start date"
-                value={contract.start_date ? format(new Date(contract.start_date), "MMM d, yyyy") : "—"}
+                value={contract.start_date ? formatDate(contract.start_date, { year: "numeric", month: "short", day: "numeric" }) : "—"}
               />
               <Field
                 label="End date"
-                value={contract.end_date ? format(new Date(contract.end_date), "MMM d, yyyy") : "—"}
+                value={contract.end_date ? formatDate(contract.end_date, { year: "numeric", month: "short", day: "numeric" }) : "—"}
               />
               <Field label="Renewal" value={contract.renewal_type} />
               {contract.renewal_type !== "none" && (

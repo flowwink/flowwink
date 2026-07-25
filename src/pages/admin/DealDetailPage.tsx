@@ -18,7 +18,6 @@ import { DealHistoryTimeline } from '@/components/admin/deals/DealHistoryTimelin
 import { LostReasonDialog, lostReasonLabel } from '@/components/admin/crm/LostReasonDialog';
 import { useDealTeams, useLatestExchangeRates, useBaseCurrency, convertAmount } from '@/hooks/useDealsParity';
 import { ArrowLeft, Calendar, DollarSign, User, Package, Building, Users } from 'lucide-react';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
@@ -34,7 +33,7 @@ export default function DealDetailPage() {
   const { data: teams = [] } = useDealTeams();
   const { data: rates = [] } = useLatestExchangeRates();
   const { data: baseCurrency = 'SEK' } = useBaseCurrency();
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate, formatDateTime } = usePlatformFormat();
   const [showLostDialog, setShowLostDialog] = useState(false);
 
   if (isLoading) {
@@ -156,7 +155,7 @@ export default function DealDetailPage() {
                 {deal.expected_close && (
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Expected: {format(new Date(deal.expected_close), 'MMM d, yyyy')}
+                    Expected: {formatDate(deal.expected_close, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </Badge>
                 )}
               </div>
@@ -229,7 +228,7 @@ export default function DealDetailPage() {
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Created {format(new Date(deal.created_at), 'PPP')}
+                  Created {formatDateTime(deal.created_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}
                 </span>
               </div>
 
@@ -237,7 +236,7 @@ export default function DealDetailPage() {
                 <div className="flex items-center gap-3">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    Closed {format(new Date(deal.closed_at), 'PPP')}
+                    Closed {formatDateTime(deal.closed_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}
                   </span>
                 </div>
               )}

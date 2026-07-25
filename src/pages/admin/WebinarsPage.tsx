@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { format, isPast, isFuture } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Video, Plus, Pencil, Trash2, Users, Calendar, Clock, ExternalLink, Play, CheckCircle, Eye, Send, Radio, Square, XCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -77,6 +78,7 @@ const defaultFormData: CreateWebinarInput = {
 };
 
 export default function WebinarsPage() {
+  const { formatDateTime } = usePlatformFormat();
   const { data: webinars = [], isLoading } = useWebinars();
   const { data: stats } = useWebinarStats();
   const createWebinar = useCreateWebinar();
@@ -160,7 +162,7 @@ export default function WebinarsPage() {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(webinar.date), 'PPP')}
+                  {formatDateTime(webinar.date, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
@@ -477,6 +479,7 @@ function WebinarDetailDialog({
   onClose: () => void;
   onEdit: (w: Webinar) => void;
 }) {
+  const { formatDateTime } = usePlatformFormat();
   const { data: registrations = [] } = useWebinarRegistrations(webinar?.id);
   const markAttendance = useMarkAttendance();
 
@@ -502,7 +505,7 @@ function WebinarDetailDialog({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <Label className="text-muted-foreground">Date</Label>
-              <p className="font-medium">{format(new Date(webinar.date), 'PPP HH:mm')}</p>
+              <p className="font-medium">{formatDateTime(webinar.date, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
             <div>
               <Label className="text-muted-foreground">Duration</Label>
@@ -585,7 +588,7 @@ function WebinarDetailDialog({
                         <Badge variant="outline">Follow-up sent</Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(reg.registered_at), 'PP')}
+                        {formatDateTime(reg.registered_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}
                       </span>
                     </div>
                   </div>

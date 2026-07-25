@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Shield, Download, Trash2, Mail, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 interface SubscriberData {
   email: string;
@@ -23,6 +23,7 @@ interface SubscriberData {
 }
 
 export default function NewsletterManagePage() {
+  const { formatDateTime } = usePlatformFormat();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -238,14 +239,14 @@ export default function NewsletterManagePage() {
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Subscribed</span>
                   <span className="text-sm">
-                    {format(new Date(subscriber.created_at), "MMMM d, yyyy")}
+                    {formatDateTime(subscriber.created_at, { year: "numeric", month: "long", day: "numeric" })}
                   </span>
                 </div>
                 {subscriber.confirmed_at && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Confirmed</span>
                     <span className="text-sm">
-                      {format(new Date(subscriber.confirmed_at), "MMMM d, yyyy")}
+                      {formatDateTime(subscriber.confirmed_at, { year: "numeric", month: "long", day: "numeric" })}
                     </span>
                   </div>
                 )}

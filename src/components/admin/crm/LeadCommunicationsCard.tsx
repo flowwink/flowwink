@@ -3,7 +3,7 @@ import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowDownLeft, ArrowUpRight, Bot, FileText, User } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useLeadCommunications } from '@/hooks/useLeadCommunications';
 import { useOpenQuotesByLead } from '@/hooks/useQuotesByLead';
@@ -71,7 +71,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
   const { data: comms = [], isLoading } = useLeadCommunications(leadId);
   const { data: quotes = [] } = useOpenQuotesByLead(leadId);
   const [selected, setSelected] = useState<Comm | null>(null);
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
 
   return (
     <Card>
@@ -100,7 +100,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
                 <Badge variant="outline" className="text-[10px] h-5">{q.status}</Badge>
                 {q.valid_until && (
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    valid until {format(new Date(q.valid_until), 'PP')}
+                    valid until {formatDate(q.valid_until)}
                   </span>
                 )}
               </div>

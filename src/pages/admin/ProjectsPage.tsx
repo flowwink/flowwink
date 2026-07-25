@@ -19,7 +19,7 @@ import { ProjectCapacity } from "@/components/admin/projects/ProjectCapacity";
 import { TaskEditDialog } from "@/components/admin/projects/TaskEditDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, FolderKanban, CheckCircle2, Clock, Circle, Pencil, Trash2, X } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   todo: <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -131,6 +131,7 @@ function TaskRow({
   subtasks: import("@/hooks/useProjects").ProjectTask[];
   onAddSubtask: (parentId: string) => void;
 }) {
+  const { formatDate } = usePlatformFormat();
   const updateTask = useUpdateProjectTask();
   const deleteTask = useDeleteProjectTask();
   const doneCount = subtasks.filter((s) => s.status === "done").length;
@@ -162,7 +163,7 @@ function TaskRow({
             <div className="flex items-center gap-2 mt-0.5">
               {task.due_date && (
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(task.due_date), "MMM d")}
+                  {formatDate(task.due_date, { year: undefined, month: 'short', day: 'numeric' })}
                 </p>
               )}
               {depth === 0 && subtasks.length > 0 && (

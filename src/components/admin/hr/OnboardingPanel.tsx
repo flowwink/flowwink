@@ -9,7 +9,7 @@ import {
   useToggleOnboardingItem,
   type OnboardingChecklist,
 } from "@/hooks/useOnboarding";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 interface Props {
   employeeId: string;
@@ -20,6 +20,7 @@ interface Props {
 export function OnboardingPanel({ employeeId, startDate, compact = false }: Props) {
   const { data, isLoading } = useOnboardingChecklists(employeeId);
   const toggle = useToggleOnboardingItem();
+  const { formatDate, formatDateTime } = usePlatformFormat();
 
   if (isLoading) {
     return <Skeleton className={compact ? "h-6 w-32" : "h-24 w-full"} />;
@@ -60,7 +61,7 @@ export function OnboardingPanel({ employeeId, startDate, compact = false }: Prop
         <div>
           <p className="text-sm font-medium">Onboarding progress</p>
           {startDate && (
-            <p className="text-xs text-muted-foreground">Started {format(new Date(startDate), "MMM d, yyyy")}</p>
+            <p className="text-xs text-muted-foreground">Started {formatDate(startDate, { year: "numeric", month: "short", day: "numeric" })}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -78,7 +79,7 @@ export function OnboardingPanel({ employeeId, startDate, compact = false }: Prop
             <p className="text-sm font-medium">{cl.title || "Onboarding checklist"}</p>
             {cl.completed_at && (
               <Badge variant="outline" className="text-green-700 border-green-300">
-                Completed {format(new Date(cl.completed_at), "MMM d")}
+                Completed {formatDateTime(cl.completed_at, { year: undefined, month: "short", day: "numeric", hour: undefined, minute: undefined })}
               </Badge>
             )}
           </div>

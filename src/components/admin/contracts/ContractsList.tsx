@@ -9,7 +9,6 @@ import { useContracts, useDeleteContract, type Contract } from '@/hooks/useContr
 import { useEntityDocumentCounts, uploadDocumentForEntity } from '@/hooks/useDocuments';
 import { NewContractDialog } from './NewContractDialog';
 import { ContractDetailDialog } from './ContractDetailDialog';
-import { format } from 'date-fns';
 import { FileText as FileTextIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
@@ -37,7 +36,7 @@ interface Props {
 export function ContractsList({ statusFilter }: Props) {
   const { data: contracts, isLoading } = useContracts(statusFilter);
   const deleteContract = useDeleteContract();
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editContract, setEditContract] = useState<Contract | undefined>();
@@ -132,8 +131,8 @@ export function ContractsList({ statusFilter }: Props) {
                         {contract.start_date && (
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(contract.start_date), 'MMM d, yyyy')}
-                            {contract.end_date && ` → ${format(new Date(contract.end_date), 'MMM d, yyyy')}`}
+                            {formatDate(contract.start_date, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            {contract.end_date && ` → ${formatDate(contract.end_date, { year: 'numeric', month: 'short', day: 'numeric' })}`}
                           </span>
                         )}
                         {contract.value_cents > 0 && (

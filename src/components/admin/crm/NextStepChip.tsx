@@ -1,6 +1,6 @@
-import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNextTasksIndex, getNextStepState } from '@/hooks/useNextTasksIndex';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface NextStepChipProps {
   leadId?: string;
@@ -18,6 +18,7 @@ interface NextStepChipProps {
  */
 export function NextStepChip({ leadId, dealId }: NextStepChipProps) {
   const { data, isLoading } = useNextTasksIndex();
+  const { formatDateTime } = usePlatformFormat();
   if (isLoading) return null;
 
   const next = dealId
@@ -47,7 +48,11 @@ export function NextStepChip({ leadId, dealId }: NextStepChipProps) {
     planned: 'text-muted-foreground',
   }[state];
 
-  const dueLabel = next.due_date ? format(parseISO(next.due_date), 'MMM d') : null;
+  const dueLabel = next.due_date
+    ? formatDateTime(next.due_date, {
+        year: undefined, month: 'short', day: 'numeric', hour: undefined, minute: undefined,
+      })
+    : null;
 
   return (
     <div className={cn('flex items-center gap-1.5 text-xs', text)} title={next.title}>

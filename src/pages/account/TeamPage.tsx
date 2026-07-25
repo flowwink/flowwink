@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { Check, X, Users, CalendarOff } from "lucide-react";
 import { toast } from "sonner";
 import { useMyTeam, useTeamLeaveRequests, TeamLeaveRequest } from "@/hooks/useTeam";
@@ -39,6 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function TeamPage() {
+  const { formatDate } = usePlatformFormat();
   const { data: team, isLoading: teamLoading } = useMyTeam();
   const { data: requests, isLoading: reqLoading } = useTeamLeaveRequests();
   const qc = useQueryClient();
@@ -85,7 +86,7 @@ export default function TeamPage() {
       </TableCell>
       <TableCell className="capitalize">{r.leave_type}</TableCell>
       <TableCell className="text-sm">
-        {format(new Date(r.start_date), "MMM d")} – {format(new Date(r.end_date), "MMM d, yyyy")}
+        {formatDate(r.start_date, { month: "short", day: "numeric" })} – {formatDate(r.end_date, { year: "numeric", month: "short", day: "numeric" })}
       </TableCell>
       <TableCell className="tabular-nums">{r.days}</TableCell>
       <TableCell>
@@ -252,8 +253,8 @@ export default function TeamPage() {
                 {decision && (
                   <p>
                     {decision.request.employees?.name} · {decision.request.leave_type} ·{" "}
-                    {format(new Date(decision.request.start_date), "MMM d")} –{" "}
-                    {format(new Date(decision.request.end_date), "MMM d, yyyy")} (
+                    {formatDate(decision.request.start_date, { month: "short", day: "numeric" })} –{" "}
+                    {formatDate(decision.request.end_date, { year: "numeric", month: "short", day: "numeric" })} (
                     {decision.request.days} day{decision.request.days === 1 ? "" : "s"})
                   </p>
                 )}

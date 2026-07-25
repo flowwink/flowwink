@@ -16,7 +16,8 @@ import {
   type UnifiedActivity,
 } from '@/hooks/useUnifiedActivities';
 import { CreateTaskDialog } from '@/components/admin/CreateTaskDialog';
-import { format, isToday, isPast, isFuture, parseISO, formatDistanceToNow } from 'date-fns';
+import { isToday, isPast, isFuture, parseISO, formatDistanceToNow } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { cn } from '@/lib/utils';
 
 type Bucket = 'overdue' | 'today' | 'upcoming' | 'no_date';
@@ -150,6 +151,7 @@ function TaskList({
 }
 
 function TaskRow({ task, onComplete }: { task: UnifiedActivity; onComplete: (id: string, source: UnifiedActivity['source']) => void }) {
+  const { formatDateTime } = usePlatformFormat();
   const due = task.due_date ? parseISO(task.due_date) : null;
   const overdue = due ? isPast(due) && !isToday(due) : false;
 
@@ -194,7 +196,7 @@ function TaskRow({ task, onComplete }: { task: UnifiedActivity; onComplete: (id:
             {due && (
               <span className="flex items-center gap-1">
                 <CalendarIcon className="h-3 w-3" />
-                {format(due, 'MMM d, yyyy HH:mm')}
+                {formatDateTime(due, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 {' · '}
                 {formatDistanceToNow(due, { addSuffix: true })}
               </span>

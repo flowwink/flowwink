@@ -12,7 +12,7 @@ import { Plus, Eye } from 'lucide-react';
 import {
   useLoyaltyAccounts, useLoyaltyAccount, useLoyaltyMutation, type LoyaltyAccount,
 } from '@/hooks/useLoyalty';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { logger } from '@/lib/logger';
 
 function tierVariant(tier: string) {
@@ -24,6 +24,7 @@ function tierVariant(tier: string) {
 export function LoyaltyTab() {
   const { data: accounts, isLoading } = useLoyaltyAccounts();
   const mut = useLoyaltyMutation();
+  const { formatDateTime } = usePlatformFormat();
 
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -149,7 +150,7 @@ export function LoyaltyTab() {
                     <div key={t.id} className="flex justify-between p-2 text-xs">
                       <div>
                         <div className="capitalize">{t.kind}</div>
-                        <div className="text-muted-foreground">{format(new Date(t.created_at), 'PPp')}</div>
+                        <div className="text-muted-foreground">{formatDateTime(t.created_at)}</div>
                         {t.note && <div className="text-muted-foreground">{t.note}</div>}
                       </div>
                       <div className={`font-mono ${t.points >= 0 ? 'text-green-600' : 'text-destructive'}`}>

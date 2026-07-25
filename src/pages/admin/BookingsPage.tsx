@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { CreateBookingDialog } from '@/components/admin/booking/CreateBookingDialog';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
@@ -44,6 +45,7 @@ function canMarkNoShow(booking: Booking): boolean {
 }
 
 export default function BookingsPage() {
+  const { formatDate, formatDateTime } = usePlatformFormat();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
@@ -224,7 +226,7 @@ export default function BookingsPage() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h2 className="text-lg font-semibold min-w-[160px] text-center">
-            {format(currentMonth, 'MMMM yyyy')}
+            {formatDate(currentMonth, { year: 'numeric', month: 'long', day: undefined })}
           </h2>
           <Button
             variant="outline"
@@ -389,7 +391,7 @@ export default function BookingsPage() {
                       <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="h-3 w-3" />
-                          {format(new Date(booking.start_time), 'PPP')}
+                          {formatDateTime(booking.start_time, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -465,7 +467,7 @@ export default function BookingsPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
-                  {format(selectedDate, 'EEEE, MMMM d')}
+                  {formatDate(selectedDate, { weekday: 'long', month: 'long', day: 'numeric', year: undefined })}
                 </CardTitle>
                 {slots.total > 0 && (
                   <Badge variant="outline" className="text-xs">
@@ -586,7 +588,7 @@ export default function BookingsPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Date</Label>
-                  <p>{format(new Date(selectedBooking.start_time), 'PPP')}</p>
+                  <p>{formatDateTime(selectedBooking.start_time, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Time</Label>

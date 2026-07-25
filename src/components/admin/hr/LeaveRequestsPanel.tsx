@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LeaveRequest, useUpdateLeaveRequest } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { Check, X } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -18,6 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
 export function LeaveRequestsPanel({ requests }: { requests: LeaveRequest[] }) {
   const update = useUpdateLeaveRequest();
   const qc = useQueryClient();
+  const { formatDate } = usePlatformFormat();
 
   useEffect(() => {
     const channel = supabase
@@ -55,7 +56,7 @@ export function LeaveRequestsPanel({ requests }: { requests: LeaveRequest[] }) {
             <TableCell className="font-medium">{req.employees?.name || "—"}</TableCell>
             <TableCell className="capitalize">{req.leave_type}</TableCell>
             <TableCell className="text-sm">
-              {format(new Date(req.start_date), "MMM d")} — {format(new Date(req.end_date), "MMM d, yyyy")}
+              {formatDate(req.start_date, { year: undefined, month: "short", day: "numeric" })} — {formatDate(req.end_date, { year: "numeric", month: "short", day: "numeric" })}
             </TableCell>
             <TableCell>{req.days}</TableCell>
             <TableCell>

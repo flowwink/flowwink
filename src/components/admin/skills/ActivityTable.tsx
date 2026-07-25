@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { Check, X, ChevronDown, ChevronRight, List, GitBranch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ import { ExecutionTimeline } from './ExecutionTimeline';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { AgentActivity, AgentActivityStatus } from '@/types/agent';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 function useDistinctAgents() {
   return useQuery({
@@ -57,6 +57,7 @@ export function ActivityTable() {
   const [agentFilter, setAgentFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const { formatDateTime } = usePlatformFormat();
 
   const filters = {
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -175,7 +176,7 @@ export function ActivityTable() {
                       {a.duration_ms != null ? `${a.duration_ms}ms` : '—'}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {format(new Date(a.created_at), 'MMM d HH:mm')}
+                      {formatDateTime(a.created_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </TableCell>
                     <TableCell>
                       {a.status === 'pending_approval' && (

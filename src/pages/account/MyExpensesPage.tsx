@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { toast } from "sonner";
 import { Receipt } from "lucide-react";
 
@@ -22,6 +22,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function MyExpensesPage() {
+  const { formatDate } = usePlatformFormat();
   const { user } = useAuth();
   const { isEmployee } = useEmployeeSelf();
   const qc = useQueryClient();
@@ -142,7 +143,7 @@ export default function MyExpensesPage() {
                   <div className="min-w-0">
                     <p className="font-medium truncate">{e.description}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(e.expense_date), "MMM d, yyyy")} · {e.category}{e.vendor ? ` · ${e.vendor}` : ""}
+                      {formatDate(e.expense_date, { year: "numeric", month: "short", day: "numeric" })} · {e.category}{e.vendor ? ` · ${e.vendor}` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">

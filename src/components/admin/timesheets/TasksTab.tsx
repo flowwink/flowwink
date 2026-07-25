@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { useProjectTasks, useCreateTask, useUpdateTask, useDeleteTask, TASK_STATUSES, type TaskStatus, type TaskPriority, type ProjectTask } from '@/hooks/useProjectTasks';
 import { useProjects } from '@/hooks/useTimesheets';
 import { Plus, Calendar, Clock, Trash2, User } from 'lucide-react';
-import { format, parseISO, isPast } from 'date-fns';
+import { parseISO, isPast } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -24,6 +25,7 @@ function TaskCard({ task, onDelete }: {
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
 }) {
+  const { formatDate } = usePlatformFormat();
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && task.status !== 'done';
 
   return (
@@ -50,7 +52,7 @@ function TaskCard({ task, onDelete }: {
         {task.due_date && (
           <span className={`flex items-center gap-0.5 text-[10px] ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
             <Calendar className="h-3 w-3" />
-            {format(parseISO(task.due_date), 'MMM d')}
+            {formatDate(task.due_date, { year: undefined, month: 'short', day: 'numeric' })}
           </span>
         )}
 

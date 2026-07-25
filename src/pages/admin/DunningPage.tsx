@@ -22,7 +22,7 @@ import {
 import { useDunningSettings, useUpdateDunningSettings } from '@/hooks/useDunningSettings';
 import { DunningPreview } from '@/components/admin/subscriptions/DunningPreview';
 import { useToast } from '@/hooks/use-toast';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Clock, MoreHorizontal, Pause, Play, Play as PlayIcon, RefreshCw, XCircle, Zap } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
@@ -295,7 +295,7 @@ function SeqRow({
 
 function DetailSheet({ sequence, onClose }: { sequence: DunningSequence | null; onClose: () => void }) {
   const { data: actions } = useDunningActions(sequence?.id ?? null);
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDateTime } = usePlatformFormat();
   if (!sequence) return null;
   const sub = sequence.subscriptions;
   return (
@@ -329,7 +329,7 @@ function DetailSheet({ sequence, onClose }: { sequence: DunningSequence | null; 
                     {a.email_template && <div className="text-xs text-muted-foreground">{a.email_template} → {a.recipient_email}</div>}
                     {a.error_message && <div className="text-xs text-destructive">{a.error_message}</div>}
                   </div>
-                  <div className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(a.created_at), 'MMM d, HH:mm')}</div>
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">{formatDateTime(a.created_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
               ))}
             </div>

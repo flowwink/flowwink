@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Plus, ExternalLink, Trash2, FolderOpen } from "lucide-react";
-import { format } from "date-fns";
 import { useEntityDocuments, useDeleteDocument, getDocumentSignedUrl } from "@/hooks/useDocuments";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { AddDocumentDialog } from "./AddDocumentDialog";
 
 interface DocumentsPanelProps {
@@ -25,6 +25,7 @@ export function DocumentsPanel({ entityType, entityId, defaultCategory, title }:
   const [addOpen, setAddOpen] = useState(false);
   const { data: docs, isLoading } = useEntityDocuments(entityType, entityId);
   const deleteDoc = useDeleteDocument();
+  const { formatDateTime } = usePlatformFormat();
 
   const open = async (path: string) => {
     const url = await getDocumentSignedUrl(path, 120);
@@ -57,7 +58,7 @@ export function DocumentsPanel({ entityType, entityId, defaultCategory, title }:
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">{d.title}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {d.file_name} · {format(new Date(d.created_at), "MMM d, yyyy")}
+                  {d.file_name} · {formatDateTime(d.created_at, { year: "numeric", month: "short", day: "numeric", hour: undefined, minute: undefined })}
                 </p>
               </div>
               <Badge variant="outline" className="capitalize text-xs">{d.category}</Badge>

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Pencil, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   useAssignments, useAssignmentMutation, useUtilizationReport,
   type ConsultantAssignment,
@@ -34,6 +34,7 @@ function useConsultantOptions() {
 const STATUSES = ['planned', 'active', 'ended'] as const;
 
 export function AssignmentsTab() {
+  const { formatDate } = usePlatformFormat();
   const { data: rows, isLoading } = useAssignments();
   const [editing, setEditing] = useState<ConsultantAssignment | null>(null);
   const [newOpen, setNewOpen] = useState(false);
@@ -84,8 +85,8 @@ export function AssignmentsTab() {
                       <div className="text-xs text-muted-foreground">{a.role_title ?? ''}</div>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {a.start_date && format(new Date(a.start_date), 'PP')}
-                      {a.end_date && ` → ${format(new Date(a.end_date), 'PP')}`}
+                      {a.start_date && formatDate(a.start_date)}
+                      {a.end_date && ` → ${formatDate(a.end_date)}`}
                     </TableCell>
                     <TableCell className="text-right">{a.allocation_pct ?? '—'}%</TableCell>
                     <TableCell className="text-right font-mono text-xs">

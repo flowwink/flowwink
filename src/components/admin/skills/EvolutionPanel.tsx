@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -114,8 +115,9 @@ function EmptyState({ icon: Icon, text }: { icon: React.ElementType; text: strin
 }
 
 function TimeAgo({ date }: { date: string }) {
+  const { formatDateTime } = usePlatformFormat();
   return (
-    <span className="text-xs text-muted-foreground" title={format(new Date(date), 'PPpp')}>
+    <span className="text-xs text-muted-foreground" title={formatDateTime(date, { month: 'long', second: '2-digit' })}>
       {formatDistanceToNow(new Date(date), { addSuffix: true })}
     </span>
   );

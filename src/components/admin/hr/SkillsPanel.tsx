@@ -5,10 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 export function SkillsPanel() {
   const { data: employees } = useEmployees();
+  const { formatDate } = usePlatformFormat();
   const { data: skills, isLoading: sl } = useEmployeeSkills();
   const { data: certs, isLoading: cl } = useCertifications();
   const [tab, setTab] = useState("certs");
@@ -43,7 +44,7 @@ export function SkillsPanel() {
                       <p className="font-medium">{c.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {empMap.get(c.employee_id)} · {c.issuer || "—"} ·{" "}
-                        {c.expires_at ? `expires ${format(new Date(c.expires_at), "MMM d, yyyy")}` : "no expiry"}
+                        {c.expires_at ? `expires ${formatDate(c.expires_at, { year: "numeric", month: "short", day: "numeric" })}` : "no expiry"}
                       </p>
                     </div>
                     {status === "expired" && <Badge variant="destructive">Expired</Badge>}

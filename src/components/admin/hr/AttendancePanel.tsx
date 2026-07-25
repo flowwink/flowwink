@@ -3,11 +3,12 @@ import { useAllAttendance, formatMinutes } from "@/hooks/useAttendance";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 export function AttendancePanel() {
   const { data: employees } = useEmployees();
   const { data: entries, isLoading } = useAllAttendance();
+  const { formatDateTime } = usePlatformFormat();
 
   const empMap = new Map(employees?.map((e) => [e.id, e.name]));
   const openCount = entries?.filter((e) => !e.clock_out).length || 0;
@@ -30,8 +31,10 @@ export function AttendancePanel() {
                 <div className="flex-1">
                   <span className="font-medium">{e.employees?.name || empMap.get(e.employee_id) || "Unknown"}</span>
                   <span className="text-muted-foreground ml-2">
-                    {format(new Date(e.clock_in), "MMM d HH:mm")}
-                    {e.clock_out ? ` – ${format(new Date(e.clock_out), "HH:mm")}` : " – open"}
+                    {formatDateTime(e.clock_in, { year: undefined, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {e.clock_out
+                      ? ` – ${formatDateTime(e.clock_out, { year: undefined, month: undefined, day: undefined, hour: "2-digit", minute: "2-digit" })}`
+                      : " – open"}
                   </span>
                 </div>
                 <Badge variant={e.clock_out ? "secondary" : "default"} className="tabular-nums">

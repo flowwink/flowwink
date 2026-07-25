@@ -44,11 +44,12 @@ import {
   WEBHOOK_EVENT_LABELS,
   WEBHOOK_EVENT_CATEGORIES
 } from '@/hooks/useWebhooks';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useToast } from '@/hooks/use-toast';
 import { WebhookStats } from '@/components/admin/WebhookStats';
 
 export function WebhooksContent() {
+  const { formatDateTime } = usePlatformFormat();
   const { webhooks, isLoading, createWebhook, updateWebhook, deleteWebhook, toggleWebhook, testWebhook, resendWebhook } = useWebhooks();
   const { toast } = useToast();
   
@@ -231,7 +232,7 @@ export function WebhooksContent() {
                         {webhook.last_triggered_at && (
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            Last: {format(new Date(webhook.last_triggered_at), 'dd MMM HH:mm')}
+                            Last: {formatDateTime(webhook.last_triggered_at, { year: undefined, month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                         {webhook.failure_count > 0 && (
@@ -361,7 +362,7 @@ export function WebhooksContent() {
                                   )}
                                 </div>
                                 <span className="text-muted-foreground text-xs flex-shrink-0">
-                                  {format(new Date(log.created_at), 'dd MMM HH:mm:ss')}
+                                  {formatDateTime(log.created_at, { year: undefined, month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                 </span>
                                 <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
                               </div>

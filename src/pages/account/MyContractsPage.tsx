@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function MyContractsPage() {
+  const { formatDateTime } = usePlatformFormat();
   const { employee, isEmployee, loading: isLoading } = useEmployeeSelf();
   const { data: contracts } = useEmploymentContracts(employee?.id);
   const sign = useSignEmploymentContract();
@@ -81,7 +82,7 @@ export default function MyContractsPage() {
                   {c.signed_by_employee_at && (
                     <span className="text-xs text-green-600 flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" />
-                      You signed {format(new Date(c.signed_by_employee_at), "PP")}
+                      You signed {formatDateTime(c.signed_by_employee_at, { year: "numeric", month: "short", day: "numeric" })}
                     </span>
                   )}
                   {!c.signed_by_employer_at && c.signed_by_employee_at && (

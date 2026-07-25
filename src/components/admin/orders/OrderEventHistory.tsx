@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   ShoppingBag,
   CreditCard,
@@ -44,6 +44,7 @@ const ACTION_META: Record<string, { label: string; icon: React.ElementType; colo
 };
 
 export function OrderEventHistory({ order }: OrderEventHistoryProps) {
+  const { formatDateTime } = usePlatformFormat();
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['order-audit-logs', order.id],
     queryFn: async () => {
@@ -134,7 +135,7 @@ export function OrderEventHistory({ order }: OrderEventHistoryProps) {
               <p className="text-sm font-medium">{e.label}</p>
               {e.detail && <p className="text-xs text-muted-foreground">{e.detail}</p>}
               <p className="text-xs text-muted-foreground">
-                {format(new Date(e.at), 'PPp')}
+                {formatDateTime(e.at)}
               </p>
             </div>
           </div>

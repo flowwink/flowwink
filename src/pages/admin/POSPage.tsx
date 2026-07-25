@@ -23,7 +23,7 @@ import {
   type PosSaleLine, type PosPayment, type PosProduct, type PosSale,
 } from '@/hooks/usePOS';
 import { Plus, Trash2, Receipt, Banknote, CreditCard, Smartphone, Search, X, Settings, ScanBarcode, FileText, Undo2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { GiftCardsTab } from '@/components/admin/pos/GiftCardsTab';
 import { LoyaltyTab } from '@/components/admin/pos/LoyaltyTab';
 import { TablesTab } from '@/components/admin/pos/TablesTab';
@@ -47,6 +47,7 @@ const PAYMENT_METHODS: Array<{ value: PosPayment['method']; label: string; icon?
 ];
 
 export default function POSPage() {
+  const { formatDateTime } = usePlatformFormat();
   const { data: registers } = useRegisters();
   const [registerId, setRegisterId] = useState<string | undefined>();
   const activeRegister = registers?.find((r) => r.id === registerId) ?? registers?.[0];
@@ -511,7 +512,7 @@ export default function POSPage() {
                 <Card>
                   <CardHeader><CardTitle>Close session (Z-report)</CardTitle></CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="text-sm">Opened {format(new Date(openSession.opened_at), 'PPp')}</div>
+                    <div className="text-sm">Opened {formatDateTime(openSession.opened_at, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                     <div className="text-sm">Sales so far: {openSession.sales_count} ({fmtMoney(openSession.total_sales_cents)})</div>
                     <div className="flex items-end gap-2">
                       <div className="flex-1">
@@ -563,7 +564,7 @@ export default function POSPage() {
                                   <Link to="/admin/invoices" className="text-xs text-primary underline">invoiced</Link>
                                 )}
                               </div>
-                              <div className="text-xs text-muted-foreground">{format(new Date(s.created_at), 'PPp')}</div>
+                              <div className="text-xs text-muted-foreground">{formatDateTime(s.created_at, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                             <div className="text-right">
                               <div className={`font-medium ${isRefund ? 'text-destructive' : ''}`}>

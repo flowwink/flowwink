@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, User, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { PublicNavigation } from "@/components/public/PublicNavigation";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { BlockRenderer } from "@/components/public/BlockRenderer";
@@ -20,7 +20,8 @@ export default function BlogPostPage() {
   const { slug } = useParams();
   const { data: post, isLoading, error } = useBlogPost(slug);
   const { data: blogSettings } = useBlogSettings();
-  
+  const { formatDateTime } = usePlatformFormat();
+
   // Related posts (same category)
   const { data: relatedData } = useBlogPosts({
     status: "published",
@@ -142,7 +143,7 @@ export default function BlogPostPage() {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <time dateTime={publishedDate.toISOString()}>
-                {format(publishedDate, "d MMMM yyyy")}
+                {formatDateTime(publishedDate, { year: "numeric", month: "long", day: "numeric" })}
               </time>
             </div>
             {blogSettings?.showReadingTime && post.reading_time_minutes && (
@@ -175,7 +176,7 @@ export default function BlogPostPage() {
                 </span>
                 {post.reviewed_at && (
                   <span className="text-green-600 dark:text-green-400 ml-2">
-                    ({format(new Date(post.reviewed_at), "d MMM yyyy")})
+                    ({formatDateTime(post.reviewed_at, { year: "numeric", month: "short", day: "numeric" })})
                   </span>
                 )}
               </div>

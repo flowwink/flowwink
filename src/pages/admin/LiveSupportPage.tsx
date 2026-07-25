@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +67,7 @@ const priorityConfig: Record<string, { label: string; variant: 'default' | 'seco
 };
 
 export default function LiveSupportPage() {
+  const { formatDateTime } = usePlatformFormat();
   const {
     agentRecord,
     agentLoading,
@@ -725,7 +727,7 @@ export default function LiveSupportPage() {
                                       'text-[10px] mt-1 opacity-70',
                                       message.role === 'agent' ? 'text-primary-foreground' : 'text-muted-foreground',
                                     )}>
-                                      {format(new Date(message.created_at), 'MMM d, HH:mm')}
+                                      {formatDateTime(message.created_at, { year: undefined, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                   </div>
                                 </div>

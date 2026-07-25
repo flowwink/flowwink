@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { CalendarIcon } from 'lucide-react';
 import { useCreateBooking, type BookingService } from '@/hooks/useBookings';
 import { useEmployees } from '@/hooks/useEmployees';
@@ -21,6 +21,7 @@ interface CreateBookingDialogProps {
 }
 
 export function CreateBookingDialog({ open, onOpenChange, services, initialDate }: CreateBookingDialogProps) {
+  const { formatDate } = usePlatformFormat();
   const createBooking = useCreateBooking();
   const { data: employees } = useEmployees();
   const [formData, setFormData] = useState({
@@ -183,7 +184,7 @@ export function CreateBookingDialog({ open, onOpenChange, services, initialDate 
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.date ? format(formData.date, 'PPP') : 'Select date'}
+                    {formData.date ? formatDate(formData.date, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Select date'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">

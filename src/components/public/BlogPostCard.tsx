@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { stripHtml } from "@/lib/utils";
 import { Calendar, User, Clock } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { BlogPost } from "@/types/cms";
@@ -19,6 +19,7 @@ export function BlogPostCard({
   showExcerpt = true,
   showReadingTime = true,
 }: BlogPostCardProps) {
+  const { formatDateTime } = usePlatformFormat();
   const publishedDate = post.published_at
     ? new Date(post.published_at)
     : new Date(post.created_at);
@@ -39,7 +40,7 @@ export function BlogPostCard({
               {post.title}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {format(publishedDate, "d MMM yyyy")}
+              {formatDateTime(publishedDate, { year: "numeric", month: "short", day: "numeric" })}
             </p>
           </div>
         </div>
@@ -90,7 +91,7 @@ export function BlogPostCard({
               )}
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                <span>{format(publishedDate, "d MMM yyyy")}</span>
+                <span>{formatDateTime(publishedDate, { year: "numeric", month: "short", day: "numeric" })}</span>
               </div>
               {showReadingTime && post.reading_time_minutes && (
                 <div className="flex items-center gap-1.5">
@@ -145,7 +146,7 @@ export function BlogPostCard({
                 <span>{post.author.full_name || "Unknown"}</span>
               )}
               <span>•</span>
-              <span>{format(publishedDate, "d MMM yyyy")}</span>
+              <span>{formatDateTime(publishedDate, { year: "numeric", month: "short", day: "numeric" })}</span>
               {showReadingTime && post.reading_time_minutes && (
                 <>
                   <span>•</span>

@@ -50,7 +50,7 @@ import { DealTeamsPanel } from '@/components/admin/deals/DealTeamsPanel';
 import { DealTemplatesPanel } from '@/components/admin/deals/DealTemplatesPanel';
 import { useDealTeams, useLatestExchangeRates, useBaseCurrency, convertAmount } from '@/hooks/useDealsParity';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
@@ -58,6 +58,7 @@ import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
 type ViewMode = 'kanban' | 'table';
 
 export default function DealsPage() {
+  const { formatDate, formatDateTime } = usePlatformFormat();
   const { data: rawDeals = [], isLoading } = useDeals();
   const { data: stats } = useDealStats();
   const { data: teams = [] } = useDealTeams();
@@ -301,7 +302,7 @@ export default function DealsPage() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {deal.expected_close 
-                              ? format(new Date(deal.expected_close), 'MMM d, yyyy')
+                              ? formatDate(deal.expected_close, { year: 'numeric', month: 'short', day: 'numeric' })
                               : '—'
                             }
                           </TableCell>
@@ -358,7 +359,7 @@ export default function DealsPage() {
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {deal.closed_at 
-                                ? format(new Date(deal.closed_at), 'MMM d, yyyy')
+                                ? formatDateTime(deal.closed_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })
                                 : '—'
                               }
                             </TableCell>

@@ -11,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Play, Square, ChevronDown, ChevronRight, Trophy } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { usePagesRpcQuery, usePagesRpcMutation, pagesRpc } from "@/hooks/usePagesRpc";
 
 type Experiment = {
@@ -81,6 +81,7 @@ function ResultsRow({ id }: { id: string }) {
 }
 
 export default function PageExperimentsTab() {
+  const { formatDateTime } = usePlatformFormat();
   const listQ = usePagesRpcQuery<{ experiments: Experiment[] }>("manage_page_experiment", { p_action: "list" }, ["list"]);
   const pagesQ = usePagesForSelect();
   const invalidate = [["manage_page_experiment", "list"]];
@@ -257,8 +258,8 @@ export default function PageExperimentsTab() {
                           <div className="py-2">
                             {e.started_at && (
                               <p className="text-xs text-muted-foreground mb-2">
-                                Started {format(new Date(e.started_at), "MMM d, yyyy HH:mm")}
-                                {e.stopped_at && ` · stopped ${format(new Date(e.stopped_at), "MMM d, yyyy HH:mm")}`}
+                                Started {formatDateTime(e.started_at, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                {e.stopped_at && ` · stopped ${formatDateTime(e.stopped_at, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
                               </p>
                             )}
                             <ResultsRow id={e.id} />

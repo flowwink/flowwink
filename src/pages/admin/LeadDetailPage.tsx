@@ -43,10 +43,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { cn } from '@/lib/utils';
 
 export default function LeadDetailPage() {
+  const { formatDateTime } = usePlatformFormat();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: lead, isLoading } = useLead(id);
@@ -324,7 +325,7 @@ export default function LeadDetailPage() {
                 <p className="text-sm">{lead.ai_summary}</p>
                 {lead.ai_qualified_at && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Last qualified: {format(new Date(lead.ai_qualified_at), 'PPp')}
+                    Last qualified: {formatDateTime(lead.ai_qualified_at, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 )}
               </CardContent>
@@ -545,7 +546,7 @@ export default function LeadDetailPage() {
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Created {format(new Date(lead.created_at), 'PPP')}
+                  Created {formatDateTime(lead.created_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}
                 </span>
               </div>
             </CardContent>

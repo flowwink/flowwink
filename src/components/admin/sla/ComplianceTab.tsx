@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ComplianceReport {
@@ -97,7 +96,7 @@ export function ComplianceTab() {
   const { data: report, isLoading } = useComplianceReport(days);
   const { data: tiers, isLoading: tiersLoading } = useSlaTiers();
   const { data: credits, isLoading: creditsLoading } = useServiceCredits();
-  const { formatCurrency } = usePlatformFormat();
+  const { formatCurrency, formatDate } = usePlatformFormat();
 
   return (
     <div className="space-y-6">
@@ -252,7 +251,7 @@ export function ComplianceTab() {
                         {formatCurrency(c.amount_cents, c.currency, { maximumFractionDigits: 0 })}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {c.reason || format(new Date(c.created_at), 'PP')}
+                        {c.reason || formatDate(new Date(c.created_at))}
                       </p>
                     </div>
                     <Badge variant="outline" className={`capitalize ${CREDIT_STATUS[c.status] ?? ''}`}>

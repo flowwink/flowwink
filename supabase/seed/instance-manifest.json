@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260723180000",
-      "migrations_count": 267,
+      "migration_head": "20260726090000",
+      "migrations_count": 268,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1073,6 +1073,10 @@
         {
           "version": "20260723180000",
           "name": "agent-runs"
+        },
+        {
+          "version": "20260726090000",
+          "name": "reverse-charge-vat"
         }
       ]
     },

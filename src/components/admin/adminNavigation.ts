@@ -150,7 +150,6 @@ export const navigationGroups: NavGroup[] = [
       { name: "Calendar", href: "/admin/calendar", icon: CalendarDays, moduleId: "calendar" },
       { name: "Surveys & NPS", href: "/admin/surveys", icon: Sparkles, moduleId: "surveys" },
       { name: "Field Service", href: "/admin/field-service", icon: Truck, moduleId: "fieldService" },
-      { name: "New service order", href: "/admin/field-service?new=1", icon: Plus, moduleId: "fieldService" },
     ],
   },
   {

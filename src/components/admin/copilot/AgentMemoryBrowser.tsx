@@ -32,7 +32,7 @@ interface MemoryRow {
   expires_at: string | null;
 }
 
-const CATEGORIES: Category[] = ['context', 'preference', 'fact', 'skill', 'other'];
+const CATEGORIES: Category[] = ['context', 'preference', 'fact', 'config', 'snapshot'];
 
 export function AgentMemoryBrowser() {
   const qc = useQueryClient();

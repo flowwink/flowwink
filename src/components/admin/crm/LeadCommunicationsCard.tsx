@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowDownLeft, ArrowUpRight, Bot, FileText, User } from 'lucide-react';
@@ -70,6 +71,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
   const { data: comms = [], isLoading } = useLeadCommunications(leadId);
   const { data: quotes = [] } = useOpenQuotesByLead(leadId);
   const [selected, setSelected] = useState<Comm | null>(null);
+  const { formatCurrency } = usePlatformFormat();
 
   return (
     <Card>

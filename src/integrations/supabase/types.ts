@@ -6865,6 +6865,7 @@ export type Database = {
           receipt_data: Json | null
           receipt_url: string | null
           report_id: string | null
+          reverse_charge_rate: number | null
           status: string
           unit: string | null
           updated_at: string
@@ -6891,6 +6892,7 @@ export type Database = {
           receipt_data?: Json | null
           receipt_url?: string | null
           report_id?: string | null
+          reverse_charge_rate?: number | null
           status?: string
           unit?: string | null
           updated_at?: string
@@ -6917,6 +6919,7 @@ export type Database = {
           receipt_data?: Json | null
           receipt_url?: string | null
           report_id?: string | null
+          reverse_charge_rate?: number | null
           status?: string
           unit?: string | null
           updated_at?: string

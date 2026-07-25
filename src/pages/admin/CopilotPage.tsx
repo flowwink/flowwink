@@ -64,10 +64,11 @@ export default function CopilotPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { searchOpen, setSearchOpen } = useAdminSearch();
 
-  // Migrate legacy ?tab values (chat → overview, evolution/autonomy → memory)
+  // Migrate legacy ?tab values
   const raw = searchParams.get('tab');
   const tabParam: FlowPilotTab = (() => {
-    if (raw === 'evolution' || raw === 'autonomy') return 'memory';
+    if (raw === 'evolution') return 'persona';
+    if (raw === 'autonomy') return 'autonomy';
     if (raw === 'chat' || !raw) return 'overview';
     if (TABS.some(t => t.id === raw)) return raw as FlowPilotTab;
     return 'overview';

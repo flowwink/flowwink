@@ -125,7 +125,7 @@ export function RenewalsPanel() {
                       {r.customer_name && <div className="text-xs text-muted-foreground">{r.customer_email}</div>}
                     </TableCell>
                     <TableCell>{r.product_name || '—'}</TableCell>
-                    <TableCell>{formatCurrency(r.unit_amount_cents, r.currency)}</TableCell>
+                    <TableCell>{formatCurrency(r.unit_amount_cents, r.currency, { maximumFractionDigits: 0 })}</TableCell>
                     <TableCell>
                       <div className="text-sm">{format(new Date(r.current_period_end), 'MMM d')}</div>
                       <div className="text-xs text-muted-foreground">in {r.days_until_renewal}d</div>

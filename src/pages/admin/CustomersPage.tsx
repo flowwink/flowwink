@@ -146,7 +146,7 @@ export default function CustomersPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Revenue</p>
                   <p className="text-2xl font-bold">
-                    {stats ? formatCurrency(stats.totalRevenue, stats.currency) : '—'}
+                    {stats ? formatCurrency(stats.totalRevenue, stats.currency, { minimumFractionDigits: 0 }) : '—'}
                   </p>
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function CustomersPage() {
                         <Badge variant="secondary">{customer.order_count}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(customer.total_spent_cents, customer.currency)}
+                        {formatCurrency(customer.total_spent_cents, customer.currency, { minimumFractionDigits: 0 })}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDistanceToNow(new Date(customer.last_order_at), { addSuffix: true })}

@@ -124,14 +124,14 @@ export default function DunningPage() {
         <MetricCard
           icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
           label="MRR at risk"
-          value={metrics ? formatCurrency(metrics.mrrAtRisk, metrics.currency) : '—'}
+          value={metrics ? formatCurrency(metrics.mrrAtRisk, metrics.currency, { maximumFractionDigits: 0 }) : '—'}
           hint={metrics ? `${metrics.activeCount} active sequence(s)` : ''}
         />
         <MetricCard
           icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
           label="Recovered (30d)"
           value={metrics?.recovered30?.toString() ?? '—'}
-          hint={metrics ? formatCurrency(metrics.recoveredMrr30, metrics.currency) + ' MRR saved' : ''}
+          hint={metrics ? formatCurrency(metrics.recoveredMrr30, metrics.currency, { maximumFractionDigits: 0 }) + ' MRR saved' : ''}
         />
         <MetricCard
           icon={<XCircle className="h-4 w-4 text-muted-foreground" />}
@@ -250,7 +250,7 @@ function SeqRow({
           <div className="text-xs text-muted-foreground">{sub.product_name}</div>
         )}
       </TableCell>
-      <TableCell className="font-medium">{formatCurrency(seq.mrr_at_risk_cents, seq.currency)}/mo</TableCell>
+      <TableCell className="font-medium">{formatCurrency(seq.mrr_at_risk_cents, seq.currency, { maximumFractionDigits: 0 })}/mo</TableCell>
       <TableCell>
         <div className="text-sm">{STEP_LABELS[seq.current_step] ?? `Step ${seq.current_step}`}</div>
         {seq.attempt_count > 1 && (
@@ -307,7 +307,7 @@ function DetailSheet({ sequence, onClose }: { sequence: DunningSequence | null; 
         </SheetHeader>
         <div className="mt-6 space-y-6">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-muted-foreground">At risk:</span><br /><strong>{formatCurrency(sequence.mrr_at_risk_cents, sequence.currency)}/mo</strong></div>
+            <div><span className="text-muted-foreground">At risk:</span><br /><strong>{formatCurrency(sequence.mrr_at_risk_cents, sequence.currency, { maximumFractionDigits: 0 })}/mo</strong></div>
             <div><span className="text-muted-foreground">Status:</span><br /><Badge variant={STATUS_LABEL[sequence.status].variant}>{STATUS_LABEL[sequence.status].label}</Badge></div>
             <div><span className="text-muted-foreground">Current step:</span><br />{STEP_LABELS[sequence.current_step] ?? `Step ${sequence.current_step}`}</div>
             <div><span className="text-muted-foreground">Failures:</span><br />{sequence.attempt_count}</div>

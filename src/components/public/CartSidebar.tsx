@@ -88,7 +88,7 @@ export function CartSidebar() {
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground">
-                      {formatCurrency(item.priceCents, item.currency)}
+                      {formatCurrency(item.priceCents, item.currency, { minimumFractionDigits: 0 })}
                     </p>
 
                     {/* Quantity controls */}
@@ -118,7 +118,7 @@ export function CartSidebar() {
                   {/* Line total + remove */}
                   <div className="flex flex-col items-end justify-between">
                     <span className="font-semibold text-sm">
-                      {formatCurrency(item.priceCents * item.quantity, item.currency)}
+                      {formatCurrency(item.priceCents * item.quantity, item.currency, { minimumFractionDigits: 0 })}
                     </span>
                     <Button
                       variant="ghost"
@@ -140,7 +140,7 @@ export function CartSidebar() {
               <div className="flex items-center justify-between">
                 <span className="font-medium">Total</span>
                 <span className="text-xl font-bold">
-                  {formatCurrency(totalPriceCents, currency)}
+                  {formatCurrency(totalPriceCents, currency, { minimumFractionDigits: 0 })}
                 </span>
               </div>
 

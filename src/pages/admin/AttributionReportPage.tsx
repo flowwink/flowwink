@@ -14,7 +14,7 @@ export default function AttributionReportPage() {
 
   // No per-row currency on the attribution report — falls back to the
   // platform display currency.
-  const formatCents = (cents: number) => formatCurrency(cents);
+  const formatCents = (cents: number) => formatCurrency(cents, undefined, { maximumFractionDigits: 0 });
 
   const totals = data.reduce(
     (acc, r) => ({

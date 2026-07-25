@@ -219,7 +219,7 @@ export function ProductsBlock({ data }: ProductsBlockProps) {
 
                     <div className="flex items-center justify-between mt-auto pt-3">
                       <span className="text-xl font-bold">
-                        {formatCurrency(product.price_cents, product.currency)}
+                        {formatCurrency(product.price_cents, product.currency, { minimumFractionDigits: 0 })}
                         {product.type === 'recurring' && (
                           <span className="text-sm font-normal text-muted-foreground">/mo</span>
                         )}

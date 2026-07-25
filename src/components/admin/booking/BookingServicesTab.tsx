@@ -89,7 +89,8 @@ export default function BookingServicesTab() {
     }
   };
 
-  const formatPrice = (cents: number, currency: string) => formatCurrency(cents, currency);
+  const formatPrice = (cents: number, currency: string) =>
+    formatCurrency(cents, currency, { minimumFractionDigits: 0 });
 
   return (
     <>

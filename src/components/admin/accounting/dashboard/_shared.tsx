@@ -9,7 +9,11 @@ import { usePlatformFormat } from '@/hooks/usePlatformFormat';
  */
 export function useFmtSek(): (cents: number) => string {
   const { formatCurrency } = usePlatformFormat();
-  return (cents: number) => formatCurrency(cents ?? 0);
+  return (cents: number) =>
+    formatCurrency(cents ?? 0, undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
 }
 
 export function DashCard({

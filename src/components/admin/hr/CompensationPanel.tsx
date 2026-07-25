@@ -207,9 +207,9 @@ export function CompensationPanel() {
                     <TableCell className="font-mono text-xs">{g.code}</TableCell>
                     <TableCell>{g.name}</TableCell>
                     <TableCell>{g.level}</TableCell>
-                    <TableCell>{formatCurrency(g.min_cents, g.currency)}</TableCell>
-                    <TableCell>{formatCurrency(g.mid_cents, g.currency)}</TableCell>
-                    <TableCell>{formatCurrency(g.max_cents, g.currency)}</TableCell>
+                    <TableCell>{formatCurrency(g.min_cents, g.currency, { maximumFractionDigits: 0 })}</TableCell>
+                    <TableCell>{formatCurrency(g.mid_cents, g.currency, { maximumFractionDigits: 0 })}</TableCell>
+                    <TableCell>{formatCurrency(g.max_cents, g.currency, { maximumFractionDigits: 0 })}</TableCell>
                     <TableCell>{g.employee_count}</TableCell>
                     <TableCell className="text-right">
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(g)}>
@@ -269,8 +269,8 @@ export function CompensationPanel() {
                       <TableRow key={r.employee_id}>
                         <TableCell className="font-medium">{r.name}</TableCell>
                         <TableCell>{r.grade}</TableCell>
-                        <TableCell>{formatCurrency(r.monthly_salary_cents)}</TableCell>
-                        <TableCell className="text-xs">{formatCurrency(r.band_min_cents)} – {formatCurrency(r.band_max_cents)}</TableCell>
+                        <TableCell>{formatCurrency(r.monthly_salary_cents, undefined, { maximumFractionDigits: 0 })}</TableCell>
+                        <TableCell className="text-xs">{formatCurrency(r.band_min_cents, undefined, { maximumFractionDigits: 0 })} – {formatCurrency(r.band_max_cents, undefined, { maximumFractionDigits: 0 })}</TableCell>
                         <TableCell>{r.compa_ratio != null ? r.compa_ratio.toFixed(2) : "—"}</TableCell>
                         <TableCell>
                           <Badge variant="destructive">{r.issue.replace(/_/g, " ")}</Badge>

@@ -356,7 +356,10 @@ export function EventsToBookTab() {
                           p.amount_cents < 0 ? 'text-foreground' : 'text-emerald-700 dark:text-emerald-400',
                         )}
                       >
-                        {formatCurrency(p.amount_cents)}
+                        {formatCurrency(p.amount_cents, undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })}
                       </div>
                     </button>
                   );
@@ -445,7 +448,10 @@ function BookedList({ data }: { data: { rows: any[]; entries: Record<string, any
                   r.amount_cents < 0 ? 'text-foreground' : 'text-emerald-700 dark:text-emerald-400',
                 )}
               >
-                {formatCurrency(r.amount_cents)}
+                {formatCurrency(r.amount_cents, undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
               </div>
             </div>
           );

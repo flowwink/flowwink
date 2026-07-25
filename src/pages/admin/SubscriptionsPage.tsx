@@ -44,7 +44,7 @@ export default function SubscriptionsPage() {
   const formatMoney = (cents: number, currency: string) =>
     currency === 'mixed'
       ? `${formatNumber(cents / 100, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (mixed)`
-      : formatCurrency(cents, currency);
+      : formatCurrency(cents, currency, { maximumFractionDigits: 0 });
   const [filter, setFilter] = useState<SubscriptionStatus | 'all'>('all');
   const { data: subs, isLoading } = useSubscriptions(filter === 'all' ? undefined : filter);
   const { data: metrics } = useSubscriptionMetrics();
@@ -239,7 +239,7 @@ function SubscriptionRow({
           {isManual ? ' · invoice-billed' : ' · Stripe'}
         </div>
       </TableCell>
-      <TableCell>{formatCurrency(sub.unit_amount_cents * sub.quantity, sub.currency)}</TableCell>
+      <TableCell>{formatCurrency(sub.unit_amount_cents * sub.quantity, sub.currency, { maximumFractionDigits: 0 })}</TableCell>
       <TableCell>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={status.variant}>{status.label}</Badge>

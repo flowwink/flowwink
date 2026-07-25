@@ -42,11 +42,11 @@ export default function GrowthDashboardPage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Total Spend"
-            value={m ? formatCurrency(m.totalSpendCents, m.currency) : null}
+            value={m ? formatCurrency(m.totalSpendCents, m.currency, { minimumFractionDigits: 0 }) : null}
             icon={DollarSign}
             variant="primary"
             isLoading={isLoading}
-            subtext={m ? `of ${formatCurrency(m.totalBudgetCents, m.currency)} budget` : undefined}
+            subtext={m ? `of ${formatCurrency(m.totalBudgetCents, m.currency, { minimumFractionDigits: 0 })} budget` : undefined}
           />
           <StatCard
             label="Impressions"
@@ -129,7 +129,7 @@ export default function GrowthDashboardPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums">
-                          {formatCurrency(c.spentCents, c.currency)}
+                          {formatCurrency(c.spentCents, c.currency, { minimumFractionDigits: 0 })}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums">
                           {formatNumber(c.impressions)}

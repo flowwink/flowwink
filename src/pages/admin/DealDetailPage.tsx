@@ -61,13 +61,15 @@ export default function DealDetailPage() {
   }
 
   const stageInfo = getDealStageInfo(deal.stage);
-  const formattedValue = formatCurrency(deal.value_cents, deal.currency);
+  const formattedValue = formatCurrency(deal.value_cents, deal.currency, { minimumFractionDigits: 0 });
   const convertedCents =
     deal.currency && deal.currency.toUpperCase() !== baseCurrency.toUpperCase()
       ? convertAmount(deal.value_cents, deal.currency, baseCurrency, rates)
       : null;
   const convertedLabel =
-    convertedCents != null ? formatCurrency(convertedCents, baseCurrency) : null;
+    convertedCents != null
+      ? formatCurrency(convertedCents, baseCurrency, { minimumFractionDigits: 0 })
+      : null;
   const dealTeamId = (deal as any).team_id as string | null | undefined;
 
   const handleStageChange = (newStage: DealStage) => {

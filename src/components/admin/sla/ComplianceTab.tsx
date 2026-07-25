@@ -129,7 +129,7 @@ export function ComplianceTab() {
             { label: 'Resolved', value: report?.violations_resolved ?? 0 },
             { label: 'Open now', value: report?.violations_open_now ?? 0 },
             { label: 'Escalations fired', value: report?.escalations_fired ?? 0 },
-            { label: 'Service credits', value: formatCurrency(report?.service_credits_accrued_cents ?? 0) },
+            { label: 'Service credits', value: formatCurrency(report?.service_credits_accrued_cents ?? 0, undefined, { maximumFractionDigits: 0 }) },
             {
               label: 'Avg overage',
               value: report?.avg_overage_ratio
@@ -233,7 +233,7 @@ export function ComplianceTab() {
               <span>Service credits</span>
               {credits && (
                 <span className="text-xs font-normal text-muted-foreground">
-                  Accrued: {formatCurrency(credits.total_accrued_cents)}
+                  Accrued: {formatCurrency(credits.total_accrued_cents, undefined, { maximumFractionDigits: 0 })}
                 </span>
               )}
             </CardTitle>
@@ -249,7 +249,7 @@ export function ComplianceTab() {
                   <div key={c.id} className="flex items-center justify-between text-sm border-b last:border-b-0 pb-2 last:pb-0 gap-3">
                     <div className="min-w-0">
                       <p className="font-medium tabular-nums">
-                        {formatCurrency(c.amount_cents, c.currency)}
+                        {formatCurrency(c.amount_cents, c.currency, { maximumFractionDigits: 0 })}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {c.reason || format(new Date(c.created_at), 'PP')}

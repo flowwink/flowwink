@@ -197,7 +197,10 @@ export default function AnalyticsDashboardPage() {
     },
     dealsEnabled && {
       title: 'Pipeline Value',
-      value: formatCurrency(summary?.dealsPipelineValue || 0),
+      value: formatCurrency(summary?.dealsPipelineValue || 0, undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }),
       icon: Briefcase,
       description: `${summary?.totalDeals || 0} active deals`,
       change: comparison?.dealValue.change,
@@ -566,7 +569,12 @@ export default function AnalyticsDashboardPage() {
                         <YAxis dataKey="name" type="category" width={100} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                         <Tooltip
                           formatter={(value: number, name: string) => [
-                            name === 'count' ? value : formatCurrency(value * 100),
+                            name === 'count'
+                              ? value
+                              : formatCurrency(value * 100, undefined, {
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0,
+                                }),
                             name === 'count' ? 'Count' : 'Value',
                           ]}
                           contentStyle={{

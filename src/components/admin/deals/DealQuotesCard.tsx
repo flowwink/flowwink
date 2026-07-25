@@ -58,7 +58,9 @@ export function DealQuotesCard({ dealId, leadId }: Props) {
             </p>
           ) : (
             quotes.map((q) => {
-              const total = formatCurrency(q.total_cents || 0, q.currency);
+              const total = formatCurrency(q.total_cents || 0, q.currency, {
+                minimumFractionDigits: 0,
+              });
               return (
                 <Link
                   key={q.id}

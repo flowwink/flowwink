@@ -24,7 +24,8 @@ export function CartBlock({ data }: CartBlockProps) {
   const { items, removeItem, updateQuantity, totalPriceCents, currency, totalItems } = useCart();
   const { formatCurrency } = usePlatformFormat();
 
-  const formatPrice = (cents: number, curr: string) => formatCurrency(cents, curr);
+  const formatPrice = (cents: number, curr: string) =>
+    formatCurrency(cents, curr, { minimumFractionDigits: 0 });
 
   const title = data.title || 'Your Cart';
   const emptyMessage = data.emptyMessage || 'Your cart is empty';

@@ -392,10 +392,6 @@ export function FlowPilotOverviewTab() {
             <JumpLink to="/admin/flowpilot?tab=autonomy" icon={Clock} label="Autonomy" />
             <JumpLink to="/admin/automations" icon={Workflow} label="Automations & Workflows" />
             <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
-            <JumpLink to="/admin/developer?tab=mcp-activity" icon={Bot} label="Skills & MCP" />
-            <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
-            <JumpLink to="/admin/automations" icon={Workflow} label="Automations & Workflows" />
-            <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
           </CardContent>
         </Card>
       </div>

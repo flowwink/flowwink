@@ -456,6 +456,11 @@ export default function SiteSettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Platform locale defaults — presentation formatting (not accounting) */}
+            <PlatformLocaleCard />
+
+
+
 
             {/* Content Workflow */}
             <Card>

@@ -204,47 +204,75 @@ export default function CopilotPage() {
             </ScrollArea>
           )}
 
-          {tabParam === 'memory' && (
+          {tabParam === 'persona' && (
             <ScrollArea className="h-full">
               <div className="p-4 space-y-6 max-w-7xl mx-auto">
                 <Alert>
                   <Info className="h-4 w-4" />
-                  <AlertTitle className="text-sm">Memory & Persona</AlertTitle>
+                  <AlertTitle className="text-sm">Persona</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Agent DNA — the soul/identity FlowPilot embodies, its persistent memory,
-                    autonomy cadence, and self-improvement proposals.
+                    Who FlowPilot is — soul, identity and self-improvement proposals that
+                    reshape how it responds.
                   </AlertDescription>
                 </Alert>
 
-                {/* Persona / soul / identity */}
                 <section className="space-y-3">
                   <div>
-                    <h2 className="text-sm font-semibold">Persona & identity</h2>
+                    <h2 className="text-sm font-semibold">Soul & identity</h2>
                     <p className="text-xs text-muted-foreground">
-                      Soul, identity and agent rules that shape every FlowPilot response.
+                      Agent rules that shape every FlowPilot response.
                     </p>
                   </div>
                   <ConfigRawEditor />
                 </section>
 
-                {/* Agent memory */}
                 <section className="space-y-3">
                   <div>
-                    <h2 className="text-sm font-semibold">Memory</h2>
+                    <h2 className="text-sm font-semibold">Self-improvement</h2>
                     <p className="text-xs text-muted-foreground">
-                      Persistent context FlowPilot carries between sessions.
+                      Proposals FlowPilot has drafted to evolve its own persona and skills.
                     </p>
                   </div>
-                  <AgentMemoryBrowser />
+                  <DistilledProposalsPanel />
+                  <EvolutionPanel />
                 </section>
+              </div>
+            </ScrollArea>
+          )}
 
-                {/* Autonomy schedule */}
+          {tabParam === 'memory' && (
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-6 max-w-7xl mx-auto">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle className="text-sm">Memory</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    What FlowPilot knows — persistent context carried between sessions:
+                    facts, preferences, config and snapshots.
+                  </AlertDescription>
+                </Alert>
+                <AgentMemoryBrowser />
+              </div>
+            </ScrollArea>
+          )}
+
+          {tabParam === 'autonomy' && (
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-6 max-w-7xl mx-auto">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle className="text-sm">Autonomy</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    When FlowPilot works — heartbeat cadence and scheduled autonomous loops.
+                  </AlertDescription>
+                </Alert>
+
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-semibold">Autonomy schedule</h2>
+                      <h2 className="text-sm font-semibold">Schedule</h2>
                       <p className="text-xs text-muted-foreground">
-                        When FlowPilot runs its autonomous loops.
+                        When the autonomous loops run.
                       </p>
                     </div>
                     <Button onClick={handleSaveAutonomy} disabled={autonomySaving} size="sm">
@@ -255,18 +283,6 @@ export default function CopilotPage() {
                     </Button>
                   </div>
                   <AutonomyScheduleTab data={autonomyData} onChange={setAutonomyData} />
-                </section>
-
-                {/* Self-improvement / evolution */}
-                <section className="space-y-3">
-                  <div>
-                    <h2 className="text-sm font-semibold">Self-improvement</h2>
-                    <p className="text-xs text-muted-foreground">
-                      Proposals and adjustments FlowPilot has made to its own skills/memory.
-                    </p>
-                  </div>
-                  <DistilledProposalsPanel />
-                  <EvolutionPanel />
                 </section>
               </div>
             </ScrollArea>

@@ -93,7 +93,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
                 </Link>
                 <span className="truncate flex-1 text-muted-foreground text-xs">{q.title ?? ''}</span>
                 <span className="font-mono text-xs">
-                  {new Intl.NumberFormat('sv-SE', { style: 'currency', currency: q.currency || 'SEK' }).format(q.total_cents / 100)}
+                  {formatCurrency(q.total_cents, q.currency)}
                 </span>
                 <Badge variant="outline" className="text-[10px] h-5">{q.status}</Badge>
                 {q.valid_until && (

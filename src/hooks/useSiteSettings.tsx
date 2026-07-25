@@ -521,6 +521,37 @@ export function useUpdateGeneralSettings() {
   return useUpdateSiteSettings<GeneralSettings>('general', 'General settings have been updated.');
 }
 
+/**
+ * Platform locale defaults — presentation-level formatting for the whole app.
+ * NOT the accounting/functional currency (that stays on the accounting locale
+ * pack). Consumed by usePlatformFormat().
+ */
+export interface PlatformLocaleSettings {
+  /** BCP-47, e.g. sv-SE — controls grouping/decimal/date format. */
+  default_locale: string;
+  /** ISO 4217, e.g. SEK — the fallback display currency (symbol only). */
+  default_currency: string;
+  /** IANA, e.g. Europe/Stockholm — applied to timestamps, never to date-only. */
+  default_timezone: string;
+}
+
+const defaultPlatformLocaleSettings: PlatformLocaleSettings = {
+  default_locale: 'sv-SE',
+  default_currency: 'SEK',
+  default_timezone: 'Europe/Stockholm',
+};
+
+export function usePlatformLocaleSettings() {
+  return useSiteSettings<PlatformLocaleSettings>('platform_locale', defaultPlatformLocaleSettings);
+}
+
+export function useUpdatePlatformLocaleSettings() {
+  return useUpdateSiteSettings<PlatformLocaleSettings>(
+    'platform_locale',
+    'Platform locale defaults have been updated.',
+  );
+}
+
 // Blog settings
 export interface BlogSettings {
   enabled: boolean;

@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLeads, useLeadStats } from '@/hooks/useLeads';
 import { useDealStats } from '@/hooks/useDeals';
-import { formatPrice } from '@/hooks/useProducts';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { getLeadStatusInfo, type LeadStatus } from '@/lib/lead-utils';
 import { useExportLeads, useImportLeads } from '@/hooks/useCsvImportExport';
 import { CsvImportDialog } from '@/components/admin/CsvImportDialog';
@@ -93,6 +93,8 @@ export default function LeadsPage() {
     },
     onError: (e: Error) => toast.error(`Bulk delete failed: ${e.message}`),
   });
+
+  const { formatCurrency } = usePlatformFormat();
 
   const handleExport = () => {
     if (leads && leads.length > 0) {
@@ -189,7 +191,7 @@ export default function LeadsPage() {
               <div>
                 <p className="font-medium">Deal Pipeline</p>
                 <p className="text-2xl font-bold text-primary">
-                  {dealStatsLoading ? '...' : formatPrice(dealStats.totalPipeline)}
+                  {dealStatsLoading ? '...' : formatCurrency(dealStats.totalPipeline)}
                 </p>
               </div>
             </div>
@@ -198,7 +200,7 @@ export default function LeadsPage() {
                 <Target className="h-4 w-4 text-blue-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Proposal</p>
-                  <p className="font-medium">{formatPrice(dealStats.proposal.value)}</p>
+                  <p className="font-medium">{formatCurrency(dealStats.proposal.value)}</p>
                   <p className="text-xs text-muted-foreground">{dealStats.proposal.count} deals</p>
                 </div>
               </div>
@@ -206,7 +208,7 @@ export default function LeadsPage() {
                 <Sparkles className="h-4 w-4 text-yellow-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Negotiation</p>
-                  <p className="font-medium">{formatPrice(dealStats.negotiation.value)}</p>
+                  <p className="font-medium">{formatCurrency(dealStats.negotiation.value)}</p>
                   <p className="text-xs text-muted-foreground">{dealStats.negotiation.count} deals</p>
                 </div>
               </div>
@@ -214,7 +216,7 @@ export default function LeadsPage() {
                 <Trophy className="h-4 w-4 text-green-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Won</p>
-                  <p className="font-medium">{formatPrice(dealStats.closed_won.value)}</p>
+                  <p className="font-medium">{formatCurrency(dealStats.closed_won.value)}</p>
                   <p className="text-xs text-muted-foreground">{dealStats.closed_won.count} deals</p>
                 </div>
               </div>
@@ -222,7 +224,7 @@ export default function LeadsPage() {
                 <XCircle className="h-4 w-4 text-red-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Lost</p>
-                  <p className="font-medium">{formatPrice(dealStats.closed_lost.value)}</p>
+                  <p className="font-medium">{formatCurrency(dealStats.closed_lost.value)}</p>
                   <p className="text-xs text-muted-foreground">{dealStats.closed_lost.count} deals</p>
                 </div>
               </div>

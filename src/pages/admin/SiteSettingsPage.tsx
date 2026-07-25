@@ -35,8 +35,12 @@ import {
   AeoSettings,
   SystemAiSettings,
   SchemaOrgType,
+  usePlatformLocaleSettings,
+  useUpdatePlatformLocaleSettings,
+  PlatformLocaleSettings,
 } from '@/hooks/useSiteSettings';
 
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, Globe, Zap, ImageIcon, X, AlertTriangle, Code, Cookie, Info, Wrench, Home, Search, Lock, Clock, CheckCircle2, Circle, Bot, FileText, Building2, ExternalLink, Trash2, Sparkles, Server, Copy, Check } from 'lucide-react';
@@ -455,6 +459,11 @@ export default function SiteSettingsPage() {
                 />
               </CardContent>
             </Card>
+
+            {/* Platform locale defaults — presentation formatting (not accounting) */}
+            <PlatformLocaleCard />
+
+
 
 
             {/* Content Workflow */}
@@ -1613,5 +1622,79 @@ function CountrySelect({
         </Command>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * Platform locale defaults — how the app PRESENTS money, dates and numbers.
+ * Separate from the accounting locale pack's functional (book) currency.
+ */
+function PlatformLocaleCard() {
+  const { data: settings } = usePlatformLocaleSettings();
+  const update = useUpdatePlatformLocaleSettings();
+  const [draft, setDraft] = useState<PlatformLocaleSettings | null>(null);
+  const value = draft ?? settings ?? null;
+  const { formatCurrency, formatDate, formatDateTime } = usePlatformFormat();
+
+  if (!value) return null;
+
+  const set = (patch: Partial<PlatformLocaleSettings>) =>
+    setDraft({ ...value, ...patch });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif">Locale &amp; formatting defaults</CardTitle>
+        <CardDescription>
+          Controls how amounts, dates and numbers are displayed across the platform.
+          Locale sets the format, currency sets the symbol — amounts are never converted.
+          The accounting book (functional) currency is configured separately in Accounting.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="platform-locale">Locale (BCP-47)</Label>
+            <Input
+              id="platform-locale"
+              placeholder="sv-SE"
+              value={value.default_locale}
+              onChange={(e) => set({ default_locale: e.target.value.trim() })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="platform-currency">Default currency (ISO 4217)</Label>
+            <Input
+              id="platform-currency"
+              placeholder="SEK"
+              value={value.default_currency}
+              onChange={(e) => set({ default_currency: e.target.value.trim().toUpperCase() })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="platform-timezone">Time zone (IANA)</Label>
+            <Input
+              id="platform-timezone"
+              placeholder="Europe/Stockholm"
+              value={value.default_timezone}
+              onChange={(e) => set({ default_timezone: e.target.value.trim() })}
+            />
+          </div>
+        </div>
+        <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground space-y-1">
+          <p>Preview — amount: <span className="text-foreground">{formatCurrency(190000)}</span></p>
+          <p>Preview — foreign amount: <span className="text-foreground">{formatCurrency(1900, 'USD')}</span></p>
+          <p>Preview — date: <span className="text-foreground">{formatDate('2026-07-08')}</span></p>
+          <p>Preview — timestamp: <span className="text-foreground">{formatDateTime(new Date().toISOString())}</span></p>
+        </div>
+        <Button
+          onClick={() => update.mutate(value)}
+          disabled={!draft || update.isPending}
+        >
+          {update.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          Save locale defaults
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

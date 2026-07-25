@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowDownLeft, ArrowUpRight, Bot, FileText, User } from 'lucide-react';
@@ -70,6 +71,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
   const { data: comms = [], isLoading } = useLeadCommunications(leadId);
   const { data: quotes = [] } = useOpenQuotesByLead(leadId);
   const [selected, setSelected] = useState<Comm | null>(null);
+  const { formatCurrency } = usePlatformFormat();
 
   return (
     <Card>
@@ -93,7 +95,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
                 </Link>
                 <span className="truncate flex-1 text-muted-foreground text-xs">{q.title ?? ''}</span>
                 <span className="font-mono text-xs">
-                  {new Intl.NumberFormat('sv-SE', { style: 'currency', currency: q.currency || 'SEK' }).format(q.total_cents / 100)}
+                  {formatCurrency(q.total_cents, q.currency)}
                 </span>
                 <Badge variant="outline" className="text-[10px] h-5">{q.status}</Badge>
                 {q.valid_until && (

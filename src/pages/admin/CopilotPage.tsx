@@ -208,10 +208,32 @@ export default function CopilotPage() {
                   <Info className="h-4 w-4" />
                   <AlertTitle className="text-sm">Memory & Persona</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Agent DNA — schedule, learning loop, and self-improvement proposals.
-                    Models, soul and trust-levels will land here next.
+                    Agent DNA — the soul/identity FlowPilot embodies, its persistent memory,
+                    autonomy cadence, and self-improvement proposals.
                   </AlertDescription>
                 </Alert>
+
+                {/* Persona / soul / identity */}
+                <section className="space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold">Persona & identity</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Soul, identity and agent rules that shape every FlowPilot response.
+                    </p>
+                  </div>
+                  <ConfigRawEditor />
+                </section>
+
+                {/* Agent memory */}
+                <section className="space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold">Memory</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Persistent context FlowPilot carries between sessions.
+                    </p>
+                  </div>
+                  <AgentMemoryBrowser />
+                </section>
 
                 {/* Autonomy schedule */}
                 <section className="space-y-3">

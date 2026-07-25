@@ -4,8 +4,9 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Truck } from 'lucide-react';
+import { Truck, Package } from 'lucide-react';
 import { ShippingRatesPanel } from '@/components/admin/shipping/ShippingRatesPanel';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Carrier { id: string; code: string; name: string; tracking_url_template: string | null; is_active: boolean; }
 interface Shipment { id: string; order_id: string; carrier_code: string | null; tracking_number: string | null; status: string; shipped_at: string | null; }
@@ -72,7 +73,13 @@ export default function ShippingPage() {
           </CardHeader>
           <CardContent>
             {(shipments?.length ?? 0) === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No shipments yet.</p>
+              <EmptyState
+                icon={Package}
+                title="No shipments yet"
+                description="Once an order is fulfilled, its parcel and tracking will appear here."
+                card={false}
+                compact
+              />
             ) : (
               <Table>
                 <TableHeader><TableRow>

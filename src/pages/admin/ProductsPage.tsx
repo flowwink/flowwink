@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useIsStripeConfigured } from '@/hooks/useIntegrationStatus';
 import { IntegrationWarning } from '@/components/admin/IntegrationWarning';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
 
 export default function ProductsPage() {
@@ -122,23 +124,26 @@ export default function ProductsPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : products.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No products yet</h3>
-            <p className="text-muted-foreground mb-4">Create your first product or import from CSV</p>
-            <div className="flex gap-2">
+        <EmptyState
+          icon={Package}
+          title="No products yet"
+          description="Create your first product, import from CSV, or seed a demo catalog to explore the storefront."
+          action={
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Product
+            </Button>
+          }
+          secondaryAction={
+            <>
               <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Import CSV
               </Button>
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Product
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <LoadDemoDataButton moduleId="ecommerce" invalidateKeys={[['products']]} />
+            </>
+          }
+        />
       ) : (
         <div className="grid gap-4">
           {products.map((product) => (

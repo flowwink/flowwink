@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { callSkill } from '@/lib/call-skill';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
@@ -84,6 +85,25 @@ export default function CopilotPage() {
   useEffect(() => {
     if (autonomySettings) setAutonomyData(autonomySettings);
   }, [autonomySettings]);
+
+  // Mark all unread FlowPilot briefings as read when the cockpit is opened —
+  // this is what clears the header bell badge.
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { error } = await supabase
+        .from('flowpilot_briefings')
+        .update({ read_at: new Date().toISOString() })
+        .is('read_at', null);
+      if (!cancelled && !error) {
+        queryClient.invalidateQueries({ queryKey: ['flowpilot-briefings'] });
+        queryClient.invalidateQueries({ queryKey: ['flowpilot-briefing'] });
+        queryClient.invalidateQueries({ queryKey: ['proactive-unread-count'] });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [queryClient]);
 
   const handleSaveAutonomy = async () => {
     setAutonomySaving(true);

@@ -74,9 +74,16 @@ describe('prepare_vat_return internal handler', () => {
   it('empty ledger → all boxes zero, box 49 integrity holds, SKV 4700 shape', async () => {
     const res: any = await executeVatReturnSe(stubDb({ data: [] }), { year: 2026, month: 6 });
     expect(res.form).toBe('SKV 4700');
-    expect(res.boxes).toHaveLength(15);
     expect(res.net_to_pay_cents).toBe(0);
     expect(res.verification.matches_box_49).toBe(true);
+    // Assert the boxes that carry meaning rather than a bare count — a count
+    // alone breaks on every legitimate addition and says nothing about which
+    // box went missing. 21 vs 22 is the EU / non-EU service split; 50 is import.
+    const codes = res.boxes.map((b: { code: string }) => b.code);
+    for (const code of ['05', '20', '21', '22', '50', '10', '11', '12', '30', '31', '32', '48', '49']) {
+      expect(codes, `SKV 4700 box ${code} is missing`).toContain(code);
+    }
+    expect(res.boxes.every((b: { amount_cents: number }) => b.amount_cents === 0)).toBe(true);
   });
 });
 

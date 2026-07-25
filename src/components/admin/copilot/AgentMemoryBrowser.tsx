@@ -20,7 +20,7 @@ import { Brain, Plus, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
-type Category = 'context' | 'preference' | 'fact' | 'skill' | 'other';
+type Category = 'context' | 'preference' | 'fact' | 'config' | 'snapshot';
 
 interface MemoryRow {
   id: string;

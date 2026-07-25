@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Sparkles, Target, ShieldAlert, ListChecks, RefreshCw, Bot, Cpu, Workflow, Timer, User2,
+  Sparkles, Target, ShieldAlert, ListChecks, RefreshCw, Bot, Cpu, Workflow, Timer, User2, Clock, GitBranch,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -386,6 +386,10 @@ export function FlowPilotOverviewTab() {
           </CardHeader>
           <CardContent className="space-y-1">
             <JumpLink to="/admin/flowpilot?tab=objectives" icon={Target} label="Objectives" />
+            <JumpLink to="/admin/flowpilot?tab=trace" icon={GitBranch} label="Trace" />
+            <JumpLink to="/admin/flowpilot?tab=persona" icon={Sparkles} label="Persona" />
+            <JumpLink to="/admin/flowpilot?tab=memory" icon={Cpu} label="Memory" />
+            <JumpLink to="/admin/flowpilot?tab=autonomy" icon={Clock} label="Autonomy" />
             <JumpLink to="/admin/automations" icon={Workflow} label="Automations & Workflows" />
             <JumpLink to="/admin/developer?tab=mcp-skills" icon={Cpu} label="Skills & MCP" />
           </CardContent>

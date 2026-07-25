@@ -216,7 +216,7 @@ function MemoryEditorDialog({
       } else {
         const { error } = await supabase
           .from('agent_memory')
-          .insert({ key, category, value: parsedValue as never });
+          .insert([{ key, category, value: parsedValue as never }]);
         if (error) throw error;
         toast.success('Memory entry created');
       }

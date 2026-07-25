@@ -25,6 +25,7 @@ import { ProductVariantsPanel } from '@/components/admin/products/ProductVariant
 import { SalesUomSelect } from '@/components/admin/products/SalesUomSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect as useEffectAlias, useState as useStateAlias } from 'react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ProductDialogProps {
   open: boolean;
@@ -52,7 +53,9 @@ interface FormData {
 export function ProductDialog({ open, onOpenChange, product }: ProductDialogProps) {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
-  
+  const { settings } = usePlatformFormat();
+  const defaultCurrency = settings.default_currency;
+
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       name: '',
@@ -60,7 +63,7 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
       type: 'one_time',
       price_cents: 0,
       cost_cents: 0,
-      currency: 'USD',
+      currency: defaultCurrency,
       image_url: '',
       track_inventory: false,
       stock_quantity: '',
@@ -103,7 +106,7 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
         type: 'one_time',
         price_cents: 0,
         cost_cents: 0,
-        currency: 'USD',
+        currency: defaultCurrency,
         image_url: '',
         track_inventory: false,
         stock_quantity: '',
@@ -114,7 +117,7 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
         weight_grams: '',
       });
     }
-  }, [product, reset]);
+  }, [product, reset, defaultCurrency]);
 
   const onSubmit = async (data: FormData) => {
     const productData = {

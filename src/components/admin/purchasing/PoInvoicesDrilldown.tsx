@@ -19,6 +19,7 @@ import {
   type VendorInvoice,
   type InvoiceHistoryEvent,
 } from '@/hooks/useVendorInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   purchaseOrderId: string;
@@ -44,6 +45,7 @@ const EVENT_ICON: Record<string, React.ReactNode> = {
 };
 
 export function PoInvoicesDrilldown({ purchaseOrderId, currency = 'SEK' }: Props) {
+  const { formatCurrency } = usePlatformFormat();
   useVendorInvoicesRealtime();
   const { data: invoices = [], isLoading } = useVendorInvoicesForPo(purchaseOrderId);
   const invoiceIds = useMemo(() => invoices.map(i => i.id), [invoices]);
@@ -100,8 +102,7 @@ export function PoInvoicesDrilldown({ purchaseOrderId, currency = 'SEK' }: Props
     });
   };
 
-  const fmt = (cents: number, cur: string) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: cur }).format(cents / 100);
+  const fmt = (cents: number, cur: string) => formatCurrency(cents, cur);
 
   return (
     <TooltipProvider>

@@ -10,14 +10,7 @@ import {
 } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-
-function formatPrice(cents: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-  }).format(cents / 100);
-}
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export function CartSidebar() {
   const {
@@ -30,6 +23,7 @@ export function CartSidebar() {
     isOpen,
     closeCart,
   } = useCart();
+  const { formatCurrency } = usePlatformFormat();
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
@@ -94,7 +88,7 @@ export function CartSidebar() {
                       </p>
                     )}
                     <p className="text-sm text-muted-foreground">
-                      {formatPrice(item.priceCents, item.currency)}
+                      {formatCurrency(item.priceCents, item.currency)}
                     </p>
 
                     {/* Quantity controls */}
@@ -124,7 +118,7 @@ export function CartSidebar() {
                   {/* Line total + remove */}
                   <div className="flex flex-col items-end justify-between">
                     <span className="font-semibold text-sm">
-                      {formatPrice(item.priceCents * item.quantity, item.currency)}
+                      {formatCurrency(item.priceCents * item.quantity, item.currency)}
                     </span>
                     <Button
                       variant="ghost"
@@ -146,7 +140,7 @@ export function CartSidebar() {
               <div className="flex items-center justify-between">
                 <span className="font-medium">Total</span>
                 <span className="text-xl font-bold">
-                  {formatPrice(totalPriceCents, currency)}
+                  {formatCurrency(totalPriceCents, currency)}
                 </span>
               </div>
 

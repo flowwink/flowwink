@@ -20,6 +20,7 @@ import {
   useContractInvoiceReminders,
   useTriggerContractBillingCron,
 } from '@/hooks/useContractsParity';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ContractLike {
   id: string;
@@ -36,15 +37,9 @@ interface ContractLike {
   billing_reminders_enabled?: boolean;
 }
 
-function formatMoney(cents: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(2)} ${currency}`;
-  }
-}
-
 export function ContractBillingPanel({ contract }: { contract: ContractLike }) {
+  const { formatCurrency } = usePlatformFormat();
+  const formatMoney = (cents: number, currency: string) => formatCurrency(cents, currency);
   const update = useUpdateContractBilling();
   const genNow = useGenerateContractInvoiceNow();
   const sweep = useTriggerContractBillingCron();

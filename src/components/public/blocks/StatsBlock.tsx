@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { StatsBlockData, StatsAnimationStyle } from '@/types/cms';
 import { icons, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface StatsBlockProps {
   data: StatsBlockData;
@@ -21,21 +22,27 @@ function parseStatValue(value: string | number | undefined): { prefix: string; n
   return { prefix, number, suffix };
 }
 
-// Format number back to string with proper formatting
-function formatNumber(num: number, originalValue: string): string {
+// Format number back to string with proper formatting.
+// `formatNumber` is the platform formatter, passed in from the component that
+// owns the usePlatformFormat() hook call.
+function formatStatNumber(
+  num: number,
+  originalValue: string,
+  formatNumber: (n: number, options?: Intl.NumberFormatOptions) => string,
+): string {
   // Preserve original formatting (commas, decimals, etc.)
   const hasDecimal = originalValue.includes('.');
   const decimalPlaces = hasDecimal ? (originalValue.split('.')[1]?.match(/\d+/)?.[0]?.length || 0) : 0;
-  
+
   if (decimalPlaces > 0) {
     return num.toFixed(decimalPlaces);
   }
-  
-  // Add commas for thousands
+
+  // Add thousands grouping
   if (originalValue.includes(',') || num >= 1000) {
-    return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    return formatNumber(num, { maximumFractionDigits: 0 });
   }
-  
+
   return Math.round(num).toString();
 }
 
@@ -49,11 +56,12 @@ function CountUpStat({
   isVisible: boolean;
   duration: number;
 }) {
+  const { formatNumber } = usePlatformFormat();
   const [displayValue, setDisplayValue] = useState(value);
   const animationRef = useRef<number>();
   const startTimeRef = useRef<number>();
   const hasAnimatedRef = useRef(false);
-  
+
   useEffect(() => {
     const parsed = parseStatValue(value);
     
@@ -83,7 +91,7 @@ function CountUpStat({
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const currentValue = startValue + (endValue - startValue) * easeOut;
       
-      setDisplayValue(`${prefix}${formatNumber(currentValue, value)}${suffix}`);
+      setDisplayValue(`${prefix}${formatStatNumber(currentValue, value, formatNumber)}${suffix}`);
       
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
@@ -101,8 +109,8 @@ function CountUpStat({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isVisible, value, duration]);
-  
+  }, [isVisible, value, duration, formatNumber]);
+
   return <>{displayValue}</>;
 }
 

@@ -29,12 +29,7 @@ import {
   useBudgetVsActual,
   type Budget,
 } from '@/hooks/useBudgets';
-
-const fmtSEK = (cents: number | null | undefined) =>
-  cents == null
-    ? '—'
-    : new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 2 })
-        .format(cents / 100);
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -69,6 +64,9 @@ export function BudgetsTab() {
   const { data: budgets = [], isLoading } = useBudgets();
   const upsert = useUpsertBudget();
   const del = useDeleteBudget();
+  const { formatCurrency } = usePlatformFormat();
+  const fmtAmount = (cents: number | null | undefined, currency?: string | null) =>
+    cents == null ? '—' : formatCurrency(cents, currency);
 
   const { year: ctxYear } = useFiscalYear();
   const [open, setOpen] = useState(false);
@@ -204,7 +202,7 @@ export function BudgetsTab() {
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm">
-                          {fmtSEK(b.amount_cents)}
+                          {fmtAmount(b.amount_cents, b.currency)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{b.currency}</TableCell>
                         <TableCell>
@@ -314,13 +312,13 @@ export function BudgetsTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {fmtSEK(r.budget_cents)}
+                      {fmtAmount(r.budget_cents)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {fmtSEK(r.actual_cents)}
+                      {fmtAmount(r.actual_cents)}
                     </TableCell>
                     <TableCell className={`text-right font-mono text-sm tabular-nums ${varianceClass(r.variance_cents)}`}>
-                      {fmtSEK(r.variance_cents)}
+                      {fmtAmount(r.variance_cents)}
                     </TableCell>
                     <TableCell>
                       {r.variance_cents > 0 ? (

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashCard, Subline, QuietEmpty, fmtSek } from './_shared';
+import { DashCard, Subline, QuietEmpty, useFmtSek } from './_shared';
 
 const AGENT_SOURCES = ['mcp', 'agent', 'flowpilot'];
 
@@ -11,6 +11,7 @@ interface Result {
 }
 
 export function AgentActivityCard() {
+  const fmtSek = useFmtSek();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dash', 'agent-activity'],
     queryFn: async (): Promise<Result> => {

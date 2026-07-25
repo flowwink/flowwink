@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { PublicNavigation } from '@/components/public/PublicNavigation';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import { Button } from '@/components/ui/button';
@@ -68,21 +69,15 @@ const STAGE_INDEX: Record<Fulfillment, number> = {
   delivered: 4,
 };
 
-function formatPrice(cents: number, currency: string) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleString('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
-}
-
 export default function OrderTrackingPage() {
   const { id: paramId } = useParams();
   const [searchParams] = useSearchParams();
+  const { formatCurrency, formatDateTime } = usePlatformFormat();
+
+  // Keep the null-return contract: the timeline distinguishes "no timestamp yet"
+  // (renders the pulsing clock / "In progress…") from a formatted timestamp.
+  const formatPrice = (cents: number, currency: string) => formatCurrency(cents, currency);
+  const formatDate = (iso: string | null) => (iso ? formatDateTime(iso) : null);
 
   const [orderId, setOrderId] = useState(paramId ?? searchParams.get('order_id') ?? '');
   const [email, setEmail] = useState(searchParams.get('email') ?? '');

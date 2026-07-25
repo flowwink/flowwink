@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCreateInvoice, type InvoiceLineItem } from '@/hooks/useInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { toast } from 'sonner';
 
 interface Props {
@@ -22,6 +23,7 @@ export function InvoiceFromTimesheetsDialog({ open, onOpenChange }: Props) {
   const [dueDays, setDueDays] = useState(30);
   const createInvoice = useCreateInvoice();
   const queryClient = useQueryClient();
+  const { formatCurrency } = usePlatformFormat();
 
   // Fetch projects
   const { data: projects = [] } = useQuery({
@@ -203,10 +205,10 @@ export function InvoiceFromTimesheetsDialog({ open, onOpenChange }: Props) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      Rate: {new Intl.NumberFormat('sv-SE', { style: 'currency', currency: selectedProject?.currency || 'SEK' }).format(rateCents / 100)}/h
+                      Rate: {formatCurrency(rateCents, selectedProject?.currency)}/h
                     </span>
                     <span className="font-mono font-medium">
-                      {new Intl.NumberFormat('sv-SE', { style: 'currency', currency: selectedProject?.currency || 'SEK' }).format(totalCents / 100)}
+                      {formatCurrency(totalCents, selectedProject?.currency)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">+ 25% VAT</p>

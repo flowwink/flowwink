@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Subscription } from '@/hooks/useSubscriptions';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   open: boolean;
@@ -16,16 +17,9 @@ interface Props {
   sub: Subscription;
 }
 
-function fmtMoney(cents: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
-  }
-}
-
 export function ChangePlanDialog({ open, onOpenChange, sub }: Props) {
   const qc = useQueryClient();
+  const { formatCurrency } = usePlatformFormat();
   const [qty, setQty] = useState(String(sub.quantity));
   const [unit, setUnit] = useState((sub.unit_amount_cents / 100).toFixed(2));
   const [saving, setSaving] = useState(false);
@@ -69,7 +63,7 @@ export function ChangePlanDialog({ open, onOpenChange, sub }: Props) {
       const d = (data as { prorated_cents?: number; adjustment_invoice_id?: string; credit_cents?: number } | null) ?? {};
       if (d.adjustment_invoice_id) {
         toast.success(`Plan changed — adjustment invoice created`, {
-          description: `Prorated ${fmtMoney(d.prorated_cents ?? 0, sub.currency)}`,
+          description: `Prorated ${formatCurrency(d.prorated_cents ?? 0, sub.currency)}`,
           action: {
             label: 'Open invoice',
             onClick: () => window.open(`/admin/invoices/${d.adjustment_invoice_id}`, '_blank'),
@@ -77,7 +71,7 @@ export function ChangePlanDialog({ open, onOpenChange, sub }: Props) {
         });
       } else if (d.credit_cents) {
         toast.success(`Credit recorded — apply next cycle`, {
-          description: `Credit ${fmtMoney(d.credit_cents, sub.currency)}`,
+          description: `Credit ${formatCurrency(d.credit_cents, sub.currency)}`,
         });
       } else {
         toast.success('Plan changed');
@@ -113,7 +107,7 @@ export function ChangePlanDialog({ open, onOpenChange, sub }: Props) {
               <Label>New unit price</Label>
               <Input type="number" step="0.01" min="0" value={unit} onChange={(e) => setUnit(e.target.value)} />
               <p className="text-xs text-muted-foreground">
-                Currently {fmtMoney(sub.unit_amount_cents, sub.currency)}
+                Currently {formatCurrency(sub.unit_amount_cents, sub.currency)}
               </p>
             </div>
           </div>
@@ -122,16 +116,16 @@ export function ChangePlanDialog({ open, onOpenChange, sub }: Props) {
             <CardContent className="pt-4 space-y-1.5 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Old period total</span>
-                <span className="font-mono">{fmtMoney(sub.quantity * sub.unit_amount_cents, sub.currency)}</span>
+                <span className="font-mono">{formatCurrency(sub.quantity * sub.unit_amount_cents, sub.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">New period total</span>
-                <span className="font-mono">{fmtMoney(preview.newQty * preview.newUnit, sub.currency)}</span>
+                <span className="font-mono">{formatCurrency(preview.newQty * preview.newUnit, sub.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Delta / period</span>
                 <span className={`font-mono ${preview.delta > 0 ? 'text-amber-600' : preview.delta < 0 ? 'text-emerald-600' : ''}`}>
-                  {preview.delta >= 0 ? '+' : ''}{fmtMoney(preview.delta, sub.currency)}
+                  {preview.delta >= 0 ? '+' : ''}{formatCurrency(preview.delta, sub.currency)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -139,7 +133,7 @@ export function ChangePlanDialog({ open, onOpenChange, sub }: Props) {
                   Remaining {preview.daysRemaining}/{preview.periodDays}d ({Math.round(preview.fraction * 100)}%)
                 </span>
                 <span className="font-mono font-semibold">
-                  ≈ {preview.prorated >= 0 ? '+' : ''}{fmtMoney(preview.prorated, sub.currency)}
+                  ≈ {preview.prorated >= 0 ? '+' : ''}{formatCurrency(preview.prorated, sub.currency)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground pt-2 border-t">

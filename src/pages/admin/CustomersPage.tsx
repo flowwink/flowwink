@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Users, ShoppingCart, Coins, UserCheck, UserSearch } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface AggregatedCustomer {
   email: string;
@@ -32,6 +33,7 @@ interface AggregatedCustomer {
 
 export default function CustomersPage() {
   const navigate = useNavigate();
+  const { formatCurrency } = usePlatformFormat();
   // Aggregate customers from orders + augment with profile data when available
   const { data: customers, isLoading } = useQuery({
     queryKey: ['admin-customers-aggregated'],
@@ -85,13 +87,6 @@ export default function CustomersPage() {
         withAccount: customers.filter(c => c.has_account).length,
       }
     : null;
-
-  const formatCurrency = (cents: number, currency: string) =>
-    new Intl.NumberFormat('sv-SE', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(cents / 100);
 
   return (
     <AdminLayout>

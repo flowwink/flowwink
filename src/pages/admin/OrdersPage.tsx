@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Package, Eye, RefreshCw, ShoppingBag, TrendingUp, Clock, CheckCircle, Mail, Loader2, UserSearch, X, FileText, ExternalLink } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNavigate } from 'react-router-dom';
@@ -99,6 +99,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const { formatCurrency, formatDateTime } = usePlatformFormat();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -270,13 +271,6 @@ export default function OrdersPage() {
     onError: (e: Error) => toast.error(`Could not create invoice: ${e.message}`),
   });
 
-  const formatPrice = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(cents / 100);
-  };
-
   // Stats
   const stats = {
     total: orders?.length || 0,
@@ -331,7 +325,7 @@ export default function OrdersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatPrice(stats.totalRevenue, 'USD')}
+              {formatCurrency(stats.totalRevenue)}
             </div>
           </CardContent>
         </Card>
@@ -471,10 +465,10 @@ export default function OrdersPage() {
                        </Badge>
                      </TableCell>
                      <TableCell className="font-medium">
-                       {formatPrice(order.total_cents, order.currency)}
+                       {formatCurrency(order.total_cents, order.currency)}
                      </TableCell>
                      <TableCell className="text-muted-foreground">
-                       {format(new Date(order.created_at), 'PPp')}
+                       {formatDateTime(order.created_at)}
                      </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -559,7 +553,7 @@ export default function OrdersPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Date</p>
-                  <p>{format(new Date(selectedOrder.created_at), 'PPp')}</p>
+                  <p>{formatDateTime(selectedOrder.created_at)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Customer</p>
@@ -621,7 +615,7 @@ export default function OrdersPage() {
                             <p className="font-medium">{so.shipping_method}</p>
                             {so.shipping_cost_cents != null && (
                               <p className="text-muted-foreground">
-                                {formatPrice(so.shipping_cost_cents, selectedOrder.currency)}
+                                {formatCurrency(so.shipping_cost_cents, selectedOrder.currency)}
                               </p>
                             )}
                           </div>
@@ -689,11 +683,11 @@ export default function OrdersPage() {
                       <div>
                         <p className="font-medium">{item.product_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantity} st × {formatPrice(item.price_cents, selectedOrder.currency)}
+                          {item.quantity} st × {formatCurrency(item.price_cents, selectedOrder.currency)}
                         </p>
                       </div>
                       <p className="font-medium">
-                        {formatPrice(item.price_cents * item.quantity, selectedOrder.currency)}
+                        {formatCurrency(item.price_cents * item.quantity, selectedOrder.currency)}
                       </p>
                     </div>
                   ))}
@@ -721,7 +715,7 @@ export default function OrdersPage() {
               {/* Total */}
               <div className="flex justify-between items-center text-lg font-bold">
                 <span>Total</span>
-                <span>{formatPrice(selectedOrder.total_cents, selectedOrder.currency)}</span>
+                <span>{formatCurrency(selectedOrder.total_cents, selectedOrder.currency)}</span>
               </div>
 
               {/* Actions */}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreatePartialMatch } from '@/hooks/useReconciliationParity';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import type { BankTransaction } from '@/hooks/useReconciliation';
 
 interface Props {
@@ -27,14 +28,14 @@ export function PartialMatchDialog({ open, onOpenChange, transaction, bankGlAcco
   const [notes, setNotes] = useState('');
 
   const mut = useCreatePartialMatch();
+  const { formatCurrency } = usePlatformFormat();
 
   if (!transaction) return null;
 
   const bankAbs = Math.abs(transaction.amount_cents);
   const expectedCents = Math.round(parseFloat(expectedAmount || '0') * 100);
   const varianceCents = expectedCents - bankAbs; // positive = we received less than owed
-  const fmt = (c: number) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: transaction.currency }).format(c / 100);
+  const fmt = (c: number) => formatCurrency(c, transaction.currency);
 
   const submit = async () => {
     if (!expectedCents) return;

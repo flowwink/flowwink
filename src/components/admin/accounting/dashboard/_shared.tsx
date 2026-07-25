@@ -1,15 +1,15 @@
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
-const sekFmt = new Intl.NumberFormat('sv-SE', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-
-export function fmtSek(cents: number): string {
-  const v = (cents ?? 0) / 100;
-  const s = sekFmt.format(Math.abs(Math.round(v)));
-  return `${v < 0 ? '−' : ''}${s} kr`;
+/**
+ * Money formatter for the accounting dashboard cards.
+ * A hook (not a plain function) because formatting now goes through the
+ * platform locale/currency settings — call it from a component body.
+ */
+export function useFmtSek(): (cents: number) => string {
+  const { formatCurrency } = usePlatformFormat();
+  return (cents: number) => formatCurrency(cents ?? 0);
 }
 
 export function DashCard({

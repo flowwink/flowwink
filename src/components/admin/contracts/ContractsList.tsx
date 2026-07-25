@@ -12,6 +12,7 @@ import { ContractDetailDialog } from './ContractDetailDialog';
 import { format } from 'date-fns';
 import { FileText as FileTextIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -36,6 +37,7 @@ interface Props {
 export function ContractsList({ statusFilter }: Props) {
   const { data: contracts, isLoading } = useContracts(statusFilter);
   const deleteContract = useDeleteContract();
+  const { formatCurrency } = usePlatformFormat();
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editContract, setEditContract] = useState<Contract | undefined>();
@@ -47,7 +49,7 @@ export function ContractsList({ statusFilter }: Props) {
 
   const formatValue = (cents: number, currency: string) => {
     if (!cents) return null;
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
+    return formatCurrency(cents, currency);
   };
 
   const handleDrop = async (e: React.DragEvent, contract: Contract) => {

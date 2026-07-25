@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,14 +52,8 @@ const statusConfig: Record<OrderStatus, { icon: React.ReactNode; label: string; 
   },
 };
 
-const formatPrice = (cents: number, currency: string) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-  }).format(cents / 100);
-};
-
 export default function CheckoutSuccessPage() {
+  const { formatCurrency, formatDateTime } = usePlatformFormat();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -177,7 +172,7 @@ export default function CheckoutSuccessPage() {
                       {item.product_name} × {item.quantity}
                     </span>
                     <span className="font-medium">
-                      {formatPrice(item.price_cents * item.quantity, order?.currency || 'SEK')}
+                      {formatCurrency(item.price_cents * item.quantity, order?.currency)}
                     </span>
                   </div>
                 ))}
@@ -186,7 +181,7 @@ export default function CheckoutSuccessPage() {
               <div className="flex justify-between items-center font-semibold">
                 <span>Total</span>
                 <span className="text-lg">
-                  {order && formatPrice(order.total_cents, order.currency)}
+                  {order && formatCurrency(order.total_cents, order.currency)}
                 </span>
               </div>
             </>
@@ -196,7 +191,7 @@ export default function CheckoutSuccessPage() {
             <div className="text-xs text-muted-foreground space-y-1 pt-2">
               <p>Email: {order.customer_email}</p>
               {order.customer_name && <p>Name: {order.customer_name}</p>}
-              <p>Order date: {new Date(order.created_at).toLocaleString('en-US')}</p>
+              <p>Order date: {formatDateTime(order.created_at)}</p>
             </div>
           )}
 

@@ -20,6 +20,7 @@ import { useDealTeams, useLatestExchangeRates, useBaseCurrency, convertAmount } 
 import { ArrowLeft, Calendar, DollarSign, User, Package, Building, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function DealDetailPage() {
   const { data: teams = [] } = useDealTeams();
   const { data: rates = [] } = useLatestExchangeRates();
   const { data: baseCurrency = 'SEK' } = useBaseCurrency();
+  const { formatCurrency } = usePlatformFormat();
   const [showLostDialog, setShowLostDialog] = useState(false);
 
   if (isLoading) {
@@ -59,20 +61,13 @@ export default function DealDetailPage() {
   }
 
   const stageInfo = getDealStageInfo(deal.stage);
-  const formattedValue = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: deal.currency,
-    minimumFractionDigits: 0,
-  }).format(deal.value_cents / 100);
+  const formattedValue = formatCurrency(deal.value_cents, deal.currency);
   const convertedCents =
     deal.currency && deal.currency.toUpperCase() !== baseCurrency.toUpperCase()
       ? convertAmount(deal.value_cents, deal.currency, baseCurrency, rates)
       : null;
   const convertedLabel =
-    convertedCents != null
-      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: baseCurrency, minimumFractionDigits: 0 })
-          .format(convertedCents / 100)
-      : null;
+    convertedCents != null ? formatCurrency(convertedCents, baseCurrency) : null;
   const dealTeamId = (deal as any).team_id as string | null | undefined;
 
   const handleStageChange = (newStage: DealStage) => {

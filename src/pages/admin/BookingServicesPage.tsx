@@ -20,8 +20,10 @@ import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export default function BookingServicesPage() {
+  const { formatCurrency, settings } = usePlatformFormat();
   const { data: services, isLoading } = useBookingServices();
   const createService = useCreateService();
   const updateService = useUpdateService();
@@ -46,7 +48,7 @@ export default function BookingServicesPage() {
       description: '',
       duration_minutes: 60,
       price_cents: 0,
-      currency: 'USD',
+      currency: settings.default_currency,
       color: '#3b82f6',
       is_active: true,
     });
@@ -88,13 +90,7 @@ export default function BookingServicesPage() {
     }
   };
 
-  const formatPrice = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(cents / 100);
-  };
+  const formatPrice = (cents: number, currency: string) => formatCurrency(cents, currency);
 
   return (
     <AdminLayout>

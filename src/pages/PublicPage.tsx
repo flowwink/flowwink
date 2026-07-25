@@ -15,6 +15,7 @@ import { ComingSoonPage } from '@/components/public/ComingSoonPage';
 import { SetupRequiredPage } from '@/components/public/SetupRequiredPage';
 import { cn } from '@/lib/utils';
 import { useSeoSettings, useMaintenanceSettings, useGeneralSettings } from '@/hooks/useSiteSettings';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import type { Page, ContentBlock, SectionBackground } from '@/types/cms';
@@ -43,6 +44,7 @@ export default function PublicPage() {
   const { data: generalSettings } = useGeneralSettings();
   const { data: seoSettings } = useSeoSettings();
   const { data: maintenanceSettings } = useMaintenanceSettings();
+  const { formatDateTime } = usePlatformFormat();
   const [user, setUser] = useState<unknown>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [renderError, setRenderError] = useState<Error | null>(null);
@@ -331,7 +333,7 @@ export default function PublicPage() {
           </p>
           {maintenanceSettings.expectedEndTime && (
             <p className="text-sm text-muted-foreground mb-8">
-              Expected end time: {new Date(maintenanceSettings.expectedEndTime).toLocaleString('en-US')}
+              Expected end time: {formatDateTime(maintenanceSettings.expectedEndTime)}
             </p>
           )}
           <Button variant="outline" onClick={() => navigate('/auth')} size="sm">

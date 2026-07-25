@@ -18,20 +18,20 @@ import {
 } from '@/hooks/useDealsParity';
 import { useLeads } from '@/hooks/useLeads';
 import { useProducts } from '@/hooks/useProducts';
-
-/** Format money, tolerating a missing/invalid currency code (free-text input can
- *  hold '' or garbage). Intl.NumberFormat throws RangeError on a bad ISO code —
- *  fall back to SEK so the templates table never crashes. */
-function fmtMoney(amount: number, currency?: string | null): string {
-  const cur = /^[A-Za-z]{3}$/.test(currency ?? '') ? (currency as string).toUpperCase() : 'SEK';
-  try {
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: cur }).format(amount);
-  } catch {
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(amount);
-  }
-}
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export function DealTemplatesPanel() {
+  const { formatCurrency } = usePlatformFormat();
+
+  /** Format money (minor units), tolerating a missing/invalid currency code
+   *  (free-text input can hold '' or garbage) — fall back to the platform
+   *  default currency so the templates table never renders a bad code. */
+  const fmtMoney = (cents: number, currency?: string | null): string =>
+    formatCurrency(
+      cents,
+      /^[A-Za-z]{3}$/.test(currency ?? '') ? (currency as string).toUpperCase() : undefined,
+    );
+
   const { data: templates = [] } = useDealTemplates();
   const { data: teams = [] } = useDealTeams();
   const { data: products = [] } = useProducts();
@@ -77,7 +77,7 @@ export function DealTemplatesPanel() {
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell className="text-sm">{t.default_stage || '—'}</TableCell>
                     <TableCell className="font-mono text-sm">
-                      {fmtMoney(t.default_value_cents / 100, t.default_currency)}
+                      {fmtMoney(t.default_value_cents, t.default_currency)}
                     </TableCell>
                     <TableCell className="text-sm">{product?.name || '—'}</TableCell>
                     <TableCell>

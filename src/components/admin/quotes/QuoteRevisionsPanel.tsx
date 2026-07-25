@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { History, GitCommit } from 'lucide-react';
 import { useQuoteRevisions, useAmendQuote } from '@/hooks/useQuoteRevisions';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   quoteId: string;
@@ -29,8 +30,8 @@ export function QuoteRevisionsPanel({ quoteId, currency, currentSnapshot, curren
   const [reason, setReason] = useState('');
   const [resetAccept, setResetAccept] = useState(true);
 
-  const fmt = (cents: number | null | undefined) =>
-    cents == null ? '—' : new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
+  const { formatCurrency } = usePlatformFormat();
+  const fmt = (cents: number | null | undefined) => formatCurrency(cents, currency);
 
   const submit = async () => {
     if (!reason.trim()) return;

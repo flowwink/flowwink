@@ -7,10 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Printer, ArrowLeft, Receipt } from 'lucide-react';
 import { useMyPayslips, usePayslip } from '@/hooks/usePayslip';
-import { PayslipView, printPayslip, fmtSEK } from '@/components/payroll/PayslipView';
+import { PayslipView, printPayslip } from '@/components/payroll/PayslipView';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export default function MyPayslipsPage() {
   const { data: list, isLoading, error } = useMyPayslips();
+  const { formatCurrency } = usePlatformFormat();
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   const { data: payslip, isLoading: loadingOne, error: oneErr } = usePayslip(
@@ -124,8 +126,8 @@ export default function MyPayslipsPage() {
                         {p.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{fmtSEK(p.gross_cents)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmtSEK(p.net_cents)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(p.gross_cents)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(p.net_cents)}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="outline" onClick={() => setSelectedRunId(p.run_id)}>
                         View

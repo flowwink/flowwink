@@ -5,14 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useGrowthDashboard } from '@/hooks/useGrowthDashboard';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { DollarSign, Eye, MousePointerClick, TrendingUp, Target, BarChart3 } from 'lucide-react';
-
-function formatCurrency(cents: number, currency: string) {
-  return new Intl.NumberFormat('sv-SE', { style: 'currency', currency, minimumFractionDigits: 0 }).format(cents / 100);
-}
-
-function formatNumber(n: number) {
-  return new Intl.NumberFormat('sv-SE').format(n);
-}
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const platformColors: Record<string, string> = {
   meta: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
@@ -28,6 +21,7 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destr
 };
 
 export default function GrowthDashboardPage() {
+  const { formatCurrency, formatNumber } = usePlatformFormat();
   const fpEnabled = useIsModuleEnabled('flowpilot');
   const { data, isLoading } = useGrowthDashboard();
   const m = data?.metrics;

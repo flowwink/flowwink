@@ -15,6 +15,7 @@ import { GoodsReceiptDialog } from './GoodsReceiptDialog';
 import { PoInvoicesDrilldown } from './PoInvoicesDrilldown';
 import { LandedCostPanel } from './LandedCostDialog';
 import { PoRevisionsPanel } from './PoRevisionsPanel';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface POLine {
   id?: string;
@@ -48,6 +49,7 @@ export function PurchaseOrderEditor({ poId, onClose }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { formatCurrency } = usePlatformFormat();
 
   const [vendorId, setVendorId] = useState('');
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
@@ -120,9 +122,6 @@ export function PurchaseOrderEditor({ poId, onClose }: Props) {
   const subtotal = lines.reduce((s, l) => s + l.quantity * l.unit_price_cents, 0);
   const tax = lines.reduce((s, l) => s + Math.round(l.quantity * l.unit_price_cents * l.tax_rate / 100), 0);
   const total = subtotal + tax;
-
-  const formatCurrency = (cents: number) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
 
   const saveMutation = useMutation({
     mutationFn: async (newStatus?: string) => {
@@ -283,7 +282,7 @@ export function PurchaseOrderEditor({ poId, onClose }: Props) {
                     />
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {formatCurrency(calcLineTotal(l))}
+                    {formatCurrency(calcLineTotal(l), currency)}
                   </TableCell>
                   <TableCell>
                     {lines.length > 1 && (
@@ -305,9 +304,9 @@ export function PurchaseOrderEditor({ poId, onClose }: Props) {
       {/* Totals */}
       <div className="flex justify-end">
         <div className="w-64 space-y-1 text-sm">
-          <div className="flex justify-between"><span>Subtotal</span><span className="font-mono">{formatCurrency(subtotal)}</span></div>
-          <div className="flex justify-between"><span>Tax</span><span className="font-mono">{formatCurrency(tax)}</span></div>
-          <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span className="font-mono">{formatCurrency(total)}</span></div>
+          <div className="flex justify-between"><span>Subtotal</span><span className="font-mono">{formatCurrency(subtotal, currency)}</span></div>
+          <div className="flex justify-between"><span>Tax</span><span className="font-mono">{formatCurrency(tax, currency)}</span></div>
+          <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span className="font-mono">{formatCurrency(total, currency)}</span></div>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertTriangle, Calendar, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Renewal {
   id: string;
@@ -22,18 +23,9 @@ interface Renewal {
   days_until_renewal: number;
 }
 
-function money(cents: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 0,
-    }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(0)} ${currency.toUpperCase()}`;
-  }
-}
-
 export function RenewalsPanel() {
   const qc = useQueryClient();
+  const { formatCurrency } = usePlatformFormat();
 
   const { data: renewals, isLoading } = useQuery({
     queryKey: ['upcoming-renewals'],
@@ -133,7 +125,7 @@ export function RenewalsPanel() {
                       {r.customer_name && <div className="text-xs text-muted-foreground">{r.customer_email}</div>}
                     </TableCell>
                     <TableCell>{r.product_name || '—'}</TableCell>
-                    <TableCell>{money(r.unit_amount_cents, r.currency)}</TableCell>
+                    <TableCell>{formatCurrency(r.unit_amount_cents, r.currency)}</TableCell>
                     <TableCell>
                       <div className="text-sm">{format(new Date(r.current_period_end), 'MMM d')}</div>
                       <div className="text-xs text-muted-foreground">in {r.days_until_renewal}d</div>

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { History, GitCommit } from 'lucide-react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   purchaseOrderId: string;
@@ -24,11 +25,11 @@ interface Props {
 export function PoRevisionsPanel({ purchaseOrderId, currency, currentSnapshot, currentTotalCents }: Props) {
   const { data: revisions = [], isLoading } = usePoRevisions(purchaseOrderId);
   const amend = useAmendPurchaseOrder();
+  const { formatCurrency } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
 
-  const fmt = (cents: number | null | undefined) =>
-    cents == null ? '—' : new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
+  const fmt = (cents: number | null | undefined) => formatCurrency(cents, currency);
 
   return (
     <Card>

@@ -12,6 +12,7 @@ import { Plus, Trash2, Pencil, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useHrQuery, useHrMutation } from "@/hooks/useHrOps";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 type Grade = {
   id: string;
@@ -40,12 +41,8 @@ type Compliance = {
   ungraded_active_employees: number;
 };
 
-const fmt = (cents: number | null | undefined, ccy = "SEK") =>
-  cents == null
-    ? "—"
-    : new Intl.NumberFormat("sv-SE", { style: "currency", currency: ccy, maximumFractionDigits: 0 }).format(cents / 100);
-
 export function CompensationPanel() {
+  const { formatCurrency } = usePlatformFormat();
   const { data: employees } = useEmployees();
   const gradesQ = useHrQuery<{ grades: Grade[] }>("manage_salary_grade", { p_action: "list" }, ["list"]);
   const complianceQ = useHrQuery<Compliance>("manage_salary_grade", { p_action: "compliance" }, ["compliance"]);
@@ -210,9 +207,9 @@ export function CompensationPanel() {
                     <TableCell className="font-mono text-xs">{g.code}</TableCell>
                     <TableCell>{g.name}</TableCell>
                     <TableCell>{g.level}</TableCell>
-                    <TableCell>{fmt(g.min_cents, g.currency)}</TableCell>
-                    <TableCell>{fmt(g.mid_cents, g.currency)}</TableCell>
-                    <TableCell>{fmt(g.max_cents, g.currency)}</TableCell>
+                    <TableCell>{formatCurrency(g.min_cents, g.currency)}</TableCell>
+                    <TableCell>{formatCurrency(g.mid_cents, g.currency)}</TableCell>
+                    <TableCell>{formatCurrency(g.max_cents, g.currency)}</TableCell>
                     <TableCell>{g.employee_count}</TableCell>
                     <TableCell className="text-right">
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(g)}>
@@ -272,8 +269,8 @@ export function CompensationPanel() {
                       <TableRow key={r.employee_id}>
                         <TableCell className="font-medium">{r.name}</TableCell>
                         <TableCell>{r.grade}</TableCell>
-                        <TableCell>{fmt(r.monthly_salary_cents)}</TableCell>
-                        <TableCell className="text-xs">{fmt(r.band_min_cents)} – {fmt(r.band_max_cents)}</TableCell>
+                        <TableCell>{formatCurrency(r.monthly_salary_cents)}</TableCell>
+                        <TableCell className="text-xs">{formatCurrency(r.band_min_cents)} – {formatCurrency(r.band_max_cents)}</TableCell>
                         <TableCell>{r.compa_ratio != null ? r.compa_ratio.toFixed(2) : "—"}</TableCell>
                         <TableCell>
                           <Badge variant="destructive">{r.issue.replace(/_/g, " ")}</Badge>

@@ -10,9 +10,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Zap, BarChart3 } from 'lucide-react';
-
-const fmtSEK = (cents: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format((cents ?? 0) / 100);
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 function todayISO() {
   const d = new Date();
@@ -43,6 +41,7 @@ interface Row {
 
 export function ReportsTab() {
   const qc = useQueryClient();
+  const { formatCurrency } = usePlatformFormat();
   const [start, setStart] = useState(daysAgoISO(29));
   const [end, setEnd] = useState(todayISO());
 
@@ -130,8 +129,8 @@ export function ReportsTab() {
                   <TableCell className="text-right font-mono text-sm">{Number(r.overtime_hours ?? 0).toFixed(1)}</TableCell>
                   <TableCell className="text-right font-mono text-sm">{Number(r.utilization_pct ?? 0).toFixed(1)}%</TableCell>
                   <TableCell className="text-right font-mono text-sm">{Number(r.billable_pct ?? 0).toFixed(1)}%</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{fmtSEK(r.cost_cents)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{fmtSEK(r.revenue_cents)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{formatCurrency(r.cost_cents)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{formatCurrency(r.revenue_cents)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

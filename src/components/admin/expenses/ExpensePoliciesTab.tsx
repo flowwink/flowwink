@@ -21,12 +21,7 @@ import {
   useDeleteExpensePolicy,
   type ExpensePolicy,
 } from '@/hooks/useExpensePolicies';
-
-const fmtSEK = (cents: number | null | undefined) =>
-  cents == null
-    ? '—'
-    : new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 2 })
-        .format(cents / 100);
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Draft {
   id?: string;
@@ -55,6 +50,9 @@ export function ExpensePoliciesTab() {
   const { data: policies = [], isLoading } = useExpensePolicies();
   const upsert = useUpsertExpensePolicy();
   const del = useDeleteExpensePolicy();
+  const { formatCurrency } = usePlatformFormat();
+  const fmtAmount = (cents: number | null | undefined) =>
+    cents == null ? '—' : formatCurrency(cents);
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -146,7 +144,7 @@ export function ExpensePoliciesTab() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
-                        {fmtSEK(p.max_amount_cents)}
+                        {fmtAmount(p.max_amount_cents)}
                       </TableCell>
                       <TableCell>
                         {p.requires_receipt ? (
@@ -156,7 +154,7 @@ export function ExpensePoliciesTab() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
-                        {fmtSEK(p.requires_approval_over_cents)}
+                        {fmtAmount(p.requires_approval_over_cents)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-end">

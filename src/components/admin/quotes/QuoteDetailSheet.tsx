@@ -13,6 +13,7 @@ import {
   type QuoteStatus,
 } from '@/hooks/useQuotes';
 import { useRequestQuoteApproval, useSendQuote, useSendQuoteReminder, publicQuoteUrl } from '@/hooks/useQuoteWorkflow';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { QuoteAttachmentsPanel } from './QuoteAttachmentsPanel';
 import { QuoteRevisionsPanel } from './QuoteRevisionsPanel';
 import { toast } from 'sonner';
@@ -64,10 +65,9 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
 
   const totals = computeInvoiceTotals(lineItems, taxRate);
 
-  const formatAmount = (cents: number) => {
-    const currency = quote?.currency || 'SEK';
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
-  };
+  const { formatCurrency } = usePlatformFormat();
+
+  const formatAmount = (cents: number) => formatCurrency(cents, quote?.currency);
 
   const handleSave = useCallback(() => {
     if (!quote) return;

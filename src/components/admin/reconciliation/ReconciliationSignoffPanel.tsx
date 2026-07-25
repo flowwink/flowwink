@@ -10,6 +10,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { Lock, Unlock } from 'lucide-react';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { useReconciliationSignoffs, useSignoffReconciliation, useUnlockSignoff } from '@/hooks/useReconciliationParity';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export function ReconciliationSignoffPanel() {
   const today = new Date();
@@ -26,8 +27,8 @@ export function ReconciliationSignoffPanel() {
 
   const effectiveAccount = bankAccountId || accounts[0]?.id || '';
   const currency = accounts.find((a) => a.id === effectiveAccount)?.currency || 'SEK';
-  const fmt = (c: number, ccy = currency) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: ccy }).format(c / 100);
+  const { formatCurrency } = usePlatformFormat();
+  const fmt = (c: number, ccy = currency) => formatCurrency(c, ccy);
 
   const submit = async () => {
     if (!effectiveAccount) return;

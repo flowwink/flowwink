@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRfqs, useRfq, useCreateRfq, useUpdateRfqStatus, useSubmitBid, useAwardRfq, type RfqStatus } from '@/hooks/useRfqs';
 import { useVendors } from '@/hooks/usePurchasing';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const statusVariant: Record<RfqStatus, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   draft: 'outline',
@@ -197,12 +198,10 @@ function RfqDetailDialog({ rfqId, onClose }: { rfqId: string | null; onClose: ()
   const updateStatus = useUpdateRfqStatus();
   const award = useAwardRfq();
   const submitBid = useSubmitBid();
+  const { formatCurrency } = usePlatformFormat();
   const [bidEditor, setBidEditor] = useState<string | null>(null);
 
   if (!rfqId) return null;
-
-  const fmtMoney = (cents: number, ccy = 'SEK') =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: ccy }).format((cents || 0) / 100);
 
   return (
     <Dialog open={!!rfqId} onOpenChange={(v) => !v && onClose()}>
@@ -277,7 +276,7 @@ function RfqDetailDialog({ rfqId, onClose }: { rfqId: string | null; onClose: ()
                         <TableCell>{(b as any).vendors?.name ?? b.vendor_id.slice(0, 8)}</TableCell>
                         <TableCell><Badge variant="outline">{b.status}</Badge></TableCell>
                         <TableCell className="text-right font-mono">
-                          {b.status === 'submitted' || b.status === 'awarded' ? fmtMoney(total, data.rfq.currency) : '—'}
+                          {b.status === 'submitted' || b.status === 'awarded' ? formatCurrency(total, data.rfq.currency) : '—'}
                         </TableCell>
                         <TableCell>{b.lead_time_days ? `${b.lead_time_days} days` : '—'}</TableCell>
                         <TableCell className="space-x-1">

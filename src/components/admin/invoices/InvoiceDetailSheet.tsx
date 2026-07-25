@@ -15,6 +15,7 @@ import {
   useCreditNotesForInvoice,
   type InvoiceLineItem, type InvoiceStatus,
 } from '@/hooks/useInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { CreditNoteDialog } from './CreditNoteDialog';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
 
@@ -49,6 +50,7 @@ export function InvoiceDetailSheet({ invoiceId, open, onOpenChange }: Props) {
   const { data: invoice } = useInvoice(invoiceId || undefined);
   const updateInvoice = useUpdateInvoice();
   const deleteInvoice = useDeleteInvoice();
+  const { formatCurrency } = usePlatformFormat();
 
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
   const [taxRate, setTaxRate] = useState(0.25);
@@ -72,10 +74,7 @@ export function InvoiceDetailSheet({ invoiceId, open, onOpenChange }: Props) {
 
   const totals = computeInvoiceTotals(lineItems, taxRate);
 
-  const formatAmount = (cents: number) => {
-    const currency = invoice?.currency || 'SEK';
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
-  };
+  const formatAmount = (cents: number) => formatCurrency(cents, invoice?.currency);
 
   const handleSave = useCallback(() => {
     if (!invoice) return;
@@ -330,7 +329,7 @@ export function InvoiceDetailSheet({ invoiceId, open, onOpenChange }: Props) {
                       </p>
                     </div>
                     <span className="font-mono text-destructive">
-                      {new Intl.NumberFormat('sv-SE', { style: 'currency', currency: cn.currency }).format(cn.total_cents / 100)}
+                      {formatCurrency(cn.total_cents, cn.currency)}
                     </span>
                   </div>
                 ))}

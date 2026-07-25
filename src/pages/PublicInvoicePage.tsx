@@ -10,11 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { toast } from 'sonner';
 
 export default function PublicInvoicePage() {
   const { token } = useParams<{ token: string }>();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const [searchParams] = useSearchParams();
   const justPaid = searchParams.get('paid') === '1';
   const [paying, setPaying] = useState(false);
@@ -111,7 +112,7 @@ export default function PublicInvoicePage() {
   }
 
   const currency = invoice.currency || 'SEK';
-  const fmt = (cents: number) => new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format((cents || 0) / 100);
+  const fmt = (cents: number) => formatCurrency(cents || 0, currency);
   const items = Array.isArray(invoice.line_items) ? (invoice.line_items as any[]) : [];
   const isPaid = invoice.status === 'paid';
   const isCancelled = invoice.status === 'cancelled';
@@ -183,7 +184,7 @@ export default function PublicInvoicePage() {
 
             {invoice.due_date && (
               <p className="text-xs text-muted-foreground">
-                Due {format(new Date(invoice.due_date), 'yyyy-MM-dd')}
+                Due {formatDate(invoice.due_date)}
               </p>
             )}
 

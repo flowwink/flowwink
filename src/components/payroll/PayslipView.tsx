@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export type PayslipData = {
   employer?: { name?: string } | null;
@@ -50,15 +51,6 @@ export type PayslipData = {
   } | null;
 };
 
-export function fmtSEK(cents: number | null | undefined): string {
-  const v = (cents ?? 0) / 100;
-  return new Intl.NumberFormat('sv-SE', {
-    style: 'currency',
-    currency: 'SEK',
-    maximumFractionDigits: 2,
-  }).format(v);
-}
-
 const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
   paid: 'default',
   approved: 'secondary',
@@ -71,13 +63,14 @@ interface PayslipViewProps {
 
 export const PayslipView = forwardRef<HTMLDivElement, PayslipViewProps>(({ payslip }, ref) => {
   const { employer, employee, period, status, components, amounts, ytd } = payslip;
+  const { formatCurrency } = usePlatformFormat();
 
   const row = (label: string, cents: number | null | undefined, opts?: { muted?: boolean; negative?: boolean }) => {
     if (cents == null || cents === 0) return null;
     return (
       <div className="flex justify-between text-sm py-1">
         <span className={opts?.muted ? 'text-muted-foreground' : ''}>{label}</span>
-        <span className="font-mono">{opts?.negative ? '−' : ''}{fmtSEK(Math.abs(cents))}</span>
+        <span className="font-mono">{opts?.negative ? '−' : ''}{formatCurrency(Math.abs(cents))}</span>
       </div>
     );
   };
@@ -136,7 +129,7 @@ export const PayslipView = forwardRef<HTMLDivElement, PayslipViewProps>(({ paysl
                   <TableCell className="text-center text-muted-foreground">
                     {c.taxable ? 'Yes' : '—'}
                   </TableCell>
-                  <TableCell className="text-right font-mono">{fmtSEK(c.amount_cents)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(c.amount_cents)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -162,7 +155,7 @@ export const PayslipView = forwardRef<HTMLDivElement, PayslipViewProps>(({ paysl
           <Separator className="my-2" />
           <div className="flex justify-between text-base font-semibold pt-1">
             <span>Net pay</span>
-            <span className="font-mono">{fmtSEK(amounts.net_cents)}</span>
+            <span className="font-mono">{formatCurrency(amounts.net_cents)}</span>
           </div>
         </div>
       </div>
@@ -186,10 +179,10 @@ export const PayslipView = forwardRef<HTMLDivElement, PayslipViewProps>(({ paysl
             Year-to-date{ytd.months ? ` (${ytd.months} month${ytd.months === 1 ? '' : 's'})` : ''}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <YtdStat label="Gross" value={fmtSEK(ytd.gross_cents)} />
-            <YtdStat label="Taxable" value={fmtSEK(ytd.taxable_cents)} />
-            <YtdStat label="Tax" value={fmtSEK(ytd.tax_cents)} />
-            <YtdStat label="Net" value={fmtSEK(ytd.net_cents)} />
+            <YtdStat label="Gross" value={formatCurrency(ytd.gross_cents)} />
+            <YtdStat label="Taxable" value={formatCurrency(ytd.taxable_cents)} />
+            <YtdStat label="Tax" value={formatCurrency(ytd.tax_cents)} />
+            <YtdStat label="Net" value={formatCurrency(ytd.net_cents)} />
           </div>
         </div>
       )}

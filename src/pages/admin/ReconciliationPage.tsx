@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Upload, RefreshCw, Wand2, X, FileText, ScanLine, Trash2, BookOpen, Settings2, Plus, Scale } from 'lucide-react';
 import {
   useBankTransactions,
@@ -58,6 +59,7 @@ const STATUS_COLORS: Record<BankTxStatus, string> = {
 type ImportFormat = 'csv' | 'camt053' | 'sie' | 'image';
 
 export default function ReconciliationPage() {
+  const { formatCurrency, formatDate, formatDateTime } = usePlatformFormat();
   const [tab, setTab] = useState<'transactions' | 'reconciliation' | 'rules' | 'report' | 'petty-cash' | 'signoff' | 'feeds' | 'imports' | 'accounts'>('transactions');
   const [statusFilter, setStatusFilter] = useState<BankTxStatus | 'all'>('unmatched');
   const [accountFilter, setAccountFilter] = useState<string>('all');
@@ -107,9 +109,6 @@ export default function ReconciliationPage() {
   const bookFromUnmatched = useBookFromUnmatched();
   const upsertAccount = useUpsertBankAccount();
   const archiveAccount = useArchiveBankAccount();
-
-  const fmt = (cents: number, currency: string) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -342,7 +341,7 @@ export default function ReconciliationPage() {
                       return (
                         <TableRow key={tx.id}>
                           <TableCell className="font-mono text-sm">
-                            {format(new Date(tx.transaction_date), 'yyyy-MM-dd')}
+                            {formatDate(tx.transaction_date)}
                           </TableCell>
                           <TableCell>
                             {tx.counterparty || '—'}
@@ -369,7 +368,7 @@ export default function ReconciliationPage() {
                           <TableCell
                             className={`text-right font-mono ${tx.amount_cents < 0 ? 'text-red-600 dark:text-red-400' : ''}`}
                           >
-                            {fmt(tx.amount_cents, tx.currency)}
+                            {formatCurrency(tx.amount_cents, tx.currency)}
                           </TableCell>
                           <TableCell>
                             {tx.status === 'unmatched' && (
@@ -472,17 +471,17 @@ export default function ReconciliationPage() {
                           <TableCell className="font-medium">{s.name}</TableCell>
                           <TableCell className="font-mono text-xs">{s.gl_account}</TableCell>
                           <TableCell className="text-right font-mono">
-                            {fmt(s.bank_total_cents, s.currency)}
+                            {formatCurrency(s.bank_total_cents, s.currency)}
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {fmt(s.ledger_total_cents, s.currency)}
+                            {formatCurrency(s.ledger_total_cents, s.currency)}
                           </TableCell>
                           <TableCell
                             className={`text-right font-mono ${
                               reconciled ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'
                             }`}
                           >
-                            {fmt(s.diff_cents, s.currency)}
+                            {formatCurrency(s.diff_cents, s.currency)}
                             {reconciled && <span className="ml-1">✓</span>}
                           </TableCell>
                           <TableCell className="text-right font-mono text-xs">{s.bank_count}</TableCell>
@@ -532,7 +531,7 @@ export default function ReconciliationPage() {
                     {batches.map((b) => (
                       <TableRow key={b.id}>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(b.created_at), 'yyyy-MM-dd HH:mm')}
+                          {formatDateTime(b.created_at)}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs uppercase">
@@ -770,7 +769,7 @@ export default function ReconciliationPage() {
                   <span
                     className={`font-mono ${bookTx.amount_cents < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
                   >
-                    {fmt(bookTx.amount_cents, bookTx.currency)}
+                    {formatCurrency(bookTx.amount_cents, bookTx.currency)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">

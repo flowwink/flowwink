@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { BookingBlockData } from '@/types/cms';
 import { useBookingServices, useAvailableSlots } from '@/hooks/useBookings';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { webhookEvents } from '@/lib/webhook-utils';
 import { format, addDays, startOfWeek, addWeeks, isSameDay, isToday, isBefore, startOfDay } from 'date-fns';
 
@@ -22,6 +23,7 @@ interface SmartBookingBlockProps {
 type BookingStep = 'service' | 'datetime' | 'details' | 'confirmed';
 
 export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockProps) {
+  const { formatCurrency } = usePlatformFormat();
   const [step, setStep] = useState<BookingStep>('service');
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -372,10 +374,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                       </div>
                       {service.price_cents && service.price_cents > 0 && (
                         <p className="font-medium mt-1">
-                          {new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: service.currency,
-                          }).format(service.price_cents / 100)}
+                          {formatCurrency(service.price_cents, service.currency)}
                         </p>
                       )}
                     </div>
@@ -508,10 +507,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
               {serviceRequiresPayment && selectedService && (
                 <p className="text-sm font-medium text-primary flex items-center gap-1 mt-1">
                   <CreditCard className="h-4 w-4" />
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: selectedService.currency || 'USD',
-                  }).format(selectedService.price_cents! / 100)}
+                  {formatCurrency(selectedService.price_cents!, selectedService.currency)}
                   {' — payment required'}
                 </p>
               )}
@@ -576,7 +572,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                 ) : serviceRequiresPayment ? (
                   <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    {`Confirm & Pay ${selectedService ? new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedService.currency || 'USD' }).format(selectedService.price_cents! / 100) : ''}`}
+                    {`Confirm & Pay ${selectedService ? formatCurrency(selectedService.price_cents!, selectedService.currency) : ''}`}
                   </>
                 ) : (
                   data.submitButtonText || 'Confirm Booking'

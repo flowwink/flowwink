@@ -7,6 +7,7 @@ import { FileText, Plus } from 'lucide-react';
 import { useQuotesByDeal } from '@/hooks/useQuotesByDeal';
 import { CreateQuoteDialog } from '@/components/admin/quotes/CreateQuoteDialog';
 import type { QuoteStatus } from '@/hooks/useQuotes';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   dealId: string;
@@ -23,6 +24,7 @@ const STATUS_VARIANT: Record<QuoteStatus, 'secondary' | 'default' | 'outline' | 
 
 export function DealQuotesCard({ dealId, leadId }: Props) {
   const { data: quotes = [], isLoading } = useQuotesByDeal(dealId);
+  const { formatCurrency } = usePlatformFormat();
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
@@ -56,11 +58,7 @@ export function DealQuotesCard({ dealId, leadId }: Props) {
             </p>
           ) : (
             quotes.map((q) => {
-              const total = new Intl.NumberFormat('sv-SE', {
-                style: 'currency',
-                currency: q.currency || 'SEK',
-                minimumFractionDigits: 0,
-              }).format((q.total_cents || 0) / 100);
+              const total = formatCurrency(q.total_cents || 0, q.currency);
               return (
                 <Link
                   key={q.id}

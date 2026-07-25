@@ -23,12 +23,7 @@ import {
   type GiftCard,
 } from '@/hooks/useGiftCards';
 import { toast } from 'sonner';
-
-const fmtSEK = (cents: number | null | undefined, currency = 'SEK') =>
-  cents == null
-    ? '—'
-    : new Intl.NumberFormat('sv-SE', { style: 'currency', currency, maximumFractionDigits: 2 })
-        .format(cents / 100);
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const toCents = (s: string): number => {
   const n = Number(s.trim().replace(',', '.'));
@@ -36,6 +31,7 @@ const toCents = (s: string): number => {
 };
 
 export function GiftCardsTab() {
+  const { formatCurrency } = usePlatformFormat();
   const { data: cards = [], isLoading } = useGiftCards();
   const issue = useIssueGiftCard();
   const deactivate = useDeactivateGiftCard();
@@ -141,7 +137,7 @@ export function GiftCardsTab() {
               <div className="text-right">
                 <div className="text-xs text-muted-foreground">Balance</div>
                 <div className="text-xl font-semibold font-mono">
-                  {fmtSEK(lookupResult.balance_cents, lookupResult.currency || 'SEK')}
+                  {formatCurrency(lookupResult.balance_cents, lookupResult.currency)}
                 </div>
               </div>
             </div>
@@ -198,7 +194,7 @@ export function GiftCardsTab() {
                           <span className="font-mono text-sm">{c.code}</span>
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm">
-                          {fmtSEK(c.balance_cents, c.currency || 'SEK')}
+                          {formatCurrency(c.balance_cents, c.currency)}
                         </TableCell>
                         <TableCell>
                           {active ? (
@@ -272,7 +268,7 @@ export function GiftCardsTab() {
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Balance</div>
                   <div className="text-xl font-semibold font-mono">
-                    {fmtSEK(issuedCard.balance_cents, issuedCard.currency || 'SEK')}
+                    {formatCurrency(issuedCard.balance_cents, issuedCard.currency)}
                   </div>
                 </div>
               </div>

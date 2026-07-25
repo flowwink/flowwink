@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, CheckCircle2, Clock, MoreHorizontal, Pause, Play, Play as PlayIcon, RefreshCw, XCircle, Zap } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_LABEL: Record<DunningStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: 'Active', variant: 'destructive' },
@@ -42,17 +43,8 @@ const STEP_LABELS = [
   'Day 14 — Subscription cancelled',
 ];
 
-function formatMoney(cents: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 0,
-    }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(0)} ${currency.toUpperCase()}`;
-  }
-}
-
 export default function DunningPage() {
+  const { formatCurrency } = usePlatformFormat();
   const [filter, setFilter] = useState<DunningStatus | 'all'>('active');
   const [tab, setTab] = useState<'sequences' | 'preview' | 'settings'>('sequences');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -132,14 +124,14 @@ export default function DunningPage() {
         <MetricCard
           icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
           label="MRR at risk"
-          value={metrics ? formatMoney(metrics.mrrAtRisk, metrics.currency) : '—'}
+          value={metrics ? formatCurrency(metrics.mrrAtRisk, metrics.currency) : '—'}
           hint={metrics ? `${metrics.activeCount} active sequence(s)` : ''}
         />
         <MetricCard
           icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
           label="Recovered (30d)"
           value={metrics?.recovered30?.toString() ?? '—'}
-          hint={metrics ? formatMoney(metrics.recoveredMrr30, metrics.currency) + ' MRR saved' : ''}
+          hint={metrics ? formatCurrency(metrics.recoveredMrr30, metrics.currency) + ' MRR saved' : ''}
         />
         <MetricCard
           icon={<XCircle className="h-4 w-4 text-muted-foreground" />}
@@ -247,6 +239,7 @@ function SeqRow({
   onCancel: () => void;
   onEscalate: () => void;
 }) {
+  const { formatCurrency } = usePlatformFormat();
   const status = STATUS_LABEL[seq.status];
   const sub = seq.subscriptions;
   return (
@@ -257,7 +250,7 @@ function SeqRow({
           <div className="text-xs text-muted-foreground">{sub.product_name}</div>
         )}
       </TableCell>
-      <TableCell className="font-medium">{formatMoney(seq.mrr_at_risk_cents, seq.currency)}/mo</TableCell>
+      <TableCell className="font-medium">{formatCurrency(seq.mrr_at_risk_cents, seq.currency)}/mo</TableCell>
       <TableCell>
         <div className="text-sm">{STEP_LABELS[seq.current_step] ?? `Step ${seq.current_step}`}</div>
         {seq.attempt_count > 1 && (
@@ -302,6 +295,7 @@ function SeqRow({
 
 function DetailSheet({ sequence, onClose }: { sequence: DunningSequence | null; onClose: () => void }) {
   const { data: actions } = useDunningActions(sequence?.id ?? null);
+  const { formatCurrency } = usePlatformFormat();
   if (!sequence) return null;
   const sub = sequence.subscriptions;
   return (
@@ -313,7 +307,7 @@ function DetailSheet({ sequence, onClose }: { sequence: DunningSequence | null; 
         </SheetHeader>
         <div className="mt-6 space-y-6">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-muted-foreground">At risk:</span><br /><strong>{formatMoney(sequence.mrr_at_risk_cents, sequence.currency)}/mo</strong></div>
+            <div><span className="text-muted-foreground">At risk:</span><br /><strong>{formatCurrency(sequence.mrr_at_risk_cents, sequence.currency)}/mo</strong></div>
             <div><span className="text-muted-foreground">Status:</span><br /><Badge variant={STATUS_LABEL[sequence.status].variant}>{STATUS_LABEL[sequence.status].label}</Badge></div>
             <div><span className="text-muted-foreground">Current step:</span><br />{STEP_LABELS[sequence.current_step] ?? `Step ${sequence.current_step}`}</div>
             <div><span className="text-muted-foreground">Failures:</span><br />{sequence.attempt_count}</div>

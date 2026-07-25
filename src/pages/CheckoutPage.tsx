@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useVatDisplay } from '@/hooks/useVatDisplay';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ export default function CheckoutPage() {
   const { items, totalPriceCents, currency, clearCart } = useCart();
   const { user, profile } = useAuth();
   const vat = useVatDisplay();
+  const { formatCurrency } = usePlatformFormat();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -133,12 +135,7 @@ export default function CheckoutPage() {
   const payableCents =
     Math.max(0, totalPriceCents - (appliedDiscount?.discountCents ?? 0)) + shippingCostCents;
 
-  const formatPrice = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(cents / 100);
-  };
+  const formatPrice = (cents: number) => formatCurrency(cents, currency);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({

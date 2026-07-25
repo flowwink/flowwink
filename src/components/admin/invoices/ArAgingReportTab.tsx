@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useArAgingReport } from '@/hooks/useInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const BUCKETS: { key: 'current_cents' | 'overdue_1_30_cents' | 'overdue_31_60_cents' | 'overdue_61_90_cents' | 'overdue_90_plus_cents'; label: string }[] = [
   { key: 'current_cents', label: 'Current' },
@@ -12,9 +13,9 @@ const BUCKETS: { key: 'current_cents' | 'overdue_1_30_cents' | 'overdue_31_60_ce
 
 export function ArAgingReportTab() {
   const { data: report, isLoading } = useArAgingReport();
+  const { formatCurrency, formatDate } = usePlatformFormat();
 
-  const formatAmount = (cents: number, currency = 'SEK') =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
+  const formatAmount = (cents: number, currency?: string | null) => formatCurrency(cents, currency);
 
   if (isLoading) {
     return <p className="text-center text-muted-foreground py-8">Loading…</p>;
@@ -40,7 +41,7 @@ export function ArAgingReportTab() {
       </div>
 
       <div className="flex justify-between items-center text-sm text-muted-foreground">
-        <span>As of {report.as_of}</span>
+        <span>As of {formatDate(report.as_of)}</span>
         <span>
           Total outstanding: <span className="font-mono font-medium text-foreground">{formatAmount(report.buckets.total_outstanding_cents)}</span>
         </span>

@@ -18,6 +18,10 @@ import { join } from 'node:path';
 const ALLOWED = [
   'src/hooks/usePlatformFormat.ts',
   'src/lib/format-currency.ts',
+  // Renders API-documentation code samples, not money. The `currency: "USD"`
+  // inside those samples is documentation text — rewriting it to satisfy this
+  // guard would corrupt the docs to please a lint rule.
+  'src/components/admin/modules/ModuleDetailSheet.tsx',
 ];
 
 // Files still carrying legacy formatting. Do NOT add to this list — remove

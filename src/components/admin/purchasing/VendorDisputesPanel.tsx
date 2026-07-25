@@ -10,6 +10,7 @@ import {
   type DisputeStatus,
 } from '@/hooks/useVendorDisputes';
 import { useVendorInvoices } from '@/hooks/useVendorInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,9 +53,7 @@ export function VendorDisputesPanel() {
   const [resolving, setResolving] = useState<any | null>(null);
   const [resolution, setResolution] = useState('');
 
-  const fmt = (cents: number | null | undefined, currency = 'SEK') =>
-    cents == null ? '—' : new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
-
+  const { formatCurrency } = usePlatformFormat();
   const invoicesById = useMemo(() => Object.fromEntries(invoices.map(i => [i.id, i])), [invoices]);
 
   return (
@@ -71,7 +70,7 @@ export function VendorDisputesPanel() {
         <Card><CardContent className="p-4">
           <div className="text-xs text-muted-foreground">Applied credit (SEK)</div>
           <div className="text-2xl font-semibold">
-            {fmt(credits.filter((c: any) => c.status === 'applied').reduce((s: number, c: any) => s + (c.amount_cents || 0), 0))}
+            {formatCurrency(credits.filter((c: any) => c.status === 'applied').reduce((s: number, c: any) => s + (c.amount_cents || 0), 0))}
           </div>
         </CardContent></Card>
       </div>
@@ -107,7 +106,7 @@ export function VendorDisputesPanel() {
                         <SelectContent>
                           {invoices.map(i => (
                             <SelectItem key={i.id} value={i.id}>
-                              {i.invoice_number} — {i.vendors?.name ?? '—'} ({fmt(i.total_cents, i.currency)})
+                              {i.invoice_number} — {i.vendors?.name ?? '—'} ({formatCurrency(i.total_cents, i.currency)})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -164,7 +163,7 @@ export function VendorDisputesPanel() {
                       <SelectContent>
                         {invoices.map(i => (
                           <SelectItem key={i.id} value={i.id}>
-                            {i.invoice_number} — {i.vendors?.name ?? '—'} ({fmt(i.total_cents, i.currency)})
+                            {i.invoice_number} — {i.vendors?.name ?? '—'} ({formatCurrency(i.total_cents, i.currency)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -225,7 +224,7 @@ export function VendorDisputesPanel() {
                     <TableCell className="font-mono">{d.vendor_invoices?.invoice_number ?? '—'}</TableCell>
                     <TableCell>{d.vendor_invoices?.vendors?.name ?? '—'}</TableCell>
                     <TableCell className="max-w-[280px] truncate">{d.reason}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(d.disputed_amount_cents, d.vendor_invoices?.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(d.disputed_amount_cents, d.vendor_invoices?.currency)}</TableCell>
                     <TableCell><Badge className={STATUS_COLOR[d.status as DisputeStatus]}>{d.status}</Badge></TableCell>
                     <TableCell className="text-xs">{format(new Date(d.opened_at), 'yyyy-MM-dd')}</TableCell>
                     <TableCell className="text-right">
@@ -263,7 +262,7 @@ export function VendorDisputesPanel() {
                     <TableCell>{c.vendors?.name ?? '—'}</TableCell>
                     <TableCell className="font-mono text-sm">{c.vendor_invoices?.invoice_number ?? '—'}</TableCell>
                     <TableCell className="text-xs">{c.credit_date}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(c.amount_cents, c.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(c.amount_cents, c.currency)}</TableCell>
                     <TableCell>
                       <Badge className={c.status === 'applied' ? 'bg-emerald-100 text-emerald-800' : c.status === 'cancelled' ? 'bg-muted text-muted-foreground' : 'bg-amber-100 text-amber-800'}>
                         {c.status}

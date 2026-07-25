@@ -59,6 +59,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { callSkill } from '@/lib/call-skill';
 import { useToast } from "@/hooks/use-toast";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AssignmentsTab } from "@/components/admin/consultants/AssignmentsTab";
 import { RatesTab } from "@/components/admin/consultants/RatesTab";
@@ -157,7 +158,9 @@ const emptyForm: ProfileFormData = {
   availability: "available",
   is_active: true,
   hourly_rate_cents: 0,
-  currency: "USD",
+  // Overridden with the platform default currency at every point of use
+  // (see `blankForm` below); matches the fallback in profileToForm().
+  currency: "SEK",
   languages: "",
   certifications: "",
   linkedin_url: "",
@@ -252,6 +255,7 @@ function CopyCheckinLinkButton({ profileId, profileName }: { profileId: string; 
 
 function LastCheckinCell({ profileId }: { profileId: string }) {
   const { data, isLoading } = useLastCheckin(profileId);
+  const { formatDateTime } = usePlatformFormat();
   if (isLoading) {
     return <span className="text-xs text-muted-foreground">…</span>;
   }
@@ -261,7 +265,7 @@ function LastCheckinCell({ profileId }: { profileId: string }) {
   return (
     <span
       className="text-xs text-muted-foreground"
-      title={new Date(data.created_at).toLocaleString()}
+      title={formatDateTime(data.created_at)}
     >
       {formatDistanceToNow(new Date(data.created_at), { addSuffix: true })}
     </span>
@@ -279,6 +283,10 @@ export default function ConsultantProfilesPage() {
   const [form, setForm] = useState<ProfileFormData>(emptyForm);
   const [isParsing, setIsParsing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { settings } = usePlatformFormat();
+
+  // New records default to the platform display currency, not a hardcoded one.
+  const blankForm: ProfileFormData = { ...emptyForm, currency: settings.default_currency };
 
   const saveMutation = useMutation({
     mutationFn: async (data: { id?: string; payload: ReturnType<typeof formToPayload> }) => {
@@ -425,7 +433,7 @@ export default function ConsultantProfilesPage() {
         availability: "available",
         is_active: true,
         hourly_rate_cents: 0,
-        currency: "USD",
+        currency: settings.default_currency,
         languages: (p.languages || []).join(", "),
         certifications: (p.certifications || []).join(", "),
         linkedin_url: p.linkedin_url || "",
@@ -443,7 +451,7 @@ export default function ConsultantProfilesPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm(blankForm);
     setDialogOpen(true);
   };
 
@@ -456,7 +464,7 @@ export default function ConsultantProfilesPage() {
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingId(null);
-    setForm(emptyForm);
+    setForm(blankForm);
   };
 
   const handleSave = () => {

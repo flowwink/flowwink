@@ -19,10 +19,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export default function BookingServicesTab() {
   const { data: services, isLoading } = useBookingServices();
   const { data: products } = useProducts();
+  const { formatCurrency, settings } = usePlatformFormat();
   const createService = useCreateService();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
@@ -47,7 +49,7 @@ export default function BookingServicesTab() {
       description: '',
       duration_minutes: 60,
       price_cents: 0,
-      currency: 'USD',
+      currency: settings.default_currency,
       color: '#3b82f6',
       is_active: true,
       product_id: '',
@@ -87,13 +89,7 @@ export default function BookingServicesTab() {
     }
   };
 
-  const formatPrice = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(cents / 100);
-  };
+  const formatPrice = (cents: number, currency: string) => formatCurrency(cents, currency);
 
   return (
     <>

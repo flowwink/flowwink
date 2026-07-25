@@ -5,14 +5,16 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAttributionReport } from '@/hooks/useAttributionReport';
-
-function formatCents(cents: number, currency = 'SEK') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(cents / 100);
-}
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export default function AttributionReportPage() {
   const [days, setDays] = useState(30);
   const { data = [], isLoading } = useAttributionReport(days);
+  const { formatCurrency, formatNumber } = usePlatformFormat();
+
+  // No per-row currency on the attribution report — falls back to the
+  // platform display currency.
+  const formatCents = (cents: number) => formatCurrency(cents);
 
   const totals = data.reduce(
     (acc, r) => ({
@@ -44,9 +46,9 @@ export default function AttributionReportPage() {
         </AdminPageHeader>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-4">
-          <SummaryCard label="Visits" value={totals.visits.toLocaleString()} />
-          <SummaryCard label="Leads" value={totals.leads.toLocaleString()} />
-          <SummaryCard label="Orders" value={totals.orders.toLocaleString()} />
+          <SummaryCard label="Visits" value={formatNumber(totals.visits)} />
+          <SummaryCard label="Leads" value={formatNumber(totals.leads)} />
+          <SummaryCard label="Orders" value={formatNumber(totals.orders)} />
           <SummaryCard label="Revenue" value={formatCents(totals.revenue)} />
         </div>
 
@@ -87,10 +89,10 @@ export default function AttributionReportPage() {
                       <td className="px-4 py-2">{r.utm_source}</td>
                       <td className="px-4 py-2">{r.utm_medium}</td>
                       <td className="px-4 py-2">{r.utm_campaign}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{Number(r.visits).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{Number(r.unique_visitors).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{Number(r.leads).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{Number(r.orders).toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatNumber(Number(r.visits))}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatNumber(Number(r.unique_visitors))}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatNumber(Number(r.leads))}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatNumber(Number(r.orders))}</td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCents(Number(r.revenue_cents))}</td>
                     </tr>
                   ))}

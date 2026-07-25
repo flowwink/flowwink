@@ -1,10 +1,11 @@
-import { DashCard, BigFigure, Subline, QuietEmpty, fmtSek } from './_shared';
+import { DashCard, BigFigure, Subline, QuietEmpty, useFmtSek } from './_shared';
 import { useIncomeStatementYTD } from './ResultCard';
 
 const CORPORATE_TAX_RATE = 0.206;
 
 export function TaxPreviewCard() {
   const { data, isLoading, isError } = useIncomeStatementYTD();
+  const fmtSek = useFmtSek();
 
   if (isLoading) {
     return (

@@ -13,7 +13,6 @@ import {
   useSubscriptions, useSubscriptionMetrics, useSubscriptionAction,
   openCustomerPortal, type SubscriptionStatus, type Subscription,
 } from '@/hooks/useSubscriptions';
-import { format } from 'date-fns';
 import { ExternalLink, MoreHorizontal, RefreshCw, XCircle, ArrowUpDown, PlayCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
@@ -25,6 +24,7 @@ import { ChangePlanDialog } from '@/components/admin/subscriptions/ChangePlanDia
 import { SubscriptionPlansTab } from '@/components/admin/subscriptions/SubscriptionPlansTab';
 import { useSubscriptionPlans, useConvertTrial } from '@/hooks/useSubscriptionPlans';
 import { differenceInDays, differenceInCalendarMonths } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_LABEL: Record<SubscriptionStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: 'Active', variant: 'default' },
@@ -37,18 +37,14 @@ const STATUS_LABEL: Record<SubscriptionStatus, { label: string; variant: 'defaul
   unpaid: { label: 'Unpaid', variant: 'destructive' },
 };
 
-function formatMoney(cents: number, currency: string) {
-  if (currency === 'mixed') return `${(cents / 100).toFixed(2)} (mixed)`;
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 0,
-    }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(0)} ${currency.toUpperCase()}`;
-  }
-}
-
 export default function SubscriptionsPage() {
+  const { formatCurrency, formatNumber } = usePlatformFormat();
+  // Aggregate metrics can span several currencies — keep the explicit
+  // "(mixed)" rendering instead of stamping one currency symbol on the sum.
+  const formatMoney = (cents: number, currency: string) =>
+    currency === 'mixed'
+      ? `${formatNumber(cents / 100, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (mixed)`
+      : formatCurrency(cents, currency);
   const [filter, setFilter] = useState<SubscriptionStatus | 'all'>('all');
   const { data: subs, isLoading } = useSubscriptions(filter === 'all' ? undefined : filter);
   const { data: metrics } = useSubscriptionMetrics();
@@ -198,12 +194,13 @@ function SubscriptionRow({
   onResume: () => void;
   onPortal: () => void;
 }) {
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const status = STATUS_LABEL[sub.status];
   const isManual = sub.provider === 'manual';
   const nextInvoice = (sub as any).next_invoice_date as string | null | undefined;
-  const renews = sub.current_period_end
-    ? format(new Date(sub.current_period_end), 'MMM d, yyyy')
-    : '—';
+  // `current_period_end` is a timestamptz, but a renewal is read as a DAY —
+  // rendering a 00:00 clock time next to it is noise, not information.
+  const renews = formatDate(sub.current_period_end);
   const [changeOpen, setChangeOpen] = useState(false);
   const canChangePlan = isManual && sub.status === 'active';
   const convertTrial = useConvertTrial();
@@ -219,7 +216,7 @@ function SubscriptionRow({
   const handleCancel = () => {
     if (isEarly) {
       const ok = confirm(
-        `Early termination: this subscription has a commitment until ${format(new Date(sub.commitment_end!), 'MMM d, yyyy')} (${commitmentMonthsLeft} month(s) remaining). Continue?`
+        `Early termination: this subscription has a commitment until ${formatDate(sub.commitment_end)} (${commitmentMonthsLeft} month(s) remaining). Continue?`
       );
       if (!ok) return;
     }
@@ -242,7 +239,7 @@ function SubscriptionRow({
           {isManual ? ' · invoice-billed' : ' · Stripe'}
         </div>
       </TableCell>
-      <TableCell>{formatMoney(sub.unit_amount_cents * sub.quantity, sub.currency)}</TableCell>
+      <TableCell>{formatCurrency(sub.unit_amount_cents * sub.quantity, sub.currency)}</TableCell>
       <TableCell>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={status.variant}>{status.label}</Badge>
@@ -258,7 +255,7 @@ function SubscriptionRow({
       <TableCell>
         {isManual && nextInvoice ? (
           <div>
-            <div>{format(new Date(nextInvoice), 'MMM d, yyyy')}</div>
+            <div>{formatDate(nextInvoice)}</div>
             <div className="text-xs text-muted-foreground">Auto-invoice at 06:00 UTC</div>
           </div>
         ) : (

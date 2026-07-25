@@ -9,11 +9,11 @@ import { Plus } from 'lucide-react';
 import { useQuotes, getQuoteCustomerName, getQuoteCustomerEmail, getQuoteCompanyName, type QuoteStatus } from '@/hooks/useQuotes';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
 import { QuoteDetailSheet } from '@/components/admin/quotes/QuoteDetailSheet';
 import { CreateQuoteDialog } from '@/components/admin/quotes/CreateQuoteDialog';
 import { RecurringQuotesTab } from '@/components/admin/quotes/RecurringQuotesTab';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<QuoteStatus, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -24,6 +24,7 @@ const STATUS_COLORS: Record<QuoteStatus, string> = {
 };
 
 export default function QuotesPage() {
+  const { formatCurrency, formatDate, formatDateTime } = usePlatformFormat();
   const [searchParams, setSearchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
   const [view, setView] = useState<'list' | 'recurring'>('list');
@@ -49,10 +50,6 @@ export default function QuotesPage() {
   const { data: quotes = [], isLoading } = useQuotes(
     statusFilter === 'all' ? undefined : statusFilter
   );
-
-  const formatAmount = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
-  };
 
   return (
     <AdminLayout>
@@ -133,13 +130,13 @@ export default function QuotesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {formatAmount(q.total_cents, q.currency)}
+                        {formatCurrency(q.total_cents, q.currency)}
                       </TableCell>
                       <TableCell>
-                        {q.valid_until ? format(new Date(q.valid_until), 'yyyy-MM-dd') : '—'}
+                        {formatDate(q.valid_until)}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(q.created_at), 'yyyy-MM-dd')}
+                        {formatDateTime(q.created_at)}
                       </TableCell>
                     </TableRow>
                   );

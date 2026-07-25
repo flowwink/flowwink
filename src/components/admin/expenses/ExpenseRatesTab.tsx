@@ -19,12 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Pencil, Gauge } from 'lucide-react';
-
-function formatRate(cents: number, currency: string): string {
-  return new Intl.NumberFormat('sv-SE', {
-    style: 'currency', currency, minimumFractionDigits: 2,
-  }).format(cents / 100);
-}
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface EditorState {
   id?: string;
@@ -57,6 +52,8 @@ export function ExpenseRatesTab() {
   const { data: rates, isLoading } = useExpenseRates();
   const upsert = useUpsertExpenseRate();
   const toggle = useToggleExpenseRate();
+  const { formatCurrency } = usePlatformFormat();
+  const formatRate = (cents: number, currency: string) => formatCurrency(cents, currency);
 
   const [open, setOpen] = useState(false);
   const [editor, setEditor] = useState<EditorState>(BLANK);

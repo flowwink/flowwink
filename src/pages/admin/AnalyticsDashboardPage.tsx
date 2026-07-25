@@ -19,6 +19,7 @@ import {
 } from '@/hooks/useAnalytics';
 import { useBookingStats } from '@/hooks/useBookings';
 import { useIsModuleEnabled } from '@/hooks/useModules';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   Users,
   Briefcase,
@@ -75,15 +76,6 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
-
-function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
 
 function SummaryCard({
   title,
@@ -169,6 +161,8 @@ function ModulePrompt({
 }
 
 export default function AnalyticsDashboardPage() {
+  const { formatCurrency, formatNumber, formatDateTime } = usePlatformFormat();
+
   // Module states
   const leadsEnabled = useIsModuleEnabled('leads');
   const dealsEnabled = useIsModuleEnabled('deals');
@@ -373,7 +367,7 @@ export default function AnalyticsDashboardPage() {
                         <p className="text-xs text-muted-foreground truncate">/{page.page_slug}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{page.views.toLocaleString()}</p>
+                        <p className="text-sm font-medium">{formatNumber(page.views)}</p>
                         <p className="text-xs text-muted-foreground">{page.unique_visitors} unique</p>
                       </div>
                     </div>
@@ -411,7 +405,7 @@ export default function AnalyticsDashboardPage() {
                         <p className="text-sm font-medium">{country.country}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{country.views.toLocaleString()}</p>
+                        <p className="text-sm font-medium">{formatNumber(country.views)}</p>
                         <p className="text-xs text-muted-foreground">{country.unique_visitors} unique</p>
                       </div>
                     </div>
@@ -672,7 +666,7 @@ export default function AnalyticsDashboardPage() {
                           <p className="font-medium truncate">{newsletter.subject}</p>
                           <p className="text-sm text-muted-foreground">
                             {newsletter.sent_at
-                              ? new Date(newsletter.sent_at).toLocaleDateString('en-US')
+                              ? formatDateTime(newsletter.sent_at)
                               : 'Not sent'}
                           </p>
                         </div>

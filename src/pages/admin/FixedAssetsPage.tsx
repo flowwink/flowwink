@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Calculator, Plus, MoreHorizontal } from 'lucide-react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 type DepMethod = 'straight_line' | 'declining' | 'sum_of_years' | 'units_of_production';
 
@@ -58,9 +59,6 @@ interface DepreciationEntry {
   created_at: string;
 }
 
-const fmtSEK = (cents: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format((cents ?? 0) / 100);
-
 const METHOD_LABELS: Record<DepMethod, string> = {
   straight_line: 'Straight line',
   declining: 'Declining balance',
@@ -69,6 +67,7 @@ const METHOD_LABELS: Record<DepMethod, string> = {
 };
 
 export default function FixedAssetsPage() {
+  const { formatCurrency } = usePlatformFormat();
   const [tab, setTab] = useState('register');
   const qc = useQueryClient();
 
@@ -105,7 +104,7 @@ export default function FixedAssetsPage() {
     },
     onSuccess: (data: any) => {
       toast.success(
-        `Period ${data?.period}: posted ${data?.processed} assets (${fmtSEK(data?.total_depreciation_cents ?? 0)}), skipped ${data?.skipped}`,
+        `Period ${data?.period}: posted ${data?.processed} assets (${formatCurrency(data?.total_depreciation_cents ?? 0)}), skipped ${data?.skipped}`,
       );
       qc.invalidateQueries({ queryKey: ['fixed_assets'] });
       qc.invalidateQueries({ queryKey: ['depreciation_entries'] });
@@ -151,11 +150,11 @@ export default function FixedAssetsPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardDescription>Total cost</CardDescription></CardHeader>
-            <CardContent className="text-2xl font-semibold">{fmtSEK(totals.cost)}</CardContent>
+            <CardContent className="text-2xl font-semibold">{formatCurrency(totals.cost)}</CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardDescription>Net book value</CardDescription></CardHeader>
-            <CardContent className="text-2xl font-semibold">{fmtSEK(totals.cost - totals.accum)}</CardContent>
+            <CardContent className="text-2xl font-semibold">{formatCurrency(totals.cost - totals.accum)}</CardContent>
           </Card>
         </div>
 
@@ -210,10 +209,10 @@ export default function FixedAssetsPage() {
                               : ''}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">{a.location ?? '—'}</TableCell>
-                          <TableCell className="text-right font-mono">{fmtSEK(a.cost_cents)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmtSEK(a.accumulated_cents)}</TableCell>
+                          <TableCell className="text-right font-mono">{formatCurrency(a.cost_cents)}</TableCell>
+                          <TableCell className="text-right font-mono">{formatCurrency(a.accumulated_cents)}</TableCell>
                           <TableCell className="text-right font-mono">
-                            {fmtSEK(a.cost_cents - a.accumulated_cents)}
+                            {formatCurrency(a.cost_cents - a.accumulated_cents)}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -265,7 +264,7 @@ export default function FixedAssetsPage() {
                         <TableRow key={e.id}>
                           <TableCell>{e.period_date}</TableCell>
                           <TableCell>{asset?.name ?? e.asset_id.slice(0, 8)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmtSEK(e.amount_cents)}</TableCell>
+                          <TableCell className="text-right font-mono">{formatCurrency(e.amount_cents)}</TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {e.journal_entry_id?.slice(0, 8) ?? '—'}
                           </TableCell>
@@ -478,6 +477,7 @@ function AssetActionsMenu({
 }
 
 function RevalueDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose: () => void; onDone: () => void }) {
+  const { formatCurrency } = usePlatformFormat();
   const [value, setValue] = useState(String(((asset.cost_cents - asset.accumulated_cents) / 100).toFixed(2)));
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -491,7 +491,7 @@ function RevalueDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose:
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     const r = data as any;
-    toast.success(`${r?.kind ?? 'Revalued'}: ${fmtSEK(r?.amount_cents ?? 0)}`);
+    toast.success(`${r?.kind ?? 'Revalued'}: ${formatCurrency(r?.amount_cents ?? 0)}`);
     onClose(); onDone();
   };
   return (
@@ -499,7 +499,7 @@ function RevalueDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose:
       <DialogContent>
         <DialogHeader><DialogTitle>Revalue / impair — {asset.name}</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">Current NBV: {fmtSEK(asset.cost_cents - asset.accumulated_cents)}</div>
+          <div className="text-sm text-muted-foreground">Current NBV: {formatCurrency(asset.cost_cents - asset.accumulated_cents)}</div>
           <div className="space-y-1">
             <Label>New value (SEK)</Label>
             <Input type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} />
@@ -519,6 +519,7 @@ function RevalueDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose:
 }
 
 function ManualDepDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose: () => void; onDone: () => void }) {
+  const { formatCurrency } = usePlatformFormat();
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -531,7 +532,7 @@ function ManualDepDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClos
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Posted ${fmtSEK(Math.round(parseFloat(amount) * 100))}`);
+    toast.success(`Posted ${formatCurrency(Math.round(parseFloat(amount) * 100))}`);
     onClose(); onDone();
   };
   return (
@@ -594,6 +595,7 @@ function UnitsDepDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose
 }
 
 function ScheduleDialog({ asset, onClose }: { asset: FixedAsset; onClose: () => void }) {
+  const { formatCurrency } = usePlatformFormat();
   const { data, isLoading } = useQuery({
     queryKey: ['dep_schedule', asset.id],
     queryFn: async () => {
@@ -627,9 +629,9 @@ function ScheduleDialog({ asset, onClose }: { asset: FixedAsset; onClose: () => 
                 {schedule.map((r, i) => (
                   <TableRow key={i}>
                     <TableCell>{r.period}</TableCell>
-                    <TableCell className="text-right font-mono">{fmtSEK(r.amount_cents)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmtSEK(r.accumulated_cents)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmtSEK(r.nbv_cents)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(r.amount_cents)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(r.accumulated_cents)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(r.nbv_cents)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -697,6 +699,7 @@ function EditDialog({ asset, allAssets, onClose, onDone }: { asset: FixedAsset; 
 }
 
 function DisposeDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose: () => void; onDone: () => void }) {
+  const { formatCurrency } = usePlatformFormat();
   const [sale, setSale] = useState('0');
   const [busy, setBusy] = useState(false);
 
@@ -709,7 +712,7 @@ function DisposeDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose:
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     const r = data as any;
-    toast.success(`Disposed. NBV ${fmtSEK(r?.nbv_cents ?? 0)}, gain/loss ${fmtSEK(r?.gain_loss_cents ?? 0)}.`);
+    toast.success(`Disposed. NBV ${formatCurrency(r?.nbv_cents ?? 0)}, gain/loss ${formatCurrency(r?.gain_loss_cents ?? 0)}.`);
     onClose(); onDone();
   };
 
@@ -718,9 +721,9 @@ function DisposeDialog({ asset, onClose, onDone }: { asset: FixedAsset; onClose:
       <DialogContent>
         <DialogHeader><DialogTitle>Dispose: {asset.name}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
-          <div>Cost: <span className="font-mono">{fmtSEK(asset.cost_cents)}</span></div>
-          <div>Accumulated: <span className="font-mono">{fmtSEK(asset.accumulated_cents)}</span></div>
-          <div>NBV: <span className="font-mono">{fmtSEK(asset.cost_cents - asset.accumulated_cents)}</span></div>
+          <div>Cost: <span className="font-mono">{formatCurrency(asset.cost_cents)}</span></div>
+          <div>Accumulated: <span className="font-mono">{formatCurrency(asset.accumulated_cents)}</span></div>
+          <div>NBV: <span className="font-mono">{formatCurrency(asset.cost_cents - asset.accumulated_cents)}</span></div>
           <div className="space-y-1 pt-2">
             <Label>Sale proceeds (SEK, 0 for scrap)</Label>
             <Input type="number" step="0.01" value={sale} onChange={(e) => setSale(e.target.value)} />

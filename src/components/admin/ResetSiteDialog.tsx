@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { getAllModuleOwnership, wipeModulesData, countModuleRows } from '@/lib/module-data-ownership';
 import type { ModulesSettings } from '@/hooks/useModules';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ResetSiteDialogProps {
   open: boolean;
@@ -65,6 +66,7 @@ interface ProgressItem {
 
 export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
   const { user } = useAuth();
+  const { settings: localeSettings } = usePlatformFormat();
   const [step, setStep] = useState<ResetStep>('warning');
   const [options, setOptions] = useState<ResetOptions>(defaultOptions);
   const [confirmText, setConfirmText] = useState('');
@@ -280,7 +282,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
             { key: 'system_ai', value: { provider: 'openai', openaiModel: 'gpt-4.1-mini', openaiReasoningModel: 'gpt-4.1', geminiModel: 'gemini-2.5-flash', geminiReasoningModel: 'gemini-2.5-pro', anthropicModel: 'claude-sonnet-4-20250514', anthropicReasoningModel: 'claude-sonnet-4-20250514', defaultTone: 'professional', defaultLanguage: 'en' } },
             { key: 'aeo', value: { enabled: false } },
             { key: 'custom_scripts', value: { headStart: '', headEnd: '', bodyStart: '', bodyEnd: '' } },
-            { key: 'store', value: { currency: 'USD', taxRate: 0, taxDisplay: 'hidden', taxLabel: 'VAT', storeName: '' } },
+            { key: 'store', value: { currency: localeSettings.default_currency, taxRate: 0, taxDisplay: 'hidden', taxLabel: 'VAT', storeName: '' } },
             { key: 'autonomy_schedule', value: { timezone: 'Europe/Stockholm', heartbeatEnabled: true, briefingEnabled: true, briefingHour: 8, learnEnabled: true, learnHour: 3, heartbeatHours: [0, 12] } },
             { key: 'modules', value: {} },
             { key: 'footer', value: {} },

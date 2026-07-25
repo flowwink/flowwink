@@ -5,6 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useProducts } from '@/hooks/useProducts';
 import { useVariantProductIds } from '@/hooks/useProductVariants';
 import { useProductCategories } from '@/hooks/useProductCategories';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { ShoppingCart, Plus, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -27,15 +28,8 @@ interface ProductsBlockProps {
   data: ProductsBlockData;
 }
 
-function formatPrice(cents: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-  }).format(cents / 100);
-}
-
 export function ProductsBlock({ data }: ProductsBlockProps) {
+  const { formatCurrency } = usePlatformFormat();
   const { data: products = [], isLoading } = useProducts({ activeOnly: true });
   const { data: variantProductIds } = useVariantProductIds();
   const { data: categories = [] } = useProductCategories({ activeOnly: true });
@@ -225,7 +219,7 @@ export function ProductsBlock({ data }: ProductsBlockProps) {
 
                     <div className="flex items-center justify-between mt-auto pt-3">
                       <span className="text-xl font-bold">
-                        {formatPrice(product.price_cents, product.currency)}
+                        {formatCurrency(product.price_cents, product.currency)}
                         {product.type === 'recurring' && (
                           <span className="text-sm font-normal text-muted-foreground">/mo</span>
                         )}

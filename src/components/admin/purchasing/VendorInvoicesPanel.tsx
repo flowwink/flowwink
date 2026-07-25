@@ -19,6 +19,7 @@ import {
   type MatchStatus,
   type VendorInvoiceStatus,
 } from '@/hooks/useVendorInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_TABS: Array<VendorInvoiceStatus | 'all'> = ['all', 'registered', 'approved', 'paid', 'draft', 'cancelled'];
 
@@ -28,6 +29,7 @@ export function VendorInvoicesPanel() {
   const [matchFilter, setMatchFilter] = useState<MatchStatus | 'all'>('all');
   const { data: invoices = [], isLoading } = useVendorInvoices({ status, matchStatus: matchFilter });
   const rematch = useMatchInvoice();
+  const { formatCurrency } = usePlatformFormat();
   const autoApprove = useAutoApproveInvoice();
 
   const kpis = useMemo(() => {
@@ -37,9 +39,6 @@ export function VendorInvoicesPanel() {
     const autoApproved = invoices.filter(i => i.status === 'approved' && i.match_status === 'matched').length;
     return { total, matched, issues, autoApproved };
   }, [invoices]);
-
-  const fmt = (cents: number, currency: string) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
 
   return (
     <TooltipProvider>
@@ -109,9 +108,9 @@ export function VendorInvoicesPanel() {
                       {inv.purchase_orders?.po_number ?? <span className="text-muted-foreground italic">none</span>}
                     </TableCell>
                     <TableCell className="text-sm">{format(new Date(inv.invoice_date), 'yyyy-MM-dd')}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(inv.total_cents, inv.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(inv.total_cents, inv.currency)}</TableCell>
                     <TableCell className={`text-right font-mono ${variance > 0 ? 'text-red-600' : variance < 0 ? 'text-orange-600' : 'text-muted-foreground'}`}>
-                      {variance === 0 ? '—' : fmt(variance, inv.currency)}
+                      {variance === 0 ? '—' : formatCurrency(variance, inv.currency)}
                     </TableCell>
                     <TableCell>
                       <Tooltip>

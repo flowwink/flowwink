@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useCart } from '@/contexts/CartContext';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,14 +22,9 @@ interface CartBlockProps {
 
 export function CartBlock({ data }: CartBlockProps) {
   const { items, removeItem, updateQuantity, totalPriceCents, currency, totalItems } = useCart();
+  const { formatCurrency } = usePlatformFormat();
 
-  const formatPrice = (cents: number, curr: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: curr,
-      minimumFractionDigits: 0,
-    }).format(cents / 100);
-  };
+  const formatPrice = (cents: number, curr: string) => formatCurrency(cents, curr);
 
   const title = data.title || 'Your Cart';
   const emptyMessage = data.emptyMessage || 'Your cart is empty';

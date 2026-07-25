@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useCustomer360, type Customer360TimelineEvent } from '@/hooks/useCustomer360';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { RecordDiscussPanel } from '@/components/admin/crm/RecordDiscussPanel';
 
 const KIND_ICON: Record<Customer360TimelineEvent['kind'], typeof Activity> = {
@@ -61,26 +62,26 @@ const KIND_COLOR: Record<Customer360TimelineEvent['kind'], string> = {
   task: 'text-muted-foreground bg-muted',
 };
 
-function formatMoney(n: number | undefined | null) {
-  if (!n && n !== 0) return '—';
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 }).format(n);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 export default function Customer360Page() {
   const { identifier } = useParams<{ identifier?: string }>();
   const [search] = useSearchParams();
   const navigate = useNavigate();
   const [emailInput, setEmailInput] = useState('');
+  const { settings, formatNumber, formatDateTime } = usePlatformFormat();
+
+  // NOTE: customer-360 returns MAJOR units — the handler already divides
+  // total_cents/value_cents by 100 (see _shared/handlers/customer-360.ts).
+  // So this must NOT go through formatCurrency (which expects minor units);
+  // it formats the major amount directly with currency style.
+  const formatMoney = (n: number | undefined | null) => {
+    if (!n && n !== 0) return '—';
+    return formatNumber(n, {
+      style: 'currency',
+      currency: settings.default_currency,
+      maximumFractionDigits: 0,
+    });
+  };
+  const formatDate = (iso: string) => formatDateTime(iso);
 
   // Identifier can be lead UUID or an email address (URL-encoded).
   const param = useMemo(() => {

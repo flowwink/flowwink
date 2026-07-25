@@ -28,6 +28,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FileText, Loader2, Send, Check, X, RefreshCw, BookOpen, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -38,17 +39,11 @@ const STATUS_COLORS: Record<string, string> = {
   paid: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
 };
 
-function formatCents(cents: number, currency = 'SEK'): string {
-  return new Intl.NumberFormat('sv-SE', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
 export function ExpenseReportsTab() {
   const { data: reports, isLoading } = useExpenseReports();
   const { isAdmin } = useAuth();
+  const { formatCurrency } = usePlatformFormat();
+  const formatCents = (cents: number, currency?: string | null) => formatCurrency(cents, currency);
   const generate = useGenerateMonthlyReport();
   const submit = useSubmitExpenseReport();
   const approve = useApproveExpenseReport();

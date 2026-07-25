@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, Loader2, Inbox, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 type ProposalStatus = 'auto' | 'propose' | 'escalate';
 
@@ -58,29 +59,6 @@ interface ProposalsResult {
   summary: { total: number; auto: number; propose: number; escalate: number };
 }
 
-const sekFmt = new Intl.NumberFormat('sv-SE', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-const sekFmt2 = new Intl.NumberFormat('sv-SE', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-function fmtSek(cents: number, decimals = false) {
-  const v = cents / 100;
-  const abs = Math.abs(v);
-  const s = (decimals ? sekFmt2 : sekFmt).format(abs);
-  return `${v < 0 ? '−' : ''}${s} kr`;
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('sv-SE', {
-    day: '2-digit',
-    month: 'short',
-  });
-}
-
 async function invokeSkill<T>(skill_name: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke('agent-execute', {
     body: { skill_name, arguments: args, agent_type: 'flowpilot' },
@@ -91,6 +69,7 @@ async function invokeSkill<T>(skill_name: string, args: Record<string, unknown>)
 
 export function EventsToBookTab() {
   const qc = useQueryClient();
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [templateOverrides, setTemplateOverrides] = useState<Record<string, string>>({});
   const [batchMode, setBatchMode] = useState(false);
@@ -362,7 +341,7 @@ export function EventsToBookTab() {
                         </div>
                       )}
                       <div className="w-16 shrink-0 text-xs text-muted-foreground tabular-nums">
-                        {fmtDate(p.transaction_date)}
+                        {formatDate(p.transaction_date)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm text-foreground truncate">{p.counterparty}</div>
@@ -377,7 +356,7 @@ export function EventsToBookTab() {
                           p.amount_cents < 0 ? 'text-foreground' : 'text-emerald-700 dark:text-emerald-400',
                         )}
                       >
-                        {fmtSek(p.amount_cents)}
+                        {formatCurrency(p.amount_cents)}
                       </div>
                     </button>
                   );
@@ -426,6 +405,7 @@ export function EventsToBookTab() {
 }
 
 function BookedList({ data }: { data: { rows: any[]; entries: Record<string, any> } | undefined }) {
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const rows = data?.rows ?? [];
   const entries = data?.entries ?? {};
   if (rows.length === 0) {
@@ -449,7 +429,7 @@ function BookedList({ data }: { data: { rows: any[]; entries: Record<string, any
               className="px-5 py-4 flex items-center gap-4"
             >
               <div className="w-16 shrink-0 text-xs text-muted-foreground tabular-nums">
-                {fmtDate(r.transaction_date)}
+                {formatDate(r.transaction_date)}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm text-foreground truncate">{r.counterparty || '—'}</div>
@@ -465,7 +445,7 @@ function BookedList({ data }: { data: { rows: any[]; entries: Record<string, any
                   r.amount_cents < 0 ? 'text-foreground' : 'text-emerald-700 dark:text-emerald-400',
                 )}
               >
-                {fmtSek(r.amount_cents)}
+                {formatCurrency(r.amount_cents)}
               </div>
             </div>
           );
@@ -491,6 +471,7 @@ function ProposalDetail({
   onSkip: () => void;
   isBooking: boolean;
 }) {
+  const { formatCurrency, formatDate } = usePlatformFormat();
   const p = proposal;
   const effectiveTemplateId = templateOverride ?? p.suggested_template_id;
   const effectiveTemplateName =
@@ -503,11 +484,7 @@ function ProposalDetail({
 
       <div className="mb-6">
         <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-          {new Date(p.transaction_date).toLocaleDateString('sv-SE', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
+          {formatDate(p.transaction_date)}
         </div>
         <h2 className="font-serif text-2xl tracking-tight text-foreground">{p.counterparty}</h2>
         {p.description && (
@@ -539,10 +516,10 @@ function ProposalDetail({
                       <span className="text-foreground">{l.account_name}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums font-semibold text-foreground">
-                      {l.debit_cents ? fmtSek(l.debit_cents, true) : ''}
+                      {l.debit_cents ? formatCurrency(l.debit_cents) : ''}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums font-semibold text-foreground">
-                      {l.credit_cents ? fmtSek(l.credit_cents, true) : ''}
+                      {l.credit_cents ? formatCurrency(l.credit_cents) : ''}
                     </td>
                   </tr>
                 ))}

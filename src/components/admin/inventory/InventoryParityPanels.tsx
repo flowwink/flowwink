@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useStockLocations } from '@/hooks/useInventoryV2';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   useInventoryTransfers, useCreateTransfer, useCompleteTransfer,
   useInventoryReceipts, useCreateReceipt, useAdvanceReceipt, useInventoryReceiptLines, useUpdateReceiptLine,
@@ -365,6 +366,7 @@ export function ExpiringLotsPanel() {
 // ABC Analysis
 // ============================================================
 export function AbcAnalysisPanel() {
+  const { formatCurrency } = usePlatformFormat();
   const [days, setDays] = useState(90);
   const { data: rows = [], isLoading } = useAbcAnalysis(days);
 
@@ -411,7 +413,7 @@ export function AbcAnalysisPanel() {
                     <Badge variant={r.abc_class === 'A' ? 'default' : r.abc_class === 'B' ? 'secondary' : 'outline'}>{r.abc_class}</Badge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{Number(r.units_out).toFixed(0)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{(Number(r.value_out_cents) / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatCurrency(Number(r.value_out_cents))}</TableCell>
                   <TableCell>{r.is_slow_mover && <Badge variant="destructive">Slow</Badge>}</TableCell>
                 </TableRow>
               ))}

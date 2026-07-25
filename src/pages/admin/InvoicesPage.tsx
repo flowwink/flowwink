@@ -8,12 +8,12 @@ import { Plus, Clock } from 'lucide-react';
 import { useInvoices, getInvoiceCustomerName, getInvoiceCustomerEmail, getInvoiceCompanyName, type InvoiceStatus } from '@/hooks/useInvoices';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
 import { InvoiceDetailSheet } from '@/components/admin/invoices/InvoiceDetailSheet';
 import { CreateInvoiceDialog } from '@/components/admin/invoices/CreateInvoiceDialog';
 import { InvoiceFromTimesheetsDialog } from '@/components/admin/invoices/InvoiceFromTimesheetsDialog';
 import { ArAgingReportTab } from '@/components/admin/invoices/ArAgingReportTab';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<InvoiceStatus, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -25,6 +25,7 @@ const STATUS_COLORS: Record<InvoiceStatus, string> = {
 };
 
 export default function InvoicesPage() {
+  const { formatCurrency, formatDate, formatDateTime } = usePlatformFormat();
   const [view, setView] = useState<'invoices' | 'aging'>('invoices');
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -35,10 +36,6 @@ export default function InvoicesPage() {
   const { data: invoices = [], isLoading } = useInvoices(
     statusFilter === 'all' ? undefined : statusFilter
   );
-
-  const formatAmount = (cents: number, currency: string) => {
-    return new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
-  };
 
   return (
     <AdminLayout>
@@ -121,13 +118,13 @@ export default function InvoicesPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                            {formatAmount(inv.total_cents, inv.currency)}
+                            {formatCurrency(inv.total_cents, inv.currency)}
                           </TableCell>
                           <TableCell>
-                            {inv.due_date ? format(new Date(inv.due_date), 'yyyy-MM-dd') : '—'}
+                            {formatDate(inv.due_date)}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
-                            {format(new Date(inv.created_at), 'yyyy-MM-dd')}
+                            {formatDateTime(inv.created_at)}
                           </TableCell>
                         </TableRow>
                       );

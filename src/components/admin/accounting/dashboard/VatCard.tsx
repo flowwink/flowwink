@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { callSkill } from '@/lib/call-skill';
-import { DashCard, BigFigure, Subline, QuietEmpty, fmtSek } from './_shared';
+import { DashCard, BigFigure, Subline, QuietEmpty, useFmtSek } from './_shared';
 import { useFiscalYear } from '../FiscalYearContext';
 
 interface VatReturn {
@@ -12,6 +12,7 @@ interface VatReturn {
 
 export function VatCard() {
   const { year } = useFiscalYear();
+  const fmtSek = useFmtSek();
   const now = new Date();
   const month = year === now.getFullYear() ? now.getMonth() + 1 : 12;
 

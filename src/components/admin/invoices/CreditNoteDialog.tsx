@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCreateCreditNote, type Invoice } from '@/hooks/useInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   invoice: Invoice | null;
@@ -18,6 +19,7 @@ export function CreditNoteDialog({ invoice, open, onOpenChange }: Props) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const createCreditNote = useCreateCreditNote();
+  const { formatCurrency } = usePlatformFormat();
 
   useEffect(() => {
     if (open) {
@@ -29,8 +31,7 @@ export function CreditNoteDialog({ invoice, open, onOpenChange }: Props) {
 
   if (!invoice) return null;
 
-  const formatAmount = (cents: number) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: invoice.currency }).format(cents / 100);
+  const formatAmount = (cents: number) => formatCurrency(cents, invoice.currency);
 
   const amountCents = Math.round((Number(amount) || 0) * 100);
   const overLimit = kind === 'partial' && amountCents > invoice.total_cents;

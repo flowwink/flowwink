@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DashCard, BigFigure, Subline, QuietEmpty, fmtSek } from './_shared';
+import { DashCard, BigFigure, Subline, QuietEmpty, useFmtSek } from './_shared';
 import { useFiscalYear } from '../FiscalYearContext';
 
 interface PnLResult {
@@ -38,6 +38,7 @@ export function useIncomeStatementYTD() {
 export function ResultCard() {
   const { data, isLoading, isError } = useIncomeStatementYTD();
   const { year } = useFiscalYear();
+  const fmtSek = useFmtSek();
   const now = new Date();
   const isCurrent = year === now.getFullYear();
   const endLabel = isCurrent

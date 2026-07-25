@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Inbox, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export function PendingOperationsList() {
   const qc = useQueryClient();
+  const { formatCurrency, formatDateTime } = usePlatformFormat();
   const { data, isLoading } = useQuery({
     queryKey: ['pending-operations'],
     queryFn: async () => {
@@ -43,11 +45,7 @@ export function PendingOperationsList() {
 
   if (isLoading) return <p className="text-sm text-muted-foreground p-4">Loading…</p>;
 
-  const sekFmt = new Intl.NumberFormat('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const fmtSek = (cents: number) => {
-    const v = (cents ?? 0) / 100;
-    return `${v < 0 ? '−' : ''}${sekFmt.format(Math.abs(v))} kr`;
-  };
+  const fmtSek = (cents: number) => formatCurrency(cents ?? 0);
 
   const renderJournalEntry = (op: any) => {
     const a = op.args ?? op.preview ?? {};
@@ -136,7 +134,7 @@ export function PendingOperationsList() {
                       </Badge>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground">{new Date(op.created_at).toLocaleString()}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(op.created_at)}</span>
                 </div>
                 {op.skill_name === 'manage_journal_entry' ? (
                   renderJournalEntry(op)

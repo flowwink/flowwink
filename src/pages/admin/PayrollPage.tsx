@@ -17,6 +17,7 @@ import { Wallet, Plus, CheckCircle2, Banknote, Eye, Trash2, FileDown, FileText }
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PayslipDialog } from '@/components/payroll/PayslipDialog';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface PayrollRun {
   id: string;
@@ -67,10 +68,8 @@ interface Component {
   active: boolean;
 }
 
-const fmtSEK = (cents: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format((cents ?? 0) / 100);
-
 export default function PayrollPage() {
+  const { formatCurrency } = usePlatformFormat();
   const [tab, setTab] = useState('runs');
   const qc = useQueryClient();
 
@@ -102,7 +101,7 @@ export default function PayrollPage() {
       return data as any;
     },
     onSuccess: (d: any) => {
-      toast.success(`Created run with ${d?.lines} lines, gross ${fmtSEK(d?.total_gross_cents ?? 0)}`);
+      toast.success(`Created run with ${d?.lines} lines, gross ${formatCurrency(d?.total_gross_cents ?? 0)}`);
       qc.invalidateQueries({ queryKey: ['payroll_runs'] });
       setTab('runs');
     },
@@ -163,11 +162,11 @@ export default function PayrollPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardDescription>YTD gross (last 24 runs)</CardDescription></CardHeader>
-            <CardContent className="text-2xl font-semibold">{fmtSEK(totals.gross)}</CardContent>
+            <CardContent className="text-2xl font-semibold">{formatCurrency(totals.gross)}</CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2"><CardDescription>YTD net paid</CardDescription></CardHeader>
-            <CardContent className="text-2xl font-semibold">{fmtSEK(totals.net)}</CardContent>
+            <CardContent className="text-2xl font-semibold">{formatCurrency(totals.net)}</CardContent>
           </Card>
         </div>
 
@@ -203,8 +202,8 @@ export default function PayrollPage() {
                           {((r.total_pension_employer_cents ?? 0) > 0 ||
                             (r.total_pension_employee_cents ?? 0) > 0) && (
                             <div className="text-[11px] text-muted-foreground font-normal font-mono mt-0.5">
-                              Pension: er {fmtSEK(r.total_pension_employer_cents ?? 0)} · ee{' '}
-                              {fmtSEK(r.total_pension_employee_cents ?? 0)}
+                              Pension: er {formatCurrency(r.total_pension_employer_cents ?? 0)} · ee{' '}
+                              {formatCurrency(r.total_pension_employee_cents ?? 0)}
                             </div>
                           )}
                         </TableCell>
@@ -213,10 +212,10 @@ export default function PayrollPage() {
                             {r.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono">{fmtSEK(r.total_gross_cents)}</TableCell>
-                        <TableCell className="text-right font-mono">{fmtSEK(r.total_tax_cents)}</TableCell>
-                        <TableCell className="text-right font-mono">{fmtSEK(r.total_social_fee_cents)}</TableCell>
-                        <TableCell className="text-right font-mono">{fmtSEK(r.total_net_cents)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(r.total_gross_cents)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(r.total_tax_cents)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(r.total_social_fee_cents)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatCurrency(r.total_net_cents)}</TableCell>
                         <TableCell>
                           <div className="flex gap-1 justify-end">
                             <RunDetails run={r} />
@@ -294,6 +293,7 @@ function NewRunForm({ onCreate, pending }: { onCreate: (period: string) => void;
 }
 
 function RunDetails({ run }: { run: PayrollRun }) {
+  const { formatCurrency } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const { data: lines } = useQuery({
     queryKey: ['payroll_lines', run.id, open],
@@ -427,11 +427,11 @@ function RunDetails({ run }: { run: PayrollRun }) {
         </DialogHeader>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
-          <MiniStat label="Gross" value={fmtSEK(totals.gross)} />
-          <MiniStat label="PAYE tax" value={fmtSEK(totals.tax)} />
-          <MiniStat label="Social fee" value={fmtSEK(totals.social)} />
-          <MiniStat label="Net" value={fmtSEK(totals.net)} />
-          <MiniStat label="Employer cost" value={fmtSEK(totals.employer)} highlight />
+          <MiniStat label="Gross" value={formatCurrency(totals.gross)} />
+          <MiniStat label="PAYE tax" value={formatCurrency(totals.tax)} />
+          <MiniStat label="Social fee" value={formatCurrency(totals.social)} />
+          <MiniStat label="Net" value={formatCurrency(totals.net)} />
+          <MiniStat label="Employer cost" value={formatCurrency(totals.employer)} highlight />
         </div>
 
         <Table>
@@ -452,18 +452,18 @@ function RunDetails({ run }: { run: PayrollRun }) {
             {sorted.map((l) => (
               <TableRow key={l.id}>
                 <TableCell className="font-medium">{l.employee_name ?? l.employee_id.slice(0, 8)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(l.gross_cents)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(l.tax_cents)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(l.social_fee_cents)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(l.net_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(l.gross_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(l.tax_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(l.social_fee_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(l.net_cents)}</TableCell>
                 <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                  {fmtSEK(l.pension_employer_cents ?? 0)} / {fmtSEK(l.pension_employee_cents ?? 0)}
+                  {formatCurrency(l.pension_employer_cents ?? 0)} / {formatCurrency(l.pension_employee_cents ?? 0)}
                 </TableCell>
                 <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                  {(l.sick_days ?? 0)}d · {fmtSEK(l.sick_pay_cents ?? 0)}
+                  {(l.sick_days ?? 0)}d · {formatCurrency(l.sick_pay_cents ?? 0)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {fmtSEK(l.gross_cents + l.social_fee_cents)}
+                  {formatCurrency(l.gross_cents + l.social_fee_cents)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -491,16 +491,16 @@ function RunDetails({ run }: { run: PayrollRun }) {
             {sorted.length > 0 && (
               <TableRow className="font-semibold bg-muted/40">
                 <TableCell>Total</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.gross)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.tax)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.social)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.net)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.gross)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.tax)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.social)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.net)}</TableCell>
                 <TableCell className="text-right font-mono">
-                  {fmtSEK(run.total_pension_employer_cents ?? 0)} /{' '}
-                  {fmtSEK(run.total_pension_employee_cents ?? 0)}
+                  {formatCurrency(run.total_pension_employer_cents ?? 0)} /{' '}
+                  {formatCurrency(run.total_pension_employee_cents ?? 0)}
                 </TableCell>
                 <TableCell></TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.employer)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.employer)}</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             )}
@@ -607,6 +607,7 @@ function ComponentsList({
   components: Component[];
   onChange: () => void;
 }) {
+  const { formatCurrency } = usePlatformFormat();
   const [type, setType] = useState<Component['component_type']>('benefit');
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
@@ -654,7 +655,7 @@ function ComponentsList({
             <TableRow key={c.id}>
               <TableCell className="capitalize">{c.component_type}</TableCell>
               <TableCell>{c.label}</TableCell>
-              <TableCell className="text-right font-mono">{fmtSEK(c.amount_cents)}</TableCell>
+              <TableCell className="text-right font-mono">{formatCurrency(c.amount_cents)}</TableCell>
               <TableCell>{c.taxable ? 'Yes' : 'No'}</TableCell>
               <TableCell>
                 <Button variant="ghost" size="sm" onClick={() => remove(c.id)}>
@@ -703,6 +704,7 @@ function ComponentsList({
 // ─────────────────────────────────────────────────────────────────────────
 
 function ReportsTab({ runs }: { runs: PayrollRun[] }) {
+  const { formatCurrency } = usePlatformFormat();
   const currentYear = new Date().getFullYear();
   const [from, setFrom] = useState(`${currentYear}-01-01`);
   const [to, setTo] = useState(`${currentYear}-12-31`);
@@ -844,11 +846,11 @@ function ReportsTab({ runs }: { runs: PayrollRun[] }) {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <SummaryCard label="Gross wages" value={fmtSEK(totals.gross)} />
-          <SummaryCard label="PAYE tax (2710)" value={fmtSEK(totals.tax)} />
-          <SummaryCard label="Social fee (2731)" value={fmtSEK(totals.social)} />
-          <SummaryCard label="Net paid (2890)" value={fmtSEK(totals.net)} />
-          <SummaryCard label="Employer cost" value={fmtSEK(totals.employer_cost)} highlight />
+          <SummaryCard label="Gross wages" value={formatCurrency(totals.gross)} />
+          <SummaryCard label="PAYE tax (2710)" value={formatCurrency(totals.tax)} />
+          <SummaryCard label="Social fee (2731)" value={formatCurrency(totals.social)} />
+          <SummaryCard label="Net paid (2890)" value={formatCurrency(totals.net)} />
+          <SummaryCard label="Employer cost" value={formatCurrency(totals.employer_cost)} highlight />
         </div>
 
         <Table>
@@ -871,12 +873,12 @@ function ReportsTab({ runs }: { runs: PayrollRun[] }) {
                 <TableCell>
                   <Badge variant={r.status === 'paid' ? 'default' : 'outline'} className="capitalize">{r.status}</Badge>
                 </TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(r.total_gross_cents)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(r.total_tax_cents)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(r.total_social_fee_cents)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(r.total_net_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(r.total_gross_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(r.total_tax_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(r.total_social_fee_cents)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(r.total_net_cents)}</TableCell>
                 <TableCell className="text-right font-mono">
-                  {fmtSEK(r.total_gross_cents + r.total_social_fee_cents)}
+                  {formatCurrency(r.total_gross_cents + r.total_social_fee_cents)}
                 </TableCell>
                 <TableCell className="text-right"><RunDetails run={r} /></TableCell>
               </TableRow>
@@ -892,11 +894,11 @@ function ReportsTab({ runs }: { runs: PayrollRun[] }) {
               <TableRow className="font-semibold bg-muted/40">
                 <TableCell>Total</TableCell>
                 <TableCell></TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.gross)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.tax)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.social)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.net)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtSEK(totals.employer_cost)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.gross)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.tax)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.social)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.net)}</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(totals.employer_cost)}</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             )}
@@ -923,6 +925,7 @@ function SummaryCard({ label, value, highlight }: { label: string; value: string
 // ─────────────────────────────────────────────────────────────────────────
 
 function ApplyPensionDialog({ run }: { run: PayrollRun }) {
+  const { formatCurrency } = usePlatformFormat();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [employerPct, setEmployerPct] = useState('4.5');
@@ -940,7 +943,7 @@ function ApplyPensionDialog({ run }: { run: PayrollRun }) {
     },
     onSuccess: (d: any) => {
       toast.success(
-        `Pension applied — employer ${fmtSEK(d?.total_pension_employer_cents ?? 0)}, employee ${fmtSEK(d?.total_pension_employee_cents ?? 0)}`,
+        `Pension applied — employer ${formatCurrency(d?.total_pension_employer_cents ?? 0)}, employee ${formatCurrency(d?.total_pension_employee_cents ?? 0)}`,
       );
       qc.invalidateQueries({ queryKey: ['payroll_runs'] });
       qc.invalidateQueries({ queryKey: ['payroll_lines', run.id] });
@@ -994,6 +997,7 @@ function ApplyPensionDialog({ run }: { run: PayrollRun }) {
 }
 
 function SickDaysDialog({ run, line }: { run: PayrollRun; line: PayrollLine }) {
+  const { formatCurrency } = usePlatformFormat();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [sickDays, setSickDays] = useState(String(line.sick_days ?? 0));
@@ -1012,7 +1016,7 @@ function SickDaysDialog({ run, line }: { run: PayrollRun; line: PayrollLine }) {
     },
     onSuccess: (d: any) => {
       toast.success(
-        `Sick pay applied — sick ${fmtSEK(d?.sick_pay_cents ?? 0)}, karens ${fmtSEK(d?.karensavdrag_cents ?? 0)}`,
+        `Sick pay applied — sick ${formatCurrency(d?.sick_pay_cents ?? 0)}, karens ${formatCurrency(d?.karensavdrag_cents ?? 0)}`,
       );
       if (d?.note) toast.message(d.note);
       qc.invalidateQueries({ queryKey: ['payroll_runs'] });

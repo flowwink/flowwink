@@ -11,22 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   purchaseOrderId: string;
   currency?: string;
 }
 
-function fmtMoney(cents: number | null | undefined, currency = 'SEK') {
-  if (cents == null) return '—';
-  try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(2)} ${currency}`;
-  }
-}
-
 export function LandedCostPanel({ purchaseOrderId, currency = 'SEK' }: Props) {
+  const { formatCurrency } = usePlatformFormat();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'by_value' | 'by_qty'>('by_value');
@@ -156,7 +149,7 @@ export function LandedCostPanel({ purchaseOrderId, currency = 'SEK' }: Props) {
                   <TableCell className="text-sm">{format(new Date(e.created_at), 'MMM d, yyyy')}</TableCell>
                   <TableCell className="text-sm">{e.description ?? '—'}</TableCell>
                   <TableCell className="text-sm">{e.method === 'by_qty' ? 'By qty' : 'By value'}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{fmtMoney(e.amount_cents, currency)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{formatCurrency(e.amount_cents, currency)}</TableCell>
                   <TableCell className="text-xs font-mono text-muted-foreground">{e.journal_entry_id ? e.journal_entry_id.slice(0, 8) + '…' : '—'}</TableCell>
                 </TableRow>
               ))}

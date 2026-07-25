@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Receipt, Users, AlertCircle, Send } from 'lucide-react';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -27,19 +28,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-function formatCents(cents: number, currency = 'SEK'): string {
-  return new Intl.NumberFormat('sv-SE', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
 export function ExpensesListTab() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { data: expenses, isLoading } = useExpenses(statusFilter);
   const submitExpenses = useSubmitExpenses();
+  const { formatCurrency } = usePlatformFormat();
+  const formatCents = (cents: number, currency?: string | null) => formatCurrency(cents, currency);
 
   const totalAmount = expenses?.reduce((s, e) => s + e.amount_cents, 0) ?? 0;
   const draftCount = expenses?.filter(e => e.status === 'draft').length ?? 0;

@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SignaturePad } from '@/components/public/SignaturePad';
 import { usePublicQuote, useSignQuote, markQuoteViewed } from '@/hooks/useQuoteWorkflow';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface QuotePaymentStatus {
   invoice_number: string;
@@ -38,6 +38,7 @@ export default function PublicQuotePage() {
   const { data: quote, isLoading, refetch } = usePublicQuote(token);
   const signQuote = useSignQuote();
   const qc = useQueryClient();
+  const { formatCurrency, formatDate, formatDateTime } = usePlatformFormat();
 
   const [signerName, setSignerName] = useState('');
   const [signerEmail, setSignerEmail] = useState('');
@@ -163,7 +164,7 @@ export default function PublicQuotePage() {
   const subtotal = (quote as { subtotal_cents: number }).subtotal_cents || 0;
   const tax = (quote as { tax_cents: number }).tax_cents || 0;
   const validUntil = (quote as { valid_until: string | null }).valid_until;
-  const fmt = (cents: number) => new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
+  const fmt = (cents: number) => formatCurrency(cents, currency);
 
   const isFinal = status === 'accepted' || status === 'rejected';
   // Expiry mirrors the server-side gate in quote-sign: valid through valid_until, expired after.
@@ -281,7 +282,7 @@ export default function PublicQuotePage() {
             </div>
 
             {validUntil && (
-              <p className="text-xs text-muted-foreground">Valid until {format(new Date(validUntil), 'yyyy-MM-dd')}</p>
+              <p className="text-xs text-muted-foreground">Valid until {formatDate(validUntil)}</p>
             )}
 
             {(quote as { terms_text: string | null }).terms_text && (
@@ -296,7 +297,7 @@ export default function PublicQuotePage() {
               <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-sm flex items-start gap-2">
                 <Clock className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>
-                  This quote expired on {format(new Date(validUntil!), 'yyyy-MM-dd')} — contact us for a renewed offer.
+                  This quote expired on {formatDate(validUntil!)} — contact us for a renewed offer.
                 </span>
               </div>
             )}
@@ -380,7 +381,7 @@ export default function PublicQuotePage() {
                         <Badge>Paid</Badge>
                         <span className="text-muted-foreground">
                           Invoice {payStatus.invoice_number} is paid in full
-                          {payStatus.quote_paid_at ? ` (${format(new Date(payStatus.quote_paid_at), 'yyyy-MM-dd')})` : ''}.
+                          {payStatus.quote_paid_at ? ` (${formatDateTime(payStatus.quote_paid_at)})` : ''}.
                         </span>
                       </div>
                     )}

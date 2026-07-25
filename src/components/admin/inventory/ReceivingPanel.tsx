@@ -15,10 +15,7 @@ import {
   useReceivingRealtime,
   type ReceiveLineInput,
 } from '@/hooks/useReceiving';
-
-function formatMoney(cents: number, ccy = 'SEK') {
-  return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: ccy }).format(cents / 100);
-}
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 function statusBadge(status: string) {
   const variant: 'default' | 'secondary' | 'outline' = status === 'partially_received' ? 'secondary' : 'outline';
@@ -142,6 +139,7 @@ function ReceiveDialog({ poId, onClose }: { poId: string; onClose: () => void })
 }
 
 export function ReceivingPanel() {
+  const { formatCurrency } = usePlatformFormat();
   useReceivingRealtime();
   const { data: openPos, isLoading } = useOpenPurchaseOrders();
   const { data: receipts } = useRecentGoodsReceipts(15);
@@ -198,7 +196,7 @@ export function ReceivingPanel() {
                     <TableCell>{po.vendors?.name ?? '—'}</TableCell>
                     <TableCell>{statusBadge(po.status)}</TableCell>
                     <TableCell>{po.expected_delivery ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-right">{formatMoney(po.total_cents, po.currency)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(po.total_cents, po.currency)}</TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" onClick={() => setReceivingPoId(po.id)}>Receive</Button>
                     </TableCell>

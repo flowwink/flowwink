@@ -18,18 +18,16 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, FileText, Lock, Play, AlertCircle, CheckCircle2 } from "lucide-react";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-function formatSEK(cents: number): string {
-  return new Intl.NumberFormat("sv-SE", { style: "currency", currency: "SEK" })
-    .format(Number(cents) / 100);
-}
-
 export function PayrollExportPanel() {
+  const { formatCurrency, formatDateTime } = usePlatformFormat();
+  const formatSEK = (cents: number): string => formatCurrency(Number(cents));
   const now = new Date();
   // Default to previous month (typical payroll workflow)
   const defaultDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -276,7 +274,7 @@ export function PayrollExportPanel() {
                     <TableCell className="text-right">{Number(e.total_leave_days).toFixed(1)}</TableCell>
                     <TableCell className="text-right">{formatSEK(e.total_expense_cents)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {e.generated_at ? new Date(e.generated_at).toLocaleString("sv-SE") : "—"}
+                      {formatDateTime(e.generated_at)}
                     </TableCell>
                   </TableRow>
                 ))}

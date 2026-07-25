@@ -10,6 +10,7 @@ import { Plus, Search, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePoMatchSummaries, MATCH_STATUS_LABEL, MATCH_STATUS_COLOR } from '@/hooks/useVendorInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function PurchaseOrdersList({ onEdit, onNew }: Props) {
+  const { formatCurrency } = usePlatformFormat();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -62,9 +64,6 @@ export function PurchaseOrdersList({ onEdit, onNew }: Props) {
 
   const { data: matchSummaries = [] } = usePoMatchSummaries(filtered.map(o => o.id));
   const summaryMap = new Map(matchSummaries.map(s => [s.purchase_order_id, s]));
-
-  const formatCurrency = (cents: number, currency: string) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
 
   return (
     <TooltipProvider>

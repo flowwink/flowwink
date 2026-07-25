@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { usePettyCashCounts, useRecordPettyCashCount } from '@/hooks/useReconciliationParity';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export function PettyCashPanel() {
   const [cashAccount, setCashAccount] = useState('1910');
@@ -17,8 +18,7 @@ export function PettyCashPanel() {
   const { data: counts = [] } = usePettyCashCounts(cashAccount);
   const record = useRecordPettyCashCount();
 
-  const fmt = (c: number, ccy = 'SEK') =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: ccy }).format(c / 100);
+  const { formatCurrency } = usePlatformFormat();
 
   const submit = async () => {
     const cents = Math.round(parseFloat(countedAmount || '0') * 100);
@@ -105,10 +105,10 @@ export function PettyCashPanel() {
                   <TableRow key={c.id}>
                     <TableCell className="font-mono text-sm">{c.count_date}</TableCell>
                     <TableCell className="font-mono text-xs">{c.cash_account_code}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(c.book_balance_cents, c.currency)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(c.counted_cents, c.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(c.book_balance_cents, c.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(c.counted_cents, c.currency)}</TableCell>
                     <TableCell className={`text-right font-mono ${c.difference_cents === 0 ? 'text-muted-foreground' : c.difference_cents > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {fmt(c.difference_cents, c.currency)}
+                      {formatCurrency(c.difference_cents, c.currency)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{c.notes || '—'}</TableCell>
                   </TableRow>

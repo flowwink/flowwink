@@ -5,10 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useReconciliationReport } from '@/hooks/useReconciliationRules';
-
-const fmtSEK = (cents: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 2 })
-    .format((cents ?? 0) / 100);
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 export function ReconciliationReportPanel() {
   const today = new Date();
@@ -16,6 +13,7 @@ export function ReconciliationReportPanel() {
   const [to, setTo] = useState(format(endOfMonth(today), 'yyyy-MM-dd'));
 
   const { data, isLoading, refetch, isFetching } = useReconciliationReport(from, to);
+  const { formatCurrency } = usePlatformFormat();
 
   const matchedPct =
     data && data.total_count > 0 ? Math.round((data.matched_count / data.total_count) * 100) : 0;
@@ -66,7 +64,7 @@ export function ReconciliationReportPanel() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-semibold">{data.total_count}</div>
-                <div className="text-sm text-muted-foreground mt-1">{fmtSEK(data.total_cents)}</div>
+                <div className="text-sm text-muted-foreground mt-1">{formatCurrency(data.total_cents)}</div>
               </CardContent>
             </Card>
 
@@ -77,7 +75,7 @@ export function ReconciliationReportPanel() {
               <CardContent>
                 <div className="text-2xl font-semibold text-emerald-600">{data.matched_count}</div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  {fmtSEK(data.matched_cents)} · {matchedPct}%
+                  {formatCurrency(data.matched_cents)} · {matchedPct}%
                 </div>
               </CardContent>
             </Card>
@@ -88,7 +86,7 @@ export function ReconciliationReportPanel() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-semibold text-destructive">{data.unmatched_count}</div>
-                <div className="text-sm text-muted-foreground mt-1">{fmtSEK(data.unmatched_cents)}</div>
+                <div className="text-sm text-muted-foreground mt-1">{formatCurrency(data.unmatched_cents)}</div>
               </CardContent>
             </Card>
 

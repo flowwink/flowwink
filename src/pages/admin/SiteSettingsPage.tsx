@@ -166,6 +166,7 @@ function OgImagePicker({ value, onChange }: { value: string; onChange: (url: str
 }
 
 export default function SiteSettingsPage() {
+  const { formatDateTime } = usePlatformFormat();
   const [showResetDialog, setShowResetDialog] = useState(false);
   const { data: seoSettings, isLoading: seoLoading } = useSeoSettings();
   const { data: performanceSettings, isLoading: performanceLoading } = usePerformanceSettings();
@@ -1146,7 +1147,7 @@ export default function SiteSettingsPage() {
                     </p>
                     {maintenanceData.expectedEndTime && (
                       <p className="text-sm text-muted-foreground">
-                        Expected end time: {new Date(maintenanceData.expectedEndTime).toLocaleString('en-US')}
+                        Expected end time: {formatDateTime(maintenanceData.expectedEndTime)}
                       </p>
                     )}
                   </div>

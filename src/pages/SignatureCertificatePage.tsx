@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface CertificateSignature {
   action: 'accept' | 'reject';
@@ -66,6 +67,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export default function SignatureCertificatePage() {
   const { token } = useParams<{ token: string }>();
   const location = useLocation();
+  const { formatCurrency } = usePlatformFormat();
   const kind: 'quote' | 'contract' = location.pathname.startsWith('/contract/') ? 'contract' : 'quote';
 
   const { data: cert, isLoading } = useQuery({
@@ -106,8 +108,7 @@ export default function SignatureCertificatePage() {
   const sig = cert.signature;
   const accepted = sig?.action === 'accept';
   const amountCents = cert.kind === 'quote' ? cert.total_cents : cert.value_cents;
-  const fmtAmount = (cents: number) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: cert.currency || 'SEK' }).format(cents / 100);
+  const fmtAmount = (cents: number) => formatCurrency(cents, cert.currency);
   const docLabel = cert.kind === 'quote' ? 'Quote' : 'Contract';
   const payment = cert.payment ?? null;
   const paidCents = payment?.paid_amount_cents ?? 0;

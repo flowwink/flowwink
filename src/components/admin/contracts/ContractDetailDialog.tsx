@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import type { Contract } from "@/hooks/useContracts";
 import { DocumentsPanel } from "@/components/admin/documents/DocumentsPanel";
+import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 interface Props {
   contract: Contract | null;
@@ -20,10 +21,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function ContractDetailDialog({ contract, open, onOpenChange }: Props) {
+  const { formatCurrency } = usePlatformFormat();
+
   if (!contract) return null;
 
   const formatValue = (cents: number, currency: string) =>
-    cents ? new Intl.NumberFormat("sv-SE", { style: "currency", currency }).format(cents / 100) : "—";
+    cents ? formatCurrency(cents, currency) : "—";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

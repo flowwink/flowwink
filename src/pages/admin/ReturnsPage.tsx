@@ -16,6 +16,7 @@ import { Undo2, CheckCircle2, PackageCheck, ClipboardCheck, DollarSign, Plus, Se
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ReturnDetailDrawer } from '@/components/admin/returns/ReturnDetailDrawer';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ReturnRow {
   id: string;
@@ -51,11 +52,6 @@ const REASON_CODES = [
 
 function reasonLabel(code: string | null) {
   return REASON_CODES.find((r) => r.value === code)?.label ?? code ?? '—';
-}
-
-function formatMoney(cents: number | null | undefined, currency = 'SEK') {
-  if (cents == null) return '—';
-  return new Intl.NumberFormat('sv-SE', { style: 'currency', currency }).format(cents / 100);
 }
 
 function CreateReturnDialog() {
@@ -167,6 +163,7 @@ function InspectDialog({ returnRow }: { returnRow: ReturnRow }) {
 }
 
 function RefundDialog({ returnRow }: { returnRow: ReturnRow }) {
+  const { formatCurrency } = usePlatformFormat();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const expectedTotal = (returnRow.total_amount_cents ?? 0) - (returnRow.restocking_fee_cents ?? 0);
@@ -194,7 +191,7 @@ function RefundDialog({ returnRow }: { returnRow: ReturnRow }) {
       setLastRemaining(r.remaining_cents ?? 0);
       toast.success(
         (r.remaining_cents ?? 0) > 0
-          ? `Refund posted. Remaining: ${formatMoney(r.remaining_cents ?? 0, returnRow.refund_currency ?? 'SEK')}`
+          ? `Refund posted. Remaining: ${formatCurrency(r.remaining_cents ?? 0, returnRow.refund_currency)}`
           : 'Refund completed'
       );
       if ((r.remaining_cents ?? 0) === 0) setOpen(false);
@@ -211,13 +208,13 @@ function RefundDialog({ returnRow }: { returnRow: ReturnRow }) {
         <DialogHeader><DialogTitle>Refund {returnRow.rma_number}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-3 gap-2 p-3 rounded-md bg-muted/40">
-            <div><div className="text-xs text-muted-foreground">Items</div><div className="font-medium">{formatMoney(returnRow.total_amount_cents, returnRow.refund_currency ?? 'SEK')}</div></div>
-            <div><div className="text-xs text-muted-foreground">Restock fee</div><div className="font-medium">−{formatMoney(returnRow.restocking_fee_cents, returnRow.refund_currency ?? 'SEK')}</div></div>
-            <div><div className="text-xs text-muted-foreground">Already refunded</div><div className="font-medium">{formatMoney(alreadyRefunded, returnRow.refund_currency ?? 'SEK')}</div></div>
+            <div><div className="text-xs text-muted-foreground">Items</div><div className="font-medium">{formatCurrency(returnRow.total_amount_cents, returnRow.refund_currency)}</div></div>
+            <div><div className="text-xs text-muted-foreground">Restock fee</div><div className="font-medium">−{formatCurrency(returnRow.restocking_fee_cents, returnRow.refund_currency)}</div></div>
+            <div><div className="text-xs text-muted-foreground">Already refunded</div><div className="font-medium">{formatCurrency(alreadyRefunded, returnRow.refund_currency)}</div></div>
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">Remaining: </span>
-            <span className="font-semibold">{formatMoney(lastRemaining ?? remaining, returnRow.refund_currency ?? 'SEK')}</span>
+            <span className="font-semibold">{formatCurrency(lastRemaining ?? remaining, returnRow.refund_currency)}</span>
           </div>
           <div className="space-y-2">
             <Label>Refund amount</Label>
@@ -255,6 +252,7 @@ function RefundDialog({ returnRow }: { returnRow: ReturnRow }) {
 }
 
 function ReasonsWidget() {
+  const { formatCurrency } = usePlatformFormat();
   const [days, setDays] = useState(30);
   const { data, isLoading } = useQuery({
     queryKey: ['return-reasons', days],
@@ -300,7 +298,7 @@ function ReasonsWidget() {
                 <div key={r.reason_code} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span>{reasonLabel(r.reason_code)}</span>
-                    <span className="text-muted-foreground">{r.cnt} · {formatMoney(r.refunded_cents)}</span>
+                    <span className="text-muted-foreground">{r.cnt} · {formatCurrency(r.refunded_cents)}</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
@@ -316,6 +314,7 @@ function ReasonsWidget() {
 }
 
 export default function ReturnsPage() {
+  const { formatCurrency } = usePlatformFormat();
   const qc = useQueryClient();
   const [detailRow, setDetailRow] = useState<ReturnRow | null>(null);
   const { data, isLoading } = useQuery({
@@ -407,7 +406,7 @@ export default function ReturnsPage() {
                         <Badge variant={STATUS_COLORS[r.status] ?? 'outline'}>{r.status}</Badge>
                       </TableCell>
                       <TableCell>
-                        {formatMoney(r.refunded_cents ?? r.refund_amount_cents, r.refund_currency ?? 'SEK')}
+                        {formatCurrency(r.refunded_cents ?? r.refund_amount_cents, r.refund_currency)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}

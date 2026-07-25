@@ -23,12 +23,7 @@ import {
   type ShippingRate,
   type CalcRateResult,
 } from '@/hooks/useShippingRates';
-
-const fmtSEK = (cents: number | null | undefined, currency = 'SEK') =>
-  cents == null
-    ? '—'
-    : new Intl.NumberFormat('sv-SE', { style: 'currency', currency, maximumFractionDigits: 2 })
-        .format(cents / 100);
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const toCents = (s: string): number => {
   const n = Number(s.trim().replace(',', '.'));
@@ -69,6 +64,7 @@ export function ShippingRatesPanel() {
   const create = useCreateShippingRate();
   const update = useUpdateShippingRate();
   const del = useDeleteShippingRate();
+  const { formatCurrency } = usePlatformFormat();
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -223,7 +219,7 @@ export function ShippingRatesPanel() {
                               )}
                             </TableCell>
                             <TableCell className="text-right font-mono text-sm">
-                              {fmtSEK(r.price_cents, r.currency)}
+                              {formatCurrency(r.price_cents, r.currency)}
                             </TableCell>
                             <TableCell className="text-right font-mono text-sm text-muted-foreground">
                               {r.dim_divisor ?? '—'}
@@ -321,7 +317,7 @@ export function ShippingRatesPanel() {
                   <div>
                     <div className="text-xs text-muted-foreground">Price</div>
                     <div className="text-xl font-semibold font-mono">
-                      {fmtSEK(calcResult.price_cents, calcResult.currency || 'SEK')}
+                      {formatCurrency(calcResult.price_cents, calcResult.currency || 'SEK')}
                     </div>
                   </div>
                   <div>

@@ -32,8 +32,19 @@ function minorUnitDigits(locale: string, currency: string): number {
 
 export interface PlatformFormat {
   settings: PlatformLocaleSettings;
-  /** Amount is given in MINOR units (öre/cents/…) of `currency`. */
-  formatCurrency: (amountMinorUnits: number | null | undefined, currency?: string | null) => string;
+  /**
+   * Amount is given in MINOR units (öre/cents/…) of `currency`.
+   *
+   * `options` is a narrow escape hatch for presentation-only tweaks — chiefly
+   * `maximumFractionDigits: 0` for whole-unit displays (salary bands, KPI
+   * tiles) that would otherwise gain a misleading ",00". It must never be used
+   * to change the currency or the locale.
+   */
+  formatCurrency: (
+    amountMinorUnits: number | null | undefined,
+    currency?: string | null,
+    options?: Omit<Intl.NumberFormatOptions, 'style' | 'currency'>,
+  ) => string;
   /** Date-only value ("2026-07-08" or a Date) — never timezone-shifted. */
   formatDate: (dateOnly: string | Date | null | undefined) => string;
   /** Real timestamp — rendered in the platform timezone. */
@@ -56,13 +67,20 @@ export function usePlatformFormat(): PlatformFormat {
     const formatCurrency = (
       amountMinorUnits: number | null | undefined,
       currency?: string | null,
+      options?: Omit<Intl.NumberFormatOptions, 'style' | 'currency'>,
     ) => {
       if (amountMinorUnits == null || Number.isNaN(amountMinorUnits)) return '—';
       const cur = (currency || s.default_currency).toUpperCase();
+      // Scaling ALWAYS uses the currency's true minor-unit digits — `options`
+      // may change how the value is displayed, never how it is scaled.
       const digits = minorUnitDigits(locale, cur);
       const major = amountMinorUnits / Math.pow(10, digits);
       try {
-        return new Intl.NumberFormat(locale, { style: 'currency', currency: cur }).format(major);
+        return new Intl.NumberFormat(locale, {
+          ...options,
+          style: 'currency',
+          currency: cur,
+        }).format(major);
       } catch {
         return `${major.toFixed(digits)} ${cur}`;
       }

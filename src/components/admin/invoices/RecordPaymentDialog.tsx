@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRecordInvoicePayment, type Invoice } from '@/hooks/useInvoices';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Props {
   invoice: Invoice | null;
@@ -18,6 +19,7 @@ export function RecordPaymentDialog({ invoice, open, onOpenChange }: Props) {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<(typeof PAYMENT_METHODS)[number]>('manual');
   const recordPayment = useRecordInvoicePayment();
+  const { formatCurrency } = usePlatformFormat();
 
   const remainingCents = invoice ? Math.max(0, invoice.total_cents - (invoice.paid_amount_cents || 0)) : 0;
 
@@ -31,8 +33,7 @@ export function RecordPaymentDialog({ invoice, open, onOpenChange }: Props) {
 
   if (!invoice) return null;
 
-  const formatAmount = (cents: number) =>
-    new Intl.NumberFormat('sv-SE', { style: 'currency', currency: invoice.currency }).format(cents / 100);
+  const formatAmount = (cents: number) => formatCurrency(cents, invoice.currency);
 
   const amountCents = Math.round((Number(amount) || 0) * 100);
   const invalidAmount = !amount || amountCents <= 0;

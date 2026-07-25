@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ComplianceReport {
   period_days: number;
@@ -79,11 +80,6 @@ function useServiceCredits() {
   });
 }
 
-const fmtSek = (cents: number) =>
-  new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 }).format(
-    (cents ?? 0) / 100,
-  );
-
 function complianceBar(pct: number): string {
   if (pct >= 95) return 'bg-green-600';
   if (pct >= 80) return 'bg-amber-500';
@@ -101,6 +97,7 @@ export function ComplianceTab() {
   const { data: report, isLoading } = useComplianceReport(days);
   const { data: tiers, isLoading: tiersLoading } = useSlaTiers();
   const { data: credits, isLoading: creditsLoading } = useServiceCredits();
+  const { formatCurrency } = usePlatformFormat();
 
   return (
     <div className="space-y-6">
@@ -132,7 +129,7 @@ export function ComplianceTab() {
             { label: 'Resolved', value: report?.violations_resolved ?? 0 },
             { label: 'Open now', value: report?.violations_open_now ?? 0 },
             { label: 'Escalations fired', value: report?.escalations_fired ?? 0 },
-            { label: 'Service credits', value: fmtSek(report?.service_credits_accrued_cents ?? 0) },
+            { label: 'Service credits', value: formatCurrency(report?.service_credits_accrued_cents ?? 0) },
             {
               label: 'Avg overage',
               value: report?.avg_overage_ratio
@@ -236,7 +233,7 @@ export function ComplianceTab() {
               <span>Service credits</span>
               {credits && (
                 <span className="text-xs font-normal text-muted-foreground">
-                  Accrued: {fmtSek(credits.total_accrued_cents)}
+                  Accrued: {formatCurrency(credits.total_accrued_cents)}
                 </span>
               )}
             </CardTitle>
@@ -252,11 +249,7 @@ export function ComplianceTab() {
                   <div key={c.id} className="flex items-center justify-between text-sm border-b last:border-b-0 pb-2 last:pb-0 gap-3">
                     <div className="min-w-0">
                       <p className="font-medium tabular-nums">
-                        {new Intl.NumberFormat('sv-SE', {
-                          style: 'currency',
-                          currency: c.currency || 'SEK',
-                          maximumFractionDigits: 0,
-                        }).format(c.amount_cents / 100)}
+                        {formatCurrency(c.amount_cents, c.currency)}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {c.reason || format(new Date(c.created_at), 'PP')}

@@ -84,39 +84,47 @@ export type NavGroup = {
 
 export const navigationGroups: NavGroup[] = [
   {
+    // Everyday cockpit — the 4 tools an operator opens most.
     label: "Main",
     items: [
       { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { name: "FlowChat", href: "/admin/flowchat", icon: MessageSquare },
       { name: "FlowPilot", href: "/admin/flowpilot", icon: Zap, moduleId: "flowpilot" },
-      { name: "Automations", href: "/admin/automations", icon: Timer },
-      { name: "Federation", href: "/admin/federation", icon: Network, moduleId: "federation" },
-
       { name: "Analytics", href: "/admin/analytics", icon: BarChart3, moduleId: "analytics" },
-      { name: "Growth", href: "/admin/growth", icon: Megaphone, moduleId: "paidGrowth" },
     ],
-
   },
   {
+    // Automation & agent orchestration — split out from Main to reduce clutter.
+    label: "Automate",
+    items: [
+      { name: "Automations", href: "/admin/automations", icon: Timer },
+      { name: "Federation", href: "/admin/federation", icon: Network, moduleId: "federation" },
+    ],
+  },
+  {
+    // Site content authoring — Website → Blog → Media are the top three.
     label: "Content",
     items: [
       { name: "Website", href: "/admin/pages", icon: FileText, moduleId: "pages" },
       { name: "Blog", href: "/admin/blog", icon: BookOpen, moduleId: "blog" },
-      { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone, moduleId: "developer" },
-      { name: "Knowledge Base", href: "/admin/knowledge-base", icon: Library, moduleId: "knowledgeBase" },
       { name: "Media Library", href: "/admin/media", icon: Image, moduleId: "mediaLibrary" },
-      { name: "Handbook", href: "/admin/handbook", icon: BookMarked, moduleId: "handbook" },
+      { name: "Knowledge Base", href: "/admin/knowledge-base", icon: Library, moduleId: "knowledgeBase" },
       { name: "Docs", href: "/admin/docs", icon: BookOpen, moduleId: "docs" },
+      { name: "Handbook", href: "/admin/handbook", icon: BookMarked, moduleId: "handbook" },
       { name: "Wiki", href: "/admin/wiki", icon: BookMarked, moduleId: "wiki" },
       { name: "River", href: "/admin/river", icon: MessageSquare, moduleId: "river" },
       { name: "Flowtable", href: "/admin/flowtable", icon: Table2, moduleId: "flowtable" },
     ],
   },
   {
+    // All outbound / demand generation lives here — Campaigns + Growth moved
+    // out of Content/Main so marketing has one home.
     label: "Marketing",
     allowedRoles: ["marketing"],
     items: [
+      { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone, moduleId: "developer" },
       { name: "Newsletter", href: "/admin/newsletter", icon: Mail, moduleId: "newsletter" },
+      { name: "Growth", href: "/admin/growth", icon: Target, moduleId: "paidGrowth" },
       { name: "Webinars", href: "/admin/webinars", icon: Video, moduleId: "webinars" },
       { name: "WebMeet", href: "/admin/webmeet", icon: Video, moduleId: "webmeet" },
       { name: "Forms", href: "/admin/forms", icon: Inbox, moduleId: "forms" },
@@ -127,27 +135,28 @@ export const navigationGroups: NavGroup[] = [
     label: "Support",
     allowedRoles: ["support"],
     items: [
-      { name: "Flowwork", href: "/admin/flowwork", icon: Sparkles, moduleId: "workspaceChat" },
+      { name: "Tickets", href: "/admin/tickets", icon: Inbox, moduleId: "tickets" },
       { name: "Live Support", href: "/admin/live-support", icon: Headphones, moduleId: "liveSupport" },
       { name: "Voice", href: "/admin/voice", icon: Phone, moduleId: "voice" },
-      { name: "Tickets", href: "/admin/tickets", icon: Inbox, moduleId: "tickets" },
+      { name: "Flowwork", href: "/admin/flowwork", icon: Sparkles, moduleId: "workspaceChat" },
     ],
   },
   {
-    label: "CRM",
+    // Renamed CRM → Sales; reordered by day-to-day usage (Contacts/Deals top,
+    // Business Identity moved to Admin where operator-level config belongs).
+    label: "Sales",
     allowedRoles: ["sales"],
     items: [
-      { name: "Business Identity", href: "/admin/company-insights", icon: Building2, moduleId: "companyInsights" },
-      { name: "Customer 360", href: "/admin/customer", icon: UserSearch, moduleId: "customer360" },
       { name: "Contacts", href: "/admin/contacts", icon: UserCheck, moduleId: "leads" },
       { name: "Companies", href: "/admin/companies", icon: Building2, moduleId: "companies" },
-      { name: "Sales Intelligence", href: "/admin/sales-intelligence", icon: Target, moduleId: "salesIntelligence" },
-      { name: "Consultants", href: "/admin/consultants", icon: FileUser, moduleId: "consultants" },
       { name: "Deals", href: "/admin/deals", icon: Briefcase, moduleId: "deals" },
-      { name: "Pipeline Stages", href: "/admin/pipelines/stages", icon: FolderKanban, moduleId: "crm" },
       { name: "Activities", href: "/admin/activities", icon: CheckSquare, moduleId: "crm" },
+      { name: "Pipeline Stages", href: "/admin/pipelines/stages", icon: FolderKanban, moduleId: "crm" },
       { name: "Bookings", href: "/admin/bookings", icon: CalendarDays, moduleId: "bookings" },
       { name: "Calendar", href: "/admin/calendar", icon: CalendarDays, moduleId: "calendar" },
+      { name: "Customer 360", href: "/admin/customer", icon: UserSearch, moduleId: "customer360" },
+      { name: "Sales Intelligence", href: "/admin/sales-intelligence", icon: Target, moduleId: "salesIntelligence" },
+      { name: "Consultants", href: "/admin/consultants", icon: FileUser, moduleId: "consultants" },
       { name: "Surveys & NPS", href: "/admin/surveys", icon: Sparkles, moduleId: "surveys" },
       { name: "Field Service", href: "/admin/field-service", icon: Truck, moduleId: "fieldService" },
     ],
@@ -175,13 +184,15 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    label: "E-commerce",
+    // Renamed E-commerce → Commerce (covers B2B + POS + purchasing too).
+    label: "Commerce",
     allowedRoles: ["warehouse", "purchasing"],
     items: [
-      { name: "Customers", href: "/admin/customers", icon: UserRound, moduleId: "ecommerce" },
       { name: "Products", href: "/admin/products", icon: Package, moduleId: "ecommerce" },
-      { name: "Units of Measure", href: "/admin/products/units", icon: Package, moduleId: "ecommerce" },
+      { name: "Orders", href: "/admin/orders", icon: ShoppingCart, moduleId: "ecommerce" },
+      { name: "Customers", href: "/admin/customers", icon: UserRound, moduleId: "ecommerce" },
       { name: "Inventory", href: "/admin/inventory", icon: Package, moduleId: "inventory" },
+      { name: "Units of Measure", href: "/admin/products/units", icon: Package, moduleId: "ecommerce" },
       {
         name: "Vendors",
         href: "/admin/vendors",
@@ -196,7 +207,6 @@ export const navigationGroups: NavGroup[] = [
         moduleId: "purchasing",
         allowedRoles: ["purchasing"],
       },
-      { name: "Orders", href: "/admin/orders", icon: ShoppingCart, moduleId: "ecommerce" },
       {
         name: "Manufacturing",
         href: "/admin/manufacturing",
@@ -232,25 +242,33 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Setup",
+    // The old "Setup" was overgrown (13 items mixing user-admin + system).
+    // Split into Admin (org-level: users, roles, branding, identity) and
+    // System (platform-level: modules, integrations, developer, templates).
+    label: "Admin",
     adminOnly: true,
-    collapsible: false,
+    collapsible: true,
     items: [
-      { name: "Chat Module", href: "/admin/chat", icon: MessageSquare, moduleId: "chat" },
-      { name: "Templates", href: "/admin/templates", icon: LayoutTemplate, moduleId: "templates" },
-      { name: "Modules", href: "/admin/modules", icon: Puzzle },
-      { name: "Integrations", href: "/admin/integrations", icon: Plug },
+      { name: "Site Settings", href: "/admin/settings", icon: Settings },
+      { name: "Business Identity", href: "/admin/company-insights", icon: Building2, moduleId: "companyInsights" },
       { name: "Branding", href: "/admin/branding", icon: Image },
-      { name: "Developer", href: "/admin/developer", icon: Code2, moduleId: "developer" },
-      { name: "System", href: "/admin/system", icon: Database },
-
-
-      { name: "AI Usage", href: "/admin/ai-usage", icon: BarChart3 },
-
       { name: "Users", href: "/admin/users", icon: Users },
       { name: "Role Permissions", href: "/admin/roles", icon: Shield },
       { name: "Profile", href: "/admin/profile", icon: UserCircle },
-      { name: "Site Settings", href: "/admin/settings", icon: Settings },
+    ],
+  },
+  {
+    label: "System",
+    adminOnly: true,
+    collapsible: true,
+    items: [
+      { name: "Modules", href: "/admin/modules", icon: Puzzle },
+      { name: "Integrations", href: "/admin/integrations", icon: Plug },
+      { name: "Templates", href: "/admin/templates", icon: LayoutTemplate, moduleId: "templates" },
+      { name: "Chat Module", href: "/admin/chat", icon: MessageSquare, moduleId: "chat" },
+      { name: "Developer", href: "/admin/developer", icon: Code2, moduleId: "developer" },
+      { name: "AI Usage", href: "/admin/ai-usage", icon: BarChart3 },
+      { name: "System", href: "/admin/system", icon: Database },
     ],
   },
 ];

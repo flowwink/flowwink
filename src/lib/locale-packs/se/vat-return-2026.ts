@@ -63,13 +63,23 @@ export const SE_VAT_RETURN_2026: {
     },
     {
       code: '21',
-      label: 'Inköp av tjänster från annat EU-land',
+      label: 'Inköp av tjänster från annat EU-land enligt huvudregeln',
       kind: 'base_debit',
-      accounts: ['4531', '4532', '4535', '4536'],
+      // BAS 4535-4538 = services from another EU country. 4531-4534 are
+      // services from OUTSIDE the EU and belong in box 22 — lumping the two
+      // ranges together (as this box previously did) reports a US purchase as
+      // an EU acquisition.
+      accounts: ['4535', '4536', '4537', '4538'],
     },
     {
       code: '22',
-      label: 'Import av varor (beskattningsunderlag)',
+      label: 'Inköp av tjänster från land utanför EU',
+      kind: 'base_debit',
+      accounts: ['4531', '4532', '4533', '4534'],
+    },
+    {
+      code: '50',
+      label: 'Beskattningsunderlag vid import',
       kind: 'base_debit',
       accounts: ['4545', '4546', '4547'],
     },

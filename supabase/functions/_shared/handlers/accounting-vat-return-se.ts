@@ -39,9 +39,14 @@ const BOXES_2026: BoxDef[] = [
 
   { code: '20', label: 'Inköp av varor från annat EU-land', kind: 'base_debit',
     accounts: ['4515','4516','4517','4518'] },
-  { code: '21', label: 'Inköp av tjänster från annat EU-land', kind: 'base_debit',
-    accounts: ['4531','4532','4535','4536'] },
-  { code: '22', label: 'Import av varor (beskattningsunderlag)', kind: 'base_debit',
+  // BAS 4535-4538 = services from another EU country; 4531-4534 = services
+  // from OUTSIDE the EU. Box 21 previously summed both ranges, reporting a US
+  // purchase as an EU acquisition and leaving box 22 empty.
+  { code: '21', label: 'Inköp av tjänster från annat EU-land enligt huvudregeln', kind: 'base_debit',
+    accounts: ['4535','4536','4537','4538'] },
+  { code: '22', label: 'Inköp av tjänster från land utanför EU', kind: 'base_debit',
+    accounts: ['4531','4532','4533','4534'] },
+  { code: '50', label: 'Beskattningsunderlag vid import', kind: 'base_debit',
     accounts: ['4545','4546','4547'] },
 
   { code: '35', label: 'Försäljning av varor till annat EU-land', kind: 'base_credit',

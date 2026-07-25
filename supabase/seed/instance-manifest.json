@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260726090000",
-      "migrations_count": 268,
+      "migration_head": "20260726140000",
+      "migrations_count": 269,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1077,6 +1077,10 @@
         {
           "version": "20260726090000",
           "name": "reverse-charge-vat"
+        },
+        {
+          "version": "20260726140000",
+          "name": "vat-value-boxes"
         }
       ]
     },
@@ -1087,7 +1091,7 @@
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:9d95f1985b30c09ee76fb03c083193e8a313c713cbce4f9efa5707a2263a5024",
+      "shared_hash": "sha256:ff418718d81dd7f548269a98299de047610b130441e3f39df90ced755081ab3b",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

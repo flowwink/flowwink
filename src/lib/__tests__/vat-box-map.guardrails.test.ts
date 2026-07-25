@@ -39,6 +39,48 @@ function sqlBuckets(): string[][] {
   );
 }
 
+/**
+ * The box map exists TWICE: in the pack, and duplicated as BOXES_2026 inside
+ * the Deno edge handler (which cannot import from src/). The handler is the
+ * path the UI and the skill actually use, so a drift there is invisible in the
+ * pack and ships silently. This is the seam that matters most.
+ */
+describe('VAT box map — the edge handler matches the locale pack', () => {
+  const handler = readFileSync(
+    join(process.cwd(), 'supabase/functions/_shared/handlers/accounting-vat-return-se.ts'),
+    'utf8',
+  );
+
+  /** `{ code: 'NN', … accounts: ['a','b'] }` entries in the handler's BOXES_2026. */
+  function handlerBoxes(): Map<string, string[]> {
+    const out = new Map<string, string[]>();
+    for (const m of handler.matchAll(
+      /\{\s*code:\s*'(\d+)'[\s\S]{0,200}?accounts:\s*\[([^\]]*)\]/g,
+    )) {
+      out.set(m[1], [...m[2].matchAll(/'([\dA-Za-z]+)'/g)].map((x) => x[1]).sort());
+    }
+    return out;
+  }
+
+  it('every account-backed box in the pack exists in the handler with the same accounts', () => {
+    const inHandler = handlerBoxes();
+    for (const box of SE_VAT_RETURN_2026.boxes as Array<{ code: string; accounts?: string[] }>) {
+      if (!box.accounts) continue;
+      expect(inHandler.has(box.code), `handler is missing box ${box.code}`).toBe(true);
+      expect(inHandler.get(box.code), `box ${box.code} accounts differ between pack and handler`)
+        .toEqual([...box.accounts].sort());
+    }
+  });
+
+  it('EU and non-EU service purchases are separate boxes (21 vs 22)', () => {
+    const inHandler = handlerBoxes();
+    // 4531-4534 are OUTSIDE the EU; putting them in box 21 reports a US
+    // purchase as an EU acquisition — the bug this split fixes.
+    expect(inHandler.get('21')).not.toContain('4531');
+    expect(inHandler.get('22')).toContain('4531');
+  });
+});
+
 describe('VAT return box map — SQL matches the locale pack', () => {
   it('extracts four buckets from the SQL (25 / 12 / 6 / reverse, then input)', () => {
     expect(sqlBuckets().length).toBe(5);

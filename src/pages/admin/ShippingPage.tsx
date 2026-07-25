@@ -73,7 +73,13 @@ export default function ShippingPage() {
           </CardHeader>
           <CardContent>
             {(shipments?.length ?? 0) === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No shipments yet.</p>
+              <EmptyState
+                icon={Package}
+                title="No shipments yet"
+                description="Once an order is fulfilled, its parcel and tracking will appear here."
+                card={false}
+                compact
+              />
             ) : (
               <Table>
                 <TableHeader><TableRow>

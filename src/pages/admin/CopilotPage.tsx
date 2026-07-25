@@ -34,6 +34,8 @@ import { AutonomyScheduleTab } from '@/components/admin/AutonomyScheduleTab';
 import { FlowPilotStatusBar } from '@/components/admin/copilot/FlowPilotStatusBar';
 import { FlowPilotOverviewTab } from '@/components/admin/copilot/FlowPilotOverviewTab';
 import { FlowPilotTraceTab } from '@/components/admin/copilot/FlowPilotTraceTab';
+import { AgentMemoryBrowser } from '@/components/admin/copilot/AgentMemoryBrowser';
+import { ConfigRawEditor } from '@/components/admin/modules/ConfigRawEditor';
 
 import {
   useAutonomyScheduleSettings,

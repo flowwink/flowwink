@@ -1,6 +1,6 @@
 import { logger } from '@/lib/logger';
 import { useState } from 'react';
-import { format, isFuture, isPast, differenceInDays } from 'date-fns';
+import { isFuture, isPast, differenceInDays } from 'date-fns';
 import { Video, Calendar, Clock, Users, Play, CheckCircle, Loader2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -180,7 +180,7 @@ function WebinarCard({
   blockId?: string;
   pageId?: string;
 }) {
-  const { formatDateTime } = usePlatformFormat();
+  const { formatDateTime, formatTime } = usePlatformFormat();
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -276,7 +276,7 @@ function WebinarCard({
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {format(new Date(webinar.date), 'HH:mm')} ({webinar.duration_minutes} min)
+                {formatTime(webinar.date)} ({webinar.duration_minutes} min)
               </span>
               <span className="flex items-center gap-1">
                 <Video className="h-3.5 w-3.5" />

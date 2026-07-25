@@ -12,7 +12,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 
 export default function AttendancePage() {
-  const { formatDateTime } = usePlatformFormat();
+  const { formatDateTime, formatTime } = usePlatformFormat();
   const { isEmployee, loading } = useEmployeeSelf();
   const { data: open, isLoading: openLoading } = useOpenAttendance();
   const { data: history } = useMyAttendance(20);
@@ -48,7 +48,7 @@ export default function AttendancePage() {
               <div className="rounded-lg border bg-green-50 dark:bg-green-950/20 p-4">
                 <p className="text-sm text-muted-foreground">Currently clocked in</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  Since {format(new Date(open.clock_in), "HH:mm")} — {formatDistanceToNow(new Date(open.clock_in))}
+                  Since {formatTime(open.clock_in)} — {formatDistanceToNow(new Date(open.clock_in))}
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -93,7 +93,7 @@ export default function AttendancePage() {
                   <div>
                     <p className="font-medium">{formatDateTime(e.clock_in, { weekday: "short", month: "short", day: "numeric" })}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(e.clock_in), "HH:mm")} – {e.clock_out ? format(new Date(e.clock_out), "HH:mm") : "open"}
+                      {formatTime(e.clock_in)} – {e.clock_out ? formatTime(e.clock_out) : "open"}
                       {e.break_minutes > 0 && ` · ${e.break_minutes}m break`}
                     </p>
                   </div>

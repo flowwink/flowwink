@@ -36,10 +36,14 @@ const PENDING_FILE = 'src/lib/__tests__/.date-sweep-pending.json';
 const ROOTS = ['src/components', 'src/pages'];
 
 // A date-fns pattern literal carrying a month-NAME or weekday-NAME token, or a
-// bare P-family token. `[\s\S]{0,120}?` spans multi-line calls; the first arg
-// often contains `new Date(...)`.
+// P-family token ANYWHERE in the pattern. `[\s\S]{0,120}?` spans multi-line
+// calls; the first arg often contains `new Date(...)`.
+//
+// The P-family alternative must not be anchored to the whole literal: a
+// COMBINED pattern like 'PP HH:mm' is just as unlocalized as a bare 'PP', and
+// an earlier version of this regex missed exactly that (ScheduleVisitDialog).
 const OFFENDING =
-  /\bformat\([\s\S]{0,120}?,\s*['"](?:[^'"]*\b(?:MMM|MMMM|EEE|EEEE)\b[^'"]*|P{1,3}p{0,2})['"]\s*\)/;
+  /\bformat\([\s\S]{0,120}?,\s*['"][^'"]*(?:\b(?:MMM|MMMM|EEE|EEEE)\b|(?<![A-Za-z])P{1,3}p{0,2}(?![A-Za-z]))[^'"]*['"]\s*\)/;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {

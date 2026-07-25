@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { format, formatDistanceStrict } from 'date-fns';
+import { formatDistanceStrict } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { ChevronDown, ChevronRight, Zap, AlertCircle, Clock, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +68,7 @@ export function ExecutionTimeline({ filters }: { filters?: { status?: string; ag
   const approve = useApproveActivity();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
-  const { formatDateTime } = usePlatformFormat();
+  const { formatDateTime, formatTime } = usePlatformFormat();
 
   const groups = useMemo(() => groupByConversation(activities), [activities]);
 
@@ -185,7 +185,7 @@ export function ExecutionTimeline({ filters }: { filters?: { status?: string; ag
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-                                <span>{format(new Date(entry.created_at), 'HH:mm:ss')}</span>
+                                <span>{formatTime(entry.created_at, { second: '2-digit' })}</span>
                                 {entry.duration_ms != null && <span>{entry.duration_ms}ms</span>}
                                 {entry.error_message && (
                                   <span className="text-destructive truncate max-w-[300px]">

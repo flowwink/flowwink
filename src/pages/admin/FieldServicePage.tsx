@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -20,7 +21,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Loader2, Plus, Truck, CheckCircle2, Calendar, Clock, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
 import { PackagesTab } from '@/components/admin/field-service/PackagesTab';
 import { ScheduleVisitDialog } from '@/components/admin/field-service/ScheduleVisitDialog';
 import { ServiceOrderDetailDialog } from '@/components/admin/field-service/ServiceOrderDetailDialog';
@@ -175,6 +175,7 @@ function KpiCard({ label, value, icon }: { label: string; value: number; icon: R
 function ServiceOrderRow({ order, breached, onSchedule, onOpen }: {
   order: ServiceOrder; breached: boolean; onSchedule: () => void; onOpen: () => void;
 }) {
+  const { formatDateTime } = usePlatformFormat();
   const complete = useCompleteServiceOrder();
 
   return (
@@ -198,7 +199,7 @@ function ServiceOrderRow({ order, breached, onSchedule, onOpen }: {
           <div className="text-sm text-muted-foreground mt-1">
             {order.customer_name}
             {order.service_address && ` · ${order.service_address}`}
-            {order.scheduled_start && ` · ${format(new Date(order.scheduled_start), 'PP HH:mm')}`}
+            {order.scheduled_start && ` · ${formatDateTime(order.scheduled_start)}`}
           </div>
         </div>
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

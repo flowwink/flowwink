@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -46,6 +46,7 @@ const STATUS_VARIANT: Record<SocialPostStatus, 'default' | 'secondary' | 'outlin
 };
 
 export default function SocialPostsPage() {
+  const { formatDateTime } = usePlatformFormat();
   const [filter, setFilter] = useState<SocialPostStatus | 'all'>('all');
   const { data: posts = [], isLoading } = useSocialPosts(filter === 'all' ? undefined : filter);
   const create = useCreateSocialPost();
@@ -185,7 +186,7 @@ export default function SocialPostsPage() {
                     </Badge>
                     {p.scheduled_at && (
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(p.scheduled_at), 'PP p')}
+                        {formatDateTime(p.scheduled_at)}
                       </span>
                     )}
                   </div>

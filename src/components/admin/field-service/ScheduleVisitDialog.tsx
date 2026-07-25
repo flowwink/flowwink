@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -10,7 +11,6 @@ import { CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTechnicians, checkTechnicianAvailability, type AvailabilityResult } from '@/hooks/useFieldServiceRpc';
 import { useScheduleServiceOrder } from '@/hooks/useFieldService';
 import { logger } from '@/lib/logger';
-import { format } from 'date-fns';
 
 interface Props {
   orderId: string | null;
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function ScheduleVisitDialog({ orderId, onClose }: Props) {
+  const { formatDateTime, formatTime } = usePlatformFormat();
   const { data: techs } = useTechnicians();
   const schedule$ = useScheduleServiceOrder();
   const [tech, setTech] = useState<string>('');
@@ -104,8 +105,8 @@ export function ScheduleVisitDialog({ orderId, onClose }: Props) {
                     {result.conflicts.map((c, i) => (
                       <li key={i}>
                         {c.order_number ?? c.service_order_id?.slice(0, 8) ?? 'visit'}
-                        {c.scheduled_start && ` · ${format(new Date(c.scheduled_start), 'PP HH:mm')}`}
-                        {c.scheduled_end && `–${format(new Date(c.scheduled_end), 'HH:mm')}`}
+                        {c.scheduled_start && ` · ${formatDateTime(c.scheduled_start)}`}
+                        {c.scheduled_end && `–${formatTime(c.scheduled_end)}`}
                       </li>
                     ))}
                   </ul>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
-import { format, isPast, isFuture } from 'date-fns';
+import { isPast, isFuture } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { Video, Plus, Pencil, Trash2, Users, Calendar, Clock, ExternalLink, Play, CheckCircle, Eye, Send, Radio, Square, XCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -78,7 +78,7 @@ const defaultFormData: CreateWebinarInput = {
 };
 
 export default function WebinarsPage() {
-  const { formatDateTime } = usePlatformFormat();
+  const { formatDateTime, formatTime } = usePlatformFormat();
   const { data: webinars = [], isLoading } = useWebinars();
   const { data: stats } = useWebinarStats();
   const createWebinar = useCreateWebinar();
@@ -166,7 +166,7 @@ export default function WebinarsPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {format(new Date(webinar.date), 'HH:mm')} ({webinar.duration_minutes} min)
+                  {formatTime(webinar.date)} ({webinar.duration_minutes} min)
                 </span>
                 <span className="flex items-center gap-1">
                   <Video className="h-3.5 w-3.5" />
@@ -479,7 +479,7 @@ function WebinarDetailDialog({
   onClose: () => void;
   onEdit: (w: Webinar) => void;
 }) {
-  const { formatDateTime } = usePlatformFormat();
+  const { formatDateTime, formatTime } = usePlatformFormat();
   const { data: registrations = [] } = useWebinarRegistrations(webinar?.id);
   const markAttendance = useMarkAttendance();
 

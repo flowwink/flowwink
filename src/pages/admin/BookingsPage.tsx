@@ -45,7 +45,7 @@ function canMarkNoShow(booking: Booking): boolean {
 }
 
 export default function BookingsPage() {
-  const { formatDate, formatDateTime } = usePlatformFormat();
+  const { formatDate, formatDateTime, formatTime } = usePlatformFormat();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
@@ -347,7 +347,7 @@ export default function BookingsPage() {
                             color: booking.service.color 
                           } : undefined}
                         >
-                          {format(new Date(booking.start_time), 'HH:mm')} {booking.customer_name.split(' ')[0]}
+                          {formatTime(booking.start_time)} {booking.customer_name.split(' ')[0]}
                         </div>
                       ))}
                       {dayBookings.length > 2 && (
@@ -395,7 +395,7 @@ export default function BookingsPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
+                          {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
                         </span>
                         {booking.service && (
                           <span>{booking.service.name}</span>
@@ -483,7 +483,7 @@ export default function BookingsPage() {
                 <div className="space-y-2">
                   {allSlotTimes.map(time => {
                     const booking = dayBookingsForPanel.find(
-                      b => format(new Date(b.start_time), 'HH:mm') === time
+                      b => formatTime(b.start_time) === time
                     );
 
                     if (booking) {
@@ -497,7 +497,7 @@ export default function BookingsPage() {
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">
-                                {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
+                                {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
                               </span>
                             </div>
                             <Badge className={STATUS_COLORS[booking.status]} variant="secondary">
@@ -593,7 +593,7 @@ export default function BookingsPage() {
                 <div>
                   <Label className="text-muted-foreground">Time</Label>
                   <p>
-                    {format(new Date(selectedBooking.start_time), 'HH:mm')} - {format(new Date(selectedBooking.end_time), 'HH:mm')}
+                    {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
                   </p>
                 </div>
                 {selectedBooking.service && (

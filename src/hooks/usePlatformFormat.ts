@@ -76,6 +76,21 @@ export interface PlatformFormat {
     timestamp: string | Date | null | undefined,
     options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
   ) => string;
+  /**
+   * Clock time of a TIMESTAMP, in the platform timezone.
+   *
+   * Use this instead of date-fns `format(d,'HH:mm')`, which renders in the
+   * BROWSER's zone — that puts a platform-zone date next to a browser-zone time
+   * in the same row, and splits a range like "09:00 – 17:00" across two zones.
+   *
+   * NOT for `time` columns (shift start, booking slot). Those are wall-clock
+   * values with no timezone; run them through here and you reinterpret them as
+   * instants. Render those as stored.
+   */
+  formatTime: (
+    timestamp: string | Date | null | undefined,
+    options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
+  ) => string;
   formatNumber: (n: number | null | undefined, options?: Intl.NumberFormatOptions) => string;
 }
 
@@ -170,6 +185,27 @@ export function usePlatformFormat(): PlatformFormat {
       }
     };
 
+    const formatTime = (
+      timestamp: string | Date | null | undefined,
+      options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>,
+    ) => {
+      if (!timestamp) return '—';
+      const dt = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+      if (Number.isNaN(dt.getTime())) return '—';
+      try {
+        return new Intl.DateTimeFormat(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          ...options,
+          // Same invariant as formatDateTime: the platform zone is not optional,
+          // or two users read the same instant as different clock times.
+          timeZone: tz,
+        }).format(dt);
+      } catch {
+        return dt.toISOString().slice(11, 16);
+      }
+    };
+
     const formatNumber = (n: number | null | undefined, options?: Intl.NumberFormatOptions) => {
       if (n == null || Number.isNaN(n)) return '—';
       try {
@@ -179,6 +215,6 @@ export function usePlatformFormat(): PlatformFormat {
       }
     };
 
-    return { settings: s, formatCurrency, formatDate, formatDateTime, formatNumber };
+    return { settings: s, formatCurrency, formatDate, formatDateTime, formatTime, formatNumber };
   }, [s.default_locale, s.default_currency, s.default_timezone]);
 }

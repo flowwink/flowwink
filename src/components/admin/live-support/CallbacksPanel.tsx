@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Loader2, PhoneCall, Clock, Check, Smartphone } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ interface VoiceCallbackRow {
 }
 
 export function CallbacksPanel() {
+  const { formatDateTime } = usePlatformFormat();
   const qc = useQueryClient();
 
   const { data: rows, isLoading } = useQuery({
@@ -93,7 +95,7 @@ export function CallbacksPanel() {
                     )}
                     {cb.callback_scheduled_at ? (
                       <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" />{format(new Date(cb.callback_scheduled_at), 'PP HH:mm')}
+                        <Clock className="h-3 w-3" />{formatDateTime(cb.callback_scheduled_at)}
                         <span className="text-muted-foreground/70">· {formatDistanceToNow(new Date(cb.callback_scheduled_at), { addSuffix: true })}</span>
                       </span>
                     ) : (

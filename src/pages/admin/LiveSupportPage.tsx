@@ -35,7 +35,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import {
   DropdownMenu,
@@ -67,7 +67,7 @@ const priorityConfig: Record<string, { label: string; variant: 'default' | 'seco
 };
 
 export default function LiveSupportPage() {
-  const { formatDateTime } = usePlatformFormat();
+  const { formatDateTime, formatTime } = usePlatformFormat();
   const {
     agentRecord,
     agentLoading,
@@ -430,7 +430,7 @@ export default function LiveSupportPage() {
                                     <span className="font-medium">Internal routing note:</span>{' '}
                                     <span>{message.content}</span>{' '}
                                     <time className="opacity-70">
-                                      {format(new Date(message.created_at), 'HH:mm')}
+                                      {formatTime(message.created_at)}
                                     </time>
                                   </div>
                                 </div>
@@ -465,7 +465,7 @@ export default function LiveSupportPage() {
                                   )}
                                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                                   <time className="text-xs opacity-70 mt-1 block">
-                                    {format(new Date(message.created_at), 'HH:mm')}
+                                    {formatTime(message.created_at)}
                                   </time>
                                 </div>
                               </div>

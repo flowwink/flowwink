@@ -37,6 +37,11 @@ interface ComposioApp {
 interface ComposioDiagnostic {
   api_key_configured: boolean;
   api_key_valid: boolean;
+  api_key_fingerprint?: {
+    prefix?: string;
+    suffix?: string;
+    length?: number;
+  } | null;
   auth_configs_ok: boolean;
   auth_configs_count: number;
   gmail_auth_config_found: boolean;
@@ -48,6 +53,7 @@ interface ComposioDiagnostic {
   connected_accounts_count: number;
   errors?: string[];
 }
+
 
 interface ComposioTool {
   name?: string;

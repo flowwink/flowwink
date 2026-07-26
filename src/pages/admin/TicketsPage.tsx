@@ -13,13 +13,16 @@ import { CannedResponsesDialog } from "@/components/admin/tickets/CannedResponse
 import { TicketTeamsTab } from "@/components/admin/tickets/TicketTeamsTab";
 import { TicketEscalationRulesTab } from "@/components/admin/tickets/TicketEscalationRulesTab";
 import { useTickets, useTicketSearch, type Ticket } from "@/hooks/useTickets";
-import { LayoutGrid, List, Search, X, Users, AlarmClock } from "lucide-react";
+import { LayoutGrid, List, Search, X, Users, AlarmClock, Inbox } from "lucide-react";
 import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useOpenOnQueryParam } from "@/hooks/useOpenOnQueryParam";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadDemoDataButton } from "@/components/admin/LoadDemoDataButton";
 import { Ticket as TicketIcon } from "lucide-react";
+import { InboundMailboxesSection } from "@/components/admin/email/InboundMailboxesSection";
+import { useIsIntegrationActive } from "@/hooks/useIntegrations";
+import { Link } from "react-router-dom";
 
 export default function TicketsPage() {
   const [view, setView] = useState<"kanban" | "table" | "teams" | "rules">("kanban");

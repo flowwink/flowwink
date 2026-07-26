@@ -80,12 +80,9 @@ export function ComposioPanel() {
     }
   };
 
-  // Test Gmail state
-  const [testTo, setTestTo] = useState("");
-  const [testSubject, setTestSubject] = useState("");
-  const [testBody, setTestBody] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false);
+  // Connected-account actions
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+
 
   // Fetch connected apps
   const { data: connectedApps, isLoading: appsLoading, refetch: refetchApps } = useQuery({

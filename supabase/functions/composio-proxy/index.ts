@@ -584,6 +584,29 @@ Deno.serve(async (req) => {
         }, 404);
       }
 
+      // Composio refuses to re-authorize when a prior account for the same
+      // user_id + auth_config is stuck in a non-ACTIVE state (INITIALIZING,
+      // INITIATED, EXPIRED, FAILED). Purge those first so link starts fresh.
+      try {
+        const staleRes = await callComposio(
+          `${COMPOSIO_V3}/connected_accounts?user_id=${encodeURIComponent(effectiveUserId)}&auth_config_ids=${encodeURIComponent(matchedConfig.id)}`,
+          { headers: composioHeaders },
+        );
+        const staleItems = Array.isArray(staleRes.data?.items) ? staleRes.data.items : [];
+        for (const acc of staleItems) {
+          const status = String(acc?.status || '').toUpperCase();
+          if (status && status !== 'ACTIVE' && acc?.id) {
+            console.log(`[composio-proxy] Purging stale ${status} account ${acc.id}`);
+            await callComposio(`${COMPOSIO_V3}/connected_accounts/${encodeURIComponent(acc.id)}`, {
+              method: 'DELETE',
+              headers: composioHeaders,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[composio-proxy] stale-account purge failed (continuing):', (e as Error).message);
+      }
+
       const connectBody: Record<string, unknown> = {
         auth_config_id: matchedConfig.id,
         auth_config: { id: matchedConfig.id },

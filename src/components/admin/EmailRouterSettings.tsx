@@ -70,21 +70,62 @@ export function EmailRouterSettings() {
 
   return (
     <div className="space-y-6">
-      {/* What the router does */}
-      <Alert>
-        <Mail className="h-4 w-4" />
-        <AlertTitle>Email Router — the control plane</AlertTitle>
-        <AlertDescription>
-          All outbound mail flows through <code>email-send</code>. By default,
-          system mail (newsletters, receipts, auth, order confirmations) goes
-          via <strong>Resend</strong> — it's transactional and no reply is
-          expected. Individual callers can <strong>override per send</strong>:
-          the <code>send_email_to_lead</code> skill, for example, asks for
-          Composio/Gmail so the lead's reply lands in the agent's inbox and
-          threads naturally. Leave the default on Resend unless you have a
-          reason to change it.
-        </AlertDescription>
-      </Alert>
+      {/* Flow map — how transport, router and use cases connect */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Mail className="h-4 w-4" /> How email flows
+          </CardTitle>
+          <CardDescription>
+            The router is the control plane. Transports plug in from the left,
+            use cases plug out on the right. Configure each in its own place.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                1. Transport
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <em>How</em> mail is sent/received. Configured in{" "}
+                <Link to="/admin/integrations" className="underline">Integrations</Link>.
+              </p>
+              <ul className="text-xs space-y-1">
+                <li><strong>Resend</strong> — transactional, newsletters, no reply expected.</li>
+                <li><strong>SMTP</strong> — self-hosted server.</li>
+                <li><strong>Composio / Gmail</strong> — outbound + <em>inbound</em> replies.</li>
+              </ul>
+            </div>
+            <div className="rounded-md border bg-primary/5 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                2. Router (this page)
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Chooses transport per send, sets default From, registers inbound
+                mailboxes and decides where replies land (CRM / Tickets).
+              </p>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                3. Use cases
+              </p>
+              <ul className="text-xs space-y-1">
+                <li><strong>Newsletter</strong> → Resend (bulk, tracking).</li>
+                <li><strong>Outreach</strong> (cold email to leads) → Composio/Gmail so replies thread.</li>
+                <li><strong>Inbound reply</strong> → attached to contact/lead (CRM), optionally opens a ticket.</li>
+                <li><strong>System</strong> (receipts, auth) → Resend.</li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3">
+            Rule of thumb: leave the default on Resend. Callers that need a
+            two-way conversation (like <code>send_email_to_lead</code>) opt into
+            Composio per send so the reply lands in the same mailbox.
+          </p>
+        </CardContent>
+      </Card>
+
 
       {/* Provider routing */}
       <Card>

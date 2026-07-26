@@ -25,7 +25,8 @@ import { useIsIntegrationActive } from "@/hooks/useIntegrations";
 import { Link } from "react-router-dom";
 
 export default function TicketsPage() {
-  const [view, setView] = useState<"kanban" | "table" | "teams" | "rules">("kanban");
+  const [view, setView] = useState<"kanban" | "table" | "teams" | "rules" | "inbound">("kanban");
+  const composioActive = useIsIntegrationActive("composio").isActive;
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);

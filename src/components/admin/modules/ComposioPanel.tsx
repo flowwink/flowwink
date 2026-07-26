@@ -747,6 +747,15 @@ function InboundEmailSection({ isGmailConnected }: { isGmailConnected: boolean }
                       >
                         {acc.enabled ? 'Disable' : 'Enable'}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs h-7 text-destructive hover:text-destructive"
+                        onClick={() => handleRemove(acc.id, acc.email_address)}
+                        title="Remove this inbound mailbox"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                   <div className="text-[10px] text-muted-foreground space-y-0.5">

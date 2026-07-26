@@ -314,6 +314,16 @@ Deno.serve(async (req) => {
     (entity.related_entity_id ? ` → ${entity.related_entity_type} ${entity.related_entity_id}` : ''),
   );
 
+  // Compute whether downstream automations should create a ticket for this mail.
+  // 'crm_only'        → never (CRM record is the sole home).
+  // 'crm_then_ticket' → only when CRM resolution failed (unresolved) — ticket is the fallback.
+  // 'ticket_only'     → always.
+  const resolvedToCrm = entity.resolved_by !== 'unresolved';
+  const shouldCreateTicket =
+    routeMode === 'ticket_only' ||
+    (routeMode === 'crm_then_ticket' && !resolvedToCrm);
+  (eventPayload as any).should_create_ticket = shouldCreateTicket;
+
   // Log inbound row to the unified communications log so it shows up in
   // /admin/communications alongside outbound mail. Dedupe on message_id_header.
   let logErr: any = null;

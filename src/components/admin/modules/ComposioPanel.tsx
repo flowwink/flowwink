@@ -298,55 +298,29 @@ export function ComposioPanel() {
 
         {/* Gmail Tab */}
         <TabsContent value="gmail" className="space-y-4 mt-4">
-          {/* Connection Status */}
-          <Card className={isGmailConnected ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}>
-            <CardContent className="py-4 px-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${isGmailConnected ? 'bg-primary/10' : 'bg-muted'}`}>
-                    <Mail className={`h-4 w-4 ${isGmailConnected ? 'text-primary' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Gmail</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {isGmailConnected ? (
-                        <>
-                          <CheckCircle2 className="h-3 w-3 text-primary" />
-                          <span className="text-xs text-primary">Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Not connected</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {isGmailConnected ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDisconnectGmail}
-                    disabled={isDisconnectingGmail}
-                    className="text-xs border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    {isDisconnectingGmail ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Unplug className="h-3 w-3 mr-1" />
-                    )}
-                    Disconnect Gmail
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={() => handleConnectApp('gmail')} className="text-xs">
-                    <Plug className="h-3 w-3 mr-1" />
-                    Connect
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Connected accounts (list — supports multiple mailboxes later) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Connected accounts
+              </h4>
+              {isGmailConnected && (
+                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => handleConnectApp('gmail')}>
+                  <Plug className="h-3 w-3 mr-1" />
+                  Connect another
+                </Button>
+              )}
+            </div>
+            <ComposioAccountsList
+              accounts={(connectedApps || []).filter(a =>
+                `${a.toolkit?.slug || a.appName || a.name || ''}`.toLowerCase().includes('gmail'),
+              )}
+              isLoading={appsLoading}
+              disconnectingId={disconnectingId}
+              onDisconnect={acc => handleDisconnectAccount(acc as ComposioApp)}
+              onConnect={() => handleConnectApp('gmail')}
+            />
+          </div>
 
           {/* Capabilities */}
           <div className="space-y-2">
@@ -377,50 +351,12 @@ export function ComposioPanel() {
                 </CardContent>
               </Card>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Per-user From / Reply-To addresses (set on a profile) are honoured by the Resend
+              transport only. Gmail via Composio always sends as the connected account.
+            </p>
           </div>
 
-          {/* Test Send */}
-          {isGmailConnected && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Test Send
-                </h4>
-                <Input
-                  placeholder="To (email)"
-                  value={testTo}
-                  onChange={e => setTestTo(e.target.value)}
-                  className="text-xs h-8"
-                />
-                <Input
-                  placeholder="Subject"
-                  value={testSubject}
-                  onChange={e => setTestSubject(e.target.value)}
-                  className="text-xs h-8"
-                />
-                <textarea
-                  placeholder="Body..."
-                  value={testBody}
-                  onChange={e => setTestBody(e.target.value)}
-                  className="w-full text-xs p-2 rounded-md border border-input bg-background min-h-[60px] resize-none"
-                />
-                <Button
-                  size="sm"
-                  onClick={handleTestSend}
-                  disabled={isSending || !testTo || !testSubject || !testBody}
-                  className="w-full text-xs"
-                >
-                  {isSending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Send Test Email
-                </Button>
-              </div>
-            </>
-          )}
         </TabsContent>
 
         {/* Connections Tab */}

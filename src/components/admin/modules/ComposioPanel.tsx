@@ -289,6 +289,35 @@ export function ComposioPanel() {
         </Card>
       )}
 
+      {/* Webhook URL — project-level Composio setting, shared by all triggers/accounts */}
+      <Card className="border-muted">
+        <CardContent className="py-3 px-4 space-y-2">
+          <p className="text-xs font-medium">Composio webhook URL</p>
+          <p className="text-[11px] text-muted-foreground">
+            Paste this into Composio dashboard → Project Settings → Webhooks. One URL per project — shared by every trigger and connected account below.
+          </p>
+          <div className="flex gap-1">
+            <Input
+              value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/composio-webhook`}
+              readOnly
+              className="h-8 text-xs font-mono"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-8"
+              onClick={() => {
+                navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/composio-webhook`);
+                toast.success("Copied");
+              }}
+            >
+              Copy
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+
       <Tabs defaultValue="gmail" className="w-full">
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="gmail" className="text-xs">

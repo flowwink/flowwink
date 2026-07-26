@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260726210000",
-      "migrations_count": 272,
+      "migration_head": "20260726230000",
+      "migrations_count": 273,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1093,6 +1093,10 @@
         {
           "version": "20260726210000",
           "name": "inbound-email-loop"
+        },
+        {
+          "version": "20260726230000",
+          "name": "lead-activities-staff-insert"
         }
       ]
     },

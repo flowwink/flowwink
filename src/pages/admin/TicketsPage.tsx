@@ -192,6 +192,17 @@ export default function TicketsPage() {
           <TabsContent value="rules" className="mt-0">
             <TicketEscalationRulesTab />
           </TabsContent>
+
+          <TabsContent value="inbound" className="mt-0">
+            <div className="space-y-3 max-w-3xl">
+              <p className="text-sm text-muted-foreground">
+                Route inbound mail into tickets. The full mailbox registry lives in the{" "}
+                <Link to="/admin/communications" className="underline">Email Router</Link> —
+                this tab is a shortcut so ticket admins can adjust routing without leaving Tickets.
+              </p>
+              <InboundMailboxesSection emphasis="tickets" isGmailConnected={composioActive} />
+            </div>
+          </TabsContent>
         </Tabs>
       </AdminPageContainer>
     </AdminLayout>

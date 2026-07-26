@@ -44,6 +44,8 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
   const [registering, setRegistering] = useState(false);
   const [activatingWatch, setActivatingWatch] = useState<string | null>(null);
   const [enablingTrigger, setEnablingTrigger] = useState<string | null>(null);
+  const [autoRegistering, setAutoRegistering] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/composio-webhook`;
 

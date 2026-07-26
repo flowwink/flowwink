@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'gmail_send') {
-      const { to, subject, body: emailBody, cc, bcc, in_reply_to, references, thread_id, account_id: explicitAccountId } = params || {};
+      const { to, subject, body: emailBody, cc, bcc, in_reply_to, references, thread_id, is_html, account_id: explicitAccountId } = params || {};
       if (!to || !subject || !emailBody) {
         return json({ error: 'to, subject, and body required' }, 400);
       }
@@ -299,6 +299,12 @@ Deno.serve(async (req) => {
         recipient_email: to,
         subject,
         body: emailBody,
+        // Composio rejects an HTML body outright unless is_html is set, with an
+        // error the caller only sees after the send has already failed. Callers
+        // pass rendered HTML far more often than not, so default by inspecting
+        // the body rather than making every call site remember a flag whose
+        // omission is fatal. An explicit is_html always wins.
+        is_html: typeof is_html === 'boolean' ? is_html : /<[a-z][\s\S]*>/i.test(String(emailBody ?? '')),
       };
       if (cc) input.cc = cc;
       if (bcc) input.bcc = bcc;

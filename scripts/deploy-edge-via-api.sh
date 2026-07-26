@@ -94,16 +94,32 @@ META="$META}"
 ARGS=(-F "metadata=$META;type=application/json")
 for f in "${FILES[@]}"; do ARGS+=(-F "file=@$f;filename=$f"); done
 
-resp=$(curl -s -m 180 -X POST \
+# Capture the HTTP status separately. An API error is still valid JSON, so
+# parsing alone proves nothing: a 403 used to parse fine, yield slug=None, print
+# "-> None vNone None" and exit 0 — a deploy that never happened, reported as if
+# it had. Status first, then shape.
+resp=$(curl -s -m 180 -w '\n%{http_code}' -X POST \
   "https://api.supabase.com/v1/projects/$REF/functions/deploy?slug=$FN" \
   -H "Authorization: Bearer $SBP_TOKEN" "${ARGS[@]}")
 
-echo "$resp" | python3 -c '
+code="${resp##*$'\n'}"
+payload="${resp%$'\n'*}"
+
+if [ "$code" -lt 200 ] 2>/dev/null || [ "$code" -ge 300 ] 2>/dev/null; then
+  echo "  !! deploy FAILED — HTTP $code" >&2
+  echo "     $(printf '%s' "$payload" | head -c 300)" >&2
+  [ "$code" = "403" ] && echo "     (SBP_TOKEN has no access to project $REF — wrong account?)" >&2
+  exit 1
+fi
+
+printf '%s' "$payload" | python3 -c '
 import sys, json
 raw = sys.stdin.read()
 try:
     d = json.loads(raw)
-    slug = d.get("slug"); ver = d.get("version"); status = d.get("status")
-    print("  -> {} v{} {}".format(slug, ver, status))
 except Exception:
-    print("  -> " + raw[:300]); sys.exit(1)'
+    print("  !! deploy returned non-JSON: " + raw[:300]); sys.exit(1)
+slug, ver, status = d.get("slug"), d.get("version"), d.get("status")
+if not slug:
+    print("  !! deploy returned 2xx without a function body: " + raw[:300]); sys.exit(1)
+print("  -> {} v{} {}".format(slug, ver, status))'

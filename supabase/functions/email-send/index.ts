@@ -391,6 +391,9 @@ serve(async (req: Request) => {
             subject: body.subject,
             // Gmail send expects an HTML body — pass the html (proxy forwards as `body`).
             body: body.html,
+            // This rail only ever sends rendered HTML, so say so rather than
+            // leaning on the proxy's detection.
+            is_html: true,
           },
         }),
       });

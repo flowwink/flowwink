@@ -80,7 +80,8 @@ interface RowProps {
 function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
   const isGmail = toolkitOf(account).includes('gmail');
   const entityId = account.user_id || 'default';
-  const identity = useGmailIdentity(account, isGmail);
+  const isActive = (account.status || '').toLowerCase() === 'active';
+  const identity = useGmailIdentity(account, isGmail && isActive);
 
   const [testOpen, setTestOpen] = useState(false);
   const [testTo, setTestTo] = useState('');

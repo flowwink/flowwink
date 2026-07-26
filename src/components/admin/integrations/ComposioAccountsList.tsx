@@ -134,12 +134,12 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
   return (
     <Card className="border-muted">
       <CardContent className="py-3 px-4 space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
             <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
               <Mail className="h-4 w-4 text-primary" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-medium capitalize">
                   {account.toolkit?.slug || account.appName || account.name || 'Connected app'}
@@ -156,10 +156,10 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
               </div>
 
               {/* Identity */}
-              <div className="mt-1 flex items-center gap-1.5 text-xs">
+              <div className="mt-1 flex items-center gap-1.5 text-xs min-w-0">
                 <User className="h-3 w-3 text-muted-foreground shrink-0" />
                 {!isGmail ? (
-                  <span className="text-muted-foreground">Account: {entityId}</span>
+                  <span className="text-muted-foreground truncate">Account: {entityId}</span>
                 ) : !isActive ? (
                   <span className="text-destructive">
                     Connection expired — disconnect and reconnect Gmail
@@ -169,7 +169,7 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
                     <Loader2 className="h-3 w-3 animate-spin" /> Resolving mailbox…
                   </span>
                 ) : identity.data?.email ? (
-                  <span className="font-medium text-foreground break-all">{identity.data.email}</span>
+                  <span className="font-medium text-foreground truncate">{identity.data.email}</span>
                 ) : (
                   <span className="text-muted-foreground">
                     Mailbox unknown — could not read the Gmail profile
@@ -182,13 +182,14 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
                   FlowPilot can read and send mail as this account.
                 </p>
               )}
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
                 Composio user_id: <span className="font-mono">{entityId}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 sm:self-start">
+
             {isGmail && isActive && (
               <Button
                 variant="outline"

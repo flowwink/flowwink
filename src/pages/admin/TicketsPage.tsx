@@ -13,16 +13,20 @@ import { CannedResponsesDialog } from "@/components/admin/tickets/CannedResponse
 import { TicketTeamsTab } from "@/components/admin/tickets/TicketTeamsTab";
 import { TicketEscalationRulesTab } from "@/components/admin/tickets/TicketEscalationRulesTab";
 import { useTickets, useTicketSearch, type Ticket } from "@/hooks/useTickets";
-import { LayoutGrid, List, Search, X, Users, AlarmClock } from "lucide-react";
+import { LayoutGrid, List, Search, X, Users, AlarmClock, Inbox } from "lucide-react";
 import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useOpenOnQueryParam } from "@/hooks/useOpenOnQueryParam";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadDemoDataButton } from "@/components/admin/LoadDemoDataButton";
 import { Ticket as TicketIcon } from "lucide-react";
+import { InboundMailboxesSection } from "@/components/admin/email/InboundMailboxesSection";
+import { useIsIntegrationActive } from "@/hooks/useIntegrations";
+import { Link } from "react-router-dom";
 
 export default function TicketsPage() {
-  const [view, setView] = useState<"kanban" | "table" | "teams" | "rules">("kanban");
+  const [view, setView] = useState<"kanban" | "table" | "teams" | "rules" | "inbound">("kanban");
+  const composioActive = useIsIntegrationActive("composio").isActive;
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -85,6 +89,10 @@ export default function TicketsPage() {
               <TabsTrigger value="rules" className="gap-1.5">
                 <AlarmClock className="h-3.5 w-3.5" />
                 Escalation
+              </TabsTrigger>
+              <TabsTrigger value="inbound" className="gap-1.5">
+                <Inbox className="h-3.5 w-3.5" />
+                Inbound
               </TabsTrigger>
             </TabsList>
             <SavedViewsMenu
@@ -183,6 +191,17 @@ export default function TicketsPage() {
 
           <TabsContent value="rules" className="mt-0">
             <TicketEscalationRulesTab />
+          </TabsContent>
+
+          <TabsContent value="inbound" className="mt-0">
+            <div className="space-y-3 max-w-3xl">
+              <p className="text-sm text-muted-foreground">
+                Route inbound mail into tickets. The full mailbox registry lives in the{" "}
+                <Link to="/admin/communications" className="underline">Email Router</Link> —
+                this tab is a shortcut so ticket admins can adjust routing without leaving Tickets.
+              </p>
+              <InboundMailboxesSection emphasis="tickets" isGmailConnected={composioActive} />
+            </div>
           </TabsContent>
         </Tabs>
       </AdminPageContainer>

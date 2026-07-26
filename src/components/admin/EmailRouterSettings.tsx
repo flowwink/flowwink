@@ -10,8 +10,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useIntegrations, useUpdateIntegrations, useIsIntegrationActive } from "@/hooks/useIntegrations";
-import { Mail, Inbox, MessageSquare, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Mail, Inbox, CheckCircle2, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { InboundMailboxesSection } from "@/components/admin/email/InboundMailboxesSection";
 
 /**
  * Email Router control plane. Owns provider selection, default From identity,
@@ -194,31 +195,20 @@ export function EmailRouterSettings() {
         </CardContent>
       </Card>
 
-      {/* Inbound pipeline (read-only summary) */}
+      {/* Inbound mailboxes — routing owner lives here */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Inbox className="h-4 w-4" /> Inbound → Ticket
+            <Inbox className="h-4 w-4" /> Inbound mailboxes
           </CardTitle>
           <CardDescription>
-            The router also owns inbound mail. Messages arriving via Composio/Gmail
-            webhooks are converted into support tickets (or appended as comments on
-            existing threads) by the <code>email_to_ticket</code> skill.
+            Register the addresses FlowWink should watch for replies. Primary path: cold
+            outbound email → reply lands on the contact/lead card and in Communications.
+            Ticket routing is optional and gated by the Tickets module.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline">Gmail webhook</Badge>
-            <ArrowRight className="h-3 w-3" />
-            <Badge variant="outline">email_to_ticket</Badge>
-            <ArrowRight className="h-3 w-3" />
-            <Badge variant="outline">tickets</Badge>
-          </div>
-          <p>
-            Configure inbox accounts under{" "}
-            <Link to="/admin/live-support" className="underline">Live Support</Link>.
-            Replies sent from a ticket route back through this same router.
-          </p>
+        <CardContent>
+          <InboundMailboxesSection emphasis="crm" isGmailConnected={composioStatus.isActive} />
         </CardContent>
       </Card>
 

@@ -80,7 +80,12 @@ interface RowProps {
 function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
   const isGmail = toolkitOf(account).includes('gmail');
   const entityId = account.user_id || 'default';
-  const isActive = (account.status || '').toLowerCase() === 'active';
+  // Composio reports OAuth accounts as ACTIVE once linked, but sometimes lingers
+  // on INITIATED even after the token works (send succeeds). Only treat known
+  // terminal/broken states as inactive so the identity fetch still runs.
+  const rawStatus = (account.status || '').toUpperCase();
+  const INACTIVE_STATUSES = new Set(['EXPIRED', 'FAILED', 'DELETED', 'INITIALIZING', 'REVOKED']);
+  const isActive = rawStatus === '' ? true : !INACTIVE_STATUSES.has(rawStatus);
   const identity = useGmailIdentity(account, isGmail && isActive);
 
   const [testOpen, setTestOpen] = useState(false);

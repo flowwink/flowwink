@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Sparkles, ChevronDown, Mail } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useIsModuleEnabled } from "@/hooks/useModules";
 import { Link } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 /**
  * Inbound mailbox registry.
@@ -42,6 +44,8 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
   const [registering, setRegistering] = useState(false);
   const [activatingWatch, setActivatingWatch] = useState<string | null>(null);
   const [enablingTrigger, setEnablingTrigger] = useState<string | null>(null);
+  const [autoRegistering, setAutoRegistering] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/composio-webhook`;
 
@@ -83,6 +87,110 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
       toast.error(err instanceof Error ? err.message : "Failed to register");
     } finally {
       setRegistering(false);
+    }
+  };
+
+  /**
+   * One-click: read the first ACTIVE Composio Gmail connection, resolve its
+   * mailbox via GMAIL_GET_PROFILE, register it as the company inbox, then
+   * enable the webhook subscription + trigger and activate Gmail Watch.
+   * This is the happy path — the manual "Register company inbox" form below
+   * remains for advanced setups (multiple accounts, non-Gmail providers).
+   */
+  const handleAutoRegisterConnectedGmail = async () => {
+    setAutoRegistering(true);
+    try {
+      // 1. Discover the connected Gmail account
+      const listRes = await supabase.functions.invoke("composio-proxy", {
+        body: { action: "list_apps", entity_id: "default" },
+      });
+      if (listRes.error) throw listRes.error;
+      const items = listRes.data?.result;
+      const apps = Array.isArray(items) ? items : items?.items || [];
+      const gmail = apps.find((a: any) => {
+        const slug = (a.toolkit?.slug || a.appName || a.name || "").toLowerCase();
+        const status = (a.status || "").toUpperCase();
+        return slug.includes("gmail") && status === "ACTIVE";
+      });
+      if (!gmail?.id) throw new Error("No active Gmail connection found in Composio");
+
+      // 2. Resolve the actual mailbox address
+      const profRes = await supabase.functions.invoke("composio-proxy", {
+        body: {
+          action: "execute",
+          entity_id: gmail.user_id || "default",
+          params: { action_name: "GMAIL_GET_PROFILE", toolkit: "gmail", input: {} },
+        },
+      });
+      if (profRes.error) throw profRes.error;
+      const payload = profRes.data?.result?.data?.response_data
+        || profRes.data?.result?.data
+        || profRes.data?.result
+        || {};
+      const mailbox = payload.emailAddress || payload.email_address || payload.email;
+      if (!mailbox) throw new Error("Could not read the Gmail profile — try again in a moment");
+
+      // 3. Register (or update) the inbound mailbox row
+      const { data: existing } = await supabase
+        .from("inbound_email_accounts")
+        .select("id")
+        .eq("email_address", mailbox)
+        .maybeSingle();
+      let accountId = existing?.id as string | undefined;
+      if (accountId) {
+        const { error: updErr } = await supabase
+          .from("inbound_email_accounts")
+          .update({
+            provider: "composio_gmail",
+            composio_account_id: gmail.id,
+            is_shared: true,
+            enabled: true,
+          } as any)
+          .eq("id", accountId);
+        if (updErr) throw updErr;
+      } else {
+        const { data: inserted, error: insErr } = await supabase
+          .from("inbound_email_accounts")
+          .insert({
+            provider: "composio_gmail",
+            email_address: mailbox,
+            composio_account_id: gmail.id,
+            is_shared: true,
+            enabled: true,
+            route_mode: emphasis === "tickets" && ticketsEnabled ? "crm_then_ticket" : "crm_only",
+          } as any)
+          .select("id")
+          .single();
+        if (insErr) throw insErr;
+        accountId = inserted?.id;
+      }
+
+      // 4. Enable webhook subscription + Gmail trigger so replies land here
+      try {
+        const subRes = await supabase.functions.invoke("composio-proxy", {
+          body: { action: "ensure_webhook_subscription", params: {}, entity_id: "default" },
+        });
+        if (subRes.error) throw subRes.error;
+        const trigRes = await supabase.functions.invoke("composio-proxy", {
+          body: {
+            action: "enable_trigger",
+            params: { trigger_slug: "GMAIL_NEW_GMAIL_MESSAGE", account_id: gmail.id, toolkit: "gmail" },
+            entity_id: "default",
+          },
+        });
+        if (trigRes.error) throw trigRes.error;
+      } catch (trigErr) {
+        logger.warn("[InboundMailboxes] Trigger enable warning:", trigErr);
+        toast.warning("Inbox registered, but enabling the trigger failed — try the Enable trigger button on the mailbox row");
+      }
+
+      toast.success(`${mailbox} is now your company inbox`);
+      refetch();
+    } catch (err) {
+      logger.error("[InboundMailboxes] Auto-register failed:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to register connected Gmail");
+    } finally {
+      setAutoRegistering(false);
     }
   };
 
@@ -315,6 +423,36 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
             );
           })}
         </div>
+      ) : isGmailConnected ? (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="py-4 px-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Mail className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Use the connected Gmail as your company inbox</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  We'll read the mailbox address from the connected account, register it as the
+                  shared inbox, and enable the Gmail trigger so replies arrive automatically.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="w-full text-xs"
+              onClick={handleAutoRegisterConnectedGmail}
+              disabled={autoRegistering}
+            >
+              {autoRegistering ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 mr-1" />
+              )}
+              Register connected Gmail as company inbox
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Card className="border-dashed border-muted-foreground/30">
           <CardContent className="py-4 text-center text-xs text-muted-foreground">
@@ -323,31 +461,44 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
         </Card>
       )}
 
-      {/* Register form */}
-      <Card className="border-muted">
-        <CardContent className="py-3 px-4 space-y-2">
-          <p className="text-xs font-medium">Register company inbox</p>
-          <Input
-            placeholder="info@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="h-8 text-xs"
-          />
-          <Input
-            placeholder="Composio connected_account_id (optional)"
-            value={composioAccountId}
-            onChange={(e) => setComposioAccountId(e.target.value)}
-            className="h-8 text-xs font-mono"
-          />
-          <Button size="sm" className="w-full text-xs" onClick={handleRegister} disabled={registering || !email.trim()}>
-            {registering && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-            Register mailbox
+      {/* Advanced: manual registration for extra mailboxes or non-Gmail providers */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-xs w-full justify-between">
+            <span>Advanced — register another mailbox manually</span>
+            <ChevronDown className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
           </Button>
-          <p className="text-[10px] text-muted-foreground">
-            Leave account id empty to let the webhook auto-match by the inbound message.
-          </p>
-        </CardContent>
-      </Card>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <Card className="border-muted mt-2">
+            <CardContent className="py-3 px-4 space-y-2">
+              <p className="text-[10px] text-muted-foreground">
+                Only needed for a second brand/region mailbox or a non-Gmail provider.
+                For your primary Gmail, use the one-click button above.
+              </p>
+              <Input
+                placeholder="info@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <Input
+                placeholder="Composio connected_account_id (optional)"
+                value={composioAccountId}
+                onChange={(e) => setComposioAccountId(e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+              <Button size="sm" className="w-full text-xs" onClick={handleRegister} disabled={registering || !email.trim()}>
+                {registering && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                Register mailbox
+              </Button>
+              <p className="text-[10px] text-muted-foreground">
+                Leave account id empty to let the webhook auto-match by the inbound message.
+              </p>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

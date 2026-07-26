@@ -22,6 +22,7 @@ import {
   Send,
   Inbox,
   Unplug,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
@@ -636,6 +637,17 @@ function InboundEmailSection({ isGmailConnected }: { isGmailConnected: boolean }
     refetch();
   };
 
+  const handleRemove = async (accountId: string, emailAddress: string) => {
+    if (!confirm(`Remove inbound mailbox "${emailAddress}"? Routing rules for this address will be lost.`)) return;
+    const { error } = await supabase.from('inbound_email_accounts').delete().eq('id', accountId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Mailbox removed');
+    refetch();
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-xs text-muted-foreground">
@@ -734,6 +746,15 @@ function InboundEmailSection({ isGmailConnected }: { isGmailConnected: boolean }
                         onClick={() => handleToggleEnabled(acc.id, !acc.enabled)}
                       >
                         {acc.enabled ? 'Disable' : 'Enable'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs h-7 text-destructive hover:text-destructive"
+                        onClick={() => handleRemove(acc.id, acc.email_address)}
+                        title="Remove this inbound mailbox"
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>

@@ -261,7 +261,21 @@ export function ComposioPanel() {
               <div>Auth configs: <span className="text-foreground font-medium">{diagnostic.auth_configs_count}</span></div>
               <div>Connected accounts: <span className="text-foreground font-medium">{diagnostic.connected_accounts_count}</span></div>
               <div>Matched Gmail config: <span className="text-foreground font-medium">{diagnostic.gmail_auth_config?.name || '—'}</span></div>
+              <div className="md:col-span-3">
+                API key fingerprint:{' '}
+                <span className="text-foreground font-mono">
+                  {diagnostic.api_key_fingerprint?.prefix
+                    ? `${diagnostic.api_key_fingerprint.prefix}…${diagnostic.api_key_fingerprint.suffix ?? ''}`
+                    : '—'}
+                </span>
+                {diagnostic.api_key_fingerprint?.length ? (
+                  <span className="ml-1">({diagnostic.api_key_fingerprint.length} chars)</span>
+                ) : null}
+                <span className="ml-1">— compare with the key in the Composio dashboard.</span>
+              </div>
             </div>
+
+
 
             {diagnostic.errors && diagnostic.errors.length > 0 && (
               <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1">

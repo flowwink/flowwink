@@ -17,7 +17,9 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageContainer } from "@/components/admin/AdminPageContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailRouterSettings } from "@/components/admin/EmailRouterSettings";
-import { Mail, AlertCircle, CheckCircle2, FlaskConical, Eye, Settings, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Mail, AlertCircle, CheckCircle2, FlaskConical, Eye, Settings, ArrowDownLeft, ArrowUpRight, Link2, UserX } from "lucide-react";
+import { useCommEntityNames } from "@/hooks/useCommEntityNames";
+import { LinkCommunicationDialog } from "@/components/admin/communications/LinkCommunicationDialog";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -33,7 +35,9 @@ export default function CommunicationsPage() {
   const [channel, setChannel] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
   const [direction, setDirection] = useState<string>("all");
+  const [linkage, setLinkage] = useState<string>("all");
   const [selected, setSelected] = useState<Comm | null>(null);
+  const [linking, setLinking] = useState<Comm | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["outbound-communications", channel, status, direction],
@@ -52,16 +56,29 @@ export default function CommunicationsPage() {
     },
   });
 
-  const rows = data ?? [];
+  const allRows = data ?? [];
+  const isBound = (r: Comm) => !!r.related_entity_id;
+  const rows = allRows.filter((r) =>
+    linkage === "all" ? true : linkage === "linked" ? isBound(r) : !isBound(r),
+  );
+
+  const entityNames = useCommEntityNames(
+    allRows
+      .filter((r) => r.related_entity_type && r.related_entity_id)
+      .map((r) => ({ type: r.related_entity_type as string, id: r.related_entity_id as string })),
+  ).data ?? {};
+
+  const linkedCount = allRows.filter(isBound).length;
+  const routingQuality = allRows.length ? Math.round((linkedCount / allRows.length) * 100) : 0;
   const stats = {
-    total: rows.length,
-    inbound: rows.filter((r) => r.direction === "inbound").length,
-    outbound: rows.filter((r) => r.direction === "outbound").length,
-    failed: rows.filter((r) => r.status === "failed").length,
+    total: allRows.length,
+    inbound: allRows.filter((r) => r.direction === "inbound").length,
+    outbound: allRows.filter((r) => r.direction === "outbound").length,
+    failed: allRows.filter((r) => r.status === "failed").length,
   };
-  const simCount = rows.filter((r) => r.simulated).length;
-  const sentCount = rows.filter((r) => r.status === "sent" && !r.simulated).length;
-  const simModeActive = rows.length > 0 && simCount === rows.length && sentCount === 0;
+  const simCount = allRows.filter((r) => r.simulated).length;
+  const sentCount = allRows.filter((r) => r.status === "sent" && !r.simulated).length;
+  const simModeActive = allRows.length > 0 && simCount === allRows.length && sentCount === 0;
 
   return (
     <AdminLayout>
@@ -92,6 +109,13 @@ export default function CommunicationsPage() {
             <StatCard label="Failed" value={stats.failed} tone="danger" />
           </div>
 
+          <RoutingQualityCard
+            quality={routingQuality}
+            linked={linkedCount}
+            total={allRows.length}
+            onShowUnlinked={() => setLinkage("unlinked")}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Filters</CardTitle>
@@ -113,6 +137,14 @@ export default function CommunicationsPage() {
                   <SelectItem value="sms">SMS</SelectItem>
                   <SelectItem value="slack">Slack</SelectItem>
                   <SelectItem value="signing">E-signing</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={linkage} onValueChange={setLinkage}>
+                <SelectTrigger className="w-52"><SelectValue placeholder="Customer" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Linked + unlinked</SelectItem>
+                  <SelectItem value="linked">Linked to a customer</SelectItem>
+                  <SelectItem value="unlinked">Unlinked only</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={status} onValueChange={setStatus}>
@@ -139,16 +171,17 @@ export default function CommunicationsPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>From / To</TableHead>
                     <TableHead>Subject</TableHead>
+                    <TableHead>Customer</TableHead>
                     <TableHead>Provider</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading && (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
                   )}
                   {!isLoading && rows.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No communications yet. Send or receive an email to see it logged here.
                     </TableCell></TableRow>
                   )}
@@ -175,6 +208,15 @@ export default function CommunicationsPage() {
                         </TableCell>
                         <TableCell className="font-mono text-xs">{party}</TableCell>
                         <TableCell className="max-w-xs truncate">{r.subject ?? "—"}</TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <CustomerCell
+                            comm={r}
+                            entity={r.related_entity_type && r.related_entity_id
+                              ? entityNames[`${r.related_entity_type}:${r.related_entity_id}`]
+                              : undefined}
+                            onLink={() => setLinking(r)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <ProviderBadge provider={r.provider} simulated={r.simulated} />
                         </TableCell>
@@ -195,8 +237,58 @@ export default function CommunicationsPage() {
       </AdminPageContainer>
 
 
+      <LinkCommunicationDialog comm={linking} onOpenChange={(v) => !v && setLinking(null)} />
       <CommunicationDetailDialog comm={selected} onOpenChange={(v) => !v && setSelected(null)} />
     </AdminLayout>
+  );
+}
+
+function CustomerCell({
+  comm, entity, onLink,
+}: { comm: Comm; entity?: { label: string; href?: string }; onLink: () => void }) {
+  if (comm.related_entity_id) {
+    const label = entity?.label ?? `${comm.related_entity_type ?? "record"} · linked`;
+    return entity?.href ? (
+      <Link to={entity.href} className="text-sm font-medium hover:underline truncate block max-w-[14rem]">
+        {label}
+      </Link>
+    ) : (
+      <span className="text-sm truncate block max-w-[14rem]">{label}</span>
+    );
+  }
+  return (
+    <Button variant="ghost" size="sm" className="h-7 text-muted-foreground gap-1.5" onClick={onLink}>
+      <UserX className="h-3.5 w-3.5" />
+      Unlinked
+    </Button>
+  );
+}
+
+function RoutingQualityCard({
+  quality, linked, total, onShowUnlinked,
+}: { quality: number; linked: number; total: number; onShowUnlinked: () => void }) {
+  const tone = quality >= 80 ? "text-emerald-600" : quality >= 40 ? "text-amber-600" : "text-destructive";
+  return (
+    <Card>
+      <CardContent className="p-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link2 className={`h-5 w-5 ${tone}`} />
+          <div>
+            <div className="text-sm font-medium">
+              Routing quality <span className={tone}>{quality}%</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {linked} of {total} messages are bound to a customer. Unbound mail is invisible to the CRM and to FlowPilot.
+            </p>
+          </div>
+        </div>
+        {total > linked && (
+          <Button variant="outline" size="sm" onClick={onShowUnlinked}>
+            Show {total - linked} unlinked
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

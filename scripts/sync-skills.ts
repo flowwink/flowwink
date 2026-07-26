@@ -22,6 +22,20 @@
  * Usage:
  *   DATABASE_URL=postgresql://… bun run scripts/sync-skills.ts            # dry-run (default)
  *   DATABASE_URL=postgresql://… bun run scripts/sync-skills.ts --apply    # write changes
+ *   DATABASE_URL=postgresql://… bun run scripts/sync-skills.ts --prune    # also list orphans
+ *   DATABASE_URL=postgresql://… bun run scripts/sync-skills.ts --prune --apply   # retire them
+ *
+ * ORPHANS. This tool inserts and updates but historically never retired
+ * anything, so a skill removed from the seeds lived on the fleet forever. That
+ * is how two generations of QA skills ended up side by side — the same
+ * capability under two names, doubling the MCP surface and forcing the
+ * relevance engine to rank near-identical entries against each other.
+ *
+ * `--prune` retires an orphan by DISABLING it (enabled=false, mcp_exposed=false).
+ * It never DELETEs: the row carries trust overrides and history, an agent may
+ * hold the name in a plan, and a disabled row is trivially reversible where a
+ * deleted one is not. Orphans used recently are reported but never touched —
+ * recent use means the seed is wrong, not the instance.
  *
  * Regenerate the artifact first if seeds changed:  bun run scripts/skills-to-json.ts
  */
@@ -30,6 +44,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const APPLY = process.argv.includes('--apply');
+const PRUNE = process.argv.includes('--prune');
+/** An orphan called this recently is a seed bug, not instance drift — leave it. */
+const PRUNE_QUIET_DAYS = 30;
 const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) { console.error('Set DATABASE_URL'); process.exit(1); }
 
@@ -237,6 +254,47 @@ if (APPLY) {
   );
 }
 
+// ─── Orphans: live on the instance, absent from every seed ──────────────────
+const orphanStats = { retired: [] as string[], keptRecent: [] as string[], skipped: 0 };
+if (PRUNE) {
+  // Every name the artifact knows about, regardless of whether its module is on
+  // — a skill from a DISABLED module is dormant, not orphaned.
+  const seeded = new Set<string>();
+  for (const m of modules) for (const s of m.skills) seeded.add(s.name);
+
+  const { rows: orphans } = await c.query(
+    `select s.name, s.enabled, s.mcp_exposed,
+            (select max(a.created_at) from agent_activity a where a.skill_name = s.name) as last_used
+       from agent_skills s
+      where s.name <> all($1::text[])
+      order by s.name`,
+    [Array.from(seeded)],
+  );
+
+  for (const o of orphans) {
+    const quietFor = o.last_used
+      ? (Date.now() - new Date(o.last_used).getTime()) / 86_400_000
+      : Infinity;
+    if (quietFor < PRUNE_QUIET_DAYS) {
+      orphanStats.keptRecent.push(
+        `${o.name} (used ${Math.round(quietFor)}d ago — seed it or investigate, do not retire)`,
+      );
+      continue;
+    }
+    if (o.enabled === false && o.mcp_exposed === false) { orphanStats.skipped++; continue; }
+    orphanStats.retired.push(
+      `${o.name}${o.last_used ? ` (last used ${new Date(o.last_used).toISOString().slice(0, 10)})` : ' (never used)'}`,
+    );
+    if (APPLY) {
+      // Disable, never DELETE — see the header note.
+      await c.query(
+        `update agent_skills set enabled = false, mcp_exposed = false where name = $1`,
+        [o.name],
+      );
+    }
+  }
+}
+
 await c.end();
 
 console.log(`\n${APPLY ? 'APPLIED' : 'DRY-RUN'} — modules synced: ${stats.modulesSynced}, skipped (disabled): ${stats.modulesSkipped}`);
@@ -260,6 +318,18 @@ if (coaStats.missing.length) {
   console.log('    + ' + coaStats.missing.slice(0, 20).join(', ') + (coaStats.missing.length > 20 ? `, … +${coaStats.missing.length - 20} more` : ''));
 }
 
+if (PRUNE) {
+  console.log(
+    `\n  orphans (on the instance, in no seed) — to retire: ${orphanStats.retired.length}` +
+      `  |  kept (recently used): ${orphanStats.keptRecent.length}  |  already retired: ${orphanStats.skipped}`,
+  );
+  orphanStats.retired.forEach((x) => console.log('    - ' + x));
+  orphanStats.keptRecent.forEach((x) => console.log('    ! ' + x));
+} else {
+  console.log('\n  (orphan check skipped — pass --prune to list skills this instance has but no seed defines)');
+}
+
 const anything =
-  stats.inserts.length || stats.updates.length || autoStats.inserted.length || coaStats.missing.length || tplStats.inserted;
+  stats.inserts.length || stats.updates.length || autoStats.inserted.length ||
+  coaStats.missing.length || tplStats.inserted || orphanStats.retired.length;
 if (!APPLY && anything) console.log('\n  Re-run with --apply to write these changes.');

@@ -47,7 +47,7 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
   const [autoRegistering, setAutoRegistering] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/composio-webhook`;
+  
 
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["inbound-email-accounts"],
@@ -290,29 +290,10 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
         )}
       </div>
 
-      {/* Webhook URL */}
-      <Card className="border-muted">
-        <CardContent className="py-3 px-4 space-y-2">
-          <p className="text-xs font-medium">Composio webhook URL</p>
-          <p className="text-[10px] text-muted-foreground">
-            Paste this into Composio dashboard → Project Settings → Webhooks so trigger events reach FlowWink.
-          </p>
-          <div className="flex gap-1">
-            <Input value={webhookUrl} readOnly className="h-8 text-xs font-mono" />
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs h-8"
-              onClick={() => {
-                navigator.clipboard.writeText(webhookUrl);
-                toast.success("Copied");
-              }}
-            >
-              Copy
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Webhook URL lives on the Composio integration card — it's a project-level setting,
+          not per-inbox. Kept out of this router to avoid conflating "how Composio reaches us"
+          with "which inboxes we listen to". */}
+
 
       {!isGmailConnected && (
         <Card className="border-dashed border-amber-500/40 bg-amber-500/5">

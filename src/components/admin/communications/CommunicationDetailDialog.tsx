@@ -22,6 +22,8 @@ export type Comm = {
   body_text: string | null;
   source: string | null;
   thread_id: string | null;
+  related_entity_type: string | null;
+  related_entity_id: string | null;
   error_message: string | null;
   metadata: CommMetadata | null;
   created_at: string;

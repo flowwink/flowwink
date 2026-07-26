@@ -10,8 +10,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useIntegrations, useUpdateIntegrations, useIsIntegrationActive } from "@/hooks/useIntegrations";
-import { Mail, Inbox, MessageSquare, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Mail, Inbox, CheckCircle2, XCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { InboundMailboxesSection } from "@/components/admin/email/InboundMailboxesSection";
 
 /**
  * Email Router control plane. Owns provider selection, default From identity,

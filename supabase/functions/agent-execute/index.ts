@@ -2539,8 +2539,7 @@ async function executeOpenClawAction(
   args: Record<string, unknown>,
 ): Promise<unknown> {
   switch (skillName) {
-    case 'start_qa_session':
-    case 'openclaw_start_session': {
+    case 'start_qa_session': {
       const { scenario, peer_name = 'agent', metadata = {} } = args as any;
       if (!scenario) return { error: 'scenario is required' };
 
@@ -2553,8 +2552,7 @@ async function executeOpenClawAction(
       return { success: true, session: data };
     }
 
-    case 'end_qa_session':
-    case 'openclaw_end_session': {
+    case 'end_qa_session': {
       const { session_id, summary, status = 'completed' } = args as any;
       if (!session_id) return { error: 'session_id is required' };
 
@@ -2576,8 +2574,7 @@ async function executeOpenClawAction(
       return { success: true, session_id, duration_ms: durationMs };
     }
 
-    case 'report_finding':
-    case 'openclaw_report_finding': {
+    case 'report_finding': {
       const { session_id, type, severity = 'medium', title, description, context = {}, screenshot_url, auto_objective = true } = args as any;
       const normalizedType = typeof type === 'string'
         ? ({ observation: 'suggestion', seo: 'suggestion', seo_audit: 'suggestion' } as Record<string, string>)[type.trim()] ?? type.trim()

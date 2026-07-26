@@ -367,9 +367,25 @@ export function ComposioPanel() {
               Per-user From / Reply-To addresses (set on a profile) are honoured by the Resend
               transport only. Gmail via Composio always sends as the connected account.
             </p>
+            <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+              <p className="font-medium">Inbound routing lives in the Email Router</p>
+              <p className="text-muted-foreground">
+                This panel manages the <em>Gmail transport</em> only (connect / disconnect / diagnose).
+                Which mailboxes are watched, and whether replies land on the contact card or open a
+                ticket, is configured in the Email Router.
+              </p>
+              <a
+                href="/admin/communications?tab=settings"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+              >
+                Open Email Router settings
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
 
         </TabsContent>
+
 
         {/* Connections Tab */}
         <TabsContent value="connections" className="space-y-4 mt-4">

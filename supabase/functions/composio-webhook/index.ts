@@ -275,6 +275,11 @@ Deno.serve(async (req) => {
       .eq('id', account.id);
   }
 
+  // Routing policy for this mailbox — CRM is the primary path, tickets are opt-in.
+  // See InboundMailboxesSection for the UI that writes this column.
+  const routeMode: 'crm_only' | 'crm_then_ticket' | 'ticket_only' =
+    (account?.route_mode as any) || 'crm_only';
+
   // Emit platform event — event-dispatcher fans out to automations.
   const eventPayload = {
     message_id: messageId,
@@ -292,6 +297,7 @@ Deno.serve(async (req) => {
     message_id_header: messageIdHeader,
     headers,
     received_at: new Date().toISOString(),
+    route_mode: routeMode,
   };
 
   // Which customer is this from? Resolved once, before either insert branch, so
@@ -307,6 +313,16 @@ Deno.serve(async (req) => {
     `[composio-webhook] entity: ${entity.resolved_by}` +
     (entity.related_entity_id ? ` → ${entity.related_entity_type} ${entity.related_entity_id}` : ''),
   );
+
+  // Compute whether downstream automations should create a ticket for this mail.
+  // 'crm_only'        → never (CRM record is the sole home).
+  // 'crm_then_ticket' → only when CRM resolution failed (unresolved) — ticket is the fallback.
+  // 'ticket_only'     → always.
+  const resolvedToCrm = entity.resolved_by !== 'unresolved';
+  const shouldCreateTicket =
+    routeMode === 'ticket_only' ||
+    (routeMode === 'crm_then_ticket' && !resolvedToCrm);
+  (eventPayload as any).should_create_ticket = shouldCreateTicket;
 
   // Log inbound row to the unified communications log so it shows up in
   // /admin/communications alongside outbound mail. Dedupe on message_id_header.

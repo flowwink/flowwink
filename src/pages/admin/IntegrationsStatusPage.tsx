@@ -1695,30 +1695,23 @@ export default function IntegrationsStatusPage() {
                 )}
               </div>
               <SheetFooter className="flex gap-2 pt-4 border-t">
-                {openDrawerKey === 'composio' ? (
-                  <Button variant="outline" onClick={closeDrawer} className="flex-1">
-                    Close
-                  </Button>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={closeDrawer} className="flex-1">
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleDrawerSave}
-                      disabled={updateIntegrations.isPending}
-                      className="flex-1 gap-2"
-                    >
-                      {updateIntegrations.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      Save
-                    </Button>
-                  </>
-                )}
+                <Button variant="outline" onClick={closeDrawer} className="flex-1">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDrawerSave}
+                  disabled={updateIntegrations.isPending}
+                  className="flex-1 gap-2"
+                >
+                  {updateIntegrations.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Save
+                </Button>
               </SheetFooter>
+
 
             </SheetContent>
           </Sheet>

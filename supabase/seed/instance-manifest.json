@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260726230000",
-      "migrations_count": 273,
+      "migrations_count": 274,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1081,6 +1081,10 @@
         {
           "version": "20260726140000",
           "name": "vat-value-boxes"
+        },
+        {
+          "version": "20260726173920",
+          "name": "2f623012-9c97-4385-9264-ee221a9e0f3f"
         },
         {
           "version": "20260726180000",

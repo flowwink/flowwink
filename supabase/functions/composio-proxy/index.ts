@@ -644,6 +644,36 @@ Deno.serve(async (req) => {
         });
       }
 
+      // If Composio still sees a lingering non-ACTIVE account (422
+      // TOOL_AUTH_BadConnectedAccountState), force-purge everything on this
+      // user_id + auth_config once more and retry.
+      const stillBusy = !res.ok && res.status === 422 &&
+        JSON.stringify(res.data || '').includes('BadConnectedAccountState');
+      if (stillBusy) {
+        console.log('[composio-proxy] Link hit BadConnectedAccountState — force-purge + retry');
+        try {
+          const again = await callComposio(
+            `${COMPOSIO_V3}/connected_accounts?user_id=${encodeURIComponent(effectiveUserId)}&auth_config_ids=${encodeURIComponent(matchedConfig.id)}`,
+            { headers: composioHeaders },
+          );
+          const items = Array.isArray(again.data?.items) ? again.data.items : [];
+          for (const acc of items) {
+            if (acc?.id && String(acc?.status || '').toUpperCase() !== 'ACTIVE') {
+              await callComposio(`${COMPOSIO_V3}/connected_accounts/${encodeURIComponent(acc.id)}`, {
+                method: 'DELETE',
+                headers: composioHeaders,
+              });
+            }
+          }
+        } catch (_e) { /* ignore */ }
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await callComposio(`${COMPOSIO_V3}/connected_accounts/link`, {
+          method: 'POST',
+          headers: composioHeaders,
+          body: JSON.stringify(connectBody),
+        });
+      }
+
       console.log('[composio-proxy] Connection response:', JSON.stringify(res.data).slice(0, 500));
 
       if (!res.ok) {

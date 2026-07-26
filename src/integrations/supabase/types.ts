@@ -7709,6 +7709,7 @@ export type Database = {
           last_received_at: string | null
           metadata: Json
           provider: string
+          route_mode: string
           updated_at: string
           user_id: string | null
           watch_expires_at: string | null
@@ -7724,6 +7725,7 @@ export type Database = {
           last_received_at?: string | null
           metadata?: Json
           provider?: string
+          route_mode?: string
           updated_at?: string
           user_id?: string | null
           watch_expires_at?: string | null
@@ -7739,6 +7741,7 @@ export type Database = {
           last_received_at?: string | null
           metadata?: Json
           provider?: string
+          route_mode?: string
           updated_at?: string
           user_id?: string | null
           watch_expires_at?: string | null

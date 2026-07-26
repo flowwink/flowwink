@@ -235,7 +235,10 @@ Deno.serve(async (req) => {
       const toolkit = params?.toolkit || actionName.split('_')[0]?.toLowerCase();
       const accountId = await getConnectedAccountId(toolkit);
 
-      const execBody: Record<string, unknown> = { input: params?.input || {} };
+      const execBody: Record<string, unknown> = {
+        arguments: params?.input || params?.arguments || {},
+        user_id: effectiveUserId,
+      };
       if (accountId) execBody.connected_account_id = accountId;
 
       const res = await callComposio(`${COMPOSIO_V3}/tools/execute/${actionName}`, {

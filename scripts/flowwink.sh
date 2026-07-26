@@ -901,6 +901,42 @@ cmd_create_admin() {
         echo "  Response: ${body}"
         echo "  Fix manually: INSERT INTO public.user_roles (user_id, role) VALUES ('${user_id}', 'admin');"
     fi
+
+    # Close public self-signup now that the admin exists.
+    #
+    # Without this a fresh instance ships with Supabase's signup endpoint open,
+    # and the anon key is in the frontend bundle — so anyone could create an
+    # account by calling supabase.auth.signUp() directly, bypassing the app
+    # entirely. (Until 2026-07-25 such an account was even granted the ADMIN
+    # role; that hole is closed in the migrations, but the door should be shut
+    # too.)
+    #
+    # Nothing legitimate depends on the open endpoint. Every provisioning path
+    # uses the Admin API, which ignores this setting:
+    #   this script          → POST /auth/v1/admin/users
+    #   invite-employee      → admin.inviteUserByEmail
+    #   customer-signup      → admin.createUser (and checks the portal policy
+    #                          first, so an e-shop with customer login works
+    #                          with this ON — no need to ever flip it back)
+    # The one thing it does block is self-registration on /auth, which is
+    # exactly what we want: staff arrive by invitation.
+    local token signup_resp
+    token=$(supabase_access_token)
+    if [ -n "$token" ]; then
+        signup_resp=$(curl -s -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth" \
+            -H "Authorization: Bearer ${token}" \
+            -H "Content-Type: application/json" \
+            -d '{"disable_signup": true}' 2>/dev/null || echo "")
+        if echo "$signup_resp" | grep -q '"disable_signup":true'; then
+            echo -e "  ${GREEN}✓ Public self-signup disabled${NC} (staff arrive by invite; customer portal unaffected)"
+        else
+            echo -e "  ${YELLOW}⚠ Could not disable public self-signup.${NC}"
+            echo "  Set it manually: Dashboard → Authentication → Sign In / Providers → disable 'Allow new users to sign up'"
+        fi
+    else
+        echo -e "  ${YELLOW}⚠ No access token — public self-signup left ENABLED.${NC}"
+        echo "  Disable it: Dashboard → Authentication → Sign In / Providers → 'Allow new users to sign up'"
+    fi
     echo ""
 }
 

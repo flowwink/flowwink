@@ -637,6 +637,17 @@ function InboundEmailSection({ isGmailConnected }: { isGmailConnected: boolean }
     refetch();
   };
 
+  const handleRemove = async (accountId: string, emailAddress: string) => {
+    if (!confirm(`Remove inbound mailbox "${emailAddress}"? Routing rules for this address will be lost.`)) return;
+    const { error } = await supabase.from('inbound_email_accounts').delete().eq('id', accountId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success('Mailbox removed');
+    refetch();
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-xs text-muted-foreground">

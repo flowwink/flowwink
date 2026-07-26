@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface TimelineEvent {
   id: string;
-  type: 'activity' | 'booking' | 'form' | 'chat' | 'newsletter_open' | 'newsletter_click' | 'order' | 'task';
+  type: 'activity' | 'booking' | 'form' | 'chat' | 'newsletter_open' | 'newsletter_click' | 'order' | 'task' | 'email';
   title: string;
   description?: string;
   metadata?: Record<string, unknown>;
@@ -11,7 +11,12 @@ export interface TimelineEvent {
   icon: string;
   color: string;
   points?: number;
+  /** Set for `email` events — drives the inbound/outbound visual language. */
+  direction?: 'inbound' | 'outbound';
+  actor?: string;
+  status?: string;
 }
+
 
 /**
  * Aggregates cross-module interactions for a contact by email + lead_id

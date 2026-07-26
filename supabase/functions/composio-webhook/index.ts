@@ -275,6 +275,11 @@ Deno.serve(async (req) => {
       .eq('id', account.id);
   }
 
+  // Routing policy for this mailbox — CRM is the primary path, tickets are opt-in.
+  // See InboundMailboxesSection for the UI that writes this column.
+  const routeMode: 'crm_only' | 'crm_then_ticket' | 'ticket_only' =
+    (account?.route_mode as any) || 'crm_only';
+
   // Emit platform event — event-dispatcher fans out to automations.
   const eventPayload = {
     message_id: messageId,
@@ -292,6 +297,7 @@ Deno.serve(async (req) => {
     message_id_header: messageIdHeader,
     headers,
     received_at: new Date().toISOString(),
+    route_mode: routeMode,
   };
 
   // Which customer is this from? Resolved once, before either insert branch, so

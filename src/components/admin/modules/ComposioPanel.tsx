@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { ComposioAccountsList } from "@/components/admin/integrations/ComposioAccountsList";
+
 
 interface ComposioApp {
   name?: string;

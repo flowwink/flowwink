@@ -40,44 +40,46 @@ function sqlBuckets(): string[][] {
 }
 
 /**
- * The box map exists TWICE: in the pack, and duplicated as BOXES_2026 inside
- * the Deno edge handler (which cannot import from src/). The handler is the
- * path the UI and the skill actually use, so a drift there is invisible in the
- * pack and ships silently. This is the seam that matters most.
+ * The box map used to exist TWICE — once in the pack, once duplicated inside the
+ * Deno edge handler (which cannot import from src/). They drifted, and the drift
+ * shipped bugs: 2611 counted as reverse charge, and box 21 mixing EU with non-EU
+ * service purchases. It now lives in exactly one import-free file that both
+ * runtimes read. These tests defend that singularity.
  */
-describe('VAT box map — the edge handler matches the locale pack', () => {
+describe('VAT box map — exactly one copy', () => {
   const handler = readFileSync(
     join(process.cwd(), 'supabase/functions/_shared/handlers/accounting-vat-return-se.ts'),
     'utf8',
   );
 
-  /** `{ code: 'NN', … accounts: ['a','b'] }` entries in the handler's BOXES_2026. */
-  function handlerBoxes(): Map<string, string[]> {
-    const out = new Map<string, string[]>();
-    for (const m of handler.matchAll(
-      /\{\s*code:\s*'(\d+)'[\s\S]{0,200}?accounts:\s*\[([^\]]*)\]/g,
-    )) {
-      out.set(m[1], [...m[2].matchAll(/'([\dA-Za-z]+)'/g)].map((x) => x[1]).sort());
-    }
-    return out;
-  }
+  it('the handler IMPORTS the map instead of declaring its own', () => {
+    expect(handler).toMatch(/import \{[^}]*SE_VAT_BOXES_2026[^}]*\} from '\.\.\/locale\/se-vat-boxes\.ts'/);
+    expect(
+      handler.match(/code:\s*'\d+'/g) ?? [],
+      'the handler declares box definitions again — that is the duplication this replaced',
+    ).toHaveLength(0);
+  });
 
-  it('every account-backed box in the pack exists in the handler with the same accounts', () => {
-    const inHandler = handlerBoxes();
-    for (const box of SE_VAT_RETURN_2026.boxes as Array<{ code: string; accounts?: string[] }>) {
-      if (!box.accounts) continue;
-      expect(inHandler.has(box.code), `handler is missing box ${box.code}`).toBe(true);
-      expect(inHandler.get(box.code), `box ${box.code} accounts differ between pack and handler`)
-        .toEqual([...box.accounts].sort());
-    }
+  it('the shared map has no imports, which is what lets both runtimes read it', () => {
+    const shared = readFileSync(
+      join(process.cwd(), 'supabase/functions/_shared/locale/se-vat-boxes.ts'),
+      'utf8',
+    );
+    expect(
+      shared.match(/^import /m),
+      'an import here breaks either the Deno side or the Vite side',
+    ).toBeNull();
   });
 
   it('EU and non-EU service purchases are separate boxes (21 vs 22)', () => {
-    const inHandler = handlerBoxes();
-    // 4531-4534 are OUTSIDE the EU; putting them in box 21 reports a US
-    // purchase as an EU acquisition — the bug this split fixes.
-    expect(inHandler.get('21')).not.toContain('4531');
-    expect(inHandler.get('22')).toContain('4531');
+    const box = (c: string) =>
+      (SE_VAT_RETURN_2026.boxes as Array<{ code: string; accounts?: string[] }>)
+        .find((b) => b.code === c)?.accounts ?? [];
+    // 4531-4534 are OUTSIDE the EU; in box 21 they report a US purchase as an
+    // EU acquisition — the bug this split fixes.
+    expect(box('21')).not.toContain('4531');
+    expect(box('22')).toContain('4531');
+    expect(box('21')).toContain('4535');
   });
 });
 

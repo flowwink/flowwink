@@ -108,6 +108,16 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
   const handleEnableTrigger = async (accountId: string, composioAccId: string | null) => {
     setEnablingTrigger(accountId);
     try {
+      // Step 1: ensure Composio has a webhook subscription pointing at our composio-webhook
+      // function. Without this, trigger instances produce events but Composio has nowhere
+      // to POST them to — the trigger looks "enabled" but nothing ever arrives.
+      const subRes = await supabase.functions.invoke("composio-proxy", {
+        body: { action: "ensure_webhook_subscription", params: {}, entity_id: "default" },
+      });
+      if (subRes.error) throw subRes.error;
+      if (subRes.data?.error) throw new Error(subRes.data.error);
+
+      // Step 2: create/refresh the Gmail trigger instance for this account.
       const { data, error } = await supabase.functions.invoke("composio-proxy", {
         body: {
           action: "enable_trigger",
@@ -117,7 +127,7 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success("Composio trigger enabled — replies will now arrive via webhook");
+      toast.success("Webhook subscription + trigger enabled — replies will now arrive");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to enable trigger");
     } finally {

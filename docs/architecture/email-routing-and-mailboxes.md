@@ -60,6 +60,31 @@ tooling recovers it.
 
 `inbound_email_accounts.is_shared` already models this distinction.
 
+### Scope: one company mailbox, many identities
+
+**FlowWink supports a company email account. It does not set up per-salesperson
+mailboxes.** This is a product boundary, not a limitation to route around. A
+mailbox per seller is precisely what puts a customer's reply somewhere the CRM
+and FlowPilot cannot see it, and no amount of tooling recovers a conversation
+that never arrived.
+
+What varies is not the number of mailboxes but how much personal identity the
+mailbox can carry, and that depends on a capability we can detect rather than
+assume:
+
+| Mailbox | From line | Reply-to | Personal identity |
+|---|---|---|---|
+| Owned domain with catch-all or aliases | the signed-in seller's profile alias, e.g. `kalle@company.se` | the same alias — it delivers to the company mailbox | full |
+| Company mailbox without alias support (a plain Gmail, which is liteit today) | the company address | the company address | display name only: `Kalle at Liteit <liteitdev@gmail.com>` |
+| Any address on a domain we do not control | **never** | — | — |
+
+So the seller's profile alias is used as the sender **when the mailbox can carry
+it**, and degrades to a display name when it cannot. The conversation lands in
+the same place either way, which is the point.
+
+This is why the domain registry below is a capability check and not merely
+validation: it decides which row of that table an instance is in.
+
 ### The guard this requires
 
 `profiles.email_from_address` is free text today, and `email-send` falls back to

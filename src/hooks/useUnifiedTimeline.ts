@@ -27,6 +27,45 @@ export function useUnifiedTimeline(leadId: string | undefined, email: string | u
     queryFn: async () => {
       const events: TimelineEvent[] = [];
 
+      // 0. Communications (outbound_communications) — the actual emails,
+      // inbound replies included. Loaded first so lead_activities rows that
+      // describe the same message can be deduplicated away.
+      const commMessageIds = new Set<string>();
+      if (leadId) {
+        const { data: comms } = await supabase
+          .from('outbound_communications')
+          .select('*')
+          .eq('related_entity_type', 'lead')
+          .eq('related_entity_id', leadId)
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        for (const c of comms ?? []) {
+          const meta = (c.metadata ?? {}) as Record<string, unknown>;
+          const messageId =
+            (meta.message_id as string | undefined) ??
+            (meta.provider_message_id as string | undefined);
+          if (messageId) commMessageIds.add(messageId);
+
+          const isInbound = c.direction === 'inbound';
+          const text =
+            c.body_text ?? (c.body_html ? c.body_html.replace(/<[^>]+>/g, ' ') : '');
+          events.push({
+            id: `comm-${c.id}`,
+            type: 'email',
+            direction: isInbound ? 'inbound' : 'outbound',
+            title: c.subject || (isInbound ? 'Email received' : 'Email sent'),
+            description: text ? text.replace(/\s+/g, ' ').trim().slice(0, 160) : undefined,
+            metadata: meta,
+            created_at: c.created_at,
+            icon: isInbound ? 'ArrowDownLeft' : 'ArrowUpRight',
+            color: isInbound ? 'text-emerald-600' : 'text-blue-600',
+            actor: deriveCommActor(c as Record<string, unknown>),
+            status: c.status ?? undefined,
+          });
+        }
+      }
+
       // 1. Lead activities (existing)
       if (leadId) {
         const { data: activities } = await supabase
@@ -39,6 +78,11 @@ export function useUnifiedTimeline(leadId: string | undefined, email: string | u
         if (activities) {
           for (const a of activities) {
             const meta = a.metadata as Record<string, unknown> | null;
+            // Prefer the outbound_communications row for the same message —
+            // it carries subject, provider and thread.
+            const mid = meta?.message_id as string | undefined;
+            if (mid && commMessageIds.has(mid)) continue;
+
             events.push({
               id: `activity-${a.id}`,
               type: 'activity',
@@ -53,6 +97,7 @@ export function useUnifiedTimeline(leadId: string | undefined, email: string | u
           }
         }
       }
+
 
       if (email) {
         // 2. Bookings

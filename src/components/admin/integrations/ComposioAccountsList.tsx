@@ -188,7 +188,7 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 sm:self-start">
+          <div className="flex items-center gap-2 flex-wrap">
 
             {isGmail && isActive && (
               <Button

@@ -233,8 +233,9 @@ export function ComposioPanel() {
           </a>
           <Button variant="outline" size="sm" onClick={handleDiagnose} disabled={isDiagnosing} className="text-xs">
             {isDiagnosing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <AlertCircle className="h-3.5 w-3.5 mr-1" />}
-            Run diagnostic
+            Check connection
           </Button>
+
         </div>
       </div>
 

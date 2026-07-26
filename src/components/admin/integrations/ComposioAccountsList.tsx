@@ -144,9 +144,14 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
                 <p className="text-sm font-medium capitalize">
                   {account.toolkit?.slug || account.appName || account.name || 'Connected app'}
                 </p>
-                <Badge variant="secondary" className="text-[10px]">
-                  <CheckCircle2 className="h-3 w-3 mr-1 text-primary" />
-                  {account.status?.toLowerCase() === 'active' ? 'Connected' : account.status || 'Connected'}
+                <Badge
+                  variant={isActive ? 'secondary' : 'destructive'}
+                  className="text-[10px]"
+                >
+                  {isActive ? (
+                    <CheckCircle2 className="h-3 w-3 mr-1 text-primary" />
+                  ) : null}
+                  {isActive ? 'Connected' : (account.status || 'Inactive')}
                 </Badge>
               </div>
 
@@ -155,6 +160,10 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
                 <User className="h-3 w-3 text-muted-foreground shrink-0" />
                 {!isGmail ? (
                   <span className="text-muted-foreground">Account: {entityId}</span>
+                ) : !isActive ? (
+                  <span className="text-destructive">
+                    Connection expired — disconnect and reconnect Gmail
+                  </span>
                 ) : identity.isLoading ? (
                   <span className="text-muted-foreground inline-flex items-center gap-1">
                     <Loader2 className="h-3 w-3 animate-spin" /> Resolving mailbox…
@@ -168,7 +177,7 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
                 )}
               </div>
 
-              {isGmail && (
+              {isGmail && isActive && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   FlowPilot can read and send mail as this account.
                 </p>
@@ -180,7 +189,7 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {isGmail && (
+            {isGmail && isActive && (
               <Button
                 variant="outline"
                 size="sm"

@@ -16,6 +16,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { resolveInboundEntity } from '../_shared/email/resolve-entity.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -293,6 +294,20 @@ Deno.serve(async (req) => {
     received_at: new Date().toISOString(),
   };
 
+  // Which customer is this from? Resolved once, before either insert branch, so
+  // the two paths cannot disagree. Until this existed every inbound row landed
+  // unattached — 213 of them on dev — which is why the routing view showed
+  // messages arriving and nothing reaching a customer.
+  const entity = await resolveInboundEntity(supabase, {
+    sender: fromEmail,
+    subject,
+    threadId: threadId || fullMessage?.threadId || null,
+  });
+  console.log(
+    `[composio-webhook] entity: ${entity.resolved_by}` +
+    (entity.related_entity_id ? ` → ${entity.related_entity_type} ${entity.related_entity_id}` : ''),
+  );
+
   // Log inbound row to the unified communications log so it shows up in
   // /admin/communications alongside outbound mail. Dedupe on message_id_header.
   let logErr: any = null;
@@ -319,7 +334,9 @@ Deno.serve(async (req) => {
         thread_id: threadId || fullMessage?.threadId || null,
         message_id_header: dedupeMessageId,
         in_reply_to: inReplyTo,
-        metadata: { references, inbound_account_id: account?.id ?? null, snippet, gmail_message_id: messageId },
+        related_entity_type: entity.related_entity_type,
+      related_entity_id: entity.related_entity_id,
+      metadata: { references, inbound_account_id: account?.id ?? null, snippet, gmail_message_id: messageId, resolved_by: entity.resolved_by },
         sent_at: new Date().toISOString(),
       });
       logErr = error;
@@ -339,7 +356,9 @@ Deno.serve(async (req) => {
       thread_id: threadId || fullMessage?.threadId || null,
       message_id_header: null,
       in_reply_to: inReplyTo,
-      metadata: { references, inbound_account_id: account?.id ?? null, snippet, gmail_message_id: messageId },
+      related_entity_type: entity.related_entity_type,
+      related_entity_id: entity.related_entity_id,
+      metadata: { references, inbound_account_id: account?.id ?? null, snippet, gmail_message_id: messageId, resolved_by: entity.resolved_by },
       sent_at: new Date().toISOString(),
     });
     logErr = error;

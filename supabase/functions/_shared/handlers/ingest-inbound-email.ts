@@ -19,21 +19,9 @@
 // fleet does not have. Composio is what is actually connected.
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { bareEmail, resolveInboundEntity } from '../email/resolve-entity.ts';
 
 interface Ctx { supabaseUrl: string; serviceKey: string }
-
-/** `"liteit dev <liteitdev@gmail.com>"` → `liteitdev@gmail.com` */
-function bareEmail(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const m = raw.match(/<([^>]+)>/);
-  return (m ? m[1] : raw).trim().toLowerCase() || null;
-}
-
-/** Same normalisation the DB trigger uses, so we can look a thread up before insert. */
-function threadKey(subject: string | null, threadId: string | null): string | null {
-  const k = threadId || (subject ?? '').replace(/^(re:|fwd:|fw:)\s*/ig, '').toLowerCase();
-  return k || null;
-}
 
 export async function executeIngestInboundEmail(
   supabase: SupabaseClient,
@@ -83,40 +71,16 @@ export async function executeIngestInboundEmail(
 
     const sender = bareEmail(m?.sender);
     const subject: string | null = m?.subject ?? null;
-    const tKey = threadKey(subject, m?.threadId ?? null);
 
-    // Entity resolution, strongest signal first.
-    let entityType: string | null = null;
-    let entityId: string | null = null;
-
-    // 1. A reply to something we sent: inherit the thread's entity. This is the
-    //    only signal that is certain, because WE set it when sending.
-    if (tKey) {
-      const { data: thread } = await supabase
-        .from('email_threads')
-        .select('related_entity_type, related_entity_id')
-        .eq('thread_key', tKey)
-        .maybeSingle();
-      if (thread?.related_entity_id) {
-        entityType = thread.related_entity_type;
-        entityId = thread.related_entity_id;
-      }
-    }
-
-    // 2. Otherwise match the sender address against known people.
-    if (!entityId && sender) {
-      const { data: lead } = await supabase
-        .from('leads').select('id').ilike('email', sender).maybeSingle();
-      if (lead) { entityType = 'lead'; entityId = lead.id; }
-      else {
-        const { data: contact } = await supabase
-          .from('company_contacts').select('id').ilike('contact_email', sender).maybeSingle();
-        if (contact) { entityType = 'company_contact'; entityId = contact.id; }
-      }
-    }
-
-    // 3. No match: still ingest. An unattached message is visible and can be
-    //    linked later; a dropped one is gone. Never guess an entity.
+    // Resolution lives in _shared/email/resolve-entity so the push path
+    // (composio-webhook) and this poll path cannot answer differently for the
+    // same message.
+    const entity = await resolveInboundEntity(supabase, {
+      sender: m?.sender ?? null,
+      subject,
+      threadId: m?.threadId ?? null,
+    });
+    const entityId = entity.related_entity_id;
     if (!entityId && sender) unlinkedSenders.add(sender);
 
     const { error } = await supabase.from('outbound_communications').insert({
@@ -131,10 +95,10 @@ export async function executeIngestInboundEmail(
       source: 'ingest_inbound_email',
       thread_id: m?.threadId ?? null,
       message_id_header: messageId,
-      related_entity_type: entityType,
+      related_entity_type: entity.related_entity_type,
       related_entity_id: entityId,
       sent_at: m?.messageTimestamp ?? null,
-      metadata: { label_ids: m?.labelIds ?? [], has_attachments: (m?.attachmentList ?? []).length > 0 },
+      metadata: { label_ids: m?.labelIds ?? [], has_attachments: (m?.attachmentList ?? []).length > 0, resolved_by: entity.resolved_by },
     });
 
     // A concurrent run may have inserted the same message between our check and

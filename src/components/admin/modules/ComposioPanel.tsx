@@ -290,14 +290,10 @@ export function ComposioPanel() {
       )}
 
       <Tabs defaultValue="gmail" className="w-full">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="gmail" className="text-xs">
             <Mail className="h-3.5 w-3.5 mr-1" />
             Gmail
-          </TabsTrigger>
-          <TabsTrigger value="inbound" className="text-xs">
-            <Inbox className="h-3.5 w-3.5 mr-1" />
-            Inbound
           </TabsTrigger>
           <TabsTrigger value="connections" className="text-xs">
             <Plug className="h-3.5 w-3.5 mr-1" />
@@ -309,9 +305,7 @@ export function ComposioPanel() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="inbound" className="space-y-4 mt-4">
-          <InboundEmailSection isGmailConnected={isGmailConnected} />
-        </TabsContent>
+
 
 
         {/* Gmail Tab */}

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260726140000",
-      "migrations_count": 269,
+      "migration_head": "20260726190000",
+      "migrations_count": 271,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1081,6 +1081,14 @@
         {
           "version": "20260726140000",
           "name": "vat-value-boxes"
+        },
+        {
+          "version": "20260726180000",
+          "name": "staff-only-internal-erp"
+        },
+        {
+          "version": "20260726190000",
+          "name": "signup-fail-closed"
         }
       ]
     },

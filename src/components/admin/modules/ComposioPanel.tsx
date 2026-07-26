@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { ComposioAccountsList } from "@/components/admin/integrations/ComposioAccountsList";
+
 
 interface ComposioApp {
   name?: string;
@@ -37,6 +39,11 @@ interface ComposioApp {
 interface ComposioDiagnostic {
   api_key_configured: boolean;
   api_key_valid: boolean;
+  api_key_fingerprint?: {
+    prefix?: string;
+    suffix?: string;
+    length?: number;
+  } | null;
   auth_configs_ok: boolean;
   auth_configs_count: number;
   gmail_auth_config_found: boolean;
@@ -48,6 +55,7 @@ interface ComposioDiagnostic {
   connected_accounts_count: number;
   errors?: string[];
 }
+
 
 interface ComposioTool {
   name?: string;
@@ -74,12 +82,9 @@ export function ComposioPanel() {
     }
   };
 
-  // Test Gmail state
-  const [testTo, setTestTo] = useState("");
-  const [testSubject, setTestSubject] = useState("");
-  const [testBody, setTestBody] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false);
+  // Connected-account actions
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+
 
   // Fetch connected apps
   const { data: connectedApps, isLoading: appsLoading, refetch: refetchApps } = useQuery({
@@ -175,67 +180,35 @@ export function ComposioPanel() {
     }
   };
 
-  const handleTestSend = async () => {
-    if (!testTo || !testSubject || !testBody) {
-      toast.error('Fill in all fields');
+  const handleDisconnectAccount = async (account: ComposioApp) => {
+    if (!account?.id) {
+      toast.error('No account id to disconnect');
       return;
     }
-    setIsSending(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('composio-proxy', {
-        body: {
-          action: 'gmail_send',
-          params: { to: testTo, subject: testSubject, body: testBody },
-          entity_id: 'default',
-        },
-      });
-      if (error) throw new Error(typeof error === 'object' ? (error as any)?.message || JSON.stringify(error) : String(error));
-      const result = data?.result;
-      if (result?.successful || result?.successfull || result?.success) {
-        toast.success('Email sent via Gmail!');
-        setTestTo('');
-        setTestSubject('');
-        setTestBody('');
-      } else {
-        const errMsg = typeof result?.error === 'string' ? result.error : 'Send failed — check Gmail connection';
-        toast.error(errMsg);
-      }
-    } catch (err) {
-      logger.error('[ComposioPanel] Gmail send failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to send email');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleDisconnectGmail = async () => {
-    if (!gmailAccount?.id) {
-      toast.error('No Gmail account to disconnect');
-      return;
-    }
-    setIsDisconnectingGmail(true);
+    setDisconnectingId(account.id);
     try {
       const { data, error } = await supabase.functions.invoke('composio-proxy', {
         body: {
           action: 'disconnect_account',
-          params: { account_id: gmailAccount.id },
-          entity_id: 'default',
+          params: { account_id: account.id },
+          entity_id: (account as any).user_id || 'default',
         },
       });
       if (error) throw new Error(await getFunctionErrorMessage(error));
       if (data?.result?.disconnected) {
-        toast.success('Gmail account disconnected from Composio');
+        toast.success('Account disconnected from Composio');
         await refetchApps();
       } else {
         throw new Error(data?.result?.error || data?.error || 'Disconnect failed');
       }
     } catch (err) {
-      logger.error('[ComposioPanel] Disconnect Gmail failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to disconnect Gmail');
+      logger.error('[ComposioPanel] Disconnect failed:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to disconnect account');
     } finally {
-      setIsDisconnectingGmail(false);
+      setDisconnectingId(null);
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -260,8 +233,9 @@ export function ComposioPanel() {
           </a>
           <Button variant="outline" size="sm" onClick={handleDiagnose} disabled={isDiagnosing} className="text-xs">
             {isDiagnosing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <AlertCircle className="h-3.5 w-3.5 mr-1" />}
-            Run diagnostic
+            Check connection
           </Button>
+
         </div>
       </div>
 
@@ -287,7 +261,21 @@ export function ComposioPanel() {
               <div>Auth configs: <span className="text-foreground font-medium">{diagnostic.auth_configs_count}</span></div>
               <div>Connected accounts: <span className="text-foreground font-medium">{diagnostic.connected_accounts_count}</span></div>
               <div>Matched Gmail config: <span className="text-foreground font-medium">{diagnostic.gmail_auth_config?.name || '—'}</span></div>
+              <div className="md:col-span-3">
+                API key fingerprint:{' '}
+                <span className="text-foreground font-mono">
+                  {diagnostic.api_key_fingerprint?.prefix
+                    ? `${diagnostic.api_key_fingerprint.prefix}…${diagnostic.api_key_fingerprint.suffix ?? ''}`
+                    : '—'}
+                </span>
+                {diagnostic.api_key_fingerprint?.length ? (
+                  <span className="ml-1">({diagnostic.api_key_fingerprint.length} chars)</span>
+                ) : null}
+                <span className="ml-1">— compare with the key in the Composio dashboard.</span>
+              </div>
             </div>
+
+
 
             {diagnostic.errors && diagnostic.errors.length > 0 && (
               <div className="rounded-md border border-border bg-muted/40 p-3 space-y-1">
@@ -327,55 +315,29 @@ export function ComposioPanel() {
 
         {/* Gmail Tab */}
         <TabsContent value="gmail" className="space-y-4 mt-4">
-          {/* Connection Status */}
-          <Card className={isGmailConnected ? "border-primary/30 bg-primary/5" : "border-dashed border-muted-foreground/30"}>
-            <CardContent className="py-4 px-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${isGmailConnected ? 'bg-primary/10' : 'bg-muted'}`}>
-                    <Mail className={`h-4 w-4 ${isGmailConnected ? 'text-primary' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Gmail</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {isGmailConnected ? (
-                        <>
-                          <CheckCircle2 className="h-3 w-3 text-primary" />
-                          <span className="text-xs text-primary">Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Not connected</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {isGmailConnected ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDisconnectGmail}
-                    disabled={isDisconnectingGmail}
-                    className="text-xs border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    {isDisconnectingGmail ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Unplug className="h-3 w-3 mr-1" />
-                    )}
-                    Disconnect Gmail
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={() => handleConnectApp('gmail')} className="text-xs">
-                    <Plug className="h-3 w-3 mr-1" />
-                    Connect
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Connected accounts (list — supports multiple mailboxes later) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Connected accounts
+              </h4>
+              {isGmailConnected && (
+                <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => handleConnectApp('gmail')}>
+                  <Plug className="h-3 w-3 mr-1" />
+                  Connect another
+                </Button>
+              )}
+            </div>
+            <ComposioAccountsList
+              accounts={(connectedApps || []).filter(a =>
+                `${a.toolkit?.slug || a.appName || a.name || ''}`.toLowerCase().includes('gmail'),
+              )}
+              isLoading={appsLoading}
+              disconnectingId={disconnectingId}
+              onDisconnect={acc => handleDisconnectAccount(acc as ComposioApp)}
+              onConnect={() => handleConnectApp('gmail')}
+            />
+          </div>
 
           {/* Capabilities */}
           <div className="space-y-2">
@@ -406,50 +368,12 @@ export function ComposioPanel() {
                 </CardContent>
               </Card>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              Per-user From / Reply-To addresses (set on a profile) are honoured by the Resend
+              transport only. Gmail via Composio always sends as the connected account.
+            </p>
           </div>
 
-          {/* Test Send */}
-          {isGmailConnected && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Test Send
-                </h4>
-                <Input
-                  placeholder="To (email)"
-                  value={testTo}
-                  onChange={e => setTestTo(e.target.value)}
-                  className="text-xs h-8"
-                />
-                <Input
-                  placeholder="Subject"
-                  value={testSubject}
-                  onChange={e => setTestSubject(e.target.value)}
-                  className="text-xs h-8"
-                />
-                <textarea
-                  placeholder="Body..."
-                  value={testBody}
-                  onChange={e => setTestBody(e.target.value)}
-                  className="w-full text-xs p-2 rounded-md border border-input bg-background min-h-[60px] resize-none"
-                />
-                <Button
-                  size="sm"
-                  onClick={handleTestSend}
-                  disabled={isSending || !testTo || !testSubject || !testBody}
-                  className="w-full text-xs"
-                >
-                  {isSending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Send Test Email
-                </Button>
-              </div>
-            </>
-          )}
         </TabsContent>
 
         {/* Connections Tab */}

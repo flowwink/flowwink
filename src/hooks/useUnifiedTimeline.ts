@@ -273,3 +273,22 @@ function getActivityColor(type: string): string {
   };
   return colors[type] || 'text-muted-foreground';
 }
+
+/**
+ * Same actor derivation as LeadCommunicationsCard — who acted: the agent,
+ * a human, the system, or the counterpart (inbound).
+ */
+const AGENT_SOURCE = /^(agent|automation|flowpilot)|^send_email_to_lead$/;
+const HUMAN_SOURCE = /^(send-contact-email|lead-compose)$/;
+
+function deriveCommActor(comm: Record<string, unknown>): string {
+  if (comm.direction === 'inbound') return (comm.sender as string) || 'Inbound';
+  const source = String(comm.source ?? '').toLowerCase();
+  const meta = (comm.metadata ?? {}) as Record<string, unknown>;
+  const tags = (meta.tags ?? {}) as Record<string, unknown>;
+  const sentBy = (tags.sent_by ?? meta.sent_by) as string | undefined;
+  if (AGENT_SOURCE.test(source)) return 'Agent';
+  if (sentBy) return `Manual · ${sentBy}`;
+  if (HUMAN_SOURCE.test(source)) return 'Manual';
+  return 'System';
+}

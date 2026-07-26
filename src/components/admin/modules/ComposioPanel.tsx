@@ -382,9 +382,10 @@ export function ComposioPanel() {
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
-
+          </div>
 
         </TabsContent>
+
 
         {/* Connections Tab */}
         <TabsContent value="connections" className="space-y-4 mt-4">

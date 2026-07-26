@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Phone, Mail, Users, MessageSquare, FileText, MailOpen,
   MousePointer, RefreshCw, Trophy, XCircle, Calendar,
-  ShoppingCart, Video, Activity, CheckCircle2
+  ShoppingCart, Video, Activity, CheckCircle2, ArrowDownLeft, ArrowUpRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,7 @@ import { useUnifiedTimeline, type TimelineEvent } from '@/hooks/useUnifiedTimeli
 const ICON_MAP: Record<string, React.ElementType> = {
   Phone, Mail, Users, MessageSquare, FileText, MailOpen,
   MousePointer, RefreshCw, Trophy, XCircle, Calendar,
-  ShoppingCart, Video, Activity, CheckCircle2,
+  ShoppingCart, Video, Activity, CheckCircle2, ArrowDownLeft, ArrowUpRight,
 };
 
 interface UnifiedTimelineProps {
@@ -24,6 +24,7 @@ interface UnifiedTimelineProps {
 const TYPE_FILTERS = [
   { value: 'all', label: 'All' },
   { value: 'activity', label: 'Activities' },
+  { value: 'email', label: 'Email' },
   { value: 'booking', label: 'Bookings' },
   { value: 'chat', label: 'Chat' },
   { value: 'newsletter', label: 'Newsletter' },
@@ -105,6 +106,14 @@ function TimelineList({ events, isLoading }: { events: TimelineEvent[]; isLoadin
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-sm">{event.title}</span>
+                {event.actor && (
+                  <Badge variant="outline" className="text-[10px] h-5 max-w-52 truncate">
+                    {event.actor}
+                  </Badge>
+                )}
+                {event.status && event.type === 'email' && (
+                  <Badge variant="secondary" className="text-[10px] h-5">{event.status}</Badge>
+                )}
                 {event.points && event.points > 0 && (
                   <Badge variant="outline" className="text-xs">+{event.points}p</Badge>
                 )}
@@ -132,6 +141,7 @@ function TypeBadge({ type }: { type: string }) {
     booking: 'Booking',
     form: 'Form',
     chat: 'Chat',
+    email: 'Email',
     newsletter_open: 'Newsletter',
     newsletter_click: 'Newsletter',
     order: 'Order',

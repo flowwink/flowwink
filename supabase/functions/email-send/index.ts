@@ -255,7 +255,12 @@ serve(async (req: Request) => {
       resendEmailCfg.provider ||
       smtpEmailCfg.provider;
     const resendEnabled = resendCfg.enabled !== false && !!Deno.env.get("RESEND_API_KEY");
-    const smtpEnabled = smtpCfg.enabled === true && !!Deno.env.get("SMTP_HOST");
+    // Host resolves env-then-config, exactly like port/secure/user below. It used to
+    // be env-only, which made the one field that MUST differ per install the one the
+    // admin card could not set — so a fully filled-in card still sent via Resend.
+    // The password stays secret-only (SMTP_PASS); it is the only real secret here.
+    const smtpHost = Deno.env.get("SMTP_HOST") || smtpEmailCfg.host || "";
+    const smtpEnabled = smtpCfg.enabled === true && !!smtpHost;
     const composioEnabled = composioCfg.enabled === true && !!Deno.env.get("COMPOSIO_API_KEY");
 
     // Fallback order:
@@ -402,7 +407,7 @@ serve(async (req: Request) => {
     } else {
       const smtpConfig = smtpCfg.config ?? {};
       result = await sendViaSMTP({
-        host: Deno.env.get("SMTP_HOST")!,
+        host: smtpHost,
         port: Number(Deno.env.get("SMTP_PORT") ?? smtpConfig.port ?? 587),
         secure:
           (Deno.env.get("SMTP_SECURE") ?? String(smtpConfig.secure ?? false)) === "true",

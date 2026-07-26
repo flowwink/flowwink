@@ -601,7 +601,9 @@ function OpenAIUsageBadge({ hasKey, budgetUsd, warnAtPct }: { hasKey: boolean; b
 
 
 // Integration Configuration Component - no auto-save, uses parent callback directly
-function IntegrationConfigPanel({ 
+// Exported for tests: the SMTP branch must render without a secret present, which
+// is only observable by rendering it.
+export function IntegrationConfigPanel({
   integrationKey,
   config,
   onConfigChange,
@@ -621,7 +623,11 @@ function IntegrationConfigPanel({
 
   // Integrations that don't require a secret (URL-only, etc.) must always show their
   // config form so the user can enter the URL needed to enable them.
-  const noSecretNeeded = ['local_llm', 'n8n', 'google_analytics', 'meta_pixel', 'slack', 'searxng'];
+  //
+  // 'smtp' qualifies: the sender treats the password as optional, so a relay that
+  // accepts unauthenticated mail needs no secret, and the host must be enterable
+  // before anything can be reached at all.
+  const noSecretNeeded = ['local_llm', 'n8n', 'google_analytics', 'meta_pixel', 'slack', 'searxng', 'smtp'];
   const alwaysShow = noSecretNeeded.includes(integrationKey as string);
   if (!alwaysShow && (!hasKey || !isEnabled)) return null;
 
@@ -741,6 +747,66 @@ function IntegrationConfigPanel({
             </SelectContent>
           </Select>
         </div>
+      </div>
+    );
+  }
+
+  if (integrationKey === 'smtp') {
+    return (
+      <div className="space-y-3 pt-3 border-t">
+        <div className="space-y-2">
+          <Label htmlFor="smtp-host" className="text-xs">Server host *</Label>
+          <Input
+            id="smtp-host"
+            value={config?.host || ''}
+            onChange={(e) => handleChange({ host: e.target.value })}
+            placeholder="smtp.example.com"
+            className="h-8 text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Any standards-compliant server. A SMTP_HOST secret, if set, wins over this field.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="smtp-port" className="text-xs">Port</Label>
+            <Input
+              id="smtp-port"
+              type="number"
+              value={config?.port ?? 587}
+              onChange={(e) => handleChange({ port: Number(e.target.value) || 587 })}
+              placeholder="587"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="smtp-user" className="text-xs">Username</Label>
+            <Input
+              id="smtp-user"
+              value={config?.user || ''}
+              onChange={(e) => handleChange({ user: e.target.value })}
+              placeholder="noreply@example.com"
+              className="h-8 text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="smtp-secure" className="text-xs">Implicit TLS</Label>
+            <p className="text-xs text-muted-foreground">
+              On for port 465. Leave off for 587, which upgrades via STARTTLS.
+            </p>
+          </div>
+          <Switch
+            id="smtp-secure"
+            checked={config?.secure === true}
+            onCheckedChange={(v) => handleChange({ secure: v })}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground border-t pt-3">
+          The password is never stored here — set the <code className="text-xs">SMTP_PASS</code> secret
+          in Supabase. Sending also requires this integration to be switched on above.
+        </p>
       </div>
     );
   }

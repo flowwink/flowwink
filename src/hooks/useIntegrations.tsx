@@ -566,7 +566,29 @@ export function useToggleIntegration() {
 // config field determines credential. EXPORTED so all callers share one list.
 export const CONFIG_BASED_KEYS: ReadonlyArray<keyof IntegrationsSettings> = [
   'local_llm', 'n8n', 'google_analytics', 'meta_pixel', 'slack', 'searxng',
+  // smtp is credential-optional on purpose: the sender passes `SMTP_PASS ?? ""`,
+  // so a relay that accepts unauthenticated mail (Mailpit, MailHog, an internal
+  // Postfix) works with no secret at all. Keying status off the secret would
+  // report those as unconfigured while they were happily sending. The host is
+  // what the backend actually requires, so that is what we check.
+  'smtp',
 ];
+
+/**
+ * Integrations the BACKEND gates on `enabled === true` (opt-in), not on
+ * `enabled !== false` (opt-out). See email-send/index.ts:
+ *   resend   → enabled !== false   (default transport, opt-out)
+ *   smtp     → enabled === true    (opt-in)
+ *   composio → enabled === true    (opt-in)
+ *
+ * This list exists because the two halves disagreed: the UI called an
+ * integration "active" as soon as its secret was present, while the sender
+ * skipped it because `enabled` was undefined rather than true. The result was a
+ * green tick over a transport that never sent a single message. Keep this in
+ * sync with the gates in email-send — a mismatch here is a lying status badge,
+ * which is worse than no badge at all.
+ */
+export const OPT_IN_KEYS: ReadonlyArray<keyof IntegrationsSettings> = ['smtp', 'composio'];
 
 export function configHasCredential(
   key: keyof IntegrationsSettings,
@@ -579,6 +601,7 @@ export function configHasCredential(
     case 'meta_pixel': return !!config?.pixelId;
     case 'slack': return !!config?.webhookUrl;
     case 'searxng': return !!config?.url;
+    case 'smtp': return !!config?.host;
     default: return false;
   }
 }
@@ -602,12 +625,15 @@ export function resolveIntegrationStatus(
   const hasKey = requiresSecret
     ? (secretsPresent?.[key] ?? false)
     : configHasCredential(key, cfg);
-  const explicitlyDisabled = settings?.[key]?.enabled === false;
-  const isActive = hasKey && !explicitlyDisabled;
+  // Opt-in integrations need an explicit true; for the rest, undefined means on.
+  const optIn = OPT_IN_KEYS.includes(key);
+  const enabledFlag = settings?.[key]?.enabled;
+  const turnedOn = optIn ? enabledFlag === true : enabledFlag !== false;
+  const isActive = hasKey && turnedOn;
   return {
     hasKey,
     isActive,
-    status: !hasKey ? 'not_configured' : explicitlyDisabled ? 'disabled' : 'active',
+    status: !hasKey ? 'not_configured' : !turnedOn ? 'disabled' : 'active',
   };
 }
 

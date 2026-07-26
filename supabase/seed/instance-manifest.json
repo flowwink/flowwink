@@ -1133,7 +1133,7 @@
         "document-sign-request": "sha256:43d75660ec58b6c85670c33d8f32508db5abd71e3b008c8a6e99422386a5b6dc",
         "dunning-processor": "sha256:8d71e58e74cf852e9b1e435779f59cf7e07e9ad61ccd91c0367763bc76b3f772",
         "elks46-ingest": "sha256:a1b085f53ec559914dd98a664838bb751ea12ec965cd181230e3eff8bed6635b",
-        "email-send": "sha256:c3d0e9e8eaa54b0fafc752c664a2be8a05c8165a843f57da2c6e1d71693ce567",
+        "email-send": "sha256:94ea73a66be6a07d2d87b205e7f6723bd334bec37148dcccab835e533f805ad0",
         "email-webhook": "sha256:0ab483c28ad242ba4cbadc329f56a029ef246c89e669bd81184ce9017ede007d",
         "event-dispatcher": "sha256:1226b1ce317cb70cfdae46441f59499f8559b159fd08ee5063105ebfd98e5aa0",
         "extract-pdf-text": "sha256:96f98e21532f261f3e41dc8843dee623e9a010a6106d4e40d3664d743df46304",

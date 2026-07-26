@@ -404,28 +404,47 @@ export function ComposioPanel() {
             </div>
           ) : connectedApps && connectedApps.length > 0 ? (
             <div className="space-y-2">
-              {connectedApps.map((app, i) => (
-                <Card key={app.id || i} className="border-muted">
-                  <CardContent className="py-3 px-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Plug className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">{app.appName || app.name || 'Unknown'}</p>
-                        {app.status && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            {app.status === 'active' ? (
-                              <CheckCircle2 className="h-3 w-3 text-primary" />
-                            ) : (
-                              <AlertCircle className="h-3 w-3 text-muted-foreground" />
-                            )}
-                            <span className="text-xs text-muted-foreground capitalize">{app.status}</span>
-                          </div>
-                        )}
+              {connectedApps.map((app: any, i) => {
+                const toolkitSlug = app.toolkit?.slug || app.toolkit_slug || '';
+                const displayName =
+                  app.appName ||
+                  app.name ||
+                  (toolkitSlug ? toolkitSlug.charAt(0).toUpperCase() + toolkitSlug.slice(1) : 'Unknown');
+                const identity =
+                  app.identity?.email ||
+                  app.user?.email ||
+                  app.data?.email ||
+                  app.entity_id ||
+                  app.user_id ||
+                  app.word_id ||
+                  null;
+                return (
+                  <Card key={app.id || i} className="border-muted">
+                    <CardContent className="py-3 px-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Plug className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{displayName}</p>
+                          {identity && (
+                            <p className="text-xs text-muted-foreground truncate">{identity}</p>
+                          )}
+                          {app.status && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {String(app.status).toLowerCase() === 'active' ? (
+                                <CheckCircle2 className="h-3 w-3 text-primary" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3 text-muted-foreground" />
+                              )}
+                              <span className="text-xs text-muted-foreground capitalize">{app.status}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
             </div>
           ) : (
             <Card className="border-dashed border-muted-foreground/30">

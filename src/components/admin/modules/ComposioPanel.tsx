@@ -181,67 +181,35 @@ export function ComposioPanel() {
     }
   };
 
-  const handleTestSend = async () => {
-    if (!testTo || !testSubject || !testBody) {
-      toast.error('Fill in all fields');
+  const handleDisconnectAccount = async (account: ComposioApp) => {
+    if (!account?.id) {
+      toast.error('No account id to disconnect');
       return;
     }
-    setIsSending(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('composio-proxy', {
-        body: {
-          action: 'gmail_send',
-          params: { to: testTo, subject: testSubject, body: testBody },
-          entity_id: 'default',
-        },
-      });
-      if (error) throw new Error(typeof error === 'object' ? (error as any)?.message || JSON.stringify(error) : String(error));
-      const result = data?.result;
-      if (result?.successful || result?.successfull || result?.success) {
-        toast.success('Email sent via Gmail!');
-        setTestTo('');
-        setTestSubject('');
-        setTestBody('');
-      } else {
-        const errMsg = typeof result?.error === 'string' ? result.error : 'Send failed — check Gmail connection';
-        toast.error(errMsg);
-      }
-    } catch (err) {
-      logger.error('[ComposioPanel] Gmail send failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to send email');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleDisconnectGmail = async () => {
-    if (!gmailAccount?.id) {
-      toast.error('No Gmail account to disconnect');
-      return;
-    }
-    setIsDisconnectingGmail(true);
+    setDisconnectingId(account.id);
     try {
       const { data, error } = await supabase.functions.invoke('composio-proxy', {
         body: {
           action: 'disconnect_account',
-          params: { account_id: gmailAccount.id },
-          entity_id: 'default',
+          params: { account_id: account.id },
+          entity_id: (account as any).user_id || 'default',
         },
       });
       if (error) throw new Error(await getFunctionErrorMessage(error));
       if (data?.result?.disconnected) {
-        toast.success('Gmail account disconnected from Composio');
+        toast.success('Account disconnected from Composio');
         await refetchApps();
       } else {
         throw new Error(data?.result?.error || data?.error || 'Disconnect failed');
       }
     } catch (err) {
-      logger.error('[ComposioPanel] Disconnect Gmail failed:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to disconnect Gmail');
+      logger.error('[ComposioPanel] Disconnect failed:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to disconnect account');
     } finally {
-      setIsDisconnectingGmail(false);
+      setDisconnectingId(null);
     }
   };
+
 
   return (
     <div className="space-y-6">

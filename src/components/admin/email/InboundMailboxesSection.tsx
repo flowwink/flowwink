@@ -423,6 +423,36 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
             );
           })}
         </div>
+      ) : isGmailConnected ? (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="py-4 px-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Mail className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Use the connected Gmail as your company inbox</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  We'll read the mailbox address from the connected account, register it as the
+                  shared inbox, and enable the Gmail trigger so replies arrive automatically.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="w-full text-xs"
+              onClick={handleAutoRegisterConnectedGmail}
+              disabled={autoRegistering}
+            >
+              {autoRegistering ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 mr-1" />
+              )}
+              Register connected Gmail as company inbox
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Card className="border-dashed border-muted-foreground/30">
           <CardContent className="py-4 text-center text-xs text-muted-foreground">
@@ -431,31 +461,44 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
         </Card>
       )}
 
-      {/* Register form */}
-      <Card className="border-muted">
-        <CardContent className="py-3 px-4 space-y-2">
-          <p className="text-xs font-medium">Register company inbox</p>
-          <Input
-            placeholder="info@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="h-8 text-xs"
-          />
-          <Input
-            placeholder="Composio connected_account_id (optional)"
-            value={composioAccountId}
-            onChange={(e) => setComposioAccountId(e.target.value)}
-            className="h-8 text-xs font-mono"
-          />
-          <Button size="sm" className="w-full text-xs" onClick={handleRegister} disabled={registering || !email.trim()}>
-            {registering && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-            Register mailbox
+      {/* Advanced: manual registration for extra mailboxes or non-Gmail providers */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-xs w-full justify-between">
+            <span>Advanced — register another mailbox manually</span>
+            <ChevronDown className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
           </Button>
-          <p className="text-[10px] text-muted-foreground">
-            Leave account id empty to let the webhook auto-match by the inbound message.
-          </p>
-        </CardContent>
-      </Card>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <Card className="border-muted mt-2">
+            <CardContent className="py-3 px-4 space-y-2">
+              <p className="text-[10px] text-muted-foreground">
+                Only needed for a second brand/region mailbox or a non-Gmail provider.
+                For your primary Gmail, use the one-click button above.
+              </p>
+              <Input
+                placeholder="info@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-8 text-xs"
+              />
+              <Input
+                placeholder="Composio connected_account_id (optional)"
+                value={composioAccountId}
+                onChange={(e) => setComposioAccountId(e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+              <Button size="sm" className="w-full text-xs" onClick={handleRegister} disabled={registering || !email.trim()}>
+                {registering && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                Register mailbox
+              </Button>
+              <p className="text-[10px] text-muted-foreground">
+                Leave account id empty to let the webhook auto-match by the inbound message.
+              </p>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

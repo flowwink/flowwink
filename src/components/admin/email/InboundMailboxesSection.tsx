@@ -47,7 +47,7 @@ export function InboundMailboxesSection({ emphasis = "crm", isGmailConnected }: 
   const [autoRegistering, setAutoRegistering] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/composio-webhook`;
+  
 
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["inbound-email-accounts"],

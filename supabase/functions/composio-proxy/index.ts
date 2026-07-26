@@ -103,6 +103,15 @@ function getAuthConfigLabels(config: any): string[] {
     .filter(Boolean);
 }
 
+function getConnectedAccountStatus(account: any): string {
+  return String(
+    account?.status
+      || account?.data?.status
+      || account?.state?.val?.status
+      || '',
+  ).toUpperCase();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -186,7 +195,16 @@ Deno.serve(async (req) => {
         return null;
       }
 
-      const account = (res.data?.items || [])[0];
+      // Composio can ignore the status filter and return an INITIATED account
+      // before an existing ACTIVE one. Never authorize a tool with the first
+      // item blindly: verify both status and toolkit locally.
+      const items = Array.isArray(res.data?.items) ? res.data.items : [];
+      const normalizedToolkit = normalizeToken(toolkit);
+      const account = items.find((candidate: any) => {
+        const labels = getAuthConfigLabels(candidate);
+        return getConnectedAccountStatus(candidate) === 'ACTIVE'
+          && labels.some((label) => label.includes(normalizedToolkit));
+      });
       return account?.id || null;
     }
 
@@ -595,7 +613,7 @@ Deno.serve(async (req) => {
         );
         const staleItems = Array.isArray(staleRes.data?.items) ? staleRes.data.items : [];
         for (const acc of staleItems) {
-          const status = String(acc?.status || '').toUpperCase();
+          const status = getConnectedAccountStatus(acc);
           if (status && status !== 'ACTIVE' && acc?.id) {
             console.log(`[composio-proxy] Purging stale ${status} account ${acc.id}`);
             await callComposio(`${COMPOSIO_V3}/connected_accounts/${encodeURIComponent(acc.id)}`, {
@@ -658,7 +676,7 @@ Deno.serve(async (req) => {
           );
           const items = Array.isArray(again.data?.items) ? again.data.items : [];
           for (const acc of items) {
-            if (acc?.id && String(acc?.status || '').toUpperCase() !== 'ACTIVE') {
+            if (acc?.id && getConnectedAccountStatus(acc) !== 'ACTIVE') {
               await callComposio(`${COMPOSIO_V3}/connected_accounts/${encodeURIComponent(acc.id)}`, {
                 method: 'DELETE',
                 headers: composioHeaders,

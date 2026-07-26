@@ -134,7 +134,7 @@ function AccountRow({ account, onDisconnect, disconnecting }: RowProps) {
   return (
     <Card className="border-muted">
       <CardContent className="py-3 px-4 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex flex-col gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
               <Mail className="h-4 w-4 text-primary" />

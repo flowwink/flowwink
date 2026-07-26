@@ -587,6 +587,7 @@ Deno.serve(async (req) => {
       // Composio refuses to re-authorize when a prior account for the same
       // user_id + auth_config is stuck in a non-ACTIVE state (INITIALIZING,
       // INITIATED, EXPIRED, FAILED). Purge those first so link starts fresh.
+      let purgedAny = false;
       try {
         const staleRes = await callComposio(
           `${COMPOSIO_V3}/connected_accounts?user_id=${encodeURIComponent(effectiveUserId)}&auth_config_ids=${encodeURIComponent(matchedConfig.id)}`,
@@ -601,10 +602,16 @@ Deno.serve(async (req) => {
               method: 'DELETE',
               headers: composioHeaders,
             });
+            purgedAny = true;
           }
         }
       } catch (e) {
         console.warn('[composio-proxy] stale-account purge failed (continuing):', (e as Error).message);
+      }
+      // Composio deletes are eventually consistent — give them a beat so the
+      // next /link call does not see the just-purged INITIALIZING account.
+      if (purgedAny) {
+        await new Promise((r) => setTimeout(r, 800));
       }
 
       const connectBody: Record<string, unknown> = {
@@ -631,6 +638,36 @@ Deno.serve(async (req) => {
       // Fallback to legacy endpoint for self-managed auth configs that still accept it.
       if (!res.ok && res.status === 404) {
         res = await callComposio(`${COMPOSIO_V3}/connected_accounts`, {
+          method: 'POST',
+          headers: composioHeaders,
+          body: JSON.stringify(connectBody),
+        });
+      }
+
+      // If Composio still sees a lingering non-ACTIVE account (422
+      // TOOL_AUTH_BadConnectedAccountState), force-purge everything on this
+      // user_id + auth_config once more and retry.
+      const stillBusy = !res.ok && res.status === 422 &&
+        JSON.stringify(res.data || '').includes('BadConnectedAccountState');
+      if (stillBusy) {
+        console.log('[composio-proxy] Link hit BadConnectedAccountState — force-purge + retry');
+        try {
+          const again = await callComposio(
+            `${COMPOSIO_V3}/connected_accounts?user_id=${encodeURIComponent(effectiveUserId)}&auth_config_ids=${encodeURIComponent(matchedConfig.id)}`,
+            { headers: composioHeaders },
+          );
+          const items = Array.isArray(again.data?.items) ? again.data.items : [];
+          for (const acc of items) {
+            if (acc?.id && String(acc?.status || '').toUpperCase() !== 'ACTIVE') {
+              await callComposio(`${COMPOSIO_V3}/connected_accounts/${encodeURIComponent(acc.id)}`, {
+                method: 'DELETE',
+                headers: composioHeaders,
+              });
+            }
+          }
+        } catch (_e) { /* ignore */ }
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await callComposio(`${COMPOSIO_V3}/connected_accounts/link`, {
           method: 'POST',
           headers: composioHeaders,
           body: JSON.stringify(connectBody),

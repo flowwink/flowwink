@@ -26,6 +26,7 @@ import { executeSalesProfileSetup } from '../_shared/handlers/sales-profile-setu
 import { executeProspectResearch } from '../_shared/handlers/prospect-research.ts';
 import { executeParseResume } from '../_shared/handlers/parse-resume.ts';
 import { executeGmailInboxScan } from '../_shared/handlers/gmail-inbox-scan.ts';
+import { executeIngestInboundEmail } from '../_shared/handlers/ingest-inbound-email.ts';
 import { executeVatReturnSe } from '../_shared/handlers/accounting-vat-return-se.ts';
 import { executeCopilotAction } from '../_shared/handlers/copilot-action.ts';
 import { executeCustomer360 } from '../_shared/handlers/customer-360.ts';
@@ -755,6 +756,9 @@ serve(async (req) => {
 
       } else if (handler === 'internal:scan_gmail_inbox') {
         result = await executeGmailInboxScan(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
+
+      } else if (handler === 'internal:ingest_inbound_email') {
+        result = await executeIngestInboundEmail(supabase, args, { supabaseUrl, serviceKey });
 
       } else if (handler === 'internal:prepare_vat_return') {
         result = await executeVatReturnSe(supabase, args);

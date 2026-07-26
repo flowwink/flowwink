@@ -160,6 +160,7 @@
     "import_bank_file",
     "import_bank_image",
     "import_exchange_rates",
+    "ingest_inbound_email",
     "initiate_company_invoice_payment",
     "inspect_return",
     "install_template",

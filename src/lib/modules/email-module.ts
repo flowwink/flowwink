@@ -116,6 +116,62 @@ Check list_communications (channel=email) — status 'sent' means the provider a
 - The gateway associates the recipient with a CRM lead automatically when the email uniquely matches one (outbound_communications trigger).`,
   },
   {
+    name: 'ingest_inbound_email',
+    description: 'Read the connected company mailbox and file each message against the customer it belongs to. A reply lands on the SAME thread — and therefore the same lead or contact — as the message it answers, so the conversation stays visible in FlowWink instead of only in a mailbox. Idempotent: re-running never duplicates a message. Use when: pulling in customer replies; keeping CRM history complete; checking what arrived since last time. NOT for: sending (composio_gmail_send); triaging inbox signals without filing them (scan_gmail_inbox); turning a mail into a support ticket (email_to_ticket).',
+    category: 'communication',
+    handler: 'internal:ingest_inbound_email',
+    scope: 'internal',
+    trust_level: 'auto',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'ingest_inbound_email',
+        description: 'Read the connected company mailbox and file each message against the customer it belongs to. A reply lands on the SAME thread — and therefore the same lead or contact — as the message it answers, so the conversation stays visible in FlowWink instead of only in a mailbox. Idempotent: re-running never duplicates a message. Use when: pulling in customer replies; keeping CRM history complete; checking what arrived since last time. NOT for: sending (composio_gmail_send); triaging inbox signals without filing them (scan_gmail_inbox); turning a mail into a support ticket (email_to_ticket).',
+        parameters: {
+          type: 'object',
+          properties: {
+            max_results: {
+              type: 'number',
+              description: 'Max messages to read (default 25, cap 100).',
+            },
+            query: {
+              type: 'string',
+              description: "Gmail search query. Default '-in:sent' (received mail only, since outbound is recorded at send time).",
+            },
+          },
+        },
+      },
+    },
+    instructions: `## ingest_inbound_email
+### What
+Reads the connected company mailbox and writes each message into the
+communications log as inbound, bound to the customer it concerns.
+
+### Why it matters
+The reply is the half that used to disappear. Sending was recorded; the answer
+lived only in a mailbox, invisible to the CRM and to FlowPilot. This closes that
+loop, which is why one shared company mailbox beats individual mailboxes: a
+reply into a salesperson's own inbox cannot be filed against the customer.
+
+### How a message finds its customer
+1. Reply to something we sent → inherits the thread's customer. This is the only
+   certain signal, because WE set it when sending.
+2. Otherwise the sender address is matched against leads, then company contacts.
+3. No match → still stored, and reported under unlinked_senders. An unattached
+   message is visible and can be linked later; a dropped one is gone. Never guess.
+
+### Reading the result
+- **ingested** — new messages filed
+- **skipped_existing** — already known, the expected number on a re-run
+- **linked** — of those ingested, how many found a customer
+- **unlinked_senders** — addresses worth adding as leads or contacts
+
+### Requires
+A connected Gmail account via Composio. If it errors, run the Composio
+diagnostic — the usual cause is an API key that was rotated on Composio's side
+but not updated in this instance.`,
+  },
+  {
     name: 'scan_gmail_inbox',
     description: 'Scan connected Gmail inbox for business signals — new leads, partnership inquiries, support requests. Use when: identifying incoming business opportunities from email; automating email categorization; flagging important emails. NOT for: sending emails (composio_gmail_send); managing leads directly (manage_leads).',
     category: 'communication',

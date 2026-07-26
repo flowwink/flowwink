@@ -90,6 +90,10 @@ export default function TicketsPage() {
                 <AlarmClock className="h-3.5 w-3.5" />
                 Escalation
               </TabsTrigger>
+              <TabsTrigger value="inbound" className="gap-1.5">
+                <Inbox className="h-3.5 w-3.5" />
+                Inbound
+              </TabsTrigger>
             </TabsList>
             <SavedViewsMenu
               scope="tickets"

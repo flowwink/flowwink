@@ -391,8 +391,25 @@ const EMAIL_AUTOMATIONS: AutomationSeed[] = [
     trigger_type: 'event',
     trigger_config: { event: 'email.received' },
     skill_name: 'email_to_ticket',
-    // event-dispatcher passes the event payload under arguments.event — handler accepts either flat or nested.
-    skill_arguments: {},
+    // Every field the handler reads has to be mapped explicitly. The comment
+    // that used to sit here said the dispatcher passes the event under
+    // `arguments.event` — it does not, and says so itself: injecting the raw
+    // event broke the RPC p_-prefix mapping, so payload access is by template
+    // only. With `{}` the skill was invoked with nothing on all 167 firings and
+    // answered "message_id required" into a void.
+    skill_arguments: {
+      message_id: '{{event.payload.message_id}}',
+      message_id_header: '{{event.payload.message_id_header}}',
+      thread_id: '{{event.payload.thread_id}}',
+      from: '{{event.payload.from}}',
+      subject: '{{event.payload.subject}}',
+      body_text: '{{event.payload.body_text}}',
+      snippet: '{{event.payload.snippet}}',
+      in_reply_to: '{{event.payload.in_reply_to}}',
+      references: '{{event.payload.references}}',
+      mailbox: '{{event.payload.mailbox}}',
+      connected_account_id: '{{event.payload.connected_account_id}}',
+    },
     executor: 'platform',
   },
 ];

@@ -581,6 +581,7 @@ export default function LeadDetailPage() {
         onOpenChange={setShowEmailDialog}
         recipientEmail={lead.email}
         recipientName={lead.name || undefined}
+        leadId={lead.id}
         leadContext={{
           name: lead.name,
           email: lead.email,

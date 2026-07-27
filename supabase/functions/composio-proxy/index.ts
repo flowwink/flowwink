@@ -6,6 +6,10 @@ async function logComposioOutbound(row: {
   subject?: string | null;
   body_text?: string | null;
   status: string;
+  direction?: 'inbound' | 'outbound';
+  related_entity_type?: string | null;
+  related_entity_id?: string | null;
+  source?: string | null;
   error_message?: string | null;
   metadata?: Record<string, unknown>;
 }) {
@@ -14,13 +18,16 @@ async function logComposioOutbound(row: {
     await supabase.from('outbound_communications').insert({
       channel: row.channel,
       status: row.status,
+      direction: row.direction ?? 'outbound',
       provider: 'composio',
       simulated: false,
       recipient: row.recipient,
       subject: row.subject ?? null,
       body_text: row.body_text ?? null,
       body_html: null,
-      source: 'composio-proxy',
+      source: row.source ?? 'composio-proxy',
+      related_entity_type: row.related_entity_type ?? null,
+      related_entity_id: row.related_entity_id ?? null,
       error_message: row.error_message ?? null,
       metadata: row.metadata ?? {},
       sent_at: row.status === 'sent' ? new Date().toISOString() : null,

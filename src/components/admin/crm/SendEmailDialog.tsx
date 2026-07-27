@@ -198,23 +198,43 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
     try {
       // Record the acting human on the comms log row (titthål: agent vs manual)
       const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase.functions.invoke('comms-send', { body: { kind: 'contact_email', 
-          to: recipientEmail,
-          toName: recipientName || undefined,
+
+      // Route directly through `email-send` with expects_reply=true so the
+      // router prefers Composio/Gmail (company inbox) over Resend — replies
+      // then land back in the system on the same thread. Same rail as the
+      // Discuss panel's Email tab.
+      const htmlBody = body
+        .trim()
+        .split('\n')
+        .map((line) => (line.trim() === '' ? '<br>' : `<p>${line}</p>`))
+        .join('');
+
+      const { data, error } = await supabase.functions.invoke('email-send', {
+        body: {
+          to: recipientName ? `${recipientName} <${recipientEmail}>` : recipientEmail,
           subject: subject.trim(),
-          body: body.trim(),
-          sentBy: user?.email || undefined,
+          html: htmlBody,
+          text: body.trim(),
+          expects_reply: true,
+          source: 'contact-compose',
+          ...(leadId ? { related_entity_type: 'lead', related_entity_id: leadId } : {}),
+          tags: {
+            source: 'contact-compose',
+            ...(user?.email ? { sent_by: user.email } : {}),
+          },
         },
       });
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (data && data.success === false) throw new Error(data.error || 'Send failed');
 
-      toast.success(`Email sent to ${recipientName || recipientEmail}`);
+      toast.success(`Email sent${data?.provider ? ` via ${data.provider}` : ''} to ${recipientName || recipientEmail}`);
       setSubject('');
       setBody('');
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['lead-communications'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['outbound-communications'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send email');
     } finally {

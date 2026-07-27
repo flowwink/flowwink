@@ -39,9 +39,11 @@ interface SendEmailDialogProps {
   initialSubject?: string;
   /** Optional prefilled body (e.g. from Fit Analysis intro letter). */
   initialBody?: string;
+  /** Lead/contact id — used so the outbound row links back to the record. */
+  leadId?: string;
 }
 
-export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientName, leadContext, initialSubject, initialBody }: SendEmailDialogProps) {
+export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientName, leadContext, initialSubject, initialBody, leadId }: SendEmailDialogProps) {
   const [subject, setSubject] = useState(initialSubject ?? '');
   const [body, setBody] = useState(initialBody ?? '');
   const [sending, setSending] = useState(false);

@@ -211,7 +211,8 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
 
       const { data, error } = await supabase.functions.invoke('email-send', {
         body: {
-          to: recipientName ? `${recipientName} <${recipientEmail}>` : recipientEmail,
+          to: recipientEmail,
+          toName: recipientName || undefined,
           subject: subject.trim(),
           html: htmlBody,
           text: body.trim(),

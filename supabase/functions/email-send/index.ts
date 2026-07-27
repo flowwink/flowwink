@@ -88,7 +88,12 @@ async function sendViaResend(args: {
       text: args.text,
       reply_to: args.replyTo,
       tags: args.tags
-        ? Object.entries(args.tags).map(([name, value]) => ({ name, value }))
+        ? Object.entries(args.tags)
+            .map(([name, value]) => ({
+              name: String(name).replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 256),
+              value: String(value ?? "").replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 256),
+            }))
+            .filter((t) => t.name.length > 0)
         : undefined,
     }),
   });

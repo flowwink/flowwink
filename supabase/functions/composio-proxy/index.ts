@@ -315,6 +315,11 @@ Deno.serve(async (req) => {
         return json({ error: 'to, subject, and body required' }, 400);
       }
 
+      // Entity binding and source come from the caller (e.g. email-send) so the
+      // outbound row is linked to the right CRM record and email_threads can
+      // resolve replies by thread.
+      const { related_entity_type, related_entity_id, source, tags } = body || {};
+
       const accountId = explicitAccountId || await getConnectedAccountId('gmail');
       if (!accountId) {
         return json({ error: 'Gmail not connected. Connect Gmail first.' }, 400);
@@ -352,6 +357,10 @@ Deno.serve(async (req) => {
         subject,
         body_text: emailBody,
         status: success ? 'sent' : 'failed',
+        direction: 'outbound',
+        related_entity_type: related_entity_type ?? null,
+        related_entity_id: related_entity_id ?? null,
+        source: source ?? null,
         error_message: success ? null : extractErrorMessage(data, 'Gmail send failed'),
         metadata: {
           tool: 'GMAIL_SEND_EMAIL',
@@ -361,6 +370,7 @@ Deno.serve(async (req) => {
           bcc: bcc ?? null,
           in_reply_to: in_reply_to ?? null,
           thread_id: thread_id ?? null,
+          tags: tags ?? {},
           gmail_message_id: data?.data?.response_data?.id ?? null,
           response_thread_id: data?.data?.response_data?.threadId ?? null,
           log_id: data?.log_id ?? null,

@@ -29,6 +29,7 @@ Other related settings panels:
 - `/admin/branding` — logo, colors, typography (`branding` key)
 - `/admin/modules` — toggle modules on/off (`modules` key)
 - `/admin/integrations` — API keys for OpenAI, Gemini, Stripe, etc.
+  - Gmail/Composio setup is documented in [`guides/composio-gmail-sync.md`](../guides/composio-gmail-sync.md).
 - `/admin/chat` — visitor chat widget (`chat` key)
 - `/admin/users` — staff invites & roles (uses `auth.users` + `user_roles` table)
 

@@ -1,13 +1,28 @@
--- Backfill: link Elin's inbound reply to her lead (thread key was gmail id, outbound row was keyed by subject)
-UPDATE public.outbound_communications
-SET related_entity_type = 'lead',
-    related_entity_id = 'debf4a00-8920-424c-ac4a-ef334dc43cd7'
-WHERE id = 'e97de575-4c24-407b-8a5f-25ba184137e1'
-  AND related_entity_id IS NULL;
+-- Intentionally a no-op. This file once carried a one-off data repair.
+--
+-- What it did: linked a single inbound message (id e97de575…) and its thread
+-- (gmail key 19fa2c86caa2fe43) to one lead (debf4a00…) on the dev instance. That
+-- repair was correct and has already run there; the rows are bound and stay
+-- bound. Nothing here reverses it.
+--
+-- Why it is emptied rather than left in place: a migration is schema, shipped to
+-- every instance in the fleet. Those UUIDs exist on exactly one of them, so on
+-- www, liteit, sandbox and every future install this was a statement that could
+-- only ever match zero rows — noise in the permanent record of what the schema
+-- is, and a template for the next person to fix data the same way.
+--
+-- Why it is not deleted: dev's migration ledger already records this version.
+-- Removing the file would leave an applied version with no source, which is the
+-- kind of gap that makes a schema history impossible to trust later. Keeping it
+-- inert costs nothing and explains itself.
+--
+-- The underlying defect is fixed in code, which is where it belonged: the reply
+-- went unattached because Composio's send does not always return a gmail thread
+-- id, so the outbound row was keyed by subject while the reply carried a real
+-- one. `_shared/email/resolve-entity.ts` now tries the subject key as a second
+-- pass — and, since a subject is neither unique nor ours, only accepts it when
+-- the sender is the person that thread belongs to.
+--
+-- Instance data belongs in a script or a skill invocation, not here.
 
--- Also set thread_key on the email_threads row for the gmail thread id
-UPDATE public.email_threads
-SET related_entity_type = 'lead',
-    related_entity_id = 'debf4a00-8920-424c-ac4a-ef334dc43cd7'
-WHERE thread_key = '19fa2c86caa2fe43'
-  AND related_entity_id IS NULL;
+SELECT 1;

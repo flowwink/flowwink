@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260727113126",
-      "migrations_count": 277,
+      "migration_head": "20260727140000",
+      "migrations_count": 278,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1113,6 +1113,10 @@
         {
           "version": "20260727113126",
           "name": "a5130fd5-92c2-4ceb-a8d1-7f546b18452d"
+        },
+        {
+          "version": "20260727140000",
+          "name": "lead-activities-single-insert-policy"
         }
       ]
     },

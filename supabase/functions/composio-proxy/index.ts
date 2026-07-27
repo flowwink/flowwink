@@ -6,6 +6,10 @@ async function logComposioOutbound(row: {
   subject?: string | null;
   body_text?: string | null;
   status: string;
+  direction?: 'inbound' | 'outbound';
+  related_entity_type?: string | null;
+  related_entity_id?: string | null;
+  source?: string | null;
   error_message?: string | null;
   metadata?: Record<string, unknown>;
 }) {
@@ -14,13 +18,16 @@ async function logComposioOutbound(row: {
     await supabase.from('outbound_communications').insert({
       channel: row.channel,
       status: row.status,
+      direction: row.direction ?? 'outbound',
       provider: 'composio',
       simulated: false,
       recipient: row.recipient,
       subject: row.subject ?? null,
       body_text: row.body_text ?? null,
       body_html: null,
-      source: 'composio-proxy',
+      source: row.source ?? 'composio-proxy',
+      related_entity_type: row.related_entity_type ?? null,
+      related_entity_id: row.related_entity_id ?? null,
       error_message: row.error_message ?? null,
       metadata: row.metadata ?? {},
       sent_at: row.status === 'sent' ? new Date().toISOString() : null,
@@ -308,6 +315,11 @@ Deno.serve(async (req) => {
         return json({ error: 'to, subject, and body required' }, 400);
       }
 
+      // Entity binding and source come from the caller (e.g. email-send) so the
+      // outbound row is linked to the right CRM record and email_threads can
+      // resolve replies by thread.
+      const { related_entity_type, related_entity_id, source, tags } = body || {};
+
       const accountId = explicitAccountId || await getConnectedAccountId('gmail');
       if (!accountId) {
         return json({ error: 'Gmail not connected. Connect Gmail first.' }, 400);
@@ -345,6 +357,10 @@ Deno.serve(async (req) => {
         subject,
         body_text: emailBody,
         status: success ? 'sent' : 'failed',
+        direction: 'outbound',
+        related_entity_type: related_entity_type ?? null,
+        related_entity_id: related_entity_id ?? null,
+        source: source ?? null,
         error_message: success ? null : extractErrorMessage(data, 'Gmail send failed'),
         metadata: {
           tool: 'GMAIL_SEND_EMAIL',
@@ -354,6 +370,7 @@ Deno.serve(async (req) => {
           bcc: bcc ?? null,
           in_reply_to: in_reply_to ?? null,
           thread_id: thread_id ?? null,
+          tags: tags ?? {},
           gmail_message_id: data?.data?.response_data?.id ?? null,
           response_thread_id: data?.data?.response_data?.threadId ?? null,
           log_id: data?.log_id ?? null,

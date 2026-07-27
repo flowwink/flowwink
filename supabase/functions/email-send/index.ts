@@ -373,7 +373,9 @@ serve(async (req: Request) => {
     } else if (provider === "composio") {
       // Delegate to composio-proxy → Gmail OAuth send.
       // The proxy logs to outbound_communications itself with provider='composio',
-      // so we skip our own logComm below to avoid duplicate rows.
+      // so we skip our own logComm below to avoid duplicate rows. We MUST pass the
+      // entity binding and source through, otherwise the outbound row is orphaned
+      // in the CRM timeline and email_threads cannot resolve replies.
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const entityId = composioEmailCfg.entity_id || body.sender_user_id || "default";
@@ -386,6 +388,10 @@ serve(async (req: Request) => {
         body: JSON.stringify({
           action: "gmail_send",
           entity_id: entityId,
+          related_entity_type: body.related_entity_type ?? null,
+          related_entity_id: body.related_entity_id ?? null,
+          source: body.source ?? body.tags?.source ?? null,
+          tags: body.tags ?? {},
           params: {
             to: recipients.join(", "),
             subject: body.subject,

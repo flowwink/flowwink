@@ -53,14 +53,32 @@ export function threadKey(subject: string | null, threadId: string | null): stri
   return k || null;
 }
 
+/**
+ * Normalised subject key, used as a fallback when threadId lookup misses.
+ * Providers don't always round-trip thread ids (e.g. Composio's GMAIL_SEND_EMAIL
+ * may not return the gmail threadId on send, so the outbound row is keyed by
+ * subject; the inbound reply, however, carries a real gmail thread id). Trying
+ * the subject key second lets us stitch those two halves back together without
+ * guessing.
+ */
+export function subjectKey(subject: string | null): string | null {
+  const k = (subject ?? '').replace(/^(re:|fwd:|fw:)\s*/ig, '').toLowerCase().trim();
+  return k || null;
+}
+
 export async function resolveInboundEntity(
   supabase: Queryable,
   opts: { sender: string | null; subject: string | null; threadId: string | null },
 ): Promise<ResolvedEntity> {
   const sender = bareEmail(opts.sender);
-  const key = threadKey(opts.subject, opts.threadId);
+  const primaryKey = threadKey(opts.subject, opts.threadId);
+  const fallbackKey = subjectKey(opts.subject);
 
-  if (key) {
+  const keysToTry = [primaryKey, fallbackKey].filter(
+    (k, i, arr): k is string => !!k && arr.indexOf(k) === i,
+  );
+
+  for (const key of keysToTry) {
     const { data: thread } = await supabase
       .from('email_threads')
       .select('related_entity_type, related_entity_id')
@@ -74,6 +92,7 @@ export async function resolveInboundEntity(
       };
     }
   }
+
 
   if (!sender) return UNRESOLVED;
 

@@ -42,7 +42,7 @@ Both paths share the **concepts** below. Everything else (guides, modules, refer
 | [`concepts/`](./concepts/) | Architecture, vision, laws | both |
 | [`operators/`](./operators/README.md) | Install, configure, run | operators |
 | [`builders/`](./builders/README.md) | Extend, contribute, test | builders |
-| [`guides/`](./guides/) | Docker, deploy, migrate, maintain | operators |
+| [`guides/`](./guides/) | Docker, deploy, migrate, maintain, integrations | operators |
 | [`modules/`](./modules/) | One page per module — auto-generated from `defineModule()` | both |
 | [`processes/`](./processes/) | End-to-end flows (lead-to-customer, quote-to-cash, …) | both |
 | [`pilot/`](./pilot/) | FlowPilot internals — handlers, memory, heartbeat | builders |
@@ -51,6 +51,14 @@ Both paths share the **concepts** below. Everything else (guides, modules, refer
 | [`mcp/`](./mcp/) | MCP resources for external agents | builders |
 | [`agents/`](./agents/) | Department-claw playbooks (sales / marketing / finance / ops / support / success) | operators |
 | [`contributing/`](./contributing/) | How to contribute, run tests | builders |
+
+---
+
+## Integration guides
+
+| Doc | Why |
+|---|---|
+| [`guides/composio-gmail-sync.md`](./guides/composio-gmail-sync.md) | How the Gmail/Composio inbound and outbound mail flow works |
 
 ---
 

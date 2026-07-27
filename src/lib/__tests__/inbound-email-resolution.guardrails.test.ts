@@ -18,16 +18,27 @@ import {
  *    history that nobody thinks to re-check.
  */
 
-/** Minimal stand-in for the query builder — enough for the three lookups. */
-function fakeDb(tables: Record<string, unknown>) {
+/**
+ * Minimal stand-in for the query builder. A table's value may be a plain row or
+ * a function of the filters applied, which is what lets a test say "the lead
+ * with THIS id has THIS address" — the question the subject fallback now has to
+ * ask before it trusts a match.
+ */
+type TableSpec = unknown | ((filters: Record<string, unknown>) => unknown);
+
+function fakeDb(tables: Record<string, TableSpec>) {
   return {
     from(table: string) {
-      const row = tables[table] ?? null;
-      const chain = {
+      const filters: Record<string, unknown> = {};
+      const chain: Record<string, unknown> = {
         select: () => chain,
-        eq: () => chain,
-        ilike: () => chain,
-        maybeSingle: async () => ({ data: row, error: null }),
+        eq: (col: string, val: unknown) => { filters[col] = val; return chain; },
+        ilike: (col: string, val: unknown) => { filters[col] = val; return chain; },
+        maybeSingle: async () => {
+          const spec = tables[table];
+          const row = typeof spec === 'function' ? spec(filters) : spec;
+          return { data: row ?? null, error: null };
+        },
       };
       return chain;
     },
@@ -130,5 +141,83 @@ describe('resolveInboundEntity', () => {
     const db = fakeDb({ email_threads: null, leads: { id: 'lead-3' } });
     const r = await resolveInboundEntity(db, { sender: null, subject: null, threadId: null });
     expect(r.related_entity_id).toBeNull();
+  });
+});
+
+/**
+ * Composio's send does not always return a gmail thread id, so our outbound row
+ * gets keyed by subject while the reply carries a real one. Without a subject
+ * fallback those halves never meet — Elin's first reply landed unattached for
+ * exactly this reason and had to be linked by hand.
+ *
+ * But a subject is neither unique nor ours. "Offert", "Faktura" and "Hej" recur
+ * across every customer a business has, so the fallback is only allowed to
+ * decide when the sender is the person that thread belongs to.
+ */
+describe('subject fallback requires the sender to match', () => {
+  const reply = { sender: 'elin@example.com', subject: 'Re: Offert', threadId: 'gmail-thread-999' };
+  const threadOwnedByElin = { related_entity_type: 'lead', related_entity_id: 'lead-elin' };
+
+  /** Thread found by subject only; the gmail thread id is unknown to us. */
+  const bySubjectOnly = (thread: unknown) => (f: Record<string, unknown>) =>
+    f.thread_key === 'offert' ? thread : null;
+
+  it('binds when the sender is the lead the thread belongs to', async () => {
+    const db = fakeDb({
+      email_threads: bySubjectOnly(threadOwnedByElin),
+      leads: (f) => (f.id === 'lead-elin' && f.email === 'elin@example.com' ? { id: 'lead-elin' } : null),
+    });
+    const r = await resolveInboundEntity(db, reply);
+    expect(r).toEqual({
+      related_entity_type: 'lead',
+      related_entity_id: 'lead-elin',
+      resolved_by: 'thread_subject',
+    });
+  });
+
+  it('refuses when a DIFFERENT customer replies with the same subject', async () => {
+    // The thread belongs to Elin. Björn, unrelated, sends "Re: Offert".
+    const db = fakeDb({
+      email_threads: bySubjectOnly(threadOwnedByElin),
+      // Elin's lead does not carry Björn's address, and Björn is unknown to us.
+      leads: () => null,
+      company_contacts: () => null,
+    });
+    const r = await resolveInboundEntity(db, { ...reply, sender: 'bjorn@other-company.example' });
+    expect(r.related_entity_id).toBeNull();
+    expect(r.resolved_by).toBe('unresolved');
+  });
+
+  it('lets the address decide on its own merits after a rejected subject match', async () => {
+    const db = fakeDb({
+      email_threads: bySubjectOnly(threadOwnedByElin),
+      // Sender is not Elin, but IS a lead in their own right.
+      leads: (f) => (f.id ? null : { id: 'lead-bjorn' }),
+    });
+    const r = await resolveInboundEntity(db, { ...reply, sender: 'bjorn@other-company.example' });
+    expect(r.related_entity_id).toBe('lead-bjorn');
+    expect(r.resolved_by).toBe('lead_email');
+  });
+
+  it('does not trust a subject match on an entity it cannot verify', async () => {
+    // An invoice thread has no address to check the sender against.
+    const db = fakeDb({
+      email_threads: bySubjectOnly({ related_entity_type: 'invoice', related_entity_id: 'inv-1' }),
+      leads: () => null,
+      company_contacts: () => null,
+    });
+    const r = await resolveInboundEntity(db, reply);
+    expect(r.resolved_by).toBe('unresolved');
+  });
+
+  it('still trusts the provider thread id without any sender check', async () => {
+    // This binding is one WE wrote when sending, so it needs no corroboration.
+    const db = fakeDb({
+      email_threads: (f) => (f.thread_key === 'gmail-thread-999' ? threadOwnedByElin : null),
+      leads: () => null,
+    });
+    const r = await resolveInboundEntity(db, { ...reply, sender: 'anyone@example.com' });
+    expect(r.resolved_by).toBe('thread');
+    expect(r.related_entity_id).toBe('lead-elin');
   });
 });

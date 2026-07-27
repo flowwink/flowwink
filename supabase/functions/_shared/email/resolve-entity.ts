@@ -28,7 +28,12 @@ export interface ResolvedEntity {
   related_entity_type: string | null;
   related_entity_id: string | null;
   /** Which rule matched — surfaced in logs and metadata so routing is auditable. */
-  resolved_by: 'thread' | 'lead_email' | 'company_contact' | 'unresolved';
+  resolved_by:
+    | 'thread'          // provider thread id — we set the binding when we sent
+    | 'thread_subject'  // subject key, confirmed by the sender's address
+    | 'lead_email'
+    | 'company_contact'
+    | 'unresolved';
 }
 
 const UNRESOLVED: ResolvedEntity = {
@@ -66,25 +71,62 @@ export function subjectKey(subject: string | null): string | null {
   return k || null;
 }
 
+/**
+ * Is this sender the person the thread belongs to?
+ *
+ * Only asked of the SUBJECT fallback, and the asymmetry is the point. A provider
+ * thread id is unique and we wrote the binding ourselves, so a match there is
+ * fact. A subject is neither unique nor ours: "Offert", "Faktura", "Hej" recur
+ * across every customer a business has. Without this check, sending "Offert" to
+ * one customer and receiving "Re: Offert" from an unrelated one files the second
+ * into the first one's history — a falsehood nobody re-reads and notices.
+ *
+ * Unverifiable entity types (an invoice, a blast) answer false: better an
+ * unattached message someone can link than a confident wrong one.
+ */
+async function senderBelongsToThread(
+  supabase: Queryable,
+  entityType: string | null,
+  entityId: string,
+  sender: string,
+): Promise<boolean> {
+  const lookup: Record<string, { table: string; column: string }> = {
+    lead: { table: 'leads', column: 'email' },
+    company_contact: { table: 'company_contacts', column: 'contact_email' },
+  };
+  const spec = lookup[entityType ?? ''];
+  if (!spec) return false;
+
+  const { data } = await supabase
+    .from(spec.table)
+    .select('id')
+    .eq('id', entityId)
+    .ilike(spec.column, sender)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function resolveInboundEntity(
   supabase: Queryable,
   opts: { sender: string | null; subject: string | null; threadId: string | null },
 ): Promise<ResolvedEntity> {
   const sender = bareEmail(opts.sender);
-  const primaryKey = threadKey(opts.subject, opts.threadId);
-  const fallbackKey = subjectKey(opts.subject);
 
-  const keysToTry = [primaryKey, fallbackKey].filter(
-    (k, i, arr): k is string => !!k && arr.indexOf(k) === i,
-  );
-
-  for (const key of keysToTry) {
-    const { data: thread } = await supabase
+  const findThread = async (key: string) => {
+    const { data } = await supabase
       .from('email_threads')
       .select('related_entity_type, related_entity_id')
       .eq('thread_key', key)
       .maybeSingle();
-    if (thread?.related_entity_id) {
+    return data?.related_entity_id ? data : null;
+  };
+
+  // 1. The provider's own thread id. Unique, and WE wrote the binding when we
+  //    sent — so a match is fact, and needs no corroboration.
+  const providerThreadId = (opts.threadId ?? '').trim() || null;
+  if (providerThreadId) {
+    const thread = await findThread(providerThreadId);
+    if (thread) {
       return {
         related_entity_type: thread.related_entity_type,
         related_entity_id: thread.related_entity_id,
@@ -93,6 +135,25 @@ export async function resolveInboundEntity(
     }
   }
 
+  // 2. The subject key. Needed because Composio's send does not always return a
+  //    gmail thread id, so our outbound row gets keyed by subject while the
+  //    reply carries a real one — the two halves would never meet otherwise.
+  //    But subjects are not unique and are not ours, so this match only counts
+  //    when the sender is the person the thread belongs to.
+  const subjKey = subjectKey(opts.subject);
+  if (subjKey && subjKey !== providerThreadId) {
+    const thread = await findThread(subjKey);
+    if (thread && sender &&
+        await senderBelongsToThread(supabase, thread.related_entity_type, thread.related_entity_id, sender)) {
+      return {
+        related_entity_type: thread.related_entity_type,
+        related_entity_id: thread.related_entity_id,
+        resolved_by: 'thread_subject',
+      };
+    }
+    // A subject that matched but whose sender did not is deliberately NOT an
+    // early return: fall through and let the address decide on its own merits.
+  }
 
   if (!sender) return UNRESOLVED;
 

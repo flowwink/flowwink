@@ -16,7 +16,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { resolveInboundEntity } from '../_shared/email/resolve-entity.ts';
+import { ingestGmailMessage } from '../_shared/email/ingest-gmail.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

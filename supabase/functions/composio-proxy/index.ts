@@ -1,4 +1,6 @@
 import { getUserClient, getServiceClient } from '../_shared/supabase-clients.ts';
+import { ingestGmailMessage } from '../_shared/email/ingest-gmail.ts';
+
 
 async function logComposioOutbound(row: {
   channel: string;

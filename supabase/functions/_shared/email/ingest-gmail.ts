@@ -105,6 +105,39 @@ export async function isAlreadyIngested(
   return false;
 }
 
+/**
+ * Classify an inbound message so downstream automations know whether a human
+ * is actually waiting for an answer.
+ *   - `known`   — resolved to a lead/contact/company in the CRM.
+ *   - `noise`   — bulk/marketing/system mail (List-Unsubscribe, Precedence: bulk,
+ *                 no-reply senders, auto-submitted). Never becomes a ticket.
+ *   - `unknown` — a human we don't know yet.
+ */
+export function classifyInbound(input: {
+  headers: Record<string, string>;
+  fromEmail: string;
+  resolvedToCrm: boolean;
+}): 'known' | 'noise' | 'unknown' {
+  const { headers, fromEmail, resolvedToCrm } = input;
+  const addr = (fromEmail.match(/<([^>]+)>/)?.[1] || fromEmail).trim().toLowerCase();
+
+  const bulkHeader =
+    !!headers['list-unsubscribe'] ||
+    !!headers['list-id'] ||
+    /bulk|list|junk/i.test(headers['precedence'] || '') ||
+    (!!headers['auto-submitted'] && headers['auto-submitted'] !== 'no') ||
+    !!headers['x-campaign-id'] ||
+    !!headers['feedback-id'];
+
+  const noReplySender =
+    /^(no[-._]?reply|do[-._]?not[-._]?reply|noreply|donotreply|notifications?|mailer[-.]daemon|newsletter|news|marketing|postmaster|bounce)/.test(
+      addr.split('@')[0] || '',
+    );
+
+  if (bulkHeader || noReplySender) return 'noise';
+  return resolvedToCrm ? 'known' : 'unknown';
+}
+
 export async function ingestGmailMessage(
   supabase: any,
   input: IngestInput,
@@ -196,8 +229,13 @@ export async function ingestGmailMessage(
   );
 
   const resolvedToCrm = entity.resolved_by !== 'unresolved';
+  const classification = classifyInbound({ headers, fromEmail, resolvedToCrm });
+
+  // Noise (newsletters, bulk mail, no-reply system notifications) never becomes
+  // a ticket, whatever the route mode says — a ticket is a promise to answer.
   const shouldCreateTicket =
-    routeMode === 'ticket_only' || (routeMode === 'crm_then_ticket' && !resolvedToCrm);
+    classification !== 'noise' &&
+    (routeMode === 'ticket_only' || (routeMode === 'crm_then_ticket' && !resolvedToCrm));
 
   const { error: logErr } = await supabase.from('outbound_communications').insert({
     direction: 'inbound',
@@ -221,6 +259,7 @@ export async function ingestGmailMessage(
       snippet,
       gmail_message_id: messageId,
       resolved_by: entity.resolved_by,
+      classification,
     },
     sent_at: new Date().toISOString(),
   });
@@ -246,6 +285,7 @@ export async function ingestGmailMessage(
       received_at: new Date().toISOString(),
       route_mode: routeMode,
       should_create_ticket: shouldCreateTicket,
+      classification,
     },
     _source: source,
   });
@@ -257,5 +297,7 @@ export async function ingestGmailMessage(
     logged: !logErr,
     emitted: !emitErr,
     resolved_by: entity.resolved_by,
+    classification,
+    should_create_ticket: shouldCreateTicket,
   };
 }

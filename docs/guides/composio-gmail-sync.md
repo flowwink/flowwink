@@ -86,6 +86,25 @@ Set per mailbox in the Email Router:
 
 The default is `crm_only`.
 
+### Classification (noise gate)
+
+Every ingested message is classified in `_shared/email/ingest-gmail.ts` and the
+result is stored on `outbound_communications.metadata.classification` and sent
+with the `email.received` event:
+
+| Value | Meaning |
+|-------|---------|
+| `known` | Resolved to a lead/contact/company in the CRM. |
+| `noise` | Bulk/marketing/system mail — `List-Unsubscribe`, `List-Id`, `Precedence: bulk`, `Auto-Submitted`, `Feedback-ID`, or a `noreply@`/`notifications@`/`newsletter@`-style sender. |
+| `unknown` | A human we don't have a record for yet. |
+
+The event carries `should_create_ticket`, which is the combination of route mode
+and classification. `internal:email_to_ticket` refuses to create a ticket when
+the message is `noise` or `should_create_ticket` is false — pass `force: true`
+to override for manual replay. This is what keeps newsletters out of the
+helpdesk on a `crm_only` mailbox.
+
+
 ---
 
 ## Configuration checklist

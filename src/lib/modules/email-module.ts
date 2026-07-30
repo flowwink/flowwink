@@ -304,7 +304,7 @@ Returns one outbound_communications row in full — body_html, body_text, error_
   },
   {
     name: 'email_to_ticket',
-    description: 'Convert an inbound email into a support ticket — creates a new ticket or appends a comment if the email is a reply to an existing thread. Idempotent on Gmail message_id. Use when: an `email.received` event fires (typically wired as an automation); manually replaying a stuck inbound email. NOT for: outbound replies (use reply_to_ticket_via_email); classifying email type (this assumes ticket — add a classifier upstream if needed).',
+    description: 'Convert an inbound email into a support ticket — creates a new ticket or appends a comment if the email is a reply to an existing thread. Idempotent on Gmail message_id. Use when: an `email.received` event fires (typically wired as an automation); manually replaying a stuck inbound email. Respects the mailbox route_mode and the inbound classification — bulk/newsletter/no-reply mail and crm_only mailboxes are skipped unless force is set. NOT for: outbound replies (use reply_to_ticket_via_email).',
     category: 'communication',
     handler: 'internal:email_to_ticket',
     scope: 'both',
@@ -330,6 +330,7 @@ Returns one outbound_communications row in full — body_html, body_text, error_
             connected_account_id: { type: 'string', description: 'Composio connected_account_id this email came from.' },
             mailbox: { type: 'string', description: 'The mailbox email address that received this email.' },
             event: { type: 'object', description: 'Alternative: full event payload from event-dispatcher (any of the fields above can live here instead, including message_id).' },
+            force: { type: 'boolean', description: 'Bypass the route_mode / noise gate and create the ticket anyway. Use only for manual replay.' },
           },
           required: ['message_id'],
         },
@@ -344,8 +345,13 @@ Ingests an inbound email and produces a ticket. Either creates a new ticket OR a
 3. Otherwise → create a new ticket.
 ### Idempotency
 A second call with the same \`message_id\` returns \`{ deduped: true }\` without writing.
+### Routing gate
+Skips (returns \`{ skipped: 'noise' | 'route_mode' }\`) when the event says
+\`classification: 'noise'\` (List-Unsubscribe / bulk / no-reply sender) or
+\`should_create_ticket: false\` (mailbox route_mode is crm_only, or the mail already
+resolved to a CRM record under crm_then_ticket). Pass \`force: true\` to override.
 ### Wired via automation
-The shipped automation 'inbound_email_to_ticket' calls this on every \`email.received\` event.`,
+The shipped automation 'inbound_email_to_ticket' calls this on every \`email.received\` event; the gate above is what keeps newsletters out of the helpdesk.`,
   },
   {
     name: 'reply_to_ticket_via_email',
@@ -409,6 +415,10 @@ const EMAIL_AUTOMATIONS: AutomationSeed[] = [
       references: '{{event.payload.references}}',
       mailbox: '{{event.payload.mailbox}}',
       connected_account_id: '{{event.payload.connected_account_id}}',
+      // Routing gate — the handler skips noise and crm_only mailboxes.
+      classification: '{{event.payload.classification}}',
+      should_create_ticket: '{{event.payload.should_create_ticket}}',
+      route_mode: '{{event.payload.route_mode}}',
     },
     executor: 'platform',
   },

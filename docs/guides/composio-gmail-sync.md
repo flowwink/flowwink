@@ -184,6 +184,29 @@ outbound_communications
 
 ---
 
+## Reconcile fallback (polling)
+
+Composio's push delivery is bursty — observed gaps from minutes up to 12 hours.
+A polling fallback closes that window without changing the webhook path:
+
+- **Shared ingest** — `supabase/functions/_shared/email/ingest-gmail.ts` holds the
+  single ingest path (expand message → parse headers → resolve entity → log to
+  `outbound_communications` → emit `email.received`). Both callers use it, so they
+  cannot drift.
+- **Webhook** — `composio-webhook` verifies the signature, then calls the shared ingest.
+- **Poller** — `composio-proxy` action `gmail_reconcile` fetches recent inbox mail via
+  `GMAIL_FETCH_EMAILS` and runs the same ingest per message.
+- **Idempotency** — ingest dedupes on `metadata->>gmail_message_id` and on
+  `message_id_header`, so re-running is a no-op.
+- **Schedule** — pg_cron job `gmail-reconcile` runs `public.run_gmail_reconcile()`
+  every 5 minutes. It no-ops when no enabled Composio mailbox exists, and calls
+  `composio-proxy` with the anon key; that caller is restricted to `gmail_reconcile`
+  and receives counts only.
+
+No new edge function was added — reconcile reuses `composio-proxy`.
+
+---
+
 ## Related docs
 
 - [`docs/operators/system-settings.md`](../operators/system-settings.md) — integration secrets and environment variables.

@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.run_gmail_reconcile() TO postgres;

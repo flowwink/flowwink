@@ -22559,6 +22559,7 @@ export type Database = {
         }
         Returns: Json
       }
+      run_gmail_reconcile: { Args: never; Returns: Json }
       run_monthly_depreciation: {
         Args: { p_period_date?: string }
         Returns: Json

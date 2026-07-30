@@ -12962,14 +12962,15 @@ async function executeEmailToTicket(
   // this message deserves a ticket. `force: true` bypasses it for manual replay.
   const force = args.force === true || evt.force === true;
   if (!force) {
-    if (evt.classification === 'noise') {
+    if (String(evt.classification ?? '') === 'noise') {
       return {
         success: true,
         skipped: 'noise',
         reason: 'Bulk/newsletter/no-reply mail is never turned into a ticket.',
       };
     }
-    if (evt.should_create_ticket === false) {
+    // Templates can arrive resolved as a real boolean or as the string "false".
+    if (evt.should_create_ticket === false || evt.should_create_ticket === 'false') {
       return {
         success: true,
         skipped: 'route_mode',

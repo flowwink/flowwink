@@ -168,6 +168,14 @@ Deno.serve(async (req) => {
     const { action, intent, app, params, entity_id } = body;
     const effectiveUserId = entity_id || 'default';
 
+    if (isCronCaller && action !== 'gmail_reconcile') {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+
     // Composio v3 rejects requests with multiple auth modes (error 10401).
     // Use only x-api-key — that's the v3 standard. Sending Authorization: Bearer
     // alongside causes "Multiple authentication modes were provided".

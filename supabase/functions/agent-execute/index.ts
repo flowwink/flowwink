@@ -12958,6 +12958,28 @@ async function executeEmailToTicket(
   const messageId = String(evt.message_id || '').trim();
   if (!messageId) return { success: false, error: 'message_id required' };
 
+  // Routing gate: the mailbox's route_mode + inbound classification decide whether
+  // this message deserves a ticket. `force: true` bypasses it for manual replay.
+  const force = args.force === true || evt.force === true;
+  if (!force) {
+    if (evt.classification === 'noise') {
+      return {
+        success: true,
+        skipped: 'noise',
+        reason: 'Bulk/newsletter/no-reply mail is never turned into a ticket.',
+      };
+    }
+    if (evt.should_create_ticket === false) {
+      return {
+        success: true,
+        skipped: 'route_mode',
+        route_mode: evt.route_mode ?? null,
+        reason: `Mailbox route_mode "${evt.route_mode ?? 'crm_only'}" does not create tickets for this message. Pass force: true to override.`,
+      };
+    }
+  }
+
+
   const fromEmail = String(evt.from || '').trim();
   const subject = String(evt.subject || '(no subject)').trim();
   const bodyText = String(evt.body_text || evt.snippet || '').trim();

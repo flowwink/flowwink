@@ -136,10 +136,14 @@ Deno.serve(async (req) => {
     }
 
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const token = authHeader.replace('Bearer ', '');
     const isServiceRole = serviceKey && token === serviceKey;
+    // pg_cron calls this with the anon key (the DB has no service key). That
+    // caller is restricted to the gmail_reconcile poll below and gets counts only.
+    const isCronCaller = !isServiceRole && !!anonKey && token === anonKey;
 
-    if (!isServiceRole) {
+    if (!isServiceRole && !isCronCaller) {
       const supabaseClient = getUserClient(authHeader)!;
       const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
@@ -150,6 +154,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+
 
     const composioKey = sanitizeSecret(Deno.env.get('COMPOSIO_API_KEY'));
     if (!composioKey) {

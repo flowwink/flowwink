@@ -196,8 +196,13 @@ export async function ingestGmailMessage(
   );
 
   const resolvedToCrm = entity.resolved_by !== 'unresolved';
+  const classification = classifyInbound({ headers, fromEmail, resolvedToCrm });
+
+  // Noise (newsletters, bulk mail, no-reply system notifications) never becomes
+  // a ticket, whatever the route mode says — a ticket is a promise to answer.
   const shouldCreateTicket =
-    routeMode === 'ticket_only' || (routeMode === 'crm_then_ticket' && !resolvedToCrm);
+    classification !== 'noise' &&
+    (routeMode === 'ticket_only' || (routeMode === 'crm_then_ticket' && !resolvedToCrm));
 
   const { error: logErr } = await supabase.from('outbound_communications').insert({
     direction: 'inbound',
@@ -221,6 +226,7 @@ export async function ingestGmailMessage(
       snippet,
       gmail_message_id: messageId,
       resolved_by: entity.resolved_by,
+      classification,
     },
     sent_at: new Date().toISOString(),
   });

@@ -394,6 +394,53 @@ Deno.serve(async (req) => {
       return json({ result: data });
     }
 
+    if (action === 'gmail_reconcile') {
+      // Polling fallback for the webhook: Composio's push delivery arrives in
+      // bursts (observed gaps of minutes → 12h). This pulls recent inbox mail
+      // and runs the exact same ingest path as composio-webhook, deduped on
+      // gmail_message_id, so it can run every few minutes without side effects.
+      const accountId = params?.account_id || await getConnectedAccountId('gmail');
+      if (!accountId) return json({ error: 'Gmail not connected.' }, 400);
+
+      const maxResults = Math.min(Number(params?.max_results) || 15, 50);
+      const query = params?.query || 'in:inbox newer_than:1d';
+
+      const data = await executeToolV3('GMAIL_FETCH_EMAILS', {
+        query,
+        max_results: maxResults,
+      }, accountId);
+
+      if (data?.success === false) {
+        return json({ error: data.error || 'GMAIL_FETCH_EMAILS failed', details: data.details }, 502);
+      }
+
+      const payload = data?.data?.response_data || data?.data || data;
+      const messages: any[] = payload?.messages || payload?.data?.messages || [];
+      const supabase = getServiceClient();
+
+      const results: Array<Record<string, unknown>> = [];
+      for (const msg of messages) {
+        const messageId = msg?.messageId || msg?.message_id || msg?.id;
+        if (!messageId) continue;
+        const res = await ingestGmailMessage(supabase, {
+          messageId,
+          threadId: msg?.threadId || msg?.thread_id || null,
+          connectedAccountId: accountId,
+          // GMAIL_FETCH_EMAILS returns expanded payloads; ingest falls back to
+          // gmail_get only when headers are missing.
+          fullMessage: msg?.payload || msg?.messageText ? msg : undefined,
+          source: 'gmail-reconcile',
+        });
+        results.push({ message_id: messageId, ...res });
+      }
+
+      const ingested = results.filter((r) => r.ok && !r.skipped).length;
+      console.log(`[composio-proxy] gmail_reconcile: ${messages.length} fetched, ${ingested} new`);
+      return json({ result: { fetched: messages.length, ingested, results } });
+    }
+
+
+
     if (action === 'gmail_get') {
       // Fetch one message by id (used by composio-webhook to fully expand a push notification).
       const messageId = params?.message_id;

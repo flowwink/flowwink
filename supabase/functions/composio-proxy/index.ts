@@ -451,8 +451,13 @@ Deno.serve(async (req) => {
 
       const ingested = results.filter((r) => r.ok && !r.skipped).length;
       console.log(`[composio-proxy] gmail_reconcile: ${messages.length} fetched, ${ingested} new`);
-      return json({ result: { fetched: messages.length, ingested, results } });
+      return json({
+        result: isCronCaller
+          ? { fetched: messages.length, ingested }
+          : { fetched: messages.length, ingested, results },
+      });
     }
+
 
 
 

@@ -415,6 +415,10 @@ const EMAIL_AUTOMATIONS: AutomationSeed[] = [
       references: '{{event.payload.references}}',
       mailbox: '{{event.payload.mailbox}}',
       connected_account_id: '{{event.payload.connected_account_id}}',
+      // Routing gate — the handler skips noise and crm_only mailboxes.
+      classification: '{{event.payload.classification}}',
+      should_create_ticket: '{{event.payload.should_create_ticket}}',
+      route_mode: '{{event.payload.route_mode}}',
     },
     executor: 'platform',
   },

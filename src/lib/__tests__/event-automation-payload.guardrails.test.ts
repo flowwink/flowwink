@@ -22,7 +22,9 @@ import { emailModule } from '../modules/email-module';
 
 const read = (p: string) => readFileSync(resolve(__dirname, '../../..', p), 'utf-8');
 
-const webhook = read('supabase/functions/composio-webhook/index.ts');
+// The email.received payload is built in the shared ingest module — both the
+// webhook and the reconcile poller go through it.
+const ingest = read('supabase/functions/_shared/email/ingest-gmail.ts');
 const dispatcher = read('supabase/functions/event-dispatcher/index.ts');
 const agentExecute = read('supabase/functions/agent-execute/index.ts');
 
@@ -34,16 +36,19 @@ const automation = emailModule.automations?.find((a) => a.name === 'inbound_emai
  * made this guard's first run accuse a correct mapping of being wrong.
  */
 function emittedPayloadKeys(): Set<string> {
-  const start = webhook.indexOf('const eventPayload = {');
-  const block = webhook.slice(start, webhook.indexOf('};', start));
-  return new Set([...block.matchAll(/^\s{4}([a-z_]+)\s*[:,]/gm)].map((m) => m[1]));
+  const start = ingest.indexOf('_payload: {');
+  const block = ingest.slice(start, ingest.indexOf('},', start));
+  return new Set([...block.matchAll(/^\s{6}([a-z_]+)\s*[:,]/gm)].map((m) => m[1]));
 }
 
 /** Fields executeEmailToTicket reads off the event. */
 function consumedFields(): Set<string> {
   const start = agentExecute.indexOf('async function executeEmailToTicket');
   const body = agentExecute.slice(start, start + 4000);
-  return new Set([...body.matchAll(/\bevt\.([a-z_]+)/g)].map((m) => m[1]));
+  const fields = new Set([...body.matchAll(/\bevt\.([a-z_]+)/g)].map((m) => m[1]));
+  // `force` is a manual-replay override, deliberately never mapped by the automation.
+  fields.delete('force');
+  return fields;
 }
 
 /** payload keys referenced by the seed's templates. */

@@ -157,7 +157,7 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="contactName">Contact Name</Label>
+              <Label htmlFor="contactName">Requester name</Label>
               <Input
                 id="contactName"
                 value={contactName}
@@ -166,7 +166,7 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Label htmlFor="contactEmail">Requester email</Label>
               <Input
                 id="contactEmail"
                 type="email"
@@ -176,6 +176,39 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Assigned to</Label>
+              <Select value={assignedTo} onValueChange={setAssignedTo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {assignees.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{assigneeLabel(a)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Team / queue</Label>
+              <Select value={teamId} onValueChange={setTeamId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {teams.filter((t) => t.is_active).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+
 
           <div className="flex justify-end">
             <Button type="submit" disabled={createTicket.isPending || !subject.trim()}>

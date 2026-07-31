@@ -50,7 +50,9 @@ import { useTicketTeams } from "@/hooks/useTicketTeams";
 import { TicketTimeEntriesPanel } from "@/components/admin/tickets/TicketTimeEntriesPanel";
 import { formatDistanceToNow } from "date-fns";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
-import { MessageSquare, Send, Building2, User, Mail, Clock, Tag, X, Plus, MessageSquareQuote, Users } from "lucide-react";
+import { MessageSquare, Send, Building2, User, Mail, Clock, Tag, X, Plus, MessageSquareQuote, Users, UserCog } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TicketDetailDrawerProps {
   ticket: Ticket | null;

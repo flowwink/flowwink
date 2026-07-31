@@ -69,6 +69,8 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
   const addComment = useAddTicketComment();
   const { data: cannedResponses = [] } = useCannedResponses(true);
   const { data: teams = [] } = useTicketTeams();
+  const { data: assignees = [] } = useTicketAssignees();
+  const { user } = useAuth();
   const incrementUsage = useIncrementCannedUsage();
   const { formatDateTime } = usePlatformFormat();
   const [newComment, setNewComment] = useState("");

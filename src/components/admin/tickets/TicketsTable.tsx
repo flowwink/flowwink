@@ -19,6 +19,8 @@ import {
 } from "@/hooks/useTickets";
 import { TicketDetailDrawer } from "./TicketDetailDrawer";
 import { formatDistanceToNow } from "date-fns";
+import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
+import { useMemo } from "react";
 
 interface TicketsTableProps {
   tickets: Ticket[];
@@ -27,6 +29,12 @@ interface TicketsTableProps {
 
 export function TicketsTable({ tickets, isLoading }: TicketsTableProps) {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const { data: assignees = [] } = useTicketAssignees();
+  const assigneeById = useMemo(
+    () => new Map(assignees.map((a) => [a.id, a])),
+    [assignees]
+  );
+
 
   if (isLoading) {
     return (
@@ -58,7 +66,8 @@ export function TicketsTable({ tickets, isLoading }: TicketsTableProps) {
               <TableHead>Priority</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Tags</TableHead>
-              <TableHead>Contact</TableHead>
+              <TableHead>Requester</TableHead>
+              <TableHead>Assigned to</TableHead>
               <TableHead>Created</TableHead>
             </TableRow>
           </TableHeader>
@@ -104,6 +113,11 @@ export function TicketsTable({ tickets, isLoading }: TicketsTableProps) {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
                   {ticket.contact_name || ticket.contact_email || '—'}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground truncate max-w-[160px]">
+                  {ticket.assigned_to
+                    ? assigneeLabel(assigneeById.get(ticket.assigned_to))
+                    : '—'}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                   {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}

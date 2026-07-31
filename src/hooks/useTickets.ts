@@ -57,6 +57,7 @@ export interface CreateTicketInput {
   company_id?: string;
   source?: string;
   assigned_to?: string;
+  team_id?: string;
 }
 
 const TICKET_STATUSES: TicketStatus[] = ['new', 'open', 'in_progress', 'waiting', 'resolved', 'closed'];
@@ -199,6 +200,7 @@ export function useCreateTicket() {
           company_id: input.company_id || null,
           source: input.source || 'manual',
           assigned_to: input.assigned_to || null,
+          team_id: input.team_id || null,
           created_by: user?.id ?? null,
         }])
         .select('id')

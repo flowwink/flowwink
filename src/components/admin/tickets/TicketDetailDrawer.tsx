@@ -47,6 +47,8 @@ import {
 } from "@/hooks/useTickets";
 import { useCannedResponses, useIncrementCannedUsage } from "@/hooks/useCannedResponses";
 import { useTicketTeams } from "@/hooks/useTicketTeams";
+import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
+import { useAuth } from "@/hooks/useAuth";
 import { TicketTimeEntriesPanel } from "@/components/admin/tickets/TicketTimeEntriesPanel";
 import { formatDistanceToNow } from "date-fns";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
@@ -67,6 +69,8 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
   const addComment = useAddTicketComment();
   const { data: cannedResponses = [] } = useCannedResponses(true);
   const { data: teams = [] } = useTicketTeams();
+  const { data: assignees = [] } = useTicketAssignees();
+  const { user } = useAuth();
   const incrementUsage = useIncrementCannedUsage();
   const { formatDateTime } = usePlatformFormat();
   const [newComment, setNewComment] = useState("");
@@ -165,6 +169,40 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
             </Select>
           </div>
 
+          {/* Owner assignment (person) */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <UserCog className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Assigned to</span>
+              </div>
+              {user?.id && ticket.assigned_to !== user.id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => updateTicket.mutate({ id: ticket.id, assigned_to: user.id } as never)}
+                >
+                  Assign to me
+                </Button>
+              )}
+            </div>
+            <Select
+              value={ticket.assigned_to ?? "none"}
+              onValueChange={(v) => updateTicket.mutate({ id: ticket.id, assigned_to: v === "none" ? null : v } as never)}
+            >
+              <SelectTrigger className="h-8 text-xs w-full">
+                <SelectValue placeholder="Unassigned" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Unassigned</SelectItem>
+                {assignees.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{assigneeLabel(a)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Team assignment (queue) */}
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-1.5">
@@ -196,7 +234,7 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
             {ticket.contact_name && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <User className="h-3.5 w-3.5" />
-                <span>{ticket.contact_name}</span>
+                <span>Requester: {ticket.contact_name}</span>
               </div>
             )}
             {ticket.contact_email && (

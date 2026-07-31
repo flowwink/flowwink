@@ -25,6 +25,8 @@ import {
   type TicketPriority,
   type TicketCategory,
 } from "@/hooks/useTickets";
+import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
+import { useTicketTeams } from "@/hooks/useTicketTeams";
 
 interface CreateTicketDialogProps {
   open?: boolean;
@@ -40,12 +42,16 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
     else setInternalOpen(v);
   };
   const createTicket = useCreateTicket();
+  const { data: assignees = [] } = useTicketAssignees();
+  const { data: teams = [] } = useTicketTeams();
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
   const [category, setCategory] = useState<TicketCategory>("other");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [assignedTo, setAssignedTo] = useState("none");
+  const [teamId, setTeamId] = useState("none");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +64,10 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
       category,
       contact_name: contactName.trim() || undefined,
       contact_email: contactEmail.trim() || undefined,
+      assigned_to: assignedTo === "none" ? undefined : assignedTo,
+      team_id: teamId === "none" ? undefined : teamId,
     });
+
 
     setSubject("");
     setDescription("");
@@ -66,6 +75,8 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
     setCategory("other");
     setContactName("");
     setContactEmail("");
+    setAssignedTo("none");
+    setTeamId("none");
     setOpen(false);
   };
 
@@ -146,7 +157,7 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="contactName">Contact Name</Label>
+              <Label htmlFor="contactName">Requester name</Label>
               <Input
                 id="contactName"
                 value={contactName}
@@ -155,7 +166,7 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Label htmlFor="contactEmail">Requester email</Label>
               <Input
                 id="contactEmail"
                 type="email"
@@ -165,6 +176,39 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Assigned to</Label>
+              <Select value={assignedTo} onValueChange={setAssignedTo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {assignees.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{assigneeLabel(a)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Team / queue</Label>
+              <Select value={teamId} onValueChange={setTeamId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {teams.filter((t) => t.is_active).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+
 
           <div className="flex justify-end">
             <Button type="submit" disabled={createTicket.isPending || !subject.trim()}>

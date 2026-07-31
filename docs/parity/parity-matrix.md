@@ -27,7 +27,6 @@ category: reference
 | **purchasing** | Purchase (purchase.order) | L3 → L4 | `████████░░` 75% | 14/0/4 | — |
 | **subscriptions** | Subscriptions (sale.subscription) | L3 → L4 | `████████░░` 79% | 11/0/3 | — |
 | **products** | Sales / Inventory (product.template, product.product, sale.order.line) | L4 → L4 | `████████░░` 80% | 10/1/4 | — |
-| **tickets** | Helpdesk (helpdesk.ticket) | L3 → L4 | `████████░░` 81% | 14/0/3 | — |
 | **expenses** | Expenses (hr.expense) | L4 → L4 | `████████░░` 82% | 12/0/3 | — |
 | **invoicing** | Invoicing (account.move) | L4 → L4 | `████████░░` 83% | 11/0/3 | — |
 | **ecommerce** | Website eCommerce + Sales (website_sale, sale.order draft→sent→sale→cancel; see docs/parity/references/ecommerce-odoo.md) | L3 → L4 | `████████░░` 84% | 11/6/1 | — |
@@ -37,6 +36,7 @@ category: reference
 | **pos** | Point of Sale (pos.order) | L4 → L4 | `█████████░` 89% | 15/0/1 | — |
 | **webinars** | Events (event.event) | L3 → L4 | `█████████░` 89% | 6/0/1 | — |
 | **templates** | Website themes | L3 → L4 | `█████████░` 90% | 3/1/0 | EPIC-06 |
+| **tickets** | Helpdesk (helpdesk.ticket) | L3 → L4 | `█████████░` 90% | 15/0/2 | — |
 | **reconciliation** | Accounting bank reconciliation | L3 → L4 | `█████████░` 91% | 12/1/0 | — |
 | **calendar** | Calendar (calendar.event) | L3 → L4 | `█████████░` 92% | 4/1/0 | — |
 | **companies** | Contacts (res.partner companies) | L4 → L4 | `█████████░` 93% | 11/0/1 | — |

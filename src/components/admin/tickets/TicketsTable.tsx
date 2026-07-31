@@ -58,7 +58,8 @@ export function TicketsTable({ tickets, isLoading }: TicketsTableProps) {
               <TableHead>Priority</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Tags</TableHead>
-              <TableHead>Contact</TableHead>
+              <TableHead>Requester</TableHead>
+              <TableHead>Assigned to</TableHead>
               <TableHead>Created</TableHead>
             </TableRow>
           </TableHeader>

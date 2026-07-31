@@ -91,8 +91,8 @@
       "status": "done",
       "weight": 2,
       "epic": "EPIC-04",
-      "verify": "DB gate guard_po_chain_approval (draft→sent blocked until chain approved) + request_entity_approval skill (migration 20260611210000)",
-      "notes": "Stage-3 verified 2026-06-11: send blocked with guiding error, request→delegate-approve→send succeeded. Expense gate (submitted→approved) shipped too. UI = ApprovalInboxPage."
+      "verify": "DB gate guard_po_chain_approval (draft\u2192sent blocked until chain approved) + request_entity_approval skill (migration 20260611210000)",
+      "notes": "Stage-3 verified 2026-06-11: send blocked with guiding error, request\u2192delegate-approve\u2192send succeeded. Expense gate (submitted\u2192approved) shipped too. UI = ApprovalInboxPage."
     },
     {
       "id": "blanket_po",
@@ -106,17 +106,19 @@
       "id": "freight_terms",
       "name": "Inbound freight cost allocation",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 1,
-      "verify": "inbound freight cost allocation"
+      "verify": "allocate_landed_cost RPC/skill in src/lib/modules/inventory-module.ts (handler rpc:allocate_landed_cost, distributes cost over valuation layers from a receipt, posts Dt 1460/Cr 5710) + admin UI src/components/admin/purchasing/LandedCostDialog.tsx wired from PurchaseOrderEditor.tsx",
+      "notes": "Cross-module: skill lives in inventory-module.ts (landed-cost allocation is an inventory-valuation concern) but is triggered from the PO editor; counts as dual-surface for this purchasing capability."
     },
     {
       "id": "vendor_sla",
       "name": "Vendor rating/SLA",
       "odoo": true,
-      "status": "done",
+      "status": "partial",
       "weight": 1,
-      "verify": "vendor scorecard view v_vendor_scorecard (on-time %, variance %) + manual_rating override on vendors; UI at Purchase Orders → Vendor Scorecards"
+      "verify": "vendor scorecard view v_vendor_scorecard (on-time %, variance %) + manual_rating override on vendors; UI at Purchase Orders \u2192 Vendor Scorecards",
+      "notes": "UI-only: VendorScorecardsPanel.tsx + v_vendor_scorecard view exist, but no MCP skill in purchasing-module.ts exposes vendor scorecard/rating data or manual_rating override. Missing surface: skill."
     },
     {
       "id": "drop_ship",
@@ -138,17 +140,19 @@
       "id": "po_amendments",
       "name": "PO change orders",
       "odoo": true,
-      "status": "done",
+      "status": "partial",
       "weight": 1,
-      "verify": "purchase_order_revisions table + PoRevisionsPanel; amendments snapshot prior state, route re-approval through approvals module when total grows past threshold"
+      "verify": "purchase_order_revisions table + PoRevisionsPanel; amendments snapshot prior state, route re-approval through approvals module when total grows past threshold",
+      "notes": "UI-only: PoRevisionsPanel.tsx + purchase_order_revisions table exist, but no MCP skill in purchasing-module.ts exposes revision creation/listing \u2014 agents cannot amend a PO over MCP. Missing surface: skill."
     },
     {
       "id": "dispute_resolution",
       "name": "Invoice dispute/credit memo",
       "odoo": true,
-      "status": "done",
+      "status": "partial",
       "weight": 1,
-      "verify": "vendor_invoice_disputes + vendor_credit_memos tables (unique credit_number); UI at Purchase Orders → Disputes & Credits; credit memos offset Leverantörsskulder 2440 via accounting module"
+      "verify": "vendor_invoice_disputes + vendor_credit_memos tables (unique credit_number); UI at Purchase Orders \u2192 Disputes & Credits; credit memos offset Leverant\u00f6rsskulder 2440 via accounting module",
+      "notes": "UI-only: VendorDisputesPanel.tsx + vendor_invoice_disputes/vendor_credit_memos tables exist, but no MCP skill in purchasing-module.ts exposes dispute/credit-memo creation. Missing surface: skill."
     }
   ]
 }

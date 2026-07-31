@@ -1,0 +1,101 @@
+{
+  "module": "flowtable",
+  "odoo_app": "Studio (custom app builder) / Spreadsheet Dashboard",
+  "current_maturity": "L1",
+  "target_maturity": "L2",
+  "capabilities": [
+    {
+      "id": "table_field_crud",
+      "name": "Base/table/field CRUD (custom schema)",
+      "odoo": true,
+      "status": "done",
+      "weight": 3,
+      "verify": "manage_flowtable_table + manage_flowtable_field skills (src/lib/modules/flowtable-module.ts) create/rename/delete tables and columns; UI at src/pages/admin/FlowtablePage.tsx supports base/table/field builder (FIELD_TYPES list, add/edit dialogs)."
+    },
+    {
+      "id": "record_crud",
+      "name": "Row CRUD",
+      "odoo": true,
+      "status": "done",
+      "weight": 2,
+      "verify": "manage_flowtable_record skill (create/update/delete/get) + FlowtablePage grid/list/kanban views with inline edit via useCreateRecord/useUpdateRecord/useDeleteRecords hooks."
+    },
+    {
+      "id": "query_filter_sort",
+      "name": "Filter/sort/search records",
+      "odoo": true,
+      "status": "done",
+      "weight": 2,
+      "verify": "query_flowtable skill supports filters[], search, order_by, count_by; FlowtablePage has Filter/ArrowUpDown UI controls and saved FlowtableViewConfig/FlowtableViewFilter."
+    },
+    {
+      "id": "relations_lookup_rollup",
+      "name": "Link/lookup/rollup fields between tables",
+      "odoo": true,
+      "status": "done",
+      "weight": 3,
+      "verify": "manage_flowtable_field supports type link/lookup/rollup with validated options (via_link_field, source_link_field, agg); query_flowtable resolve_links/resolve_computed expand relations. UI FIELD_TYPES includes link-style types in FlowtablePage."
+    },
+    {
+      "id": "csv_import_export",
+      "name": "CSV import/export",
+      "odoo": false,
+      "status": "done",
+      "weight": 1,
+      "verify": "FlowtablePage.tsx imports papaparse (Papa) and exposes Download/Upload icons for CSV import (auto field creation from header row per docs/modules/flowtable.md) and export.",
+      "notes": "Differentiator vs Odoo Studio, which has no lightweight ad-hoc CSV-to-table import."
+    },
+    {
+      "id": "push_to_crm",
+      "name": "Push rows to CRM (leads/companies)",
+      "odoo": false,
+      "status": "done",
+      "weight": 2,
+      "verify": "usePushToCrmLeads hook wired in FlowtablePage.tsx (Send icon action); flowtable-module.ts docs describe 'push to CRM as leads or companies' bridge.",
+      "notes": "Differentiator: staging-sheet-to-CRM bridge has no Odoo Studio equivalent."
+    },
+    {
+      "id": "multiple_views",
+      "name": "Multiple views (grid/list/kanban)",
+      "odoo": true,
+      "status": "done",
+      "weight": 1,
+      "verify": "FlowtablePage.tsx imports LayoutGrid, List, Rows3 icons and FlowtableViewConfig persists per-table view state (20260712140000_flowtable-view-config.sql migration)."
+    },
+    {
+      "id": "user_assignment_field",
+      "name": "Assign rows to platform users",
+      "odoo": true,
+      "status": "done",
+      "weight": 1,
+      "verify": "manage_flowtable_field type 'user' with role_filter option; query_flowtable resolve_links expands to {id, display, email}; useTeamProfiles hook feeds an assignee picker in FlowtablePage.tsx."
+    },
+    {
+      "id": "automation_triggers",
+      "name": "Automations on record change (e.g. Studio automated actions)",
+      "odoo": true,
+      "status": "missing",
+      "weight": 2,
+      "verify": "No AutomationSeed exported from flowtable-module.ts and no automation-rule UI in FlowtablePage.tsx.",
+      "notes": "Odoo Studio ships 'Automated Actions' triggered on record write; Flowtable has no equivalent hook into the automation engine yet."
+    },
+    {
+      "id": "form_view_public_share",
+      "name": "Public form view for external data collection",
+      "odoo": true,
+      "status": "missing",
+      "weight": 1,
+      "verify": "No public/share route found for flowtable tables (only /admin/flowtable); compare to Forms module which owns public form submission instead.",
+      "notes": "Odoo Studio lets you publish a form view; Flowtable currently has no shareable public entry form (use the separate Forms module as a workaround)."
+    },
+    {
+      "id": "permissions_per_base",
+      "name": "Per-base/table sharing & permissions",
+      "odoo": true,
+      "status": "missing",
+      "weight": 2,
+      "verify": "No sharing/collaborator UI found in FlowtablePage.tsx; access appears to be all-or-nothing via module enablement, not per-base ACLs.",
+      "notes": "Odoo Studio-built apps inherit granular record rules; Flowtable bases have no visible per-base ACL control."
+    }
+  ]
+}

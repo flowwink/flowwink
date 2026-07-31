@@ -24,10 +24,11 @@
       "id": "canned_responses",
       "name": "Canned responses",
       "odoo": true,
-      "status": "missing",
+      "status": "partial",
       "weight": 1,
-      "verify": "no canned-response skill or admin UI found (grep 'canned' hits nothing in live support)",
-      "epic": "EPIC-07"
+      "verify": "manage_canned_response skill + canned_responses table + CannedResponsesDialog UI exist, but scoped to Tickets (tickets-module.ts, TicketDetailDrawer) \u2014 not wired into LiveSupportPage's live chat reply box.",
+      "epic": "EPIC-07",
+      "notes": "Missing capability is live-chat-specific: agent console has no canned-response picker when replying to a visitor."
     },
     {
       "id": "transfer",
@@ -35,8 +36,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Dual-surface complete 2026-07-05: (1) skill surface — support_assign_conversation (db:chat_conversations) accepts agent_id for reassign; (2) admin UI — LiveSupportPage now has a Transfer control (Select next to Close) listing other support_agents with status dot + load (current/max), wired to a new transferConversation mutation in useSupportConversations (reassigns assigned_agent_id, keeps with_agent, increments target's counter and decrements the previous agent's). support_assign_conversation skill accepts agent_id for reassign",
-      "notes": "Was partial solely for the missing admin reassign control (skill existed). UI ships via Vercel on merge; targets are listed as 'Agent <id-prefix> · load' since support_agents carries no display name — joining a profile name is a cosmetic follow-up.",
+      "verify": "Dual-surface complete 2026-07-05: (1) skill surface \u2014 support_assign_conversation (db:chat_conversations) accepts agent_id for reassign; (2) admin UI \u2014 LiveSupportPage now has a Transfer control (Select next to Close) listing other support_agents with status dot + load (current/max), wired to a new transferConversation mutation in useSupportConversations (reassigns assigned_agent_id, keeps with_agent, increments target's counter and decrements the previous agent's). support_assign_conversation skill accepts agent_id for reassign",
+      "notes": "Was partial solely for the missing admin reassign control (skill existed). UI ships via Vercel on merge; targets are listed as 'Agent <id-prefix> \u00b7 load' since support_agents carries no display name \u2014 joining a profile name is a cosmetic follow-up.",
       "epic": "EPIC-07"
     },
     {
@@ -53,8 +54,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "LIVE VERIFIED on rzhj 2026-07-05 (Stage-3): list_support_agents action=list returned the agent roster with status/current_conversations/max_conversations/last_seen_at — the availability picture for transfer decisions. UI side (useSupportPresence realtime + status dropdown) already shipped. useSupportPresence.tsx realtime presence + status dropdown in LiveSupportPage",
-      "notes": "Dual-surface complete. Two follow-ups filed from the live run (not blocking): (1) SECURITY — the generic-CRUD select * initially exposed voice_sip_password in the skill response; fixed same day with a per-table column mask in agent-execute (pending redeploy). (2) Data quality: an agent row shows current_conversations=24 vs max 5 — historical counter drift from paths that assigned without incrementing/decrementing symmetrically.",
+      "verify": "LIVE VERIFIED on rzhj 2026-07-05 (Stage-3): list_support_agents action=list returned the agent roster with status/current_conversations/max_conversations/last_seen_at \u2014 the availability picture for transfer decisions. UI side (useSupportPresence realtime + status dropdown) already shipped. useSupportPresence.tsx realtime presence + status dropdown in LiveSupportPage",
+      "notes": "Dual-surface complete. Two follow-ups filed from the live run (not blocking): (1) SECURITY \u2014 the generic-CRUD select * initially exposed voice_sip_password in the skill response; fixed same day with a per-table column mask in agent-execute (pending redeploy). (2) Data quality: an agent row shows current_conversations=24 vs max 5 \u2014 historical counter drift from paths that assigned without incrementing/decrementing symmetrically.",
       "epic": "EPIC-07"
     }
   ]

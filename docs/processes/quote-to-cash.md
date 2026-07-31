@@ -21,6 +21,7 @@
 | **Accounting** | Booking invoices against the chart of accounts (BAS 2024) + period lock |
 | **Reconciliation** | Stripe payouts + bank file matching against AR |
 | **Contracts** | Underlying agreements that govern price/terms |
+| **Companies (B2B portal)** | Rung-3 self-service — a `company_contacts` member reviews/approves quotes and pays invoices for their own company, role-gated |
 
 ---
 
@@ -128,6 +129,7 @@ the public page; approval sign-off requires an admin/approver.
 | Booking suggestion | — | ✅ (`suggest_accounting_template`) | — |
 | Overdue reminders | ✅ | ✅ (`invoice_overdue_check`, automation) | — |
 | Reconciliation | ✅ | ⚠️ Partial | — |
+| B2B company self-service (quote approval, reorder, invoice pay) | ✅ (staff) | ✅ scoped skills (see Known gaps) | 🔗 customer-scoped API key rides the same rung |
 
 ---
 
@@ -140,6 +142,7 @@ the public page; approval sign-off requires an admin/approver.
 - ✅ Quote attachments — quotes carry file attachments (`quote_attachments`: spec PDFs, drawings, terms) that follow the quote when sent/accepted
 - ✅ Multi-currency at the invoice level — `multi-currency` module; invoices and quotes carry `exchange_rate`, rates via `fetch_ecb_rates` (manual override `set_exchange_rate`, bulk backfill `import_exchange_rates`)
 - ✅ Amount-threshold approvals — generic `approvals` engine (rules per entity type incl. invoice and quote); the quote flow is wired end-to-end via the `pending_approval` status, invoice rules are configured in the Approvals UI
+- ✅ B2B self-service portal (identity-ladder rung 3) — a company contact can list their company's orders/invoices (`list_company_orders`, `list_company_invoices`), approve a pending quote (`approve_company_quote`, role-gated to `approver`+), request a new quote (`request_company_quote`), reorder (`reorder_company_order`), pay an open invoice (`initiate_company_invoice_payment`), and manage who else may act for the company (`manage_company_contacts`, role-gated to `admin`) — scoped server-side to the caller's `company_contacts` membership, never a client-supplied company id
 - ⚠️ Reconciliation requires manual matching for ambiguous cases (auto via `auto_match_transactions`)
 
 ---

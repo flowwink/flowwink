@@ -70,9 +70,11 @@ flowchart TD
 - ✅ Agentic bookkeeping matcher — `suggest_accounting_template` / `propose_bookkeeping` rewritten with a word-boundary + Swedish-compound scorer (no more substring false-matches) and bank-leg-derived net base; template data cleaned (goods→3001, VAT-payment 1:1 via 2650, bank-paid equipment template)
 - ❌ Cash-flow statement (kassaflödesanalys) — we report balance sheet + P&L + GL; the third statement is missing
 - ❌ Document retention enforcement — the archive stores vouchers' documents, but nothing enforces the 7-year rule or provides the BFL-required *systemdokumentation* and *arkivplan* artifacts
+- ✅ Reverse-charge VAT (omvänd skattskyldighet) on expenses — `expenses.reverse_charge_rate` is a declared field (never inferred from currency/vendor); booking pairs the outgoing/ingoing VAT legs so box 30 and box 48 report correctly instead of netting to a silent zero
 - ❌ Multi-currency revaluation
 - ⚠️ Cost center / project-level — `manage_analytic_account` + `tag_journal_entry_analytics` exist; reporting limited
 - ❌ Consolidation (multi-entity)
+- ✅ Cron health monitoring — `cron_health_report()` (surfaced via `instance-health` check=cron) flags stalled/failing scheduled jobs, including the reconciliation and knowledge-indexer crons that feed this process — an admin/agent finds out before month-end that a sync silently stopped, instead of during close
 
 ---
 
@@ -93,7 +95,7 @@ of the operational loop above. Status per step:
 |---|---|---|---|
 | Continuous | Löpande bokföring, sequential vouchers, gap explanations (BFNAR 2013:2) | ✅ `assign_voucher_number` + `list_voucher_gaps`/`explain_voucher_gap` | Their draft→commit split with atomic voucher RPC matches ours; parity |
 | Continuous | Voucher immutability — storno, never edit | ❌ (gap above) | `reverseEntry()`/`correctEntry()` pattern (storno-service) |
-| Monthly/quarterly | **Momsdeklaration** — SKV 4700 ruta mapping, per-rate breakdown, EU/export handling | ❌ | Their VAT engine maps accounts → rutor declaratively; the ruta map is spec knowledge, not code — borrow freely |
+| Monthly/quarterly | **Momsdeklaration** — SKV 4700 ruta mapping, per-rate breakdown, EU/export handling | ⚠️ ruta mapping (`se-vat-boxes.ts`) and reverse-charge (box 30/48) booking now correct on real data; no filing/submission | Their VAT engine maps accounts → rutor declaratively; the ruta map is spec knowledge, not code — borrow freely |
 | Monthly (with employees) | **AGI** employer declaration | ❌ (payroll runs exist; no filing) | Their salary-journal report feeds it |
 | Quarterly (EU B2B sales) | **Periodisk sammanställning** (EU sales list) | ❌ | They export it as CSV per SKV format |
 | Yearly | **Bokslut** (K2/K3), year-end dispositions | ⚠️ `year_end_readiness` + `propose_accruals`/`propose_annual_depreciation` + `run_year_end` cover the mechanics; no K2/K3 statement pack | Their `dev_docs/bokslut` carries worked K2 examples + Bolagsverket's XBRL taxonomy for årsredovisning |

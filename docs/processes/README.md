@@ -16,10 +16,10 @@ Fourteen processes, one platform. Each links to its own doc — one page per pro
 | **Quote-to-Cash** | L3 | **Faster cash** | Quotes, Deals, Projects, Timesheets, Invoicing, Accounting, Reconciliation, Contracts | [quote-to-cash.md](./quote-to-cash.md) |
 | **Procure-to-Pay** | L3 | **Lower admin cost** | Purchasing (3-way match), Inventory, Expenses (full P2P), Invoicing, Accounting | [procure-to-pay.md](./procure-to-pay.md) |
 | **Order-to-Delivery** | L3 | **Lower ops cost** | Products, Inventory, POS, SLA, Documents | [order-to-delivery.md](./order-to-delivery.md) |
-| **Hire-to-Retire** | L3 | **Lower HR admin** | Recruitment, HR, Contracts, Documents, Expenses, Resume | [hire-to-retire.md](./hire-to-retire.md) |
+| **Hire-to-Retire** | L3 | **Lower HR admin** | Recruitment, HR, Contracts, Documents, Expenses, Consultants | [hire-to-retire.md](./hire-to-retire.md) |
 | **Content-to-Conversion** | L4 | **Cheaper marketing** | Pages, Blog, KB, Newsletter, Growth (Paid), Analytics, Sales Intelligence | [content-to-conversion.md](./content-to-conversion.md) |
 | **Record-to-Report** | L3 | **Lower accounting cost** | Accounting (period lock + SIE/SAF-T), Reconciliation, Invoicing, Expenses, Analytics | [record-to-report.md](./record-to-report.md) |
-| **Support-to-Resolution** | L3 | **Lower support cost** | Chat, Tickets, Live Support, Knowledge Base, SLA, Analytics | [support-to-resolution.md](./support-to-resolution.md) |
+| **Support-to-Resolution** | L4 | **Lower support cost** | Chat, Tickets, Live Support, Knowledge Base, SLA, Analytics | [support-to-resolution.md](./support-to-resolution.md) |
 | **Subscribe-to-Renew** | L3 | **Safer cash** | Subscriptions, Invoicing, Reconciliation, CRM | [subscribe-to-renew.md](./subscribe-to-renew.md) |
 | **Return-to-Refund** | L3 | **Lower ops cost** | Returns, Inventory, Invoicing, Shipping | [return-to-refund.md](./return-to-refund.md) |
 | **Acquire-to-Retire** | L3 | **Lower accounting cost** | Fixed Assets, Accounting, Purchasing | [acquire-to-retire.md](./acquire-to-retire.md) |
@@ -117,7 +117,7 @@ lever, per process:
 | Quote-to-Cash (L3) | Creates & sends quotes, chases expiry, records payments | **Faster cash** — shorter quote→paid cycle |
 | Subscribe-to-Renew (L3) | Bills, runs the dunning ladder, flags churn risk | **Safer cash** — fewer silently lost renewals |
 | Content-to-Conversion (L4) | Drafts/publishes content, answers from the KB | **Cheaper marketing** — output without headcount |
-| Support-to-Resolution (L3) | First-line answers, routing, KB deflection | **Lower support cost** per ticket |
+| Support-to-Resolution (L4) | First-line answers, routing, KB deflection, SLA-breach triage | **Lower support cost** per ticket |
 | Procure-to-Pay (L3) | 3-way match auto-approve, expense month-end loop | **Lower admin cost** — no invoice-matching hours |
 | Record-to-Report (L3) | Posts expenses/payroll/depreciation, reconciles bank | **Lower accounting cost** — balanced vouchers, automatically |
 | Return-to-Refund (L3) | RMA intake, QC stamps, partial refunds with guardrails | **Lower ops cost** — returns without escalation |

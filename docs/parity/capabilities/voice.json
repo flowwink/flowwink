@@ -1,0 +1,95 @@
+{
+  "module": "voice",
+  "odoo_app": "VoIP (Asterisk/OnSIP connector, voip.call)",
+  "current_maturity": "L1",
+  "target_maturity": "L3",
+  "capabilities": [
+    {
+      "id": "call_log_crud",
+      "name": "Call log (inbound/outbound history)",
+      "odoo": true,
+      "status": "done",
+      "weight": 2,
+      "verify": "list_voice_calls skill (db:voice_calls) + src/pages/admin/VoicePage.tsx 'all' tab table with direction/status/duration columns."
+    },
+    {
+      "id": "browser_softphone",
+      "name": "WebRTC browser softphone (place/answer calls in-app)",
+      "odoo": true,
+      "status": "partial",
+      "weight": 3,
+      "verify": "src/components/admin/voice/Softphone.tsx exists and is wired into VoicePage.tsx 'softphone' tab, but no place_voice_call / answer_voice_call skill is exposed in VOICE_SKILLS (voice-module.ts) — only list/schedule/mark-callback.",
+      "notes": "UI-only surface; agents cannot place or answer a call over MCP, only manage post-call metadata (dual-surface law caps this at partial)."
+    },
+    {
+      "id": "provider_adapters",
+      "name": "Pluggable provider adapters (46elks, Twilio, ...)",
+      "odoo": true,
+      "status": "done",
+      "weight": 2,
+      "verify": "src/lib/voice-providers listVoiceProviders() + capability matrix table in VoicePage.tsx (recording ✓ column per provider); useVoiceSettings/useUpdateVoiceSettings persists provider choice."
+    },
+    {
+      "id": "voicemail",
+      "name": "Voicemail with greeting + transcription",
+      "odoo": true,
+      "status": "partial",
+      "weight": 2,
+      "verify": "VoicemailPanel.tsx + voicemailGreetingUrl setting + voice-recording edge function in VoicePage.tsx; list_voice_calls instructions mention 'transcript field is filled when voicemail is transcribed', but no dedicated MCP skill to fetch/act on a voicemail transcript directly (only via generic list).",
+      "notes": "Playback + greeting config are UI-only; transcript retrieval isn't a first-class skill."
+    },
+    {
+      "id": "missed_call_queue",
+      "name": "Missed-call queue / callback workflow",
+      "odoo": true,
+      "status": "done",
+      "weight": 2,
+      "verify": "schedule_voice_callback + mark_voice_callback_done skills (rpc handlers) and 'missed'/'callbacks' tabs in VoicePage.tsx."
+    },
+    {
+      "id": "booking_ivr",
+      "name": "Booking IVR (caller picks a callback slot / auto-book)",
+      "odoo": false,
+      "status": "partial",
+      "weight": 2,
+      "verify": "VoicePage.tsx has a setting 'automatically book the next free, non-conflicting slot' when missed call/voicemail comes in, referencing UC4 in schedule_voice_callback instructions ('Pair with the bookings module for UC4'), but no dedicated skill or IVR-menu builder UI is visible — behavior is a toggle, not a configurable flow.",
+      "notes": "Differentiator concept (Odoo VoIP has no booking-slot IVR) but currently a single on/off toggle, not a full IVR flow builder."
+    },
+    {
+      "id": "sms_reply_fallback",
+      "name": "Auto-SMS reply to missed calls/voicemail",
+      "odoo": false,
+      "status": "partial",
+      "weight": 1,
+      "verify": "VoicePage.tsx has 'Reply to voicemail by SMS' toggle (smsReplyEnabled) in settings, but no skill exposes sending/inspecting these SMS replies over MCP.",
+      "notes": "Settings-only; no agent-facing skill."
+    },
+    {
+      "id": "ai_receptionist_fallback",
+      "name": "AI receptionist fallback when no agent answers",
+      "odoo": false,
+      "status": "partial",
+      "weight": 1,
+      "verify": "VoicePage.tsx: 'Falls back to voicemail if Gemini is unavailable' and useIsGeminiConfigured hook gate an AI-receptionist setting, but no skillSeed lets an agent configure or query this from MCP.",
+      "notes": "Config UI exists; not dual-surfaced."
+    },
+    {
+      "id": "call_recording",
+      "name": "Call recording storage & retrieval",
+      "odoo": true,
+      "status": "partial",
+      "weight": 1,
+      "verify": "recording_url field + voice-recording edge function link in VoicePage.tsx CallRow, but list_voice_calls is the only skill and doesn't dedicate a fetch-recording action; relies on generic DB read.",
+      "notes": "Works via generic list, no dedicated recording-fetch skill with signed URL handling."
+    },
+    {
+      "id": "agent_routing_queue",
+      "name": "Skill-based / round-robin agent routing queue",
+      "odoo": true,
+      "status": "missing",
+      "weight": 2,
+      "verify": "No queue/routing-rule table or UI found beyond per-agent voice config (AgentVoiceConfigCard.tsx handles individual agent settings, not a shared routing queue).",
+      "notes": "Odoo VoIP + call-center apps support ACD-style queues; FlowWink voice currently routes ad hoc."
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "module": "webmeet",
+  "odoo_app": "Discuss (video call channel) / Appointments video link",
+  "current_maturity": "L2",
+  "target_maturity": "L3",
+  "capabilities": [
+    {
+      "id": "room_create",
+      "name": "Create shareable video room (P2P WebRTC)",
+      "odoo": true,
+      "status": "done",
+      "weight": 3,
+      "verify": "create_webmeet_room skill (rpc:create_webmeet_room, src/lib/modules/webmeet-module.ts) + src/pages/admin/WebmeetPage.tsx 'New room' dialog creating via supabase.rpc('create_webmeet_room', ...) and copying the /meet/<slug> link."
+    },
+    {
+      "id": "room_list",
+      "name": "List active rooms",
+      "odoo": true,
+      "status": "done",
+      "weight": 1,
+      "verify": "list_webmeet_rooms skill + WebmeetPage.tsx loads webmeet_rooms where ended_at is null."
+    },
+    {
+      "id": "room_end",
+      "name": "End a room",
+      "odoo": true,
+      "status": "done",
+      "weight": 1,
+      "verify": "end_webmeet_room skill (rpc:end_webmeet_room) + endRoom() handler in WebmeetPage.tsx."
+    },
+    {
+      "id": "screen_share",
+      "name": "Screen sharing in-call",
+      "odoo": true,
+      "status": "partial",
+      "weight": 2,
+      "verify": "src/pages/MeetRoomPage.tsx toggles webmeet.isScreenSharing via toggleScreenShare() (useWebmeet hook) — UI-only, no MCP skill toggles or reports screen-share state.",
+      "notes": "Human surface exists in the meeting room itself; not agent-controllable, but a live in-call control isn't typically MCP-operable either — kept partial per dual-surface law strictness."
+    },
+    {
+      "id": "password_protection",
+      "name": "Password-protected rooms",
+      "odoo": false,
+      "status": "done",
+      "weight": 1,
+      "verify": "create_webmeet_room tool_definition accepts p_password (webmeet-module.ts); room join flow presumably checks it (webmeet_rooms table)."
+    },
+    {
+      "id": "expiring_rooms",
+      "name": "Auto-expiring rooms (TTL)",
+      "odoo": false,
+      "status": "done",
+      "weight": 1,
+      "verify": "create_webmeet_room supports p_expires_in_minutes and WebmeetPage.tsx / Room interface surfaces expires_at."
+    },
+    {
+      "id": "participant_cap",
+      "name": "Configurable max participants",
+      "odoo": true,
+      "status": "done",
+      "weight": 1,
+      "verify": "p_max_participants (2-16, default 8) on create_webmeet_room; WebmeetPage.tsx create dialog has a maxParticipants input."
+    },
+    {
+      "id": "recording",
+      "name": "Meeting recording",
+      "odoo": true,
+      "status": "missing",
+      "weight": 2,
+      "verify": "No recording field on webmeet_rooms, no recording control in MeetRoomPage.tsx, and no skill mentions recording.",
+      "notes": "Odoo Discuss video calls have no native recording either, but general video-meeting parity (Zoom/Meet-class) expects it; flagged as a gap regardless."
+    },
+    {
+      "id": "calendar_booking_integration",
+      "name": "Attach a WebMeet link to a booking/calendar event automatically",
+      "odoo": true,
+      "status": "missing",
+      "weight": 2,
+      "verify": "No cross-reference from bookings/calendar module to create_webmeet_room found in webmeet-module.ts or booking module; link creation is manual (copy from /admin/webmeet).",
+      "notes": "Odoo Appointments auto-attaches a video link; FlowWink requires manually creating and pasting a WebMeet URL into a booking today."
+    },
+    {
+      "id": "waiting_room_host_admit",
+      "name": "Waiting room / host admits participants",
+      "odoo": true,
+      "status": "missing",
+      "weight": 1,
+      "verify": "No lobby/admit-participant logic found in MeetRoomPage.tsx or webmeet_rooms schema — anyone with the link + password (if set) joins directly.",
+      "notes": "No host-gatekeeping beyond an optional static password."
+    },
+    {
+      "id": "in_call_chat",
+      "name": "In-call text chat alongside video",
+      "odoo": true,
+      "status": "missing",
+      "weight": 1,
+      "verify": "MeetRoomPage.tsx controls (share link, screen share, mic/cam) show no chat panel or chat-related import.",
+      "notes": "Discuss combines chat + video natively; WebMeet is video-only today."
+    }
+  ]
+}

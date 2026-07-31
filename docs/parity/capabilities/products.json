@@ -55,7 +55,7 @@
     },
     {
       "id": "variants",
-      "name": "Product variants (attributes → SKUs)",
+      "name": "Product variants (attributes \u2192 SKUs)",
       "odoo": true,
       "status": "done",
       "weight": 3,
@@ -71,7 +71,7 @@
       "weight": 2,
       "epic": "EPIC-01",
       "verify": "product_attributes + product_attribute_values tables; generate action upserts them",
-      "notes": "Stage-3 verified 2026-06-11: generate upserts attributes+values (Color×Size); UI in ProductVariantsPanel."
+      "notes": "Stage-3 verified 2026-06-11: generate upserts attributes+values (Color\u00d7Size); UI in ProductVariantsPanel."
     },
     {
       "id": "order_lines_normalized",
@@ -81,7 +81,7 @@
       "weight": 3,
       "epic": "EPIC-01",
       "verify": "order_items table exists + populated by create-checkout (sandbox+Stripe); variant_id + tax_rate_pct FK added (migration 20260610150000)",
-      "notes": "Lines already normalized in order_items; variant_id link added + verified on real schema 2026-06-11. Optional later: legacy metadata-only backfill. Re: 01.4 'POS sells variants' — correction: this is skill-only today. record_pos_sale (src/lib/modules/pos-module.ts ~L151) accepts variant_id and resolves SKU/price, but the human cashier UI (POSPage.tsx / usePOS.ts) has no variant picker at all — no product_variant reference anywhere in that UI. Per the dual-surface law this caps at partial, not done; tracked here as a note since there is no dedicated pos.json capability id for it."
+      "notes": "Lines already normalized in order_items; variant_id link added + verified on real schema 2026-06-11. Optional later: legacy metadata-only backfill. Re: 01.4 'POS sells variants' \u2014 correction: this is skill-only today. record_pos_sale (src/lib/modules/pos-module.ts ~L151) accepts variant_id and resolves SKU/price, but the human cashier UI (POSPage.tsx / usePOS.ts) has no variant picker at all \u2014 no product_variant reference anywhere in that UI. Per the dual-surface law this caps at partial, not done; tracked here as a note since there is no dedicated pos.json capability id for it."
     },
     {
       "id": "uom",
@@ -90,8 +90,8 @@
       "status": "done",
       "weight": 2,
       "epic": "EPIC-01",
-      "verify": "Stage-3 live 2026-07-06 over the MCP REST gateway on rzhj as an external agent: manage_uom action=list returned the seeded Units+Weight categories (unit/kg/g/t), convert_uom(2500, g, kg) → 2.5. Foundation re-emitted 2026-07-05 (migration 20260705170000 re-run via Lovable in-sandbox after the backdated original was skipped by the ledger). uom_categories + uoms tables, products.sales_uom_id; admin UI = SalesUomSelect.tsx in ProductDialog.tsx.",
-      "notes": "Depth vs Odoo: no per-line purchase-UoM on POs and no UoM on BoM lines yet — tracked separately; core conversion + product sales-unit works both surfaces."
+      "verify": "Stage-3 live 2026-07-06 over the MCP REST gateway on rzhj as an external agent: manage_uom action=list returned the seeded Units+Weight categories (unit/kg/g/t), convert_uom(2500, g, kg) \u2192 2.5. Foundation re-emitted 2026-07-05 (migration 20260705170000 re-run via Lovable in-sandbox after the backdated original was skipped by the ledger). uom_categories + uoms tables, products.sales_uom_id; admin UI = SalesUomSelect.tsx in ProductDialog.tsx.",
+      "notes": "Depth vs Odoo: no per-line purchase-UoM on POs and no UoM on BoM lines yet \u2014 tracked separately; core conversion + product sales-unit works both surfaces."
     },
     {
       "id": "partial_shipments",
@@ -101,7 +101,7 @@
       "weight": 2,
       "epic": "EPIC-01",
       "verify": "order_items.qty_fulfilled + fulfill_order_line RPC/skill (migration 20260610180000); order ships only when all lines complete",
-      "notes": "Stage-3 verified 2026-06-11: fulfill_order_line via agent-execute (3/5 → qty_fulfilled=3, order ships when all lines complete); UI = OrderLineFulfillment."
+      "notes": "Stage-3 verified 2026-06-11: fulfill_order_line via agent-execute (3/5 \u2192 qty_fulfilled=3, order ships when all lines complete); UI = OrderLineFulfillment."
     },
     {
       "id": "backorder",
@@ -115,9 +115,10 @@
       "id": "supplier_links",
       "name": "Supplier(s) + supplier price at product level",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 1,
-      "verify": "product_suppliers linking products to vendors"
+      "verify": "vendor_products table linking products to vendors with price/validity/qty-tiers; skills manage_vendor_price + resolve_vendor_price in src/lib/modules/pricelists-module.ts (handler rpc:manage_vendor_price / rpc:resolve_vendor_price); admin UI src/components/admin/purchasing/VendorProductsManager.tsx",
+      "notes": "Cross-module: skill/table live under pricelists (supplier pricing) rather than products-module.ts, but satisfy the same Odoo capability (product.supplierinfo)."
     },
     {
       "id": "product_media",

@@ -129,6 +129,7 @@ the public page; approval sign-off requires an admin/approver.
 | Booking suggestion | — | ✅ (`suggest_accounting_template`) | — |
 | Overdue reminders | ✅ | ✅ (`invoice_overdue_check`, automation) | — |
 | Reconciliation | ✅ | ⚠️ Partial | — |
+| B2B company self-service (quote approval, reorder, invoice pay) | ✅ (staff) | ✅ scoped skills (see Known gaps) | 🔗 customer-scoped API key rides the same rung |
 
 ---
 

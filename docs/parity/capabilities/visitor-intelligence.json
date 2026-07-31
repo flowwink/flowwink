@@ -1,0 +1,77 @@
+{
+  "module": "visitor-intelligence",
+  "odoo_app": "Custom (closest: Odoo has no anonymous-visitor scoring app; benchmarked against generic marketing-automation lead scoring)",
+  "current_maturity": "L2",
+  "target_maturity": "L3",
+  "capabilities": [
+    {
+      "id": "rule_based_scoring",
+      "name": "Rule-based behavioral scoring (return visits, pricing interest, deep engagement, reawakening)",
+      "odoo": false,
+      "status": "done",
+      "weight": 3,
+      "verify": "score_visitor_intent skill (src/lib/modules/visitor-intelligence-module.ts) evaluates site_settings.visitor_intelligence_rules and writes visitor_signals + bumps lead.score; UI at src/pages/admin/VisitorIntelligencePage.tsx manages session_count/url_visits/page_view_count/reawakening rules and notification email.",
+      "notes": "Odoo has no anonymous-visitor identity-stitching/scoring app; this is a FlowWink differentiator."
+    },
+    {
+      "id": "visitor_timeline",
+      "name": "Per-lead behavioral timeline (page views + fired signals)",
+      "odoo": false,
+      "status": "done",
+      "weight": 2,
+      "verify": "get_visitor_timeline skill (db:page_views handler) + VisitorTimelineWidget.tsx rendered in CRM lead detail."
+    },
+    {
+      "id": "scheduled_scoring_automation",
+      "name": "Automated recurring scoring run",
+      "odoo": false,
+      "status": "done",
+      "weight": 1,
+      "verify": "AutomationSeed 'Score visitor intent (every 15 min)' in visitor-intelligence-module.ts, trigger_type cron, dispatched via automation-dispatcher; adjustable in /admin/automations."
+    },
+    {
+      "id": "identity_stitching",
+      "name": "Anonymous-to-identified visitor stitching",
+      "odoo": false,
+      "status": "partial",
+      "weight": 2,
+      "verify": "Module doc states 'identity stitching' as a feature but no dedicated skill/UI surfaces the stitching logic itself — only downstream scoring (score_visitor_intent) and timeline (get_visitor_timeline) are exposed.",
+      "notes": "Stitching appears to happen implicitly inside page_views/lead matching; no explicit admin control or skill to inspect/adjust match confidence."
+    },
+    {
+      "id": "live_visitor_sessions",
+      "name": "Live/active visitor session monitoring",
+      "odoo": false,
+      "status": "partial",
+      "weight": 1,
+      "verify": "VisitorSessionsTab.tsx exists under src/components/admin/chat/ but is filed under the Chat/Live-support admin surface, not surfaced as a Visitor Intelligence skill (no MCP tool lists active sessions).",
+      "notes": "UI-only; no skillSeed exposes 'who is on the site right now' over MCP."
+    },
+    {
+      "id": "custom_rule_builder",
+      "name": "Admin-configurable rule builder (add/edit/disable individual rules)",
+      "odoo": false,
+      "status": "done",
+      "weight": 2,
+      "verify": "VisitorIntelligencePage.tsx reads/writes site_settings.visitor_intelligence_rules with per-rule threshold and enable toggles."
+    },
+    {
+      "id": "score_decay",
+      "name": "Score decay / time-based cooldown so stale signals don't inflate score forever",
+      "odoo": false,
+      "status": "missing",
+      "weight": 1,
+      "verify": "score_visitor_intent instructions only mention 'won't double-fire the same day per lead'; no decay/expiry logic found in module or docs.",
+      "notes": "Scores can accumulate indefinitely with no observed decay mechanism."
+    },
+    {
+      "id": "crm_action_bridge",
+      "name": "Trigger CRM actions (create task, notify rep) directly from a fired signal",
+      "odoo": false,
+      "status": "partial",
+      "weight": 2,
+      "verify": "Rules support a notification email (per VisitorIntelligencePage), but no skill creates a CRM task/deal-stage-move directly from a signal — would need chaining through the separate automations module.",
+      "notes": "Only email notification is built-in; deeper CRM workflow actions require manual automation wiring."
+    }
+  ]
+}

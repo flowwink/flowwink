@@ -50,7 +50,9 @@ import { useTicketTeams } from "@/hooks/useTicketTeams";
 import { TicketTimeEntriesPanel } from "@/components/admin/tickets/TicketTimeEntriesPanel";
 import { formatDistanceToNow } from "date-fns";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
-import { MessageSquare, Send, Building2, User, Mail, Clock, Tag, X, Plus, MessageSquareQuote, Users } from "lucide-react";
+import { MessageSquare, Send, Building2, User, Mail, Clock, Tag, X, Plus, MessageSquareQuote, Users, UserCog } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TicketDetailDrawerProps {
   ticket: Ticket | null;
@@ -71,6 +73,19 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
   const [tagInput, setTagInput] = useState("");
 
   const tags = useMemo(() => ticket?.tags ?? [], [ticket]);
+
+  const { data: creator } = useQuery({
+    queryKey: ["ticket-creator", ticket?.created_by],
+    enabled: !!ticket?.created_by,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", ticket!.created_by as string)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   if (!ticket) return null;
 
@@ -200,6 +215,14 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
               <Clock className="h-3.5 w-3.5" />
               <span>{formatDateTime(ticket.created_at)}</span>
             </div>
+            {ticket.created_by && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <UserCog className="h-3.5 w-3.5" />
+                <span>
+                  Created by {creator?.full_name || creator?.email || "internal user"}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Tags */}

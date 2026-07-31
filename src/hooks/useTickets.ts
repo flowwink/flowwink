@@ -185,6 +185,7 @@ export function useCreateTicket() {
 
   return useMutation({
     mutationFn: async (input: CreateTicketInput) => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('tickets')
         .insert([{
@@ -198,6 +199,7 @@ export function useCreateTicket() {
           company_id: input.company_id || null,
           source: input.source || 'manual',
           assigned_to: input.assigned_to || null,
+          created_by: user?.id ?? null,
         }])
         .select('id')
         .single();

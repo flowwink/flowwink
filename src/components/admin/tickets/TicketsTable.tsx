@@ -106,6 +106,11 @@ export function TicketsTable({ tickets, isLoading }: TicketsTableProps) {
                 <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
                   {ticket.contact_name || ticket.contact_email || '—'}
                 </TableCell>
+                <TableCell className="text-sm text-muted-foreground truncate max-w-[160px]">
+                  {ticket.assigned_to
+                    ? assigneeLabel(assigneeById.get(ticket.assigned_to))
+                    : '—'}
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                   {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
                 </TableCell>

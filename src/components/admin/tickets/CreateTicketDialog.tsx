@@ -40,12 +40,16 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
     else setInternalOpen(v);
   };
   const createTicket = useCreateTicket();
+  const { data: assignees = [] } = useTicketAssignees();
+  const { data: teams = [] } = useTicketTeams();
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("medium");
   const [category, setCategory] = useState<TicketCategory>("other");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [assignedTo, setAssignedTo] = useState("none");
+  const [teamId, setTeamId] = useState("none");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +62,10 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
       category,
       contact_name: contactName.trim() || undefined,
       contact_email: contactEmail.trim() || undefined,
+      assigned_to: assignedTo === "none" ? undefined : assignedTo,
+      team_id: teamId === "none" ? undefined : teamId,
     });
+
 
     setSubject("");
     setDescription("");

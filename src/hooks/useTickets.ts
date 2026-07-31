@@ -200,6 +200,7 @@ export function useCreateTicket() {
           company_id: input.company_id || null,
           source: input.source || 'manual',
           assigned_to: input.assigned_to || null,
+          team_id: input.team_id || null,
           created_by: user?.id ?? null,
         }])
         .select('id')

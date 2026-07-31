@@ -72,7 +72,7 @@ generated: true
 | [Approvals Module](./approvals.md) | agent-capable | 1 | Generic approval engine — define rules (entity type + amount threshold + required role) and route requests for sign-off. |
 | [Booking Module](./bookings.md) | 🟡 config-required | 5 | Create and manage bookings/appointments |
 | [Companies Module](./companies.md) | view-required | 1 | Create and manage company records with optional AI enrichment |
-| [Consultants Module](./resume.md) | agent-capable | 2 | Match consultant profiles against job descriptions with AI-powered scoring and cover letters |
+| [Consultants Module](./consultants.md) | agent-capable | 2 | Match consultant profiles against job descriptions with AI-powered scoring and cover letters |
 | [Contracts Module](./contracts.md) | agent-capable | 6 | Contract lifecycle management with renewal tracking and document storage |
 | [CRM Module](./leads.md) | view-required | 11 | Create and manage leads |
 | [Customer 360 Module](./customer360.md) | view-required | — | One screen showing every signal, deal, order, invoice, ticket, booking, subscription, chat and webinar tied to a person  |

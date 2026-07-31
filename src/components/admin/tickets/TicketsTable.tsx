@@ -18,7 +18,8 @@ import {
   TICKET_CATEGORY_LABELS,
 } from "@/hooks/useTickets";
 import { TicketDetailDrawer } from "./TicketDetailDrawer";
-import { formatDistanceToNow } from "date-fns";
+import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
+import { useMemo } from "react";
 
 interface TicketsTableProps {
   tickets: Ticket[];

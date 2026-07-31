@@ -117,7 +117,7 @@ lever, per process:
 | Quote-to-Cash (L3) | Creates & sends quotes, chases expiry, records payments | **Faster cash** — shorter quote→paid cycle |
 | Subscribe-to-Renew (L3) | Bills, runs the dunning ladder, flags churn risk | **Safer cash** — fewer silently lost renewals |
 | Content-to-Conversion (L4) | Drafts/publishes content, answers from the KB | **Cheaper marketing** — output without headcount |
-| Support-to-Resolution (L3) | First-line answers, routing, KB deflection | **Lower support cost** per ticket |
+| Support-to-Resolution (L4) | First-line answers, routing, KB deflection, SLA-breach triage | **Lower support cost** per ticket |
 | Procure-to-Pay (L3) | 3-way match auto-approve, expense month-end loop | **Lower admin cost** — no invoice-matching hours |
 | Record-to-Report (L3) | Posts expenses/payroll/depreciation, reconciles bank | **Lower accounting cost** — balanced vouchers, automatically |
 | Return-to-Refund (L3) | RMA intake, QC stamps, partial refunds with guardrails | **Lower ops cost** — returns without escalation |

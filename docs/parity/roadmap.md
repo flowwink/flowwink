@@ -67,6 +67,33 @@ other three — anything that fails verification becomes a defect issue instead
 of a silent lie in the matrix), then 06/07/08 in parallel. EPIC-02 (inventory
 valuation) stays the next *structural* epic after R1.
 
+## Round R2 (2026-07-31) — Audit findings: dual-surface debt
+
+A full re-audit of every capability file against the code (skills in
+`src/lib/modules/*-module.ts` vs admin UI in `src/pages/admin` /
+`src/components/admin`) corrected the scorecards again. The finding is
+consistent with R1 but has flipped direction: the remaining debt is now mostly
+**UI shipped, no MCP skill** — the opposite of the June wave. Nine capabilities
+were re-scored, and two previously "missing" ones turned out to be shipped.
+
+| Theme | Modules | What is missing | Fix shape |
+|---|---|---|---|
+| **Agent-blind ops** | inventory (`multi_step_routes`, `interwarehouse`, `expiry_alerts`, `abc_analysis`) | RPC + admin UI exist, no skill in `skillSeeds` → agents cannot run warehouse ops | Add skills over the existing RPCs (no schema work) |
+| **Agent-blind P2P** | purchasing (`po_amendments`, `vendor_sla`, `dispute_resolution`) | `PoRevisionsPanel`, `VendorScorecardsPanel`, `VendorDisputesPanel` are human-only | Same: expose the existing data as skills |
+| **Skill without a surface** | accounting (`consolidation`) | `consolidation_report` / `manage_subsidiary` skills exist with no admin screen | One admin view under Accounting |
+| **Wired to the wrong console** | live-support (`canned_responses`) | canned responses exist for tickets, not in the live-chat reply box | Reuse `CannedResponsesDialog` in `LiveSupportPage` |
+| **Genuinely missing (build)** | analytics (custom reports, conversion tracking), booking (resource capacity, waiting list, buffers), manufacturing (quality inspection, ECO/alternative BOMs), ecommerce (fiscal-position-aware tax), quotes (approval chains) | no schema, no skill | Real epics — sequence after the debt above |
+
+Corrections found *upward*: purchasing `freight_terms` (landed costs shipped in
+the inventory module) and products `supplier_links` (vendor price management)
+were both scored `missing` while being fully dual-surface.
+
+Rule reinforced by this round: **a skill without a screen and a screen without a
+skill are the same bug.** When shipping a capability, add both in the same PR —
+that is the cheapest parity point available and it is where nearly all of the
+current backlog sits.
+
+
 ## Sprint 0 — must happen first
 
 S0 is the smallest sprint and the highest leverage: it makes every later sprint

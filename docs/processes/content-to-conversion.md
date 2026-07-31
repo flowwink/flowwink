@@ -21,6 +21,7 @@
 | **Analytics** | Tracking traffic, conversion, SEO |
 | **Visitor Intelligence** | Consent-based visitor journey (cookie + page views); hands the browsing history to [Lead-to-Customer](./lead-to-customer.md) as scoring signals the moment a visitor identifies |
 | **Sales Intelligence** | Competitor and topic research |
+| **Retrieval Engine** (`knowledge_chunks`) | Indexes published blog posts, pages, KB articles, wiki and docs for hybrid search so chat surfaces (docs-chat, workspace-chat, public chat) ground answers in real content instead of a bulk dump |
 
 ---
 
@@ -68,6 +69,7 @@ flowchart TD
 - ✅ Blog comments + moderation (`moderate_blog_comment`, `list_blog_comments`), RSS (`get_blog_rss_url`), SEO meta (`generate_meta_description`, `generate_alt_text`), author pages
 - ✅ Media library / DAM — alt-text (`media_set_alt_text`), where-used (`media_find_usage`), optimized variants (`media_optimize`), browse (`media_browse`)
 - ✅ Organic social scheduling — `schedule_social_post`, `list_social_posts`, `mark_social_post_posted`; campaign optimization `ad_optimize`
+- ✅ Cross-content retrieval — published blog/pages/KB/wiki/docs are chunked and hybrid-ranked (`knowledge_chunks`, indexed by the `knowledge-indexer` cron every 5 min) so chat-based visitors get grounded answers instead of a bulk-dump prompt; measurable read on whether content actually answers questions
 - ❌ Editorial calendar with deadlines / approvals
 - ❌ Influencer / partnership outreach
 - ⚠️ Image generation requires external AI (OpenAI / Gemini / local)

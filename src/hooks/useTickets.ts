@@ -57,6 +57,7 @@ export interface CreateTicketInput {
   company_id?: string;
   source?: string;
   assigned_to?: string;
+  team_id?: string;
 }
 
 const TICKET_STATUSES: TicketStatus[] = ['new', 'open', 'in_progress', 'waiting', 'resolved', 'closed'];

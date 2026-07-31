@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPageContainer } from "@/components/admin/AdminPageContainer";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -13,7 +13,8 @@ import { CannedResponsesDialog } from "@/components/admin/tickets/CannedResponse
 import { TicketTeamsTab } from "@/components/admin/tickets/TicketTeamsTab";
 import { TicketEscalationRulesTab } from "@/components/admin/tickets/TicketEscalationRulesTab";
 import { useTickets, useTicketSearch, type Ticket } from "@/hooks/useTickets";
-import { LayoutGrid, List, Search, X, Users, AlarmClock, Inbox } from "lucide-react";
+import { useTicketSlaMap } from "@/hooks/useTicketSla";
+import { LayoutGrid, List, Search, X, Users, AlarmClock, Inbox, TriangleAlert } from "lucide-react";
 import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useOpenOnQueryParam } from "@/hooks/useOpenOnQueryParam";
@@ -22,7 +23,7 @@ import { LoadDemoDataButton } from "@/components/admin/LoadDemoDataButton";
 import { Ticket as TicketIcon } from "lucide-react";
 import { InboundMailboxesSection } from "@/components/admin/email/InboundMailboxesSection";
 import { useIsIntegrationActive } from "@/hooks/useIntegrations";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 export default function TicketsPage() {
   const [view, setView] = useState<"kanban" | "table" | "teams" | "rules" | "inbound">("kanban");
@@ -30,12 +31,26 @@ export default function TicketsPage() {
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [slaOnly, setSlaOnly] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   useOpenOnQueryParam('new', '1', () => setCreateOpen(true));
   const debouncedSearch = useDebounce(searchInput, 300);
+  const [searchParams] = useSearchParams();
+  const deepLinkTicketId = searchParams.get('ticket');
 
   const { data: tickets = [], isLoading } = useTickets();
   const { data: searchResults = [], isFetching: isSearching } = useTicketSearch(debouncedSearch);
+  const slaMap = useTicketSlaMap(tickets);
+
+  // A deep link from the SLA Monitor should land on the list view with the drawer open.
+  useEffect(() => {
+    if (deepLinkTicketId) setView('table');
+  }, [deepLinkTicketId]);
+
+  const breachedCount = useMemo(
+    () => tickets.filter((t) => slaMap.get(t.id)?.state === 'breached').length,
+    [tickets, slaMap]
+  );
 
   // When searching, map RPC results back onto full ticket rows for display parity
   const displayTickets = useMemo<Ticket[]>(() => {
@@ -51,8 +66,11 @@ export default function TicketsPage() {
     if (selectedTags.length > 0) {
       base = base.filter((t) => selectedTags.every((tag) => (t.tags ?? []).includes(tag)));
     }
+    if (slaOnly) {
+      base = base.filter((t) => slaMap.get(t.id)?.state === 'breached');
+    }
     return base;
-  }, [debouncedSearch, searchResults, tickets, selectedTags]);
+  }, [debouncedSearch, searchResults, tickets, selectedTags, slaOnly, slaMap]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -131,6 +149,23 @@ export default function TicketsPage() {
                 </Button>
               )}
             </div>
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <Button
+                size="sm"
+                variant={slaOnly ? "default" : "outline"}
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setSlaOnly((v) => !v)}
+              >
+                <TriangleAlert className="h-3.5 w-3.5" />
+                SLA breached
+                {breachedCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-[10px]">{breachedCount}</Badge>
+                )}
+              </Button>
+              <Link to="/admin/sla" className="text-xs text-muted-foreground underline">
+                SLA policies
+              </Link>
+            </div>
             {allTags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 items-center">
                 <span className="text-xs text-muted-foreground mr-1">Tags:</span>
@@ -182,7 +217,7 @@ export default function TicketsPage() {
           </TabsContent>
 
           <TabsContent value="table" className="mt-0">
-            <TicketsTable tickets={displayTickets} isLoading={isBusy} />
+            <TicketsTable tickets={displayTickets} isLoading={isBusy} autoOpenTicketId={deepLinkTicketId} />
           </TabsContent>
 
           <TabsContent value="teams" className="mt-0">

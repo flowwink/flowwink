@@ -123,6 +123,7 @@ const AttendancePage = lazy(() => import("./pages/account/AttendancePage"));
 const MySkillsPage = lazy(() => import("./pages/account/MySkillsPage"));
 const MyContractsPage = lazy(() => import("./pages/account/MyContractsPage"));
 const MyPayslipsPage = lazy(() => import("./pages/account/MyPayslipsPage"));
+const MyTicketsPage = lazy(() => import("./pages/account/MyTicketsPage"));
 const DeveloperToolsPage = lazy(() => import("./pages/admin/DeveloperToolsPage"));
 const MigrationAuditPage = lazy(() => import("./pages/admin/MigrationAuditPage"));
 const SystemHubPage = lazy(() => import("./pages/admin/SystemHubPage"));
@@ -254,6 +255,7 @@ const router = createBrowserRouter([
           { path: "skills", element: <MySkillsPage /> },
           { path: "contracts", element: <MyContractsPage /> },
           { path: "payslips", element: <MyPayslipsPage /> },
+          { path: "support", element: <MyTicketsPage /> },
         ],
       },
       { path: "/checkout", element: <CheckoutPage /> },

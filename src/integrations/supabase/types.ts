@@ -19768,6 +19768,7 @@ export type Database = {
         Args: { _base_id: string }
         Returns: boolean
       }
+      can_view_ticket: { Args: { _ticket_id: string }; Returns: boolean }
       cancel_manual_subscription: {
         Args: {
           _effective_date?: string

@@ -20,6 +20,7 @@
 | **Sales Intelligence** | Prospect research, enrichment, fit analysis |
 | **Deals** | Sales pipeline with stages (qualified → won/lost) |
 | **Newsletter** | Nurture sequences for leads not yet sales-ready |
+| **Email** | Inbound Gmail sync resolves senders to existing leads/companies; outbound sends are logged to the communications gateway |
 
 ---
 
@@ -57,6 +58,8 @@ flowchart TD
 | Nurture sequencing | ✅ | ✅ (`lead_nurture_sequence`) | — |
 | Deal conversion | ✅ | ✅ (`manage_deal`) | — |
 | Stale deal detection | — | ✅ (`deal_stale_check`) | — |
+| Inbound email → lead/contact match | — | ✅ (`scan_gmail_inbox`, `ingest_inbound_email`; push via composio-webhook + `gmail_reconcile` poll cron; noise/bulk mail filtered by `classifyInbound`, sender resolved to `leads.email` or `company_contacts.contact_email`) | — |
+| Outbound email audit trail | ✅ | ✅ (`send_email`, `list_communications`, `get_communication` — every send logged to `outbound_communications`) | — |
 
 ---
 

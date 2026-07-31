@@ -170,7 +170,7 @@ Each module has auto-generated documentation with API contracts, webhook events,
 | Quotes | [quotes.md](./quotes.md) |
 | Reconciliation | [reconciliation.md](./reconciliation.md) |
 | Recruitment | [recruitment.md](./recruitment.md) |
-| Resume | [resume.md](./resume.md) |
+| Consultants | [consultants.md](./consultants.md) |
 | River | [river.md](./river.md) |
 | Sales Intelligence | [sales-intelligence.md](./sales-intelligence.md) |
 | Site Migration | [site-migration.md](./site-migration.md) |

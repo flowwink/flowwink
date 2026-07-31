@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260727140000",
-      "migrations_count": 278,
+      "migration_head": "20260731172326",
+      "migrations_count": 284,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1117,21 +1117,45 @@
         {
           "version": "20260727140000",
           "name": "lead-activities-single-insert-policy"
+        },
+        {
+          "version": "20260730223437",
+          "name": "c23ec9ca-c333-48b6-a4a2-7332505624a3"
+        },
+        {
+          "version": "20260730223607",
+          "name": "59923e9b-62e1-4256-9edd-546aef81f077"
+        },
+        {
+          "version": "20260730223628",
+          "name": "149d2be5-0702-48d0-97ca-2c52de81cf6b"
+        },
+        {
+          "version": "20260730230658",
+          "name": "401ce7c6-35e8-4cb1-99ec-6cef648981fb"
+        },
+        {
+          "version": "20260730230822",
+          "name": "696b3df5-6b79-44a8-8e6d-0efef73e021d"
+        },
+        {
+          "version": "20260731172326",
+          "name": "21ca1c3a-0c7e-45a3-b3e0-efb6ad034f1d"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:14dc07b9398a09c90c1804278e9ab41d66757ba467d5eaceec27ff93a2629d46",
+      "seed_hash": "sha256:1ff7b55e79c8353dd3407ec4f78a76b435a8a6eb430dea28c9b98f4ac7240f3d",
       "skill_count": 516,
       "module_count": 68
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:1f16d1b06ae8f124e2fd23f6f2bae7d6aabd4b0a1617d74554de8106b5297785",
+      "shared_hash": "sha256:4716619034160163e6dbaeb1dbe5ed4b3f7136630507bebf81786d10630ae5f1",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:048434616fff885c93054bc02e2a30828bdeaa3d1ba6f862ead2bd3d3fdbece4",
+        "agent-execute": "sha256:dbcdedf37bcb88e87a58ab1215d9740d5a94a1829fc2988c016b83203eaa0dc2",
         "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
         "ai-task": "sha256:5cc0884b9c7ab08157ee79a5055f847433cb079732200a07bdae3ef2b666f1f6",
         "automation-dispatcher": "sha256:c0ffa7a2c623209bf82030bd4b6feb1ed9ae92baa4ea5a08772eaa3fa912ea3e",
@@ -1141,8 +1165,8 @@
         "chat-stt": "sha256:b67dd50ab6cad26f061b911a366607620aca8647977b2be8d4331b2ec51c4aa6",
         "check-secrets": "sha256:7d51782c0c965937199c1eb471c2664b867a37a32382fba2ecf20f3999bf86aa",
         "comms-send": "sha256:5ae8861e8216d3e5d89ecddcb3d8c63d919280304d11f7c71ebbea3ef1a547c9",
-        "composio-proxy": "sha256:53308053cb2dc44262b91dff6e3db5e5319d6eba1b0f44a63303cb4a00741ed0",
-        "composio-webhook": "sha256:81e0e1f4cf7b395055ea42b9a3c3d987c69dd0d7f5d18e5eef6ec82d19f2aceb",
+        "composio-proxy": "sha256:e612946242eddbd49713de47d042b231fb600b3bfd5d9fa8e35469d29b4039e6",
+        "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:1419717affb3711a2d7f13d44c9a228e1557a3d927e3aa05ee5e179584131e1b",
         "content-api": "sha256:64c03bcaa94f7e17575c9e36611830c049cdcf372747ed2af264eb03c70bce42",
         "contract-billing-cron": "sha256:bd4af2f1f3c05253ae5635af48686f9f662f40a55b1b3097001c1828b35f898a",

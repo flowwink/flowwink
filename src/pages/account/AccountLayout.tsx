@@ -5,7 +5,7 @@ import { PublicFooter } from '@/components/public/PublicFooter';
 import { useCustomerAuth } from '@/hooks/useCustomerAuth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Package, MapPin, Heart, User, LogOut, Loader2, CalendarOff, Receipt, Users, Target, Clock, GraduationCap, FileText, Sparkles } from 'lucide-react';
+import { Package, MapPin, Heart, User, LogOut, Loader2, CalendarOff, Receipt, Users, Target, Clock, GraduationCap, FileText, Sparkles, LifeBuoy } from 'lucide-react';
 import { useEmployeeSelf } from '@/hooks/useEmployeeSelf';
 import { useIsManager } from '@/hooks/useTeam';
 import { useIsModuleEnabled, useModules } from '@/hooks/useModules';
@@ -19,7 +19,10 @@ const commerceNav = [
   { to: '/account/wishlist', label: 'Wishlist', icon: Heart },
 ];
 
-const assistantNav = [{ to: '/account/assistant', label: 'Assistant', icon: Sparkles }];
+const assistantNav = [
+  { to: '/account/assistant', label: 'Assistant', icon: Sparkles },
+  { to: '/account/support', label: 'Support requests', icon: LifeBuoy },
+];
 
 const employeeNav = [
   { to: '/account/attendance', label: 'Time clock', icon: Clock },

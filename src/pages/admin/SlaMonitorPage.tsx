@@ -19,6 +19,7 @@ import {
 import { BusinessHoursTab } from '@/components/admin/sla/BusinessHoursTab';
 import { ComplianceTab } from '@/components/admin/sla/ComplianceTab';
 import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 import {
   useSlaPolicies, useSlaViolations, useSlaStats,
   useCreateSlaPolicy, useUpdateSlaPolicy, useDeleteSlaPolicy, useResolveSlaViolation,
@@ -26,6 +27,18 @@ import {
 } from '@/hooks/useSla';
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/** Deep link from a violation back to the record that breached its SLA. */
+function entityLink(entityType: string, entityId: string): string | null {
+  switch (entityType) {
+    case 'ticket': return `/admin/tickets?ticket=${entityId}`;
+    case 'lead': return `/admin/leads?lead=${entityId}`;
+    case 'order': return `/admin/orders?order=${entityId}`;
+    case 'invoice': return `/admin/invoices?invoice=${entityId}`;
+    case 'chat': return `/admin/live-support`;
+    default: return null;
+  }
+}
 
 const ENTITY_TYPES = [
   { value: 'ticket', label: 'Ticket' },
@@ -354,8 +367,17 @@ function ViolationsTab() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="capitalize">{v.entity_type}</span>
-                    <span className="text-muted-foreground text-xs ml-1">#{v.entity_id.slice(0, 8)}</span>
+                    {entityLink(v.entity_type, v.entity_id) ? (
+                      <Link to={entityLink(v.entity_type, v.entity_id)!} className="hover:underline">
+                        <span className="capitalize">{v.entity_type}</span>
+                        <span className="text-muted-foreground text-xs ml-1">#{v.entity_id.slice(0, 8)}</span>
+                      </Link>
+                    ) : (
+                      <>
+                        <span className="capitalize">{v.entity_type}</span>
+                        <span className="text-muted-foreground text-xs ml-1">#{v.entity_id.slice(0, 8)}</span>
+                      </>
+                    )}
                   </TableCell>
                   <TableCell className="capitalize">{v.metric.replace('_', ' ')}</TableCell>
                   <TableCell>{formatMinutes(v.threshold_minutes)}</TableCell>

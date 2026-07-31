@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { TicketSlaBadge } from "./TicketSlaBadge";
+import { useTicketSlaMap } from "@/hooks/useTicketSla";
 import {
   Sheet,
   SheetContent,
@@ -91,6 +93,9 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
     },
   });
 
+  const slaMap = useTicketSlaMap(useMemo(() => (ticket ? [ticket] : []), [ticket]));
+  const slaStatus = ticket ? slaMap.get(ticket.id) : undefined;
+
   if (!ticket) return null;
 
 
@@ -138,6 +143,10 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
           <SheetTitle className="text-left text-base leading-tight pr-4">
             {ticket.subject}
           </SheetTitle>
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-xs text-muted-foreground">SLA</span>
+            <TicketSlaBadge status={slaStatus} />
+          </div>
         </SheetHeader>
 
         <ScrollArea className="flex-1 px-6">

@@ -75,6 +75,8 @@ export function CreateTicketDialog({ open: controlledOpen, onOpenChange, hideTri
     setCategory("other");
     setContactName("");
     setContactEmail("");
+    setAssignedTo("none");
+    setTeamId("none");
     setOpen(false);
   };
 

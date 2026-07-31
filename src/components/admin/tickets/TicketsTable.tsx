@@ -18,6 +18,7 @@ import {
   TICKET_CATEGORY_LABELS,
 } from "@/hooks/useTickets";
 import { TicketDetailDrawer } from "./TicketDetailDrawer";
+import { formatDistanceToNow } from "date-fns";
 import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
 import { useMemo } from "react";
 
@@ -28,6 +29,12 @@ interface TicketsTableProps {
 
 export function TicketsTable({ tickets, isLoading }: TicketsTableProps) {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const { data: assignees = [] } = useTicketAssignees();
+  const assigneeById = useMemo(
+    () => new Map(assignees.map((a) => [a.id, a])),
+    [assignees]
+  );
+
 
   if (isLoading) {
     return (

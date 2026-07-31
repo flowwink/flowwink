@@ -74,6 +74,19 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
 
   const tags = useMemo(() => ticket?.tags ?? [], [ticket]);
 
+  const { data: creator } = useQuery({
+    queryKey: ["ticket-creator", ticket?.created_by],
+    enabled: !!ticket?.created_by,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", ticket!.created_by as string)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   if (!ticket) return null;
 
 

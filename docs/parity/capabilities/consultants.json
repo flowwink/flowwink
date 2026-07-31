@@ -1,5 +1,5 @@
 {
-  "module": "resume",
+  "module": "consultants",
   "odoo_app": "Employees → Skills / niche consultant pool",
   "current_maturity": "L3",
   "target_maturity": "L4",

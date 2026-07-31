@@ -215,6 +215,14 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
               <Clock className="h-3.5 w-3.5" />
               <span>{formatDateTime(ticket.created_at)}</span>
             </div>
+            {ticket.created_by && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <UserCog className="h-3.5 w-3.5" />
+                <span>
+                  Created by {creator?.full_name || creator?.email || "internal user"}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Tags */}

@@ -47,6 +47,8 @@ import {
 } from "@/hooks/useTickets";
 import { useCannedResponses, useIncrementCannedUsage } from "@/hooks/useCannedResponses";
 import { useTicketTeams } from "@/hooks/useTicketTeams";
+import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
+import { useAuth } from "@/hooks/useAuth";
 import { TicketTimeEntriesPanel } from "@/components/admin/tickets/TicketTimeEntriesPanel";
 import { formatDistanceToNow } from "date-fns";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";

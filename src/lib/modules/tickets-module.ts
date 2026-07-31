@@ -30,7 +30,7 @@ const TICKETS_SKILLS: SkillSeed[] = [
   {
     name: 'manage_ticket',
     description:
-      'List, view, update, resolve/close, reopen, reassign, or re-prioritize helpdesk tickets. Use when: closing a resolved ticket, changing status/priority, assigning a ticket to an agent, or reviewing the queue. NOT for: creating a ticket from an email (email_to_ticket), classifying (ticket_triage), or replying to the customer (reply_to_ticket_via_email).',
+      'Create, list, view, update, resolve/close, reopen, reassign, or re-prioritize helpdesk tickets — including setting the owner (assigned_to), the team/queue and the requester (contact/company/lead). Use when: opening a ticket for a customer issue, closing a resolved ticket, changing status/priority, assigning a ticket to an agent, or reviewing the queue. NOT for: creating a ticket from an email (email_to_ticket), classifying (ticket_triage), or replying to the customer (reply_to_ticket_via_email).',
     category: 'crm',
     handler: 'db:tickets',
     scope: 'both',

@@ -7,12 +7,16 @@ order: 50
 
 # Odoo Parity Program
 
-FlowWink covers **~80% of Odoo's processes** in breadth, but at **~45–65% of the
-functional depth** per module. **Program goal: lift every module to ≥ 80% Odoo
-parity.** This program closes that gap **systematically**: every gap is recorded,
-scored, assigned to an epic, and verified by a measurable Definition of Done. It is
-built so that **dev agents can pick up an issue cold** and ship it without tribal
-knowledge.
+FlowWink covers **~80% of Odoo's processes** in breadth. **Program goal: lift every
+module to ≥ 80% Odoo parity.** As of the 2026-07-31 audit the measured state is
+**mean 88% across 58 benchmarked modules** (69 capability files, 11 pure
+differentiators) — the remaining debt is concentrated in a handful of modules and
+is mostly *dual-surface debt*, not missing engines (see
+[`roadmap.md` → Round R2](./roadmap.md)). This program closes the gap
+**systematically**: every gap is recorded, scored, assigned to an epic, and verified
+by a measurable Definition of Done. It is built so that **dev agents can pick up an
+issue cold** and ship it without tribal knowledge.
+
 
 ## Working agreement: decide first, code later
 

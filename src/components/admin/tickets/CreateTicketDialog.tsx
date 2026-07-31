@@ -25,6 +25,8 @@ import {
   type TicketPriority,
   type TicketCategory,
 } from "@/hooks/useTickets";
+import { useTicketAssignees, assigneeLabel } from "@/hooks/useTicketAssignees";
+import { useTicketTeams } from "@/hooks/useTicketTeams";
 
 interface CreateTicketDialogProps {
   open?: boolean;

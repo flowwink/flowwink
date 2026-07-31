@@ -234,7 +234,7 @@ export function TicketDetailDrawer({ ticket, open, onOpenChange }: TicketDetailD
             {ticket.contact_name && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <User className="h-3.5 w-3.5" />
-                <span>{ticket.contact_name}</span>
+                <span>Requester: {ticket.contact_name}</span>
               </div>
             )}
             {ticket.contact_email && (

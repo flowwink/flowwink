@@ -66,7 +66,7 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Dual-surface DONE 2026-07-07. Skill: search_tickets(\"login error\") live via MCP gateway → ranked FTS hit (websearch syntax + ILIKE/tag fallback; GIN idx_tickets_fts). UI: TicketsPage debounced search input wired to the same RPC (Lovable commit db8c1ad9).",
+      "verify": "Dual-surface DONE 2026-07-07. Skill: search_tickets(\"login error\") live via MCP gateway \u2192 ranked FTS hit (websearch syntax + ILIKE/tag fallback; GIN idx_tickets_fts). UI: TicketsPage debounced search input wired to the same RPC (Lovable commit db8c1ad9).",
       "notes": "search_tickets RPC + skill added 2026-07-07 (20260707120000 migration + tickets-module.ts)."
     },
     {
@@ -91,9 +91,9 @@
       "id": "customer_portal",
       "name": "Customer self-service portal",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 2,
-      "verify": "Customer self-service ticket portal"
+      "verify": "DONE 2026-07-31. RLS helper can_view_ticket() (own ticket / matching contact email / active company_contacts) + policies on tickets and non-internal ticket_comments. UI: /account/support (MyTicketsPage) lists own + company tickets with status, conversation thread and customer reply box."
     },
     {
       "id": "templates_canned",
@@ -101,7 +101,7 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Dual-surface DONE 2026-07-07. Skill: manage_canned_response create live via MCP gateway (id 7b5f10ca, rpc:manage_canned_response — SECURITY DEFINER w/ service_role escape). UI: CannedResponsesDialog management + Canned picker in TicketDetailDrawer reply box incl. usage_count tracking (commit db8c1ad9).",
+      "verify": "Dual-surface DONE 2026-07-07. Skill: manage_canned_response create live via MCP gateway (id 7b5f10ca, rpc:manage_canned_response \u2014 SECURITY DEFINER w/ service_role escape). UI: CannedResponsesDialog management + Canned picker in TicketDetailDrawer reply box incl. usage_count tracking (commit db8c1ad9).",
       "epic": "EPIC-07",
       "notes": "canned_responses table + RLS + RPC added 2026-07-07 (20260707120000 migration)."
     },

@@ -180,21 +180,15 @@ function MemoryEditorDialog({
   const [valueText, setValueText] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Reset form when opening
-  useState(() => {
-    if (open) {
-      setKey(row?.key ?? '');
-      setCategory(row?.category ?? 'context');
-      setValueText(row ? (typeof row.value === 'string' ? row.value : JSON.stringify(row.value, null, 2)) : '');
-    }
-  });
-
-  // Reset on open change
-  if (open && row && key === '' && row.key) {
-    setKey(row.key);
-    setCategory(row.category);
-    setValueText(typeof row.value === 'string' ? row.value : JSON.stringify(row.value, null, 2));
-  }
+  // Re-sync the form whenever the dialog opens or targets a different row.
+  useEffect(() => {
+    if (!open) return;
+    setKey(row?.key ?? '');
+    setCategory(row?.category ?? 'context');
+    setValueText(
+      row ? (typeof row.value === 'string' ? row.value : JSON.stringify(row.value, null, 2)) : '',
+    );
+  }, [open, row?.id]);
 
   const handleSave = async () => {
     if (!key.trim()) return toast.error('Key is required');

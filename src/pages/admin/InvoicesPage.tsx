@@ -13,6 +13,8 @@ import { CreateInvoiceDialog } from '@/components/admin/invoices/CreateInvoiceDi
 import { InvoiceFromTimesheetsDialog } from '@/components/admin/invoices/InvoiceFromTimesheetsDialog';
 import { ArAgingReportTab } from '@/components/admin/invoices/ArAgingReportTab';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
+import { useSelectOnQueryParam } from '@/hooks/useSelectOnQueryParam';
+
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<InvoiceStatus, string> = {

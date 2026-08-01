@@ -13,6 +13,8 @@ import { CreateInvoiceDialog } from '@/components/admin/invoices/CreateInvoiceDi
 import { InvoiceFromTimesheetsDialog } from '@/components/admin/invoices/InvoiceFromTimesheetsDialog';
 import { ArAgingReportTab } from '@/components/admin/invoices/ArAgingReportTab';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
+import { useSelectOnQueryParam } from '@/hooks/useSelectOnQueryParam';
+
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_COLORS: Record<InvoiceStatus, string> = {
@@ -32,6 +34,9 @@ export default function InvoicesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [timesheetOpen, setTimesheetOpen] = useState(false);
   useOpenOnQueryParam('new', '1', () => setCreateOpen(true));
+  // Deep link from SLA Monitor: /admin/invoices?invoice=<id>
+  useSelectOnQueryParam('invoice', setSelectedId);
+
 
   const { data: invoices = [], isLoading } = useInvoices(
     statusFilter === 'all' ? undefined : statusFilter

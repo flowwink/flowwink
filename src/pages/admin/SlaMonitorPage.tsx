@@ -32,7 +32,9 @@ import {
 function entityLink(entityType: string, entityId: string): string | null {
   switch (entityType) {
     case 'ticket': return `/admin/tickets?ticket=${entityId}`;
-    case 'lead': return `/admin/leads?lead=${entityId}`;
+    // Leads have a dedicated detail page — link straight to the record.
+    case 'lead': return `/admin/contacts/${entityId}`;
+
     case 'order': return `/admin/orders?order=${entityId}`;
     case 'invoice': return `/admin/invoices?invoice=${entityId}`;
     case 'chat': return `/admin/live-support`;

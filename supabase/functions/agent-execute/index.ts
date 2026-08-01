@@ -6357,7 +6357,7 @@ async function resolveResendFrom(supabase: any): Promise<string> {
     const email = (cfg.fromEmail || '').toString().trim();
     if (email) return name ? `${name} <${email}>` : email;
   } catch (_) { /* fall through */ }
-  return 'FlowPilot <flowpilot@news.flowwink.com>';
+  return 'FlowPilot <flowpilot@flowwink.com>';
 }
 
 // Log an outbound email to the gateway log so it appears in /admin/communications.

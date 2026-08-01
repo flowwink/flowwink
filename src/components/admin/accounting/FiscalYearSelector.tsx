@@ -9,7 +9,7 @@ type Status = 'open' | 'closed' | 'upcoming';
 
 interface PeriodRow {
   fiscal_year: number;
-  period_number: number | null;
+  period_month: number | null;
   status: string | null;
 }
 
@@ -17,7 +17,7 @@ function statusFor(rows: PeriodRow[]): Status {
   if (!rows.length) return 'upcoming';
   const anyOpen = rows.some((r) => (r.status ?? '').toLowerCase() === 'open');
   if (anyOpen) return 'open';
-  const monthly = rows.filter((r) => r.period_number != null);
+  const monthly = rows.filter((r) => r.period_month != null);
   if (monthly.length >= 12) return 'closed';
   return 'open';
 }
@@ -42,7 +42,7 @@ export function FiscalYearSelector() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('accounting_periods' as any)
-        .select('fiscal_year, period_number, status');
+        .select('fiscal_year, period_month, status');
       if (error) throw error;
       return (data ?? []) as unknown as PeriodRow[];
     },

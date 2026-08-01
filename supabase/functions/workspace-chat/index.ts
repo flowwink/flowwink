@@ -252,13 +252,13 @@ async function buildContext(
 
     const { data: empContracts, error: empErr } = await supabase
       .from('employment_contracts')
-      .select('id, title, employment_type, status, start_date, end_date, monthly_salary_cents, currency, employees(full_name)')
+      .select('id, title, employment_type, status, start_date, end_date, monthly_salary_cents, currency, employees(name)')
       .order('created_at', { ascending: false })
       .limit(PER_SOURCE_LIMIT);
     if (empErr) console.error('cowork-chat: employment_contracts query failed', empErr);
     if (empContracts?.length) {
       const lines = empContracts.map((c: any) => {
-        const empName = c.employees?.full_name || 'Employee';
+        const empName = c.employees?.name || 'Employee';
         const label = `${empName} — ${c.title || c.employment_type || 'Contract'}`;
         const r = push('employment_contract', c.id, label, `/admin/hr/contracts/${c.id}`);
         const salary = c.monthly_salary_cents ? `${(c.monthly_salary_cents / 100).toFixed(0)} ${c.currency || ''}/mo` : '';

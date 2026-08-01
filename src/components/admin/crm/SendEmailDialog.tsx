@@ -69,20 +69,20 @@ export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientN
       const companyProfile = settings?.find((s) => s.key === 'company_profile')?.value as any || {};
       const companyName = (settings?.find((s) => s.key === 'company_name')?.value as any) || companyProfile.company_name || 'Our company';
 
-      // 2. Pull sender identity from profile (display_name + email identity overrides)
+      // 2. Pull sender identity from profile (full_name + title)
       const { data: { user } } = await supabase.auth.getUser();
       let senderName = user?.email || 'Sales';
       let senderTitle = '';
       if (user) {
         const { data: profile } = await (supabase as any)
           .from('profiles')
-          .select('display_name, email_from_name, job_title')
-          .eq('user_id', user.id)
+          .select('full_name, title')
+          .eq('id', user.id)
           .maybeSingle();
 
         if (profile) {
-          senderName = (profile as any).email_from_name || (profile as any).display_name || senderName;
-          senderTitle = (profile as any).job_title || '';
+          senderName = (profile as any).full_name || senderName;
+          senderTitle = (profile as any).title || '';
         }
       }
 

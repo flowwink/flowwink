@@ -1,6 +1,6 @@
 // process-job-application — turns a website form submission with a CV upload into
 // a recruitment application. Chains the existing pieces:
-//   extract-pdf-text (CV in Storage → text) → parse-resume (text → profile)
+//   extract-pdf-text (CV in Storage → text) → parse_resume handler (text → profile)
 //   → INSERT applications (the AFTER-INSERT trigger then drives the recruitment pipeline).
 //
 // Best-effort enrichment: if extraction or parsing fails, the application is STILL
@@ -8,6 +8,7 @@
 // This is the self-hosted CV path — documents stay on the customer's own instance.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
+import { executeParseResume } from '../_shared/handlers/parse-resume.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,11 +51,9 @@ serve(async (req) => {
     let profile: Record<string, unknown> = {};
     if (resumeText && resumeText.length >= 20) {
       try {
-        const { data: parsed, error } = await supabase.functions.invoke('parse-resume', {
-          body: { resume_text: resumeText },
-        });
-        if (error) console.error('parse-resume error:', error.message ?? error);
-        else if (parsed?.success) profile = parsed.profile || {};
+        const parsed = await executeParseResume(supabase, { resume_text: resumeText });
+        if (parsed?.success) profile = (parsed.profile as Record<string, unknown>) || {};
+        else console.error('parse_resume error:', parsed?.error);
       } catch (e) {
         console.error('parse-resume threw:', e);
       }

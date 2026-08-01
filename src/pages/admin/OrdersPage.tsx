@@ -163,6 +163,30 @@ export default function OrdersPage() {
     },
   });
 
+  // Deep link from SLA Monitor: /admin/orders?order=<id>. The row may be
+  // filtered out of the current list, so fall back to fetching it by id.
+  useSelectOnQueryParam(
+    'order',
+    (id) => {
+      const inList = orders?.find((o) => o.id === id);
+      if (inList) {
+        setSelectedOrder(inList);
+        return;
+      }
+      supabase
+        .from('orders')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setSelectedOrder(data as Order);
+          else toast.error('Order not found');
+        });
+    },
+    !!orders,
+  );
+
+
   const { data: orderItems } = useQuery({
     queryKey: ['order-items', selectedOrder?.id],
     queryFn: async () => {

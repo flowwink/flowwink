@@ -25,8 +25,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: voiceSettings } = useVoiceSettings();
+  // Opt-out, not opt-in: agents whose provider supports WebRTC keep the widget
+  // unless an admin explicitly turns it off (existing site_settings rows have no
+  // softphoneEnabled flag and must not silently lose their dialer).
   const softphoneVisible = Boolean(
-    voiceSettings?.softphoneEnabled &&
+    voiceSettings?.softphoneEnabled !== false &&
     voiceSettings?.provider &&
     getVoiceProvider(voiceSettings.provider)?.metadata.capabilities.webrtc,
   );

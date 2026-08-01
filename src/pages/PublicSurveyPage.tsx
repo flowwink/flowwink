@@ -116,7 +116,13 @@ export default function PublicSurveyPage() {
   }
 
   const kind = data.template?.kind ?? 'nps';
-  const primary = data.template?.questions?.find(q => q.id === 'score') ?? data.template?.questions?.[0];
+  // Only nps/csat get the dedicated score widget above. Every other kind (quiz,
+  // ces, custom) must fall through to the generic question list below, otherwise
+  // its first question renders as a label with no input.
+  const scoreWidgetKind = kind === 'nps' || kind === 'csat';
+  const primary = scoreWidgetKind
+    ? (data.template?.questions?.find(q => q.id === 'score') ?? data.template?.questions?.[0])
+    : undefined;
   const followUp = data.template?.questions?.find(q => q.id === 'comment');
 
   return (

@@ -216,12 +216,16 @@ export function AddExpenseDialog({ open: controlledOpen, onOpenChange }: { open?
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-      <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1.5" />
-          Add Expense
-        </Button>
-      </DialogTrigger>
+      {/* Controlled usage (e.g. ?new=1 deep-link) supplies its own trigger elsewhere —
+          only render the built-in button in uncontrolled mode to avoid a duplicate control. */}
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Expense
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Expense</DialogTitle>

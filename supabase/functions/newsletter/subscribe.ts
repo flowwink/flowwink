@@ -112,14 +112,14 @@ export async function handle(req: Request): Promise<Response> {
             });
 
             // Trigger AI qualification for new newsletter lead (fire-and-forget)
-            supabase.functions.invoke("qualify-lead", { body: { leadId: newLead.id } })
+            supabase.functions.invoke("agent-execute", { body: { skill_name: "qualify_lead", arguments: { leadId: newLead.id }, agent_type: "system" } })
               .catch((err: unknown) => console.warn("[newsletter-subscribe] Lead qualification error:", err));
           }
         }
 
         // Trigger AI qualification for existing leads too (fire-and-forget)
         if (existingLead) {
-          supabase.functions.invoke("qualify-lead", { body: { leadId: existingLead.id } })
+          supabase.functions.invoke("agent-execute", { body: { skill_name: "qualify_lead", arguments: { leadId: existingLead.id }, agent_type: "system" } })
             .catch((err: unknown) => console.warn("[newsletter-subscribe] Lead qualification error:", err));
         }
         console.log(`[newsletter-subscribe] Lead created/updated for: ${data.email}`);

@@ -3,7 +3,7 @@
  * with edit / delete / add. Keeps the surface small; deep edits happen via
  * FlowPilot skills or the DB directly.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -180,21 +180,15 @@ function MemoryEditorDialog({
   const [valueText, setValueText] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Reset form when opening
-  useState(() => {
-    if (open) {
-      setKey(row?.key ?? '');
-      setCategory(row?.category ?? 'context');
-      setValueText(row ? (typeof row.value === 'string' ? row.value : JSON.stringify(row.value, null, 2)) : '');
-    }
-  });
-
-  // Reset on open change
-  if (open && row && key === '' && row.key) {
-    setKey(row.key);
-    setCategory(row.category);
-    setValueText(typeof row.value === 'string' ? row.value : JSON.stringify(row.value, null, 2));
-  }
+  // Re-sync the form whenever the dialog opens or targets a different row.
+  useEffect(() => {
+    if (!open) return;
+    setKey(row?.key ?? '');
+    setCategory(row?.category ?? 'context');
+    setValueText(
+      row ? (typeof row.value === 'string' ? row.value : JSON.stringify(row.value, null, 2)) : '',
+    );
+  }, [open, row?.id]);
 
   const handleSave = async () => {
     if (!key.trim()) return toast.error('Key is required');

@@ -12,7 +12,7 @@ interface Follower {
   id: string;
   user_id: string;
   reason: string | null;
-  profile?: { display_name: string | null; email: string | null } | null;
+  profile?: { full_name: string | null; email: string | null } | null;
 }
 
 export interface EntityFollowersProps {
@@ -37,7 +37,7 @@ export function EntityFollowers({ entityType, entityId, compact }: EntityFollowe
     queryFn: async () => {
       const { data, error } = await sb
         .from('entity_followers')
-        .select('id, user_id, reason, profile:profiles(display_name, email)')
+        .select('id, user_id, reason, profile:profiles(full_name, email)')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId);
       if (error) throw error;
@@ -85,7 +85,7 @@ export function EntityFollowers({ entityType, entityId, compact }: EntityFollowe
       <Users className="h-3.5 w-3.5 text-muted-foreground" />
       <div className="flex -space-x-2">
         {followers.slice(0, 5).map((f) => {
-          const name = f.profile?.display_name || f.profile?.email || 'User';
+          const name = f.profile?.full_name || f.profile?.email || 'User';
           return (
             <Tooltip key={f.id}>
               <TooltipTrigger asChild>

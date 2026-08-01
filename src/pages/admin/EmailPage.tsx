@@ -88,7 +88,7 @@ function TemplatesTab() {
             </Table>
           )}
       </CardContent>
-      <TemplateDialog open={open} onOpenChange={setOpen} template={editing} />
+      <TemplateDialog key={editing?.id ?? 'new'} open={open} onOpenChange={setOpen} template={editing} />
     </Card>
   );
 }

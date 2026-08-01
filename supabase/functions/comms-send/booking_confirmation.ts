@@ -103,7 +103,7 @@ export const handler = async (req: Request): Promise<Response> => {
         console.log(`[send-booking-confirmation] Updated existing lead: ${existingLead.id}`);
 
         // Trigger AI qualification (fire-and-forget)
-        supabase.functions.invoke("qualify-lead", { body: { leadId: existingLead.id } })
+        supabase.functions.invoke("agent-execute", { body: { skill_name: "qualify_lead", arguments: { leadId: existingLead.id }, agent_type: "system" } })
           .catch((err: unknown) => console.warn("[send-booking-confirmation] Lead qualification error:", err));
       } else {
         // Auto-match or create company by email domain
@@ -177,12 +177,12 @@ export const handler = async (req: Request): Promise<Response> => {
           console.log(`[send-booking-confirmation] Created new lead: ${newLead.id}`);
 
           // Trigger AI qualification (fire-and-forget)
-          supabase.functions.invoke("qualify-lead", { body: { leadId: newLead.id } })
+          supabase.functions.invoke("agent-execute", { body: { skill_name: "qualify_lead", arguments: { leadId: newLead.id }, agent_type: "system" } })
             .catch((err: unknown) => console.warn("[send-booking-confirmation] Lead qualification error:", err));
 
           // Trigger company enrichment for new companies (fire-and-forget)
           if (companyId && isNewCompany) {
-            supabase.functions.invoke("enrich-company", { body: { companyId } })
+            supabase.functions.invoke("agent-execute", { body: { skill_name: "enrich_company", arguments: { companyId }, agent_type: "system" } })
               .catch((err: unknown) => console.warn("[send-booking-confirmation] Company enrichment error:", err));
           }
         }

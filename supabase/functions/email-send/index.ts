@@ -220,7 +220,18 @@ serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    recipients = Array.isArray(body.to) ? body.to : [body.to];
+    // Normalize recipients: callers (and prefilled composers) often pass
+    // "Name <addr@example.com>". Composio's Gmail action rejects that outright
+    // ("Invalid email format passed"), and the suppression check would miss it.
+    // Strip to the bare address here so every downstream rail gets a clean one.
+    const bareAddress = (value: string): string => {
+      const raw = String(value ?? "").trim();
+      const angle = raw.match(/<([^>]+)>/);
+      return (angle ? angle[1] : raw).trim();
+    };
+    recipients = (Array.isArray(body.to) ? body.to : [body.to])
+      .map(bareAddress)
+      .filter((r) => r.length > 0);
 
     // Suppression list check — skip suppressed recipients
     const lowered = recipients.map((r) => r.toLowerCase());

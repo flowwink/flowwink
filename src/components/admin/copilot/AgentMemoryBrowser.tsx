@@ -3,7 +3,7 @@
  * with edit / delete / add. Keeps the surface small; deep edits happen via
  * FlowPilot skills or the DB directly.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';

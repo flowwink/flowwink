@@ -577,9 +577,24 @@ export async function handler(req: Request): Promise<Response> {
           });
 
 
-          const fromAddress = fpEnabled
-            ? "FlowPilot <flowpilot@news.flowwink.com>"
-            : "FlowWink <briefing@news.flowwink.com>";
+          // Prefer the sender configured in /admin/integrations (Resend panel);
+          // fall back to the verified flowwink.com domain.
+          let configuredFrom = "";
+          try {
+            const { data: intg } = await supabase
+              .from("site_settings")
+              .select("value")
+              .eq("key", "integrations")
+              .maybeSingle();
+            const cfg = (intg?.value as any)?.resend?.config?.emailConfig ?? {};
+            const name = (cfg.fromName || "").toString().trim();
+            const email = (cfg.fromEmail || "").toString().trim();
+            if (email) configuredFrom = name ? `${name} <${email}>` : email;
+          } catch (_) { /* fall through to default */ }
+
+          const fromAddress = configuredFrom || (fpEnabled
+            ? "FlowPilot <flowpilot@flowwink.com>"
+            : "FlowWink <briefing@flowwink.com>");
 
           const resendRes = await fetch("https://api.resend.com/emails", {
             method: "POST",

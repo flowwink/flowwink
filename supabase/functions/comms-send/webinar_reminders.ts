@@ -101,6 +101,14 @@ export async function handler(req: Request): Promise<Response> {
     const SELECT = 'id, webinar_id, email, name, attended, webinars(title, date, duration_minutes, meeting_url, recording_url)';
     const nowIso = new Date().toISOString();
     const plus = (min: number) => new Date(Date.now() + min * 60_000).toISOString();
+    const minus = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+    // Backstop windows: a sweep must never mail historical registrations that
+    // simply have NULL markers (e.g. the first run after this path was wired,
+    // or a webinar that was never marked completed). Confirmations only make
+    // sense for a recent signup to an upcoming webinar; post-webinar follow-ups
+    // only for webinars that ended within the last week.
+    const CONFIRM_MAX_AGE_MIN = 24 * 60;
+    const POST_MAX_AGE_MIN = 7 * 24 * 60;
 
     // Same four windows as webinar_reminder_tick() — keep in sync.
     const batches: Array<{ kind: Kind; rows: Row[] }> = [];
@@ -108,6 +116,8 @@ export async function handler(req: Request): Promise<Response> {
     const { data: confirmRows } = await supabase.from('webinar_registrations')
       .select(SELECT).is(MARKER.confirm, null)
       .in('webinars.status', ['draft', 'published', 'live'])
+      .gte('registered_at', minus(CONFIRM_MAX_AGE_MIN))
+      .gte('webinars.date', nowIso)
       .not('webinars', 'is', null)
       .limit(200);
     batches.push({ kind: 'confirm', rows: (confirmRows as unknown as Row[]) ?? [] });
@@ -131,9 +141,11 @@ export async function handler(req: Request): Promise<Response> {
     const { data: postRows } = await supabase.from('webinar_registrations')
       .select(SELECT).is(MARKER.post, null)
       .eq('webinars.status', 'completed')
+      .gte('webinars.date', minus(POST_MAX_AGE_MIN))
       .lte('webinars.date', nowIso)
       .not('webinars', 'is', null)
       .limit(500);
+
     batches.push({
       kind: 'post',
       // The tick adds a 30-min-after-end grace; the join filter above can't

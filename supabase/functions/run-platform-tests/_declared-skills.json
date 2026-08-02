@@ -379,6 +379,7 @@
     "process_signal",
     "procurement_run",
     "product_promoter",
+    "progress_work_order",
     "project_cost_forecast",
     "propose_accruals",
     "propose_annual_depreciation",

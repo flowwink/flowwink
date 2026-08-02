@@ -7,16 +7,22 @@
  * 
  * This is the "dogfooding" template - FlowWink built with FlowWink.
  * 
- * Page structure:
+ * Page structure (menu):
  *   Home             → Pitch + Pricing (convince & convert)
+ *   Platform         → BOS architecture: one kernel, three shells, CMS · CRM · ERP
+ *   Processes        → Hub over the 14 documented end-to-end processes
  *   FlowPilot        → The agent (differentiate, A2A)
- *   For Agencies     → Primary target: digital agencies (white-label, multi-site)
- *   For Consultancies → Vertical elevator pitch (consult-agency best-of)
- *   For E-Commerce    → Vertical elevator pitch (digital-shop best-of)
- *   For Services      → Vertical elevator pitch (service-pro best-of)
- *   For Healthcare    → Vertical elevator pitch (securehealth best-of)
+ *   Skills & MCP     → 500+ skills, bring-your-own-agent
+ *   Use Cases        → Industry hub → the For-<industry> pages
+ *
+ * Not in the menu (reached from /use-cases and /processes):
+ *   For Agencies / Consultancies / E-Commerce / Services / Healthcare
+ *   process-lead-to-customer · process-quote-to-cash · process-order-to-delivery
+ *   process-procure-to-pay · process-record-to-report
  */
 import type { StarterTemplate } from './types';
+import { flowwinkPlatformExtraPages } from './flowwink-platform-pages';
+
 
 export const flowwinkPlatformTemplate: StarterTemplate = {
   id: 'flowwink-platform',

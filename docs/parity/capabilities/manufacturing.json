@@ -89,6 +89,16 @@
       "epic": "EPIC-08"
     },
     {
+      "id": "work_order_execution",
+      "name": "Work-order execution & time tracking (start/pause/done, actual vs planned)",
+      "odoo": true,
+      "status": "partial",
+      "weight": 2,
+      "verify": "progress_work_order(p_work_order_id,p_action,p_actual_minutes) writes started_at/completed_at/actual_minutes/actual_labor_cost_cents (migration 20260802200000); skill progress_work_order in manufacturing-module skillSeeds; admin UI: MoWorkOrdersPanel start/pause/done buttons + actual-vs-planned variance columns",
+      "notes": "Shipped 2026-08-02 as dual surface (skill + admin UI). Held at partial pending Stage-3 live run on dev after skills sync; Odoo also tracks per-operator work-order logs, which we do not (single actual per operation).",
+      "epic": "EPIC-08"
+    },
+    {
       "id": "capacity_scheduling",
       "name": "Finite capacity scheduling",
       "odoo": true,
@@ -102,7 +112,7 @@
       "odoo": true,
       "status": "done",
       "weight": 2,
-      "verify": "mrp_reorder_run(dry_run) — draft MOs for active-BOM products below reorder point with no open MO (migration 20260614070000)",
+      "verify": "mrp_reorder_run(dry_run) \u2014 draft MOs for active-BOM products below reorder point with no open MO (migration 20260614070000)",
       "notes": "Single-surface threshold MRP DONE 2026-07-07 (min/max two-bin still out of scope). Skill: mrp_reorder_run verified LIVE on dev: dry run -> 1 candidate (Sensor Housing V2, on hand -5, reorder 10, suggested 15); open-MO guard + BOM join confirmed. Admin UI: MRP tab with Check shortages (dry run), candidate table, Create draft MOs (commit 64538743).",
       "epic": "EPIC-08"
     },
@@ -144,7 +154,7 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "work_centers.cost_per_hour_cents → mo_work_orders.planned_labor_cost_cents via generate_mo_work_orders",
+      "verify": "work_centers.cost_per_hour_cents \u2192 mo_work_orders.planned_labor_cost_cents via generate_mo_work_orders",
       "notes": "Dual-surface DONE 2026-07-07. Planned labor = minutes/60 x work-center rate, verified LIVE on dev (135 min -> 1800.00 across CUT 600/h + ASM 900/h). Admin UI: per-WO planned labor cost + total in MoWorkOrdersPanel; work-center hourly rates editable in Work Centers tab."
     },
     {

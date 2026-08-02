@@ -111,3 +111,71 @@ often a Swedish/EU SMB hits the need:
 8. Dispatch-to-Invoice (field service) doc — after the module gets scheduling
 9. Generic document eSign (generalize quote signing)
 10. Maturity-level re-grade pass (decide the L4 bar first)
+
+---
+
+## 6. Sweden-specific: is any *fundamental* process missing? (2026-08-02)
+
+Re-asked with a narrower lens than §3: not "what does Odoo have" but **what does
+a Swedish SMB legally or practically have to do every month** — and does a
+process own it here? Verified against the code (`rg` over `src/lib/modules`,
+`supabase/functions`), not against intent.
+
+### Already covered (don't re-plan these)
+
+| Statutory task | Owner |
+|---|---|
+| Momsdeklaration (SKV, KV-rutor incl. reverse charge) | `prepare_vat_return` — record-to-report |
+| Arbetsgivardeklaration på individnivå (AGI, HU/IU, FK487/FK497/FK215) | payroll module — hire-to-retire |
+| SIE 4 export to the accountant / bokföringsbyrå | `se-bas2024` locale pack export adapter |
+| BAS 2024 chart, 25/12/6 % VAT, kontantmetod-friendly journal | `se-bas2024` locale pack |
+| Löneexport (PAXml 2.0, Fortnox CSV) | payroll adapters |
+| Bankfiler in (CAMT.053 / MT940 / SIE) + reconciliation | reconciliation module |
+
+### Genuinely missing, ordered by how many Swedish SMBs it blocks
+
+1. **E-faktura (Peppol BIS Billing 3.0 / UBL)** — 🔴 *the one real blocker.*
+   Since **lag 2018:1277** every invoice to a Swedish public buyer (kommun,
+   region, myndighet) must be a Peppol e-invoice; PDF-by-email is not
+   compliant. Any SMB with one municipal customer is locked out today. We have
+   PDF + email + SIE, no UBL. **Shape:** a `peppol-bis3` export adapter next to
+   `sie4-adapter` in the locale pack (UBL XML from `invoices` + lines + VAT
+   buckets), plus an outbound access-point integration (Peppol requires an
+   accredited AP — integration, not core). Skill: `export_invoice_ubl`.
+   Recommend as the next accounting/invoicing item after the current round.
+2. **Betalningspåminnelse med lagstadgad avgift + dröjsmålsränta** — 🟠
+   Dunning sequences exist, but no reminder fee (60 kr per *lag 1981:739*) and
+   no default interest (referensränta + 8 pp per *räntelagen*) are ever posted
+   as invoice lines. Every Swedish SMB chasing a late invoice adds both.
+   **Shape:** two locale-pack values + an `add_late_charges` step in the
+   dunning action, so the fee/interest land as real invoice lines in the ledger.
+   Cheap, high everyday value.
+3. **Periodisk sammanställning (EU-moms / VIES)** — 🟠 Required quarterly for
+   B2B sales inside the EU. Reverse charge is already computed per
+   invoice/expense, so the data exists; only the aggregation + file is missing.
+   **Shape:** `prepare_ec_sales_list` sibling to `prepare_vat_return`, keyed on
+   counterparty VAT number.
+4. **ROT/RUT-avdrag** — 🟡 Not statutory for us to run, but it is *the* invoicing
+   model for hantverkare, el/VVS, städ, trädgård — a large slice of Swedish
+   SMBs. Needs: labour/material split per line, householder deduction on the
+   invoice (customer pays net), and a "begäran om utbetalning" claim to
+   Skatteverket for the rest. Today none of it exists. Recommend after Peppol
+   if we target the trades vertical.
+5. **Kassaregister med certifierad kontrollenhet** — 🟡 POS is complete as a day
+   cycle (open → sell → count → close → journal), but Swedish cash-handling
+   retail requires a certified control unit / molnkassa registered with
+   Skatteverket. Position honestly: our POS is for card/Swish flows and as a
+   front end to a certified register — do **not** claim compliance.
+6. **Bokslut/årsredovisning (K2), INK2 + SRU, K10** — 🟢 Deliberate non-goal.
+   Year-end proposals (periodiseringsfond, överavskrivningar) are stubbed in the
+   SE pack; the filing itself stays with the accountant. Keep the "operational
+   finance + clean SIE handoff" positioning; borrow from
+   [erp-mafia/accounted](https://github.com/erp-mafia/accounted) only if a
+   customer actually asks to file from here.
+
+**Verdict:** no missing *process* in the catalog sense — the flows exist and
+end in the ledger. What is missing is the **Swedish statutory tail on two
+existing processes**: quote-to-cash needs Peppol e-invoicing (1) and the
+receivables side needs statutory reminder charges (2). Those two, plus the EU
+sales list (3), are the whole gap between "runs a Swedish SMB" and "runs a
+Swedish SMB that also sells to the public sector".

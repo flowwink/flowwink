@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Truck, Package } from 'lucide-react';
+import { Truck, Package, ExternalLink } from 'lucide-react';
 import { ShippingRatesPanel } from '@/components/admin/shipping/ShippingRatesPanel';
 import { EmptyState } from '@/components/ui/empty-state';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface Carrier { id: string; code: string; name: string; tracking_url_template: string | null; is_active: boolean; }
 interface Shipment { id: string; order_id: string; carrier_code: string | null; tracking_number: string | null; status: string; shipped_at: string | null; }
+
 
 export default function ShippingPage() {
   const { data: carriers } = useQuery({
@@ -28,6 +32,17 @@ export default function ShippingPage() {
       return (data ?? []) as unknown as Shipment[];
     },
   });
+  const { formatDateTime } = usePlatformFormat();
+
+  const trackingUrl = (s: Shipment) => {
+    if (!s.tracking_number || !s.carrier_code) return null;
+    const tpl = carriers?.find((c) => c.code === s.carrier_code)?.tracking_url_template;
+    if (!tpl) return null;
+    return tpl.includes('{tracking_number}')
+      ? tpl.replace('{tracking_number}', encodeURIComponent(s.tracking_number))
+      : tpl.replace(/\{[^}]+\}/, encodeURIComponent(s.tracking_number));
+  };
+
 
   return (
     <AdminLayout>
@@ -86,15 +101,43 @@ export default function ShippingPage() {
                   <TableHead>Order</TableHead><TableHead>Carrier</TableHead><TableHead>Tracking</TableHead><TableHead>Status</TableHead><TableHead>Shipped</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {(shipments ?? []).map(s => (
+                  {(shipments ?? []).map(s => {
+                    const url = trackingUrl(s);
+                    return (
                     <TableRow key={s.id}>
-                      <TableCell className="font-mono text-xs">{s.order_id.slice(0, 8)}</TableCell>
+                      <TableCell>
+                        <Button asChild variant="link" size="sm" className="h-auto p-0 font-mono text-xs">
+                          <Link to={`/admin/orders?order=${s.order_id}`}>{s.order_id.slice(0, 8)}</Link>
+                        </Button>
+                      </TableCell>
                       <TableCell>{s.carrier_code ?? '—'}</TableCell>
-                      <TableCell className="font-mono text-xs">{s.tracking_number ?? '—'}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {s.tracking_number ? (
+                          url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              {s.tracking_number}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            s.tracking_number
+                          )
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
                       <TableCell><Badge variant="outline">{s.status}</Badge></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{s.shipped_at ?? '—'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {s.shipped_at ? formatDateTime(s.shipped_at) : '—'}
+                      </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
+
                 </TableBody>
               </Table>
             )}

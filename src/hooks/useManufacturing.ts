@@ -385,6 +385,7 @@ export interface MoWorkOrder {
   planned_minutes: number;
   actual_minutes: number | null;
   planned_labor_cost_cents: number;
+  actual_labor_cost_cents: number | null;
   started_at: string | null;
   completed_at: string | null;
 }
@@ -430,4 +431,46 @@ export function useGenerateMoWorkOrders() {
       toast({ title: 'Generate work orders failed', description: e.message, variant: 'destructive' }),
   });
 }
+
+export function useProgressWorkOrder() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (args: {
+      p_work_order_id: string;
+      p_action: 'start' | 'pause' | 'done' | 'cancel';
+      p_actual_minutes?: number;
+    }) => {
+      const { data, error } = await supabase.rpc('progress_work_order' as never, args as never);
+      if (error) throw error;
+      return data as unknown as {
+        success: boolean;
+        mo_id: string;
+        status: string;
+        actual_minutes: number | null;
+        actual_labor_cost_cents: number | null;
+        variance_minutes: number;
+        mo_open_work_orders: number;
+      };
+    },
+    onSuccess: (data, vars) => {
+      if (vars.p_action === 'done') {
+        const sign = data.variance_minutes > 0 ? '+' : '';
+        toast({
+          title: 'Work order finished',
+          description:
+            `${data.actual_minutes ?? 0} min (${sign}${Number(data.variance_minutes).toFixed(0)} vs plan)` +
+            (data.mo_open_work_orders === 0
+              ? ' · all operations done'
+              : ` · ${data.mo_open_work_orders} left`),
+        });
+      }
+      qc.invalidateQueries({ queryKey: ['mo_work_orders', data.mo_id] });
+      qc.invalidateQueries({ queryKey: ['manufacturing_orders'] });
+    },
+    onError: (e: Error) =>
+      toast({ title: 'Work order update failed', description: e.message, variant: 'destructive' }),
+  });
+}
+
 

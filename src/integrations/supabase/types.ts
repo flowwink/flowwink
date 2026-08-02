@@ -9804,6 +9804,7 @@ export type Database = {
       }
       mo_work_orders: {
         Row: {
+          actual_labor_cost_cents: number | null
           actual_minutes: number | null
           completed_at: string | null
           created_at: string
@@ -9819,6 +9820,7 @@ export type Database = {
           work_center_id: string | null
         }
         Insert: {
+          actual_labor_cost_cents?: number | null
           actual_minutes?: number | null
           completed_at?: string | null
           created_at?: string
@@ -9834,6 +9836,7 @@ export type Database = {
           work_center_id?: string | null
         }
         Update: {
+          actual_labor_cost_cents?: number | null
           actual_minutes?: number | null
           completed_at?: string | null
           created_at?: string
@@ -22018,6 +22021,14 @@ export type Database = {
           rules_evaluated: number
           suggestions_created: number
         }[]
+      }
+      progress_work_order: {
+        Args: {
+          p_action: string
+          p_actual_minutes?: number
+          p_work_order_id: string
+        }
+        Returns: Json
       }
       project_cost_forecast: { Args: { p_project_id: string }; Returns: Json }
       propose_accruals: { Args: { p_year: number }; Returns: Json }

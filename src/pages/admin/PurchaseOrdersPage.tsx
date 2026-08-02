@@ -13,9 +13,11 @@ import { VendorScorecardsPanel } from '@/components/admin/purchasing/VendorScore
 import { VendorDisputesPanel } from '@/components/admin/purchasing/VendorDisputesPanel';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
+import { useTabParam } from '@/hooks/useTabParam';
+import { ReceivingPanel } from '@/components/admin/inventory/ReceivingPanel';
 
 export default function PurchaseOrdersPage() {
-  const [tab, setTab] = useState('list');
+  const [tab, setTab] = useTabParam('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const fpEnabled = useIsModuleEnabled('flowpilot');
   useOpenOnQueryParam('new', '1', () => { setEditingId(null); setTab('editor'); });
@@ -43,6 +45,7 @@ export default function PurchaseOrdersPage() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="list">Orders</TabsTrigger>
+            <TabsTrigger value="receiving">Receiving</TabsTrigger>
             <TabsTrigger value="invoices">Vendor Invoices</TabsTrigger>
             <TabsTrigger value="disputes">Disputes &amp; Credits</TabsTrigger>
             <TabsTrigger value="scorecards">Vendor Scorecards</TabsTrigger>
@@ -54,6 +57,9 @@ export default function PurchaseOrdersPage() {
 
           <TabsContent value="list">
             <PurchaseOrdersList onEdit={openEditor} onNew={() => openEditor(null)} />
+          </TabsContent>
+          <TabsContent value="receiving">
+            <ReceivingPanel />
           </TabsContent>
           <TabsContent value="invoices">
             <VendorInvoicesPanel />

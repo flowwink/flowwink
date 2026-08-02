@@ -21,6 +21,7 @@ import { TransfersPanel, ReceivingRoutePanel, ExpiringLotsPanel, AbcAnalysisPane
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { useTabParam } from '@/hooks/useTabParam';
 
 function StockBadge({ qty, reorder }: { qty: number; reorder: number }) {
   if (qty <= 0) return <Badge variant="destructive">Out of Stock</Badge>;
@@ -29,6 +30,7 @@ function StockBadge({ qty, reorder }: { qty: number; reorder: number }) {
 }
 
 export default function InventoryPage() {
+  const [tab, setTab] = useTabParam('stock');
   const { data: stock = [], isLoading } = useProductStock();
   const { data: moves = [] } = useStockMoves();
   const adjustStock = useAdjustStock();
@@ -143,7 +145,7 @@ export default function InventoryPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="stock">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="stock">Stock Levels</TabsTrigger>
           <TabsTrigger value="valuation">Valuation</TabsTrigger>

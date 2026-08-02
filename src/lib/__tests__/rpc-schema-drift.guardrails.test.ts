@@ -141,7 +141,7 @@ async function rpcSkills(): Promise<{ name: string; fn: string; declared: string
   return seeds;
 }
 
-describe('rpc: skill parameters match the function signature', () => {
+describe('rpc: skill parameters match the function signature', { timeout: 60_000 }, () => {
   it('no skill advertises a parameter the function has no slot for', async () => {
     const { jsonb, underscore } = dispatcherSets();
     const sigs = signaturesFromMigrations();

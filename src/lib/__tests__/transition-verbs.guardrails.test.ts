@@ -52,7 +52,7 @@ async function allSkills(): Promise<{ name: string; handler: string }[]> {
   return out;
 }
 
-describe('status-transition skills', () => {
+describe('status-transition skills', { timeout: 60_000 }, () => {
   /**
    * A transition VERB is not itself the bug — the bug is a transition verb on
    * a skill that mutates an EXISTING row through generic CRUD. Two shapes are

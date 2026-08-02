@@ -97,7 +97,10 @@ export function WorkCentersTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Physical or logical resources that execute routing operations.
+          Physical or logical resources that execute routing operations. Routing
+          steps are defined per BOM — open a BOM under{' '}
+          <span className="font-medium text-foreground">Bills of Materials</span> and
+          use its Routing tab.
         </p>
         <Button size="sm" onClick={openCreate}>
           <Plus className="mr-1 h-4 w-4" /> New work center

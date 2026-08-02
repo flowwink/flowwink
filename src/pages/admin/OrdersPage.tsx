@@ -656,7 +656,18 @@ export default function OrdersPage() {
 
               {/* Fulfillment Progress */}
               <div>
-                <h3 className="font-semibold mb-3">Fulfillment</h3>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h3 className="font-semibold">Fulfillment</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground"
+                    onClick={() => navigate('/admin/inventory?tab=pickpack')}
+                  >
+                    Pick &amp; Pack
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
                 <FulfillmentStepper
                   status={(selectedOrder as any).fulfillment_status || 'unfulfilled'}
                   pickedAt={(selectedOrder as any).picked_at}

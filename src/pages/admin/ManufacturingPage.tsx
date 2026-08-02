@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Plus, Pencil, CheckCircle2, PackageSearch } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { useTabParam } from '@/hooks/useTabParam';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -317,6 +318,7 @@ function MrpTab() {
 }
 
 export default function ManufacturingPage() {
+  const [tab, setTab] = useTabParam('orders');
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -324,7 +326,7 @@ export default function ManufacturingPage() {
           title="Manufacturing"
           description="MRP-light: Bills of Materials, Manufacturing Orders, and the procurement loop."
         />
-        <Tabs defaultValue="orders">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="orders">Manufacturing Orders</TabsTrigger>
             <TabsTrigger value="boms">Bills of Materials</TabsTrigger>

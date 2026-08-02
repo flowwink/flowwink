@@ -327,6 +327,33 @@ const MANUFACTURING_SKILLS: SkillSeed[] = [
     instructions: 'Run after confirming a MO. Returns work_orders_created + total_planned_minutes + total_planned_labor_cost_cents. Re-running replaces the MO\'s work orders. Admin/service-role only.',
   },
   {
+    name: 'progress_work_order',
+    description: 'Run a manufacturing work order on the shop floor: start, pause, finish or cancel it, recording actual minutes and actual labor cost. Use when: reporting shop-floor progress or time spent on an operation. NOT for: creating the work orders (generate_mo_work_orders) or the MO itself (start_manufacturing_order / complete_manufacturing_order).',
+    category: 'commerce',
+    handler: 'rpc:progress_work_order',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'progress_work_order',
+        description: 'Transition one mo_work_orders row. start sets started_at; pause accrues elapsed minutes back to pending; done stamps completed_at and computes actual_labor_cost_cents from the work-center rate; cancel takes it out of the MO\'s open count.',
+        parameters: {
+          type: 'object',
+          required: ['p_work_order_id', 'p_action'],
+          properties: {
+            p_work_order_id: { type: 'string', format: 'uuid' },
+            p_action: { type: 'string', enum: ['start', 'pause', 'done', 'cancel'] },
+            p_actual_minutes: {
+              type: 'number',
+              description: 'Optional override of the measured minutes. Omit to let the clock (started_at → now) decide.',
+            },
+          },
+        },
+      },
+    },
+    instructions: 'Work orders come from generate_mo_work_orders. Returns status, actual_minutes, actual_labor_cost_cents, variance_minutes (actual − planned) and mo_open_work_orders — when that reaches 0 the MO is ready for complete_manufacturing_order. Admin/service-role only.',
+  },
+  {
     name: 'mrp_reorder_run',
     description: 'Scan manufactured products (those with an active BOM) at/below their reorder point and create draft manufacturing orders to replenish. Use when: MRP planning, auto-replenishing made-in-house stock. NOT for: purchased items (those go via purchasing reorder/procurement_run).',
     category: 'commerce',
@@ -387,6 +414,7 @@ export const manufacturingModule = defineModule<ManufacturingInput, Manufacturin
     'manage_work_center',
     'manage_routing_operation',
     'generate_mo_work_orders',
+    'progress_work_order',
     'mrp_reorder_run',
   ],
   data: {

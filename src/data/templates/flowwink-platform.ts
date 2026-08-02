@@ -1694,6 +1694,12 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
         },
       ],
     },
+
+    // ═══════════════════════════════════════════════════════════
+    // PLATFORM STORY — /platform, /processes, /mcp, /use-cases
+    // and the five process deep dives (see flowwink-platform-pages.ts)
+    // ═══════════════════════════════════════════════════════════
+    ...flowwinkPlatformExtraPages,
   ],
 
   // Module data (blog, KB, products, consultants, booking services) is now

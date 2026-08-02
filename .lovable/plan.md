@@ -1,64 +1,88 @@
-## Månadsavstämning: CMS Blocks — Full Sweep + Modernisera 2026
+# PEPPOL e-invoicing — access-point integration for invoicing
 
-Jag går igenom samtliga **64 public blocks** och deras admin-editors, säkerställer preview-paritet, och drar upp designspråket ett snäpp mot 2026 — större typografi, mer whitespace, mjukare kort, subtila motion-hints. Inga nya blocks tillkommer.
+## Why
 
-### Arbetsflöde (iterativt, i faser)
+Since 1 April 2019 every invoice to the Swedish public sector (state, kommun, region)
+must be a structured e-invoice per the European standard — in practice PEPPOL BIS
+Billing 3.0. A PDF over email does not count. Today FlowWink cannot legally invoice a
+kommun. This is the only *legal* blocker in the parity program, so it goes before the
+remaining depth work.
 
-**Fas 1 — Audit & rapport** *(en iteration)*
-- Kör Playwright genom `TemplateLivePreviewPage` och `/admin/pages` editor, screenshotar varje block i både preview- och live-läge
-- Producerar `docs/reference/block-audit-2026-07.md` med per-block-status:
-  - ✅ OK / ⚠️ Preview mismatch / 🔴 Trasig / 💅 Design-debt
-  - Konkret åtgärd per rad
-- Levereras som deliverable innan kod ändras — du får godkänna åtgärdslistan
+An SMB does not become its own PEPPOL access point. They open an account with an
+operator (Storecove, InExchange, Qvalia, Pagero), get an API key, and we send through
+it — the same shape as Resend for email.
 
-**Fas 2 — Design language uplift** *(gemensamma primitives först)*
-- `src/components/public/blocks/_shared/` — dela ut återanvändbara delar:
-  - `SectionHeading` (eyebrow + h2 + lead, konsistent skala clamp(2rem, 4vw, 3.25rem))
-  - `BlockContainer` (spacing-skala: py-16 md:py-24 lg:py-32, container max-w-6xl)
-  - `Card` variants (soft, elevated, outlined) med enhetliga radie- och shadow-tokens
-- Lägg till motion-tokens i `index.css`: `--ease-out-expo`, `--duration-slow`
-- Introducera `--radius-block`, `--shadow-block-hover`, `--gradient-subtle` som semantic tokens
+## Architecture decision
 
-**Fas 3 — Block-för-block sweep** *(grupperade PRs, ~5-8 block per iteration)*
-Prioritetsordning baserat på synlighet:
-1. **Hero-familjen**: Hero, ParallaxSection, TwoColumn, FeaturedCarousel
-2. **Content-primärt**: Text, Quote, InfoBox, Accordion, Tabs, Timeline
-3. **Marketing-tunga**: Features, Bento, Stats, Testimonials, Team, Logos, Pricing, Comparison
-4. **Commerce**: Products, FeaturedProduct, Cart, TrustBar, CategoryNav, ShippingInfo
-5. **Lead capture**: CTA, Contact, Form, Newsletter, Booking, SmartBooking, Popup, FloatingCTA
-6. **Blog/KB**: LatestPosts, ArticleGrid, KbFeatured, KbHub, KbSearch, KbAccordion, Handbook, Webinar
-7. **Media/interactivity**: Gallery, Image, YouTube, Lottie, Marquee, Embed, Map, Chat, ChatLauncher, AiAssistant
-8. **Layout/utility**: Separator, SectionDivider, Table, Progress, Countdown, Badge, SocialProof, NotificationToast, AnnouncementBar, TrustBar, QuickLinks, LinkGrid, ConsultantMatcher
+Not a new domain module. Two existing patterns:
 
-För varje block, samma checklista:
-- [ ] Admin preview (`isEditing=false`) matchar live-render inom rimlig felmarginal
-- [ ] Använder endast semantic tokens (grep efter `text-white|bg-black|#[0-9a-f]`)
-- [ ] Responsiv: mobile → desktop utan trasiga breakpoints
-- [ ] Dark mode: kontrast OK
-- [ ] Använder shared `BlockContainer`/`SectionHeading` där tillämpligt
-- [ ] Empty states rimliga (inte "undefined" eller tomma flikar)
-- [ ] Motion: hover states, entry-animations där det höjer utan att distrahera
+- **Format** belongs to invoicing/accounting, like the BAS 2024 chart lives in the
+  locale pack. Serialising an invoice to UBL 2.1 is a *document profile*, not a
+  separate invoicing system.
+- **Transport** is an integration per `docs/architecture/channel-adapter-contract.md`:
+  one adapter behind a contract, credentials in integration settings, provider
+  swappable.
 
-**Fas 4 — Verifiering**
-- Playwright-screenshot-diff före/efter per block
-- `TemplateLivePreviewPage` för `flowwink-platform`-templaten renderar utan errors
-- `bun run lint` + `npx vitest run` gröna
-- Uppdaterar `docs/reference/block-audit-2026-07.md` med after-shots
+So: a `peppol` module at integration tier, depending on `invoicing`, toggled off until
+a key exists (Law 4 — fail forward, don't gate). Customers who never invoice the public
+sector never see it.
 
-### Constraints
-- Ingen ny business logic — bara presentation
-- Semantic tokens hela vägen (index.css + tailwind.config.ts)
-- English UI copy
-- shadcn/ui primitives, inte custom re-implementations
-- Ingen skill/module/edge-function ändras
+```text
+invoice ──> UBL 2.1 generator ──> BIS Billing 3.0 validation ──> access-point adapter
+             (pure, testable)        (rejects before send)         (Storecove REST)
+                                                                        │
+                                          invoice.peppol_status <───── kvittens
+                                       sent → delivered | rejected(reason)
+```
 
-### Vad du får per iteration
-Efter Fas 1: en genomläsbar audit-rapport med prioriterad åtgärdslista.
-Efter varje sub-batch i Fas 3: uppdaterade block + before/after-screenshots i chatten.
+## Delivery order
 
-### Öppna frågor jag löser själv om du inte flaggar
-- Radie-skala: sannolikt 0.75rem (sm) / 1rem (md) / 1.5rem (lg) på kort
-- Heading-familj förblir befintlig — jag ändrar bara skalan/rytmiken
-- Existerande block-schemas orörda (backwards compatible) — bara render-lagret ändras
+**1. UBL 2.1 generator + BIS Billing 3.0 validation** *(no vendor account needed)*
+Pure functions mapping an invoice + its lines to UBL XML: seller/buyer PEPPOL IDs, VAT
+category codes, payment means, line and total arithmetic. A validation pass that
+returns structured errors (missing buyer ID, VAT code mismatch, totals that don't sum)
+before anything leaves the system. Unit tests with a golden-file fixture per case:
+domestic 25% VAT, reverse charge, zero-rated.
 
-Vill du att jag kör igång Fas 1 direkt (audit-scriptet + rapporten)?
+**2. Participant identity**
+`companies` gets a `peppol_id` field (Swedish form `0007:5561234567`, derived from
+`org_number` when absent). A lookup skill resolves an org number to a PEPPOL
+participant via the operator's SMP so staff can confirm a kommun is reachable before
+invoicing.
+
+**3. Access-point adapter (Storecove)**
+Storecove first: plain REST, no certification required. An edge function holding the
+send + status-poll calls, credentials read server-side from integration settings. The
+adapter interface is what a second provider would implement — no Storecove types leak
+into invoicing.
+
+**4. Invoice lifecycle + agent skills**
+`delivery_method` gains `peppol` next to `email`/`pdf`. The invoice carries
+`peppol_status`, the operator's document id, and the rejection reason when there is
+one, with retry after a fix. Skills `send_einvoice` and `check_einvoice_status`
+exposed over MCP so FlowPilot and external operators can drive it.
+
+**5. Admin surface + docs**
+A PEPPOL card in integration settings (key, connected identity, "check connection"),
+matching the Composio card's identity-first pattern. Send-via-PEPPOL action on the
+invoice with the validation errors shown inline rather than a bare failure. Capability
+flips in `docs/parity/capabilities/invoicing.json`, module doc, and a note in the
+quote-to-cash process doc.
+
+## Technical notes
+
+- Migration adds `companies.peppol_id`, invoice PEPPOL columns, and a small
+  `einvoice_transmissions` audit table. Idempotent and forward-dated per project rule.
+- RLS: transmissions readable by admin/accounting, writes only via the sending RPC and
+  service role. GRANTs stated in the same migration.
+- The generator lives in shared code so both the edge function and the frontend
+  validation preview use one implementation — no second XML builder.
+- Steps 1 and 2 are fully deliverable and testable now. Step 3 needs a Storecove
+  account before it can be verified live; the adapter can be written and unit-tested
+  against recorded responses in the meantime.
+
+## Scope boundary
+
+Outbound invoicing to the public sector. Inbound e-invoice receipt (supplier invoices
+arriving over PEPPOL into procure-to-pay) is a natural follow-on and reuses the same
+account, but it is not in this delivery.

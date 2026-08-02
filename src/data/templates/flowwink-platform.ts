@@ -7,16 +7,22 @@
  * 
  * This is the "dogfooding" template - FlowWink built with FlowWink.
  * 
- * Page structure:
+ * Page structure (menu):
  *   Home             → Pitch + Pricing (convince & convert)
+ *   Platform         → BOS architecture: one kernel, three shells, CMS · CRM · ERP
+ *   Processes        → Hub over the 14 documented end-to-end processes
  *   FlowPilot        → The agent (differentiate, A2A)
- *   For Agencies     → Primary target: digital agencies (white-label, multi-site)
- *   For Consultancies → Vertical elevator pitch (consult-agency best-of)
- *   For E-Commerce    → Vertical elevator pitch (digital-shop best-of)
- *   For Services      → Vertical elevator pitch (service-pro best-of)
- *   For Healthcare    → Vertical elevator pitch (securehealth best-of)
+ *   Skills & MCP     → 500+ skills, bring-your-own-agent
+ *   Use Cases        → Industry hub → the For-<industry> pages
+ *
+ * Not in the menu (reached from /use-cases and /processes):
+ *   For Agencies / Consultancies / E-Commerce / Services / Healthcare
+ *   process-lead-to-customer · process-quote-to-cash · process-order-to-delivery
+ *   process-procure-to-pay · process-record-to-report
  */
 import type { StarterTemplate } from './types';
+import { flowwinkPlatformExtraPages } from './flowwink-platform-pages';
+
 
 export const flowwinkPlatformTemplate: StarterTemplate = {
   id: 'flowwink-platform',
@@ -178,12 +184,12 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
           id: 'links-after-timeline',
           type: 'quick-links',
           data: {
-            heading: 'See it in action for your industry',
+            heading: 'Go deeper',
             links: [
-              { id: 'ql1-agency', label: 'Digital Agencies', url: '/for-agencies' },
-              { id: 'ql1-consult', label: 'Consultancies', url: '/for-consultancies' },
-              { id: 'ql1-ecom', label: 'E-Commerce', url: '/for-ecommerce' },
-              { id: 'ql1-services', label: 'Service Business', url: '/for-services' },
+              { id: 'ql1-platform', label: 'The Platform', url: '/platform' },
+              { id: 'ql1-processes', label: '14 Business Processes', url: '/processes' },
+              { id: 'ql1-mcp', label: 'Skills & MCP', url: '/mcp' },
+              { id: 'ql1-usecases', label: 'Industry Use Cases', url: '/use-cases' },
             ],
             variant: 'dark',
             layout: 'split',
@@ -645,7 +651,7 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
     {
       title: 'FlowPilot',
       slug: 'flowpilot',
-      menu_order: 2,
+      menu_order: 4,
       showInMenu: true,
       meta: {
         seoTitle: 'FlowPilot — The Autonomous AI Operator | FlowWink',
@@ -887,8 +893,8 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
     {
       title: 'For Agencies',
       slug: 'for-agencies',
-      menu_order: 3,
-      showInMenu: true,
+      menu_order: 10,
+      showInMenu: false,
       meta: {
         seoTitle: 'For Agencies — White-Label Client Sites | FlowWink',
         description: 'FlowWink for digital agencies — white-label Business OS, multi-site management, and AI-powered client delivery.',
@@ -1063,8 +1069,8 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
     {
       title: 'For Consultancies',
       slug: 'for-consultancies',
-      menu_order: 4,
-      showInMenu: true,
+      menu_order: 11,
+      showInMenu: false,
       meta: {
         seoTitle: 'For Consultancies — AI-Powered Talent Matching | FlowWink',
         description: 'FlowWink for consulting firms — AI-powered consultant matching, live availability, and autonomous lead qualification.',
@@ -1230,8 +1236,8 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
     {
       title: 'For E-Commerce',
       slug: 'for-ecommerce',
-      menu_order: 5,
-      showInMenu: true,
+      menu_order: 12,
+      showInMenu: false,
       meta: {
         seoTitle: 'For E-Commerce — Autonomous Digital Storefront | FlowWink',
         description: 'FlowWink for e-commerce — AI shopping assistant, product catalog, Stripe checkout, and autonomous campaigns.',
@@ -1388,8 +1394,8 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
     {
       title: 'For Service Business',
       slug: 'for-services',
-      menu_order: 6,
-      showInMenu: true,
+      menu_order: 13,
+      showInMenu: false,
       meta: {
         seoTitle: 'For Services — Smart Booking & Management | FlowWink',
         description: 'FlowWink for service businesses — online booking, real-time availability, and autonomous client management.',
@@ -1561,8 +1567,8 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
     {
       title: 'For Healthcare',
       slug: 'for-healthcare',
-      menu_order: 7,
-      showInMenu: true,
+      menu_order: 14,
+      showInMenu: false,
       meta: {
         seoTitle: 'For Healthcare — HIPAA-Ready Patient Platform | FlowWink',
         description: 'FlowWink for healthcare — HIPAA-compliant private AI, patient booking, and compliance-first design.',
@@ -1694,6 +1700,12 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
         },
       ],
     },
+
+    // ═══════════════════════════════════════════════════════════
+    // PLATFORM STORY — /platform, /processes, /mcp, /use-cases
+    // and the five process deep dives (see flowwink-platform-pages.ts)
+    // ═══════════════════════════════════════════════════════════
+    ...flowwinkPlatformExtraPages,
   ],
 
   // Module data (blog, KB, products, consultants, booking services) is now

@@ -92,10 +92,10 @@
       "id": "work_order_execution",
       "name": "Work-order execution & time tracking (start/pause/done, actual vs planned)",
       "odoo": true,
-      "status": "partial",
+      "status": "done",
       "weight": 2,
       "verify": "progress_work_order(p_work_order_id,p_action,p_actual_minutes) writes started_at/completed_at/actual_minutes/actual_labor_cost_cents (migration 20260802200000); skill progress_work_order in manufacturing-module skillSeeds; admin UI: MoWorkOrdersPanel start/pause/done buttons + actual-vs-planned variance columns",
-      "notes": "Shipped 2026-08-02 as dual surface (skill + admin UI). Held at partial pending Stage-3 live run on dev after skills sync; Odoo also tracks per-operator work-order logs, which we do not (single actual per operation).",
+      "notes": "Dual-surface DONE 2026-08-02. Stage-3 verified LIVE on dev after skills sync: MO-2026-0002 WO#1 start -> done, 52 actual vs 45 planned minutes, 520.00 vs 450.00 labor cost. Odoo also tracks per-operator work-order logs, which we do not (single actual per operation).",
       "epic": "EPIC-08"
     },
     {

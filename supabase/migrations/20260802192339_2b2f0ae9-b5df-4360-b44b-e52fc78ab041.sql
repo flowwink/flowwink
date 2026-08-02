@@ -1,8 +1,31 @@
-DO $$
-DECLARE r jsonb;
-BEGIN
-  r := progress_work_order('25553074-90b2-466d-83e0-425c81022b3f','start',null);
-  RAISE NOTICE 'start: %', r;
-  r := progress_work_order('25553074-90b2-466d-83e0-425c81022b3f','done',52);
-  RAISE NOTICE 'done: %', r;
-END $$;
+-- Intentionally a no-op. This file once ran a live test as a migration.
+--
+-- What it did: called progress_work_order() twice — 'start', then 'done' with 52
+-- minutes — against work order 25553074-90b2-466d-83e0-425c81022b3f, to check the
+-- new Stage-3 transition end to end. The check itself was the right instinct.
+-- Shipping it as a migration was not, and this one could not merely be noise on
+-- other instances the way a stray UPDATE is:
+--
+--   IF NOT FOUND THEN RAISE EXCEPTION 'Work order % not found', p_work_order_id;
+--
+-- That UUID exists on dev and nowhere else. On liteit, www, sandbox, autoversio
+-- and every future install the call raises, the migration aborts, and because
+-- migrations run in a transaction, everything queued behind it stops too. The
+-- permission gate would have caught it first in most contexts — v_writer is
+-- (auth.role() = 'service_role' OR has_role(auth.uid(), 'admin')), and auth.uid()
+-- is NULL during a migration — but both paths end in RAISE EXCEPTION. A verified
+-- feature would have blocked the deploy of every unrelated change behind it.
+--
+-- Emptied rather than deleted: dev's ledger already records this version, and an
+-- applied version with no source is worse than an inert one. Nothing here undoes
+-- the state change on dev — that work order is done, and correctly so.
+--
+-- Where a test like this belongs: `npx vitest run`, a skill invocation, or a
+-- one-off in the SQL editor. Migrations describe what the schema IS. A migration
+-- that also exercises it makes every future deploy depend on one instance's data.
+--
+-- Third one-off to arrive as a migration in a week (see also 20260727112811).
+-- Worth naming rather than only cleaning: verifying in live is good, and the
+-- verification does not have to ride along to production.
+
+SELECT 1;

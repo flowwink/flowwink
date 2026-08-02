@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260802190207",
-      "migrations_count": 286,
+      "migration_head": "20260802192339",
+      "migrations_count": 288,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1147,8 +1147,16 @@
           "name": "da9ce2f2-cc20-4372-93a6-c87f0e1627e8"
         },
         {
+          "version": "20260802190000",
+          "name": "gmail-reconcile-key-format"
+        },
+        {
           "version": "20260802190207",
           "name": "6fc1eaf8-437e-402b-a8f6-2782489851fa"
+        },
+        {
+          "version": "20260802192339",
+          "name": "2b2f0ae9-b5df-4360-b44b-e52fc78ab041"
         }
       ]
     },

@@ -414,11 +414,24 @@ Deno.serve(async (req) => {
       // bursts (observed gaps of minutes → 12h). This pulls recent inbox mail
       // and runs the exact same ingest path as composio-webhook, deduped on
       // gmail_message_id, so it can run every few minutes without side effects.
-      const accountId = params?.account_id || await getConnectedAccountId('gmail');
+      // A cron caller authenticates with the ANON key, which ships inside the
+      // frontend bundle — so every parameter it sends is attacker-controlled.
+      // Withholding message content from the response is not enough on its own:
+      // a caller-chosen `query` turns the remaining count into a search oracle
+      // over the company mailbox. Ask for "from:swedbank", read the number, ask
+      // again. Each call also spends a real Composio request, and nothing here
+      // rate-limits it.
+      //
+      // So the poll's shape is pinned server-side for that caller. Cron has no
+      // reason to choose — it runs one fixed sweep — and a service-role caller,
+      // which holds a secret, keeps the parameters it needs for backfills.
+      const trusted = !isCronCaller;
+
+      const accountId = (trusted && params?.account_id) || await getConnectedAccountId('gmail');
       if (!accountId) return json({ error: 'Gmail not connected.' }, 400);
 
-      const maxResults = Math.min(Number(params?.max_results) || 15, 50);
-      const query = params?.query || 'in:inbox newer_than:1d';
+      const maxResults = trusted ? Math.min(Number(params?.max_results) || 15, 50) : 15;
+      const query = (trusted && params?.query) || 'in:inbox newer_than:1d';
 
       const data = await executeToolV3('GMAIL_FETCH_EMAILS', {
         query,
@@ -446,7 +459,11 @@ Deno.serve(async (req) => {
           fullMessage: msg?.payload || msg?.messageText ? msg : undefined,
           source: 'gmail-reconcile',
         });
-        results.push({ message_id: messageId, ...res });
+        // The id last, not first: IngestResult carries its own message_id and a
+        // spread would win, so the explicit one was dead. That mattered only on
+        // the failure path — which returns message_id: '' — meaning the response
+        // could not say WHICH message failed, the one thing a caller reads it for.
+        results.push({ ...res, message_id: messageId });
       }
 
       const ingested = results.filter((r) => r.ok && !r.skipped).length;

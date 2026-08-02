@@ -184,12 +184,12 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
           id: 'links-after-timeline',
           type: 'quick-links',
           data: {
-            heading: 'See it in action for your industry',
+            heading: 'Go deeper',
             links: [
-              { id: 'ql1-agency', label: 'Digital Agencies', url: '/for-agencies' },
-              { id: 'ql1-consult', label: 'Consultancies', url: '/for-consultancies' },
-              { id: 'ql1-ecom', label: 'E-Commerce', url: '/for-ecommerce' },
-              { id: 'ql1-services', label: 'Service Business', url: '/for-services' },
+              { id: 'ql1-platform', label: 'The Platform', url: '/platform' },
+              { id: 'ql1-processes', label: '14 Business Processes', url: '/processes' },
+              { id: 'ql1-mcp', label: 'Skills & MCP', url: '/mcp' },
+              { id: 'ql1-usecases', label: 'Industry Use Cases', url: '/use-cases' },
             ],
             variant: 'dark',
             layout: 'split',

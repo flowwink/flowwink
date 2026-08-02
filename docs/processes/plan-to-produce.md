@@ -69,7 +69,7 @@ flowchart TD
 
 ## Known gaps (parity scorecards)
 
-- ❌ **Shop-floor UI** — work orders exist as data (`generate_mo_work_orders`) but there is no operator screen for start/pause/done per operation (the dual-surface gap keeping several capabilities partial; see `docs/parity/capabilities/manufacturing.json`)
+- ✅ **Shop-floor execution** (2026-08-02) — `progress_work_order` (start/pause/done/cancel) writes `started_at`, `completed_at`, `actual_minutes` and `actual_labor_cost_cents`; the MO card's work-order panel shows actual-vs-planned variance per operation and totals. Still ❌: per-operator work logs and capacity scheduling (`manufacturing#capacity_scheduling`)
 - ❌ Backorder/partial MO completion (produce 80 of 100, keep the rest open)
 - ❌ Scrap reporting + quality checks (Odoo Quality)
 - ❌ By-products / co-products on the BOM

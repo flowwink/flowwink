@@ -114,8 +114,17 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'key' });
 
-      // Redirect back to admin integrations page
-      const siteUrl = Deno.env.get('SITE_URL') || url.origin;
+      // Redirect back to admin integrations page.
+      //
+      // PUBLIC_SITE_URL is the canonical name — seven other call sites use it and
+      // only this one ever read SITE_URL, so an operator who set the documented
+      // variable would have found this single function falling back to the request
+      // origin while everything else worked. SITE_URL is still accepted so
+      // instances configured under the old name keep working; document only the
+      // first.
+      const siteUrl = Deno.env.get('PUBLIC_SITE_URL')
+        || Deno.env.get('SITE_URL')
+        || url.origin;
       // Try to redirect to the admin page — use a known path
       return new Response(
         `<html><body><script>window.opener ? window.opener.postMessage('gmail_connected','*') && window.close() : window.location.href='/admin/integrations?gmail=connected';</script><p>Connected! You can close this window.</p></body></html>`,

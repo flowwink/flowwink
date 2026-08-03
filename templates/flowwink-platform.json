@@ -4052,7 +4052,7 @@
               },
               {
                 "id": "mcl-cursor",
-                "icon": "Code2",
+                "icon": "CodeXml",
                 "title": "Cursor & coding agents",
                 "description": "Query real business data while building, or drive test scenarios through the same interface production uses."
               },
@@ -4995,7 +4995,7 @@
                 "id": "process-procure-to-pay-t1",
                 "title": "Raise the order",
                 "description": "A purchase order is created against a vendor with agreed terms, dispatched by email, and every revision is kept.",
-                "icon": "FileSignature"
+                "icon": "FilePen"
               },
               {
                 "id": "process-procure-to-pay-t2",
@@ -5221,7 +5221,7 @@
                 "id": "process-record-to-report-t5",
                 "title": "Report",
                 "description": "Profit and loss, balance sheet, VAT return and statutory export files — generated from the ledger, not reassembled in a spreadsheet.",
-                "icon": "FileBarChart"
+                "icon": "FileChartColumn"
               }
             ]
           }
@@ -5259,7 +5259,7 @@
               },
               {
                 "id": "process-record-to-report-m4",
-                "icon": "BarChart3",
+                "icon": "ChartColumn",
                 "title": "Analytics",
                 "description": "Financial KPI reporting on top of the ledger."
               },

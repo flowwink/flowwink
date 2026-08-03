@@ -883,9 +883,25 @@ cmd_create_admin() {
         return 1
     fi
 
-    # Assign admin role via PostgREST. Show response so failures are visible.
+    # Assign the admin role.
+    #
+    # This is a BACKSTOP, not the primary path: handle_new_user already assigns
+    # it, because the user above is created with signup_type=admin in its
+    # metadata. The explicit write stays because a fresh project has been seen
+    # without that trigger at all — it lived only in the hosted database and not
+    # in the repo until we found it — so an instance where the trigger is missing
+    # still ends up with a working admin.
+    #
+    # on_conflict names the constraint that actually collides. Prefer:
+    # resolution=merge-duplicates alone is not enough: PostgREST aims it at the
+    # primary key, sees no clash on a fresh id, inserts, and Postgres rejects on
+    # user_roles_user_id_role_key instead. That produced a 409 on every healthy
+    # install — the trigger had done its job, and the installer reported "Failed
+    # to assign admin role" and offered a manual INSERT that would fail the same
+    # way. An installer that cries wolf on success teaches operators to ignore it.
     local role_resp http_code body
-    role_resp=$(curl -s -w "\n%{http_code}" -X POST "${SUPABASE_URL}/rest/v1/user_roles" \
+    role_resp=$(curl -s -w "\n%{http_code}" -X POST \
+        "${SUPABASE_URL}/rest/v1/user_roles?on_conflict=user_id,role" \
         -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
         -H "apikey: ${SERVICE_ROLE_KEY}" \
         -H "Content-Type: application/json" \
@@ -896,6 +912,10 @@ cmd_create_admin() {
 
     if [ "$http_code" = "201" ] || [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
         echo -e "  ${GREEN}✓ Admin role assigned${NC} (user_id: ${user_id})"
+    elif echo "$body" | grep -q '"23505"'; then
+        # Unique violation on this table means the row is already there, which is
+        # the end state we wanted. Report what is true, not what the verb did.
+        echo -e "  ${GREEN}✓ Admin role already assigned${NC} by the signup trigger (user_id: ${user_id})"
     else
         echo -e "  ${YELLOW}⚠ Failed to assign admin role (HTTP ${http_code})${NC}"
         echo "  Response: ${body}"

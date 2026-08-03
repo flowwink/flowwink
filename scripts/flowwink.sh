@@ -421,20 +421,64 @@ choose_install_profile() {
     local modules_row
     modules_row=$(profile_modules_row "$profile")
 
-    # Persist it. If this write fails the deploy still proceeds with the
-    # computed set, but the admin UI would show defaults — so say so loudly.
-    local wresp
-    wresp=$(curl -s -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
-        -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \
-        -d "$(jq -n --arg v "$modules_row" '{query:("insert into site_settings (key, value) values ('"'"'modules'"'"', " + ($v|@json) + "::jsonb) on conflict (key) do update set value = excluded.value")}')" 2>/dev/null || echo "")
-    if echo "$wresp" | jq -e '.message // .error' >/dev/null 2>&1; then
+    if persist_modules_row "$modules_row" "$token"; then
+        echo -e "  ${GREEN}✓ Profile '${profile}' — modules configured${NC}" >&2
+    else
         echo -e "  ${YELLOW}⚠ Could not persist the modules row — deploying the profile anyway.${NC}" >&2
         echo -e "  ${DIM}Set the modules manually in /admin/modules after install.${NC}" >&2
-    else
-        echo -e "  ${GREEN}✓ Profile '${profile}' — modules configured${NC}" >&2
     fi
 
     echo "$modules_row"
+}
+
+# Write site_settings.modules. Returns 0 only when the row is verifiably there.
+#
+# Two routes, because neither works everywhere. The Management API's
+# /database/query needs a token permitted to run SQL, and a personal access
+# token on some accounts is not — that is how a fresh ERP install ended up
+# deploying all 75 functions while /admin/modules still showed defaults. The
+# service-role key is the one credential this script is certain to hold: it
+# already creates the admin user with it.
+#
+# The old check trusted the response body alone, and an empty body — a curl that
+# failed outright — read as success. So this ends by READING THE ROW BACK. An
+# installer may not claim a write it cannot see.
+persist_modules_row() {
+    local row="$1" token="$2"
+
+    # Route 1: Management API SQL.
+    if [ -n "${PROJECT_REF}" ] && [ -n "${token}" ]; then
+        curl -s -m 30 -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+            -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg v "$row" '{query:("insert into site_settings (key, value) values ('"'"'modules'"'"', " + ($v|@json) + "::jsonb) on conflict (key) do update set value = excluded.value")}')" \
+            >/dev/null 2>&1 || true
+    fi
+
+    # Route 2: PostgREST with the service-role key. on_conflict names the
+    # constraint so the upsert targets `key` rather than the primary key —
+    # the same trap that made the admin-role step report a 409 as a failure.
+    if [ -n "${SUPABASE_URL}" ] && [ -n "${SERVICE_ROLE_KEY}" ]; then
+        curl -s -m 30 -X POST "${SUPABASE_URL}/rest/v1/site_settings?on_conflict=key" \
+            -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+            -H "apikey: ${SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal,resolution=merge-duplicates" \
+            -d "$(jq -n --argjson v "$row" '{key:"modules", value:$v}')" \
+            >/dev/null 2>&1 || true
+    fi
+
+    # Verify. This is the only statement that decides the outcome.
+    #
+    # The type check is not decoration. PostgREST answers a successful select
+    # with an ARRAY and an error with an OBJECT, and `length` counts an object's
+    # keys — so a bare `length > 0` reads {"message":"JWT expired"} as one row
+    # and reports the write as done. This guard's first draft had exactly that
+    # bug, which is the same shape as the failures it was written to catch.
+    local check
+    check=$(curl -s -m 30 "${SUPABASE_URL}/rest/v1/site_settings?key=eq.modules&select=key" \
+        -H "Authorization: Bearer ${SERVICE_ROLE_KEY}" \
+        -H "apikey: ${SERVICE_ROLE_KEY}" 2>/dev/null || echo "")
+    echo "$check" | jq -e 'type == "array" and length > 0' >/dev/null 2>&1
 }
 
 # The module ids a profile enables, following its `extends` chain.

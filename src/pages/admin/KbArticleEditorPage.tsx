@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Eye, EyeOff, MessageSquare, Sparkles, Loader2, Bold, Italic, List, ListOrdered, Quote, Heading2, Heading3 } from "lucide-react";
+import { ArrowLeft, Save, Eye, EyeOff, MessageSquare, Sparkles, Loader2, Bold, Italic, List, ListOrdered, Quote, Heading2, Heading3, Globe, Lock } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";

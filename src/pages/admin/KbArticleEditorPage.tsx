@@ -52,7 +52,9 @@ export default function KbArticleEditorPage() {
     is_published: true,
     is_featured: false,
     include_in_chat: true,
+    visibility: "public" as "public" | "internal",
   });
+
 
   const editor = useEditor({
     extensions: [

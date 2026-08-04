@@ -334,9 +334,16 @@ export default function KnowledgeBasePage() {
                             >
                               {article.title}
                             </Link>
+                            {article.visibility === 'internal' && (
+                              <Badge className="shrink-0 bg-warning/15 text-warning border-warning/30 hover:bg-warning/15">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Internal
+                              </Badge>
+                            )}
                             {!article.is_published && (
                               <Badge variant="secondary">Draft</Badge>
                             )}
+
                             {article.include_in_chat && (
                               <Badge variant="outline" className="text-xs">
                                 <MessageSquare className="h-3 w-3 mr-1" />

@@ -261,11 +261,16 @@ export function TwoColumnBlock({ data }: TwoColumnBlockProps) {
               dangerouslySetInnerHTML={{ __html: htmlContent }} 
             />
 
+            {/* Note */}
+            {data.note && (
+              <p className="mt-6 text-sm text-muted-foreground italic">{data.note}</p>
+            )}
+
             {/* CTA Link */}
             {data.ctaText && data.ctaUrl && (
               <div className="mt-8">
                 {isInternalLink ? (
-                  <Link 
+                  <Link
                     to={data.ctaUrl}
                     className="inline-flex items-center gap-3 text-sm font-semibold uppercase tracking-widest group hover:opacity-80 transition-opacity"
                   >

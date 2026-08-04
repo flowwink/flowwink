@@ -78,3 +78,33 @@ describe('block registry documents what the renderer can do', () => {
     for (const b of audited) expect(PENDING.has(b.type)).toBe(false);
   });
 });
+
+/**
+ * A field can be documented, read by the renderer, and still never reach the
+ * page: two-column renders `note` in its text-text branch but the image+text
+ * branch dropped it, so every optic services block set a note that silently
+ * vanished. The drift test above cannot see this — `data.note` does appear in
+ * the file, just in the wrong half.
+ *
+ * Layout branches are two presentations of one block; fields that are not about
+ * layout (a note, a CTA) must survive both. This asserts that directly.
+ */
+describe('two-column layout branches agree on layout-independent fields', () => {
+  const src = readFileSync(rendererPath('two-column')!, 'utf-8');
+  // The text-text branch returns early; everything after is image+text.
+  const split = src.indexOf('// Image+Text layout');
+  const textText = src.slice(0, split);
+  const imageText = src.slice(split);
+
+  it('splits into two real branches', () => {
+    expect(split).toBeGreaterThan(0);
+    expect(imageText.length).toBeGreaterThan(500);
+  });
+
+  for (const field of ['note', 'ctaText', 'ctaUrl', 'eyebrow']) {
+    it(`renders data.${field} in both layouts`, () => {
+      expect(textText.includes(`data.${field}`), `text-text branch drops ${field}`).toBe(true);
+      expect(imageText.includes(`data.${field}`), `image+text branch drops ${field}`).toBe(true);
+    });
+  }
+});

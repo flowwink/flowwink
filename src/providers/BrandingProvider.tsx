@@ -193,21 +193,27 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
       applyBrandingToDocument(branding);
       themeSetRef.current = false;
       
-      // Apply the configured default theme ONLY for visitors who have not made
-      // an explicit choice yet. Re-applying it on every load would clobber the
-      // visitor's toggle selection on refresh (dark -> light flip-flop bug).
-      // next-themes persists the active theme under localStorage key "theme".
-      if (branding.allowThemeToggle === false && branding.defaultTheme) {
-        let hasExplicitChoice = false;
-        try {
-          hasExplicitChoice = !!localStorage.getItem('theme');
-        } catch {
-          // localStorage unavailable (private mode / SSR) — fall through to apply default
-        }
-        if (!hasExplicitChoice) {
+      // Theme toggle OFF => the operator's default theme is authoritative: no
+      // visitor choice can exist, and a stale localStorage value (e.g. "light"
+      // written by an earlier admin session) must not win.
+      // Theme toggle ON => only seed the default when the visitor has not made
+      // an explicit choice yet, so a refresh doesn't clobber their selection.
+      if (branding.defaultTheme) {
+        if (branding.allowThemeToggle === false) {
           setTheme(branding.defaultTheme);
+        } else {
+          let hasExplicitChoice = false;
+          try {
+            hasExplicitChoice = !!localStorage.getItem('theme');
+          } catch {
+            // localStorage unavailable (private mode) — fall through to default
+          }
+          if (!hasExplicitChoice) {
+            setTheme(branding.defaultTheme);
+          }
         }
       }
+
     }
     
     // Reset to default CSS and theme when entering admin (only once)

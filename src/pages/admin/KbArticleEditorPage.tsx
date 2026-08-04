@@ -151,6 +151,8 @@ export default function KbArticleEditorPage() {
       is_published: formData.is_published,
       is_featured: formData.is_featured,
       include_in_chat: formData.include_in_chat,
+      visibility: formData.visibility,
+
       answer_json: answer_json as import("@/integrations/supabase/types").Json,
       answer_text,
     };

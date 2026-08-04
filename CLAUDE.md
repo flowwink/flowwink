@@ -315,6 +315,26 @@ All migrations MUST be idempotent (safe to run multiple times). Use `IF NOT EXIS
 
 Migrations are timestamped UUID filenames: `YYYYMMDDHHMMSS_<uuid>.sql`.
 
+**Squashing migrations destroys seed data — extract it first.** The 2026-06-08
+baseline squash (453 files → one schema baseline) kept all DDL and silently
+dropped every seed `INSERT`. `role_module_access_defaults` had been seeded in an
+April migration; after the squash, every fresh install was born with empty role
+tables, so role views showed only ungated nav items — and nobody noticed for two
+months because every live instance predated the squash and a July feature
+(RolePreviewSwitcher) was built on top of data that was already gone from the
+repo. Rules that follow:
+1. Before any squash: `grep -l "INSERT INTO"` across the files being removed,
+   and move platform-config seeds into their own forward-dated idempotent
+   migrations FIRST (see `20260804150000_seed-role-module-access-defaults.sql`
+   for the pattern — defaults upserted, live table filled only when empty so
+   operator customisations survive).
+2. After any squash or consolidation: run one install from scratch. "Works on
+   dev" is the weakest possible evidence — dev has accreted since April and can
+   never fail the fresh-install test.
+3. Distinguish platform config (nav/role behaviour — MUST be seeded) from
+   business config (carriers, booking services, approval rules — born empty is
+   correct; a new org defines its own).
+
 ```bash
 # Push migrations to a Supabase project
 supabase db push --project-ref <ref>

@@ -157,37 +157,44 @@ export default function MediaLibraryPage() {
   }, [lightboxImage, filteredFiles, getPublicUrl]);
 
   const handleUpload = useCallback(async (filesToUpload: FileList | File[]) => {
-    const imageFiles = Array.from(filesToUpload).filter(f => f.type.startsWith('image/'));
-    
-    if (imageFiles.length === 0) {
+    const mediaFiles = Array.from(filesToUpload).filter(
+      f => f.type.startsWith('image/') || f.type.startsWith('video/')
+    );
+
+    if (mediaFiles.length === 0) {
       toast({
-        title: 'No images selected',
-        description: 'Please select image files to upload',
+        title: 'No media selected',
+        description: 'Please select image or video files to upload',
         variant: 'destructive',
       });
       return;
     }
 
     setIsUploading(true);
-    setUploadProgress({ current: 0, total: imageFiles.length });
+    setUploadProgress({ current: 0, total: mediaFiles.length });
 
     let successCount = 0;
     let failCount = 0;
 
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
-      setUploadProgress({ current: i + 1, total: imageFiles.length });
+    for (let i = 0; i < mediaFiles.length; i++) {
+      const file = mediaFiles[i];
+      setUploadProgress({ current: i + 1, total: mediaFiles.length });
 
       try {
-        // Convert to WebP for optimization
-        const webpBlob = await convertToWebP(file);
-        const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.webp`;
+        const isVideo = file.type.startsWith('video/');
+
+        // Videos are stored as-is; images are converted to WebP for optimization.
+        const uploadBlob: Blob = isVideo ? file : await convertToWebP(file);
+        const contentType = isVideo ? file.type : 'image/webp';
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        const ext = isVideo ? (file.name.match(/\.[^/.]+$/)?.[0] || '.mp4') : '.webp';
+        const fileName = `${Date.now()}-${baseName}${ext}`;
         const storagePath = `pages/${fileName}`;
 
         const { error } = await supabase.storage
           .from('cms-images')
-          .upload(storagePath, webpBlob, {
-            contentType: 'image/webp',
+          .upload(storagePath, uploadBlob, {
+            contentType,
             cacheControl: '31536000',
           });
 
@@ -197,19 +204,21 @@ export default function MediaLibraryPage() {
         // alt-text / where-used / variants tracking.
         let width: number | undefined;
         let height: number | undefined;
-        try {
-          const dims = await probeImageDimensions(webpBlob);
-          width = dims.width;
-          height = dims.height;
-        } catch { /* non-fatal */ }
+        if (!isVideo) {
+          try {
+            const dims = await probeImageDimensions(uploadBlob);
+            width = dims.width;
+            height = dims.height;
+          } catch { /* non-fatal */ }
+        }
 
         await upsertMeta
           .mutateAsync({
             storage_path: storagePath,
             folder: 'pages',
             filename: fileName,
-            mime_type: 'image/webp',
-            size_bytes: webpBlob.size,
+            mime_type: contentType,
+            size_bytes: uploadBlob.size,
             width,
             height,
           })
@@ -227,14 +236,14 @@ export default function MediaLibraryPage() {
 
     if (successCount > 0) {
       toast({
-        title: `${successCount} image${successCount > 1 ? 's' : ''} uploaded`,
-        description: failCount > 0 ? `${failCount} failed` : 'Images are now available in your library',
+        title: `${successCount} file${successCount > 1 ? 's' : ''} uploaded`,
+        description: failCount > 0 ? `${failCount} failed` : 'Files are now available in your library',
       });
       refetch();
     } else {
       toast({
         title: 'Upload failed',
-        description: 'Could not upload images. Please try again.',
+        description: 'Could not upload files. Please try again.',
         variant: 'destructive',
       });
     }
@@ -383,12 +392,12 @@ export default function MediaLibraryPage() {
       >
         <AdminPageHeader 
           title="Media Library"
-          description="Manage uploaded images"
+          description="Manage uploaded images and videos"
         >
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
             multiple
             onChange={handleFileInput}
             className="hidden"
@@ -405,7 +414,7 @@ export default function MediaLibraryPage() {
             )}
             {isUploading && uploadProgress 
               ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...`
-              : 'Upload Images'
+              : 'Upload Media'
             }
           </Button>
         </AdminPageHeader>
@@ -493,12 +502,12 @@ export default function MediaLibraryPage() {
           >
             <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-1">
-              {searchQuery ? 'No images found' : 'Drop images here or click to upload'}
+              {searchQuery ? 'No files found' : 'Drop files here or click to upload'}
             </h3>
             <p className="text-muted-foreground text-sm">
               {searchQuery 
                 ? 'Try a different search'
-                : 'Supports JPG, PNG, GIF, WebP • Automatically optimized'
+                : 'Images (JPG, PNG, GIF, WebP — auto-optimized) and videos (MP4, WebM)'
               }
             </p>
           </div>
@@ -546,12 +555,22 @@ export default function MediaLibraryPage() {
                     setLightboxImage({ url: getPublicUrl(file), name: file.name, index });
                   }}
                 >
-                  <img
-                    src={getPublicUrl(file)}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  {/\.(mp4|webm|mov)$/i.test(file.name) ? (
+                    <video
+                      src={getPublicUrl(file)}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={getPublicUrl(file)}
+                      alt={file.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
                 </div>
                 
                 {/* Overlay with actions */}

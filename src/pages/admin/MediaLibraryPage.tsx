@@ -555,12 +555,22 @@ export default function MediaLibraryPage() {
                     setLightboxImage({ url: getPublicUrl(file), name: file.name, index });
                   }}
                 >
-                  <img
-                    src={getPublicUrl(file)}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  {/\.(mp4|webm|mov)$/i.test(file.name) ? (
+                    <video
+                      src={getPublicUrl(file)}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={getPublicUrl(file)}
+                      alt={file.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
                 </div>
                 
                 {/* Overlay with actions */}

@@ -39,18 +39,7 @@ function rendererFields(path: string): Set<string> {
  * SHRINK ONLY. Adding a block here is admitting new drift; do that in a commit
  * that says why, or better, fix the registry entry instead.
  */
-const PENDING = new Set([
-  'hero', 'text', 'image', 'cta', 'contact', 'link-grid', 'info-box',
-  'accordion', 'article-grid', 'latest-posts', 'youtube', 'quote', 'separator',
-  'gallery', 'stats', 'chat', 'map', 'form', 'newsletter', 'popup', 'booking',
-  'pricing', 'testimonials', 'team', 'logos', 'comparison', 'features',
-  'timeline', 'tabs', 'marquee', 'embed', 'lottie', 'table', 'countdown',
-  'progress', 'badge', 'social-proof', 'notification-toast', 'floating-cta',
-  'chat-launcher', 'webinar', 'parallax-section', 'bento-grid',
-  'section-divider', 'featured-carousel', 'trust-bar', 'category-nav',
-  'shipping-info', 'ai-assistant', 'quick-links', 'sticky-scroll', 'ai-faq',
-  'pricing-calculator', 'announcement-bar', 'products', 'cart', 'smart-booking',
-]);
+const PENDING = new Set<string>([]);
 
 describe('block registry documents what the renderer can do', () => {
   const audited = BLOCK_REFERENCE.filter(

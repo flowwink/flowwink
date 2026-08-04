@@ -392,12 +392,12 @@ export default function MediaLibraryPage() {
       >
         <AdminPageHeader 
           title="Media Library"
-          description="Manage uploaded images"
+          description="Manage uploaded images and videos"
         >
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
             multiple
             onChange={handleFileInput}
             className="hidden"
@@ -414,7 +414,7 @@ export default function MediaLibraryPage() {
             )}
             {isUploading && uploadProgress 
               ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...`
-              : 'Upload Images'
+              : 'Upload Media'
             }
           </Button>
         </AdminPageHeader>

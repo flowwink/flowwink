@@ -251,24 +251,29 @@ export function HeroBlockEditor({ data, onChange, isEditing }: HeroBlockEditorPr
                   className="flex-1"
                 />
                 {videoType === 'direct' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    title="Pick a random video based on your title"
-                    onClick={() => {
-                      const context = `${localData.title || ''} ${localData.subtitle || ''}`;
-                      const video = findBestVideo(context, localData.videoUrl);
-                      handleChange({
-                        videoUrl: video.url,
-                        videoPosterUrl: localData.videoPosterUrl || video.posterUrl,
-                        videoType: 'direct',
-                        backgroundType: 'video',
-                      });
-                    }}
-                  >
-                    <Shuffle className="h-4 w-4" />
-                  </Button>
+                  <>
+                    <VideoUploadButton
+                      onUploaded={(url) => handleChange({ videoUrl: url, videoType: 'direct', backgroundType: 'video' })}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Pick a random video based on your title"
+                      onClick={() => {
+                        const context = `${localData.title || ''} ${localData.subtitle || ''}`;
+                        const video = findBestVideo(context, localData.videoUrl);
+                        handleChange({
+                          videoUrl: video.url,
+                          videoPosterUrl: localData.videoPosterUrl || video.posterUrl,
+                          videoType: 'direct',
+                          backgroundType: 'video',
+                        });
+                      }}
+                    >
+                      <Shuffle className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -276,7 +281,7 @@ export function HeroBlockEditor({ data, onChange, isEditing }: HeroBlockEditorPr
                   ? 'Paste a YouTube URL or video ID'
                   : videoType === 'vimeo'
                   ? 'Paste a Vimeo URL or video ID'
-                  : 'Use a direct link to an MP4 file, or click the shuffle button to pick a free stock video'
+                  : 'Upload an MP4/WebM, paste a direct link, or shuffle a free stock video'
                 }
               </p>
             </div>

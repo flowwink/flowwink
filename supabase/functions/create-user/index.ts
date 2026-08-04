@@ -23,7 +23,7 @@ serve(async (req) => {
     // Create client with user's JWT to verify admin role
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('Ingen auktorisering');
+      throw new Error('Missing authorization');
     }
 
     const supabaseClient = getUserClient(authHeader)!;
@@ -32,7 +32,7 @@ serve(async (req) => {
     const { data: { user: caller }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !caller) {
       console.error('Auth error:', userError);
-      throw new Error('Kunde inte verifiera användare');
+      throw new Error('Could not verify user');
     }
 
     // Check if caller is admin using the has_role function
@@ -41,11 +41,11 @@ serve(async (req) => {
 
     if (roleError) {
       console.error('Role check error:', roleError);
-      throw new Error('Kunde inte verifiera admin-roll');
+      throw new Error('Could not verify admin role');
     }
 
     if (!isAdmin) {
-      throw new Error('Endast administratörer kan skapa användare');
+      throw new Error('Only administrators can create users');
     }
 
     // Parse request body
@@ -53,16 +53,19 @@ serve(async (req) => {
 
     // Validate input
     if (!email || !password || !role) {
-      throw new Error('E-post, lösenord och roll krävs');
+      throw new Error('Email, password and role are required');
     }
 
     if (password.length < 8) {
-      throw new Error('Lösenordet måste vara minst 8 tecken');
+      throw new Error('Password must be at least 8 characters');
     }
 
-    const validRoles = ['writer', 'approver', 'admin'];
+    const validRoles = [
+      'writer', 'approver', 'admin', 'customer', 'employee', 'sales', 'hr',
+      'accounting', 'support', 'warehouse', 'marketing', 'purchasing', 'projects',
+    ];
     if (!validRoles.includes(role)) {
-      throw new Error('Ogiltig roll');
+      throw new Error(`Invalid role: ${role}`);
     }
 
     console.log(`Creating user: ${email} with role: ${role}`);
@@ -78,19 +81,19 @@ serve(async (req) => {
     if (createError) {
       console.error('Create user error:', createError);
       if (createError.message.includes('already been registered')) {
-        throw new Error('E-postadressen är redan registrerad');
+        throw new Error('That email address is already registered');
       }
-      throw new Error(`Kunde inte skapa användare: ${createError.message}`);
+      throw new Error(`Could not create user: ${createError.message}`);
     }
 
     console.log(`User created with ID: ${newUser.user.id}`);
 
-    // Update user role (the trigger creates default 'writer' role, so we update if different)
+    // The signup trigger creates a default 'writer' role — replace it with the
+    // requested role (upsert so it also works when no default row exists).
     if (role !== 'writer') {
       const { error: roleUpdateError } = await supabaseAdmin
         .from('user_roles')
-        .update({ role })
-        .eq('user_id', newUser.user.id);
+        .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
 
       if (roleUpdateError) {
         console.error('Role update error:', roleUpdateError);
@@ -130,7 +133,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Ett oväntat fel uppstod';
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     console.error('Error in create-user:', errorMessage);
     return new Response(
       JSON.stringify({ error: errorMessage }),

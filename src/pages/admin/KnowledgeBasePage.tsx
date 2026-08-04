@@ -136,17 +136,22 @@ export default function KnowledgeBasePage() {
           </Button>
         </AdminPageHeader>
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Stats — public and internal are never merged into one number */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCardCompact
             label="Categories"
             value={stats?.categories}
             variant="default"
           />
           <StatCardCompact
-            label="Published Articles"
-            value={stats?.articles}
+            label="Published — Public"
+            value={stats?.publicArticles}
             variant="default"
+          />
+          <StatCardCompact
+            label="Published — Internal"
+            value={stats?.internalArticles}
+            variant="warning"
           />
           <StatCardCompact
             label="In AI Chat Context"
@@ -154,6 +159,7 @@ export default function KnowledgeBasePage() {
             variant={chatModuleEnabled ? 'primary' : 'muted'}
           />
         </div>
+
 
         <div className="grid gap-6 lg:grid-cols-4">
           {/* Categories sidebar */}

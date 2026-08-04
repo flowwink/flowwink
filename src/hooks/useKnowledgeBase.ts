@@ -248,7 +248,9 @@ export function useUpdateKbArticle() {
       is_published?: boolean;
       is_featured?: boolean;
       include_in_chat?: boolean;
+      visibility?: 'public' | 'internal';
     }) => {
+
       const { data, error } = await supabase
         .from('kb_articles')
         .update(updates)

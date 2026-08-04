@@ -223,7 +223,7 @@ export default function KnowledgeBasePage() {
 
           {/* Articles list */}
           <div className="lg:col-span-3 space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -233,7 +233,24 @@ export default function KnowledgeBasePage() {
                   className="pl-9"
                 />
               </div>
+              <ToggleGroup
+                type="single"
+                value={audienceFilter}
+                onValueChange={(value) => value && setAudienceFilter(value as AudienceFilter)}
+                className="justify-start"
+              >
+                <ToggleGroupItem value="all" className="border rounded-md px-3">All</ToggleGroupItem>
+                <ToggleGroupItem value="public" className="border rounded-md px-3 gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  Public
+                </ToggleGroupItem>
+                <ToggleGroupItem value="internal" className="border rounded-md px-3 gap-1.5">
+                  <Lock className="h-3.5 w-3.5" />
+                  Internal
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
+
 
             {/* Bulk actions bar */}
             {selectedArticles.size > 0 && (

@@ -37,6 +37,7 @@ interface ProcessPageInput {
   modules: { icon: string; title: string; description: string }[];
   agentCoverage: string;
   humanCoverage: string;
+  heroImage: string;
 }
 
 function processPage(p: ProcessPageInput): TemplatePage {
@@ -58,7 +59,9 @@ function processPage(p: ProcessPageInput): TemplatePage {
           eyebrow: p.eyebrow,
           title: p.heroTitle,
           subtitle: p.heroSubtitle,
-          backgroundType: 'gradient',
+          backgroundType: 'image',
+          backgroundImage: p.heroImage,
+          overlayOpacity: 65,
           heightMode: '60vh',
           contentAlignment: 'center',
           titleAnimation: 'fade-in',
@@ -297,7 +300,9 @@ const processesPage: TemplatePage = {
         eyebrow: 'WHAT THE SYSTEM ACTUALLY DOES',
         title: 'Fourteen Processes, Documented End to End',
         subtitle: 'Software is not a feature list — it is the set of business processes it can carry from first touch to final entry. These are ours, each one documented, implemented across modules, and callable step by step by a human or an agent.',
-        backgroundType: 'gradient',
+        backgroundType: 'image',
+        backgroundImage: '/templates/hero/tech-abstract.jpg',
+        overlayOpacity: 65,
         heightMode: '70vh',
         contentAlignment: 'center',
         titleAnimation: 'slide-up',
@@ -541,7 +546,9 @@ const useCasesPage: TemplatePage = {
         eyebrow: 'ONE PLATFORM, MANY SHAPES',
         title: 'Same Operating System. Different Business.',
         subtitle: 'The modules you enable and the processes you run decide what FlowWink becomes. Here is what it looks like in five industries — pick the one closest to yours.',
-        backgroundType: 'gradient',
+        backgroundType: 'image',
+        backgroundImage: '/templates/hero/team-collaboration.jpg',
+        overlayOpacity: 65,
         heightMode: '70vh',
         contentAlignment: 'center',
         titleAnimation: 'slide-up',
@@ -617,6 +624,7 @@ const useCasesPage: TemplatePage = {
 // ─────────────────────────────────────────────────────────────
 const leadToCustomer = processPage({
   slug: 'process-lead-to-customer',
+  heroImage: '/templates/hero/professional-handshake.jpg',
   title: 'Lead-to-Customer',
   eyebrow: 'PROCESS 01',
   heroTitle: 'From Anonymous Visitor to Signed Deal',
@@ -652,6 +660,7 @@ const leadToCustomer = processPage({
 
 const quoteToCash = processPage({
   slug: 'process-quote-to-cash',
+  heroImage: '/templates/hero/modern-office.jpg',
   title: 'Quote-to-Cash',
   eyebrow: 'PROCESS 02',
   heroTitle: 'From Offer to Money in the Bank',
@@ -688,6 +697,7 @@ const quoteToCash = processPage({
 
 const orderToDelivery = processPage({
   slug: 'process-order-to-delivery',
+  heroImage: '/templates/hero/ecommerce.jpg',
   title: 'Order-to-Delivery',
   eyebrow: 'PROCESS 03',
   heroTitle: 'From Checkout to Doorstep',
@@ -721,6 +731,7 @@ const orderToDelivery = processPage({
 
 const procureToPay = processPage({
   slug: 'process-procure-to-pay',
+  heroImage: '/templates/hero/tech-future.jpg',
   title: 'Procure-to-Pay',
   eyebrow: 'PROCESS 04',
   heroTitle: 'From Need to Payment, Matched Three Ways',
@@ -754,6 +765,7 @@ const procureToPay = processPage({
 
 const recordToReport = processPage({
   slug: 'process-record-to-report',
+  heroImage: '/templates/misc/financial-analysis.jpg',
   title: 'Record-to-Report',
   eyebrow: 'PROCESS 05',
   heroTitle: 'Every Transaction, Reconciled and Reportable',

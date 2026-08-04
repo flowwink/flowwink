@@ -483,6 +483,20 @@ persist_modules_row() {
 
 # The module ids a profile enables, following its `extends` chain.
 # "*" means every module the function map knows about.
+# Every module the platform has — the universe for "what can be enabled".
+#
+# NOT edge-function-map.json, which is the answer to a different question: which
+# functions must be deployed. Only 37 of the 68 modules have edge functions at
+# all, so sourcing the module list from that map silently dropped the other 31 —
+# among them pages, accounting, hr, inventory, manufacturing, payroll, projects,
+# purchasing and tickets. An "ERP — the full business operating system" install
+# was enabling the modules that happen to ship a function and quietly omitting
+# most of the ERP. It surfaced as FlowPilot reporting it could not create a page:
+# the pages module had never been enabled, so its skills never bootstrapped.
+all_module_ids() {
+    jq -c '[.modules[].moduleId] | unique' supabase/seed/module-skills.json
+}
+
 profile_modules() {
     local p="$1"
     local sel
@@ -495,7 +509,7 @@ profile_modules() {
     ' supabase/seed/install-profiles.json 2>/dev/null)
 
     if [ "$sel" = "ALL" ]; then
-        jq -c '.modules | keys' supabase/seed/edge-function-map.json
+        all_module_ids
     else
         jq -c --arg p "$p" '
             (.profiles) as $P
@@ -515,7 +529,7 @@ profile_modules() {
 profile_modules_row() {
     local on all
     on=$(profile_modules "$1")
-    all=$(jq -c '.modules | keys' supabase/seed/edge-function-map.json)
+    all=$(all_module_ids)
     jq -c -n --argjson on "$on" --argjson all "$all" '
         ($all + $on | unique) as $keys
         | reduce $keys[] as $k ({}; .[$k] = { enabled: (($on | index($k)) != null) })

@@ -41,8 +41,11 @@ import {
 import { useIsModuleEnabled } from "@/hooks/useModules";
 import { KbCategoryDialog } from "@/components/admin/kb/KbCategoryDialog";
 
+type AudienceFilter = 'all' | 'public' | 'internal';
+
 export default function KnowledgeBasePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [audienceFilter, setAudienceFilter] = useState<AudienceFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -57,10 +60,18 @@ export default function KnowledgeBasePage() {
   const bulkUpdateChat = useBulkUpdateKbArticlesChatStatus();
   const clearImprovementFlag = useClearKbImprovementFlag();
 
-  const filteredArticles = articles?.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.question.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredArticles = articles?.filter(article => {
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.question.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    // Rows written before the visibility column existed count as public.
+    const isInternal = article.visibility === 'internal';
+    if (audienceFilter === 'internal') return isInternal;
+    if (audienceFilter === 'public') return !isInternal;
+    return true;
+  });
+
 
   const allSelected = useMemo(() => {
     if (!filteredArticles || filteredArticles.length === 0) return false;

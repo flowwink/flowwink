@@ -300,7 +300,24 @@ Granular block-level operations on pages: add, update, remove, reorder blocks.
 - **block_ids**: Ordered array for reorder.
 ### Edge cases
 - block_data must match the ContentBlock schema for the block type.
-- Reorder requires ALL block_ids in the desired order.`,
+- Reorder requires ALL block_ids in the desired order.
+### Use the blocks' full range — do not compose with the minimum
+Blocks carry far more editorial control than their obvious fields, and pages
+written with only title+content look like the poor cousin of what the renderer
+can do. The one agents underuse most is **two-column**:
+- **eyebrow** (small uppercase label above the title, e.g. "TJÄNSTER") +
+  **eyebrowColor** (defaults to brand primary)
+- **titleSize**: default | large | display — and **accentText**, a script-font
+  word paired with the title ("Excellence"), placed via **accentPosition**
+  (start | end | inline)
+- **imageAspect** (1:1, 4:3, 3:2, 16:9, 21:9), **imageFit** (cover | contain),
+  **imageRounded** (none→full), **secondImageSrc** for a collage feel,
+  **stickyColumn** (image | text pins while the other scrolls)
+- **ctaText/ctaUrl** with **note** for small print under the button
+Alternate eyebrows across sections instead of repeating H2-only headers, and use
+one accentText per page at most — it is seasoning, not sauce. Full field lists
+for every block live in the platform's block reference; when unsure what a block
+supports, ask for its schema rather than guessing from examples.`,
   },
   {
     name: 'landing_page_compose',

@@ -671,13 +671,59 @@ export const BLOCK_CREATION_TOOLS = [
     "type": "function",
     "function": {
       "name": "create_two_column_block",
-      "description": "Create a Two Column section: Side-by-side content and image layout.",
+      "description": "Create a Two Column section: Side-by-side content and image layout with editorial styling: eyebrow label, display-size title, script-font accent text, CTA and rich image controls.",
       "parameters": {
         "type": "object",
         "properties": {
+          "eyebrow": {
+            "description": "Small uppercase label above the title, e.g. \"ABOUT US\", \"SERVICES\"",
+            "type": "string"
+          },
+          "eyebrowColor": {
+            "description": "Eyebrow color; defaults to brand primary",
+            "type": "string"
+          },
+          "title": {
+            "description": "Section title",
+            "type": "string"
+          },
+          "titleSize": {
+            "description": "Title scale",
+            "type": "string",
+            "enum": [
+              "default",
+              "large",
+              "display"
+            ]
+          },
+          "accentText": {
+            "description": "Script-font accent word/phrase, e.g. \"Excellence\" — pairs with the title",
+            "type": "string"
+          },
+          "accentPosition": {
+            "description": "Where the accent renders relative to the title",
+            "type": "string",
+            "enum": [
+              "start",
+              "end",
+              "inline"
+            ]
+          },
           "content": {
             "description": "Rich text content (Tiptap JSON: {\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"...\"}]}]})",
             "type": "object"
+          },
+          "ctaText": {
+            "description": "Call-to-action button label",
+            "type": "string"
+          },
+          "ctaUrl": {
+            "description": "Call-to-action link",
+            "type": "string"
+          },
+          "note": {
+            "description": "Small print under the CTA",
+            "type": "string"
           },
           "imageSrc": {
             "description": "Image URL",
@@ -694,6 +740,70 @@ export const BLOCK_CREATION_TOOLS = [
               "left",
               "right"
             ]
+          },
+          "imageAspect": {
+            "description": "Aspect ratio",
+            "type": "string",
+            "enum": [
+              "auto",
+              "1:1",
+              "4:3",
+              "3:2",
+              "16:9",
+              "21:9"
+            ]
+          },
+          "imageFit": {
+            "description": "Fill & crop vs show all",
+            "type": "string",
+            "enum": [
+              "cover",
+              "contain"
+            ]
+          },
+          "imageRounded": {
+            "description": "Corner radius",
+            "type": "string",
+            "enum": [
+              "none",
+              "sm",
+              "md",
+              "lg",
+              "full"
+            ]
+          },
+          "secondImageSrc": {
+            "description": "Optional second, offset image for a collage feel",
+            "type": "string"
+          },
+          "secondImageAlt": {
+            "description": "Second image alt text",
+            "type": "string"
+          },
+          "stickyColumn": {
+            "description": "Column that stays pinned while the other scrolls",
+            "type": "string",
+            "enum": [
+              "none",
+              "image",
+              "text"
+            ]
+          },
+          "backgroundColor": {
+            "description": "Section background override",
+            "type": "string"
+          },
+          "layout": {
+            "description": "Legacy: two-text-column mode instead of text+image",
+            "type": "string"
+          },
+          "leftColumn": {
+            "description": "Legacy two-text mode: left column content (Tiptap JSON: {\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"...\"}]}]})",
+            "type": "object"
+          },
+          "rightColumn": {
+            "description": "Legacy two-text mode: right column content (Tiptap JSON: {\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"...\"}]}]})",
+            "type": "object"
           }
         },
         "required": [

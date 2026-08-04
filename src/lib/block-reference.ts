@@ -231,13 +231,36 @@ export const BLOCK_REFERENCE: BlockInfo[] = [
   {
     type: 'two-column',
     name: 'Two Column',
-    description: 'Side-by-side content and image layout.',
+    description: 'Side-by-side content and image layout with editorial styling: eyebrow label, display-size title, script-font accent text, CTA and rich image controls.',
     category: 'layout',
+    // This entry documented 4 of the block's 23 fields until 2026-08-04, and an
+    // agent composing through the gateway used exactly the documented ones — the
+    // pages worked but looked like the poor cousin of what the block can do.
+    // The registry is what agents read; keep it as capable as the renderer.
     fields: [
+      { name: 'eyebrow', type: 'string', required: false, description: 'Small uppercase label above the title, e.g. "ABOUT US", "SERVICES"' },
+      { name: 'eyebrowColor', type: 'string', required: false, description: 'Eyebrow color; defaults to brand primary' },
+      { name: 'title', type: 'string', required: false, description: 'Section title' },
+      { name: 'titleSize', type: 'string', required: false, description: 'Title scale', default: 'default', options: ['default', 'large', 'display'] },
+      { name: 'accentText', type: 'string', required: false, description: 'Script-font accent word/phrase, e.g. "Excellence" — pairs with the title' },
+      { name: 'accentPosition', type: 'string', required: false, description: 'Where the accent renders relative to the title', default: 'end', options: ['start', 'end', 'inline'] },
       { name: 'content', type: 'tiptap', required: true, description: 'Rich text content' },
+      { name: 'ctaText', type: 'string', required: false, description: 'Call-to-action button label' },
+      { name: 'ctaUrl', type: 'string', required: false, description: 'Call-to-action link' },
+      { name: 'note', type: 'string', required: false, description: 'Small print under the CTA' },
       { name: 'imageSrc', type: 'string', required: false, description: 'Image URL' },
       { name: 'imageAlt', type: 'string', required: false, description: 'Image alt text' },
       { name: 'imagePosition', type: 'string', required: false, description: 'Image placement', default: 'right', options: ['left', 'right'] },
+      { name: 'imageAspect', type: 'string', required: false, description: 'Aspect ratio', default: 'auto', options: ['auto', '1:1', '4:3', '3:2', '16:9', '21:9'] },
+      { name: 'imageFit', type: 'string', required: false, description: 'Fill & crop vs show all', default: 'cover', options: ['cover', 'contain'] },
+      { name: 'imageRounded', type: 'string', required: false, description: 'Corner radius', default: 'md', options: ['none', 'sm', 'md', 'lg', 'full'] },
+      { name: 'secondImageSrc', type: 'string', required: false, description: 'Optional second, offset image for a collage feel' },
+      { name: 'secondImageAlt', type: 'string', required: false, description: 'Second image alt text' },
+      { name: 'stickyColumn', type: 'string', required: false, description: 'Column that stays pinned while the other scrolls', default: 'none', options: ['none', 'image', 'text'] },
+      { name: 'backgroundColor', type: 'string', required: false, description: 'Section background override' },
+      { name: 'layout', type: 'string', required: false, description: 'Legacy: two-text-column mode instead of text+image' },
+      { name: 'leftColumn', type: 'tiptap', required: false, description: 'Legacy two-text mode: left column content' },
+      { name: 'rightColumn', type: 'tiptap', required: false, description: 'Legacy two-text mode: right column content' },
     ],
   },
   {

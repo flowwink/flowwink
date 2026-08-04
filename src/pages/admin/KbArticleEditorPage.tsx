@@ -81,7 +81,10 @@ export default function KbArticleEditorPage() {
         is_published: article.is_published,
         is_featured: article.is_featured,
         include_in_chat: article.include_in_chat,
+        // Rows written before the column existed have no value → public.
+        visibility: article.visibility === "internal" ? "internal" : "public",
       });
+
       // Prefer answer_json (Tiptap doc). Fallback to answer_text for articles
       // created via MCP/agent that only wrote the plain-text mirror.
       const json: any = article.answer_json;

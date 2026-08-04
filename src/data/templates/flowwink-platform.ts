@@ -1454,7 +1454,6 @@ export const flowwinkPlatformTemplate: StarterTemplate = {
             },
             imageSrc: '/templates/hero/data-abstract.jpg',
             imageAlt: 'Conversational service operations',
-            imageAlt: 'Professional service team collaborating',
             imagePosition: 'right',
             imageObjectFit: 'cover',
             imageRounded: 'xl',

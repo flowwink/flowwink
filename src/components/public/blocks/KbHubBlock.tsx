@@ -116,8 +116,13 @@ export function KbHubBlock({ data }: KbHubBlockProps) {
         .eq('is_published', true)
         .order('sort_order', { ascending: true });
 
+      // Filtered in the client, not in the query: a .eq() on a column an
+      // un-migrated instance does not have is a PostgREST error, and the fleet
+      // provably runs different schema versions at once. RLS is the gate
+      // wherever the migration has landed; this only stops a logged-in staff
+      // member from seeing internal articles on the PUBLIC page.
       if (error) throw error;
-      return data as KbArticle[];
+      return (data || []).filter((a: any) => a.visibility !== 'internal') as KbArticle[];
     },
   });
 

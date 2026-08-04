@@ -40,7 +40,7 @@ const KB_SKILLS: SkillSeed[] = [
   },
   {
     name: 'manage_kb_article',
-    description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Use when: creating a new support article; updating an existing KB entry; controlling KB content visibility. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
+    description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support playbooks, objection handling, escalation routines, anything written in the team\'s own voice rather than the customer\'s). ALWAYS pass visibility="internal" when the text says "we/our" about the business, names customers to target, or would embarrass if a prospect read it; the default is public. Use when: creating a new support article; updating an existing KB entry; moving an article between audiences. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
     category: 'content',
     handler: 'module:kb',
     scope: 'internal',
@@ -48,7 +48,7 @@ const KB_SKILLS: SkillSeed[] = [
       type: 'function',
       function: {
         name: 'manage_kb_article',
-        description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Use when: creating a new support article; updating an existing KB entry; controlling KB content visibility. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
+        description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support playbooks, objection handling, escalation routines, anything written in the team\'s own voice rather than the customer\'s). ALWAYS pass visibility="internal" when the text says "we/our" about the business, names customers to target, or would embarrass if a prospect read it; the default is public. Use when: creating a new support article; updating an existing KB entry; moving an article between audiences. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
         parameters: {
           type: 'object',
           properties: {
@@ -85,6 +85,11 @@ const KB_SKILLS: SkillSeed[] = [
             include_in_chat: {
               type: 'boolean',
             },
+            visibility: {
+              type: 'string',
+              enum: ['public', 'internal'],
+              description: 'Who may read it. "public" (default) = visitors and the site chat. "internal" = staff only; visitors never see it and the public chat cannot ground answers in it, but staff-facing agents can. Internal articles keep the full KB shape — categories, search, helpful/needs_improvement.',
+            },
           },
           required: [
             'action',
@@ -99,8 +104,20 @@ Manages knowledge base articles: list, get, create, update, publish, unpublish.
 - Admin asks to create or edit FAQ/KB content
 - kb_gap_analysis identifies missing topics
 - Chat finds questions it can't answer → create KB article
+### Choosing the audience
+Ask whose voice the text is in, not what it is about.
+- Customer's question, answered for them → **public** (default).
+- Team's own words — "how do we handle the objection that…", "which customers
+  to approach first", escalation steps, pricing latitude, internal policy →
+  **visibility: 'internal'**.
+The same TOPIC can live in both: a public "Is private AI more expensive?" and an
+internal "How we handle the cost objection". Write both rather than compromising
+one article for two audiences.
+Unpublishing is NOT the same as internal: an unpublished article is gone for
+everyone including staff; an internal one is live for staff.
 ### Parameters
 - **action**: Required. list, get, create, update, publish, unpublish.
+- **visibility**: 'public' (default) or 'internal'. Settable on create and update.
 - **title**, **question**: required for create.
 - **answer**: **REQUIRED for create and for any update that changes the body.**
   Plain text or markdown. Server auto-builds the Tiptap doc the public

@@ -4044,7 +4044,7 @@ async function executeKbAction(
   }
 
   if (action === 'create') {
-    const { title, category = 'general', include_in_chat = true, is_featured = false } = args as any;
+    const { title, category = 'general', include_in_chat = true, is_featured = false, visibility = 'public' } = args as any;
     // Accept content/body as aliases for answer; auto-generate question from title if omitted
     const answer = (args as any).answer ?? (args as any).content ?? (args as any).body;
     const question = (args as any).question || (title ? `What is ${title}?` : '');
@@ -4093,10 +4093,14 @@ async function executeKbAction(
       slug: articleSlug,
       category_id: categoryId,
       include_in_chat, is_featured,
+      // Audience. The update path passes fields through generically, but create
+      // whitelists — so without this line an agent could only ever author
+      // public articles, and the internal tier would exist for humans only.
+      visibility: visibility === 'internal' ? 'internal' : 'public',
       is_published: false,
-    }).select('id, title, slug, is_published').single();
+    }).select('id, title, slug, is_published, visibility').single();
     if (error) throw new Error(`Create KB article failed: ${error.message}`);
-    return { article_id: data.id, slug: data.slug, title: data.title, status: 'draft' };
+    return { article_id: data.id, slug: data.slug, title: data.title, status: 'draft', visibility: data.visibility };
   }
 
   // Resolve article_id from slug if missing — common when agent chains create→publish

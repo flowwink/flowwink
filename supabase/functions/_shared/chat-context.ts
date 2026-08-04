@@ -123,10 +123,32 @@ export async function buildKnowledgeBase(
   }
 
   if (includeKbArticles) {
-    const { data: kbArticles } = await supabase
+    // This runs on the SERVICE client, which bypasses RLS — the policy that
+    // protects visitors elsewhere protects nobody here. Without the visibility
+    // filter the legacy fallback would dump the internal tier straight into an
+    // anonymous visitor's chat context, and only once the chunk path had
+    // already failed: a leak that appears exactly when something else is broken
+    // and nobody is watching.
+    //
+    // Filtering on a column an un-migrated instance lacks is a PostgREST error,
+    // and the fleet runs several schema versions at once. So ask for the strict
+    // set first and fall back to the old shape — degrade, never gate (Law 4).
+    // The fallback can only run where no article can be internal yet.
+    let kbArticles: any[] | null = null;
+    const strict = await supabase
       .from('kb_articles')
       .select('title, question, answer_json, answer_text')
+      .eq('visibility', 'public')
       .eq('include_in_chat', true).eq('is_published', true);
+    if (strict.error) {
+      const { data } = await supabase
+        .from('kb_articles')
+        .select('title, question, answer_json, answer_text')
+        .eq('include_in_chat', true).eq('is_published', true);
+      kbArticles = data;
+    } else {
+      kbArticles = strict.data;
+    }
 
     if (kbArticles?.length) {
       const faqSection: string[] = [];

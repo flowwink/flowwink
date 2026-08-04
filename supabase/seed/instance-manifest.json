@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260804150000",
-      "migrations_count": 289,
+      "migration_head": "20260805090000",
+      "migrations_count": 290,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1161,21 +1161,25 @@
         {
           "version": "20260804150000",
           "name": "seed-role-module-access-defaults"
+        },
+        {
+          "version": "20260805090000",
+          "name": "kb-article-visibility"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:a4af9efd1d65becc99b9946756557e2faae4ef9f5ba1903b50ef15b4928df103",
+      "seed_hash": "sha256:beebaaec72d7f39a7e80ebb84905d1f69fb9e3b8cb0bddcd9e360c38302efbbf",
       "skill_count": 517,
       "module_count": 68
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:1e3d5b49ae0f3f02c58de6c61958e16ecf7e03261eeea8593901abf69da260c8",
+      "shared_hash": "sha256:ab90858a0c0f96af9caec616f9b0169b5f5cd70a1819b953c1af70daa3a259ea",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:05d1589eb2106d91e653086a4ddd75bd0606ff7639a515e999e13cd3ddfe4cad",
+        "agent-execute": "sha256:7538656e95b827ba875c1edbe7fde0206e4d744cce2e94c22c28debb7d6d6253",
         "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
         "ai-task": "sha256:5cc0884b9c7ab08157ee79a5055f847433cb079732200a07bdae3ef2b666f1f6",
         "automation-dispatcher": "sha256:c0ffa7a2c623209bf82030bd4b6feb1ed9ae92baa4ea5a08772eaa3fa912ea3e",

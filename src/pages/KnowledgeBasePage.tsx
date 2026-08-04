@@ -28,8 +28,11 @@ export default function KnowledgeBasePage() {
     [categories]
   );
 
-  const publishedArticles = useMemo(() => 
-    articles?.filter(a => a.is_published) || [], 
+  // The hook is shared with the admin views, which must see everything, so the
+  // public surface filters here. RLS is the actual gate — this keeps the page
+  // honest for a staff member who is browsing it while logged in.
+  const publishedArticles = useMemo(() =>
+    articles?.filter(a => a.is_published && a.visibility !== 'internal') || [],
     [articles]
   );
 

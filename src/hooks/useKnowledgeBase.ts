@@ -27,6 +27,8 @@ export interface KbArticle {
   sort_order: number;
   is_featured: boolean;
   is_published: boolean;
+  /** 'public' (anyone) or 'internal' (staff only). Absent on rows written before the column existed → treated as public. */
+  visibility?: 'public' | 'internal';
   include_in_chat: boolean;
   views_count: number;
   helpful_count: number;

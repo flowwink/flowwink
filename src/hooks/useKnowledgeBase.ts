@@ -324,22 +324,32 @@ export function useDeleteKbArticle() {
   });
 }
 
-// Stats hook for dashboard
+// Stats hook for dashboard.
+// Public and internal articles are counted separately — mixing them is exactly
+// the confusion the internal tier exists to remove.
 export function useKbStats() {
   return useQuery({
     queryKey: ['kb-stats'],
     queryFn: async () => {
-      const [categories, articles, chatArticles] = await Promise.all([
+      const [categories, published, chatArticles] = await Promise.all([
         supabase.from('kb_categories').select('id', { count: 'exact' }).eq('is_active', true),
-        supabase.from('kb_articles').select('id', { count: 'exact' }).eq('is_published', true),
+        // Read the rows (not just a count) so we can split by audience without a
+        // query-level filter on a column that may not exist on older instances.
+        supabase.from('kb_articles').select('visibility').eq('is_published', true),
         supabase.from('kb_articles').select('id', { count: 'exact' }).eq('include_in_chat', true),
       ]);
 
+      const rows = (published.data ?? []) as Array<{ visibility?: string | null }>;
+      const internal = rows.filter(r => r.visibility === 'internal').length;
+
       return {
         categories: categories.count || 0,
-        articles: articles.count || 0,
+        articles: rows.length,
+        publicArticles: rows.length - internal,
+        internalArticles: internal,
         chatArticles: chatArticles.count || 0,
       };
     },
+
   });
 }

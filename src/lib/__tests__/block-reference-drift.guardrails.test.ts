@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { BLOCK_REFERENCE } from '../block-reference';
 
@@ -23,7 +23,15 @@ const rendererDir = resolve(__dirname, '../../components/public/blocks');
 function rendererPath(type: string): string | null {
   const pascal = type.split('-').map((s) => s[0].toUpperCase() + s.slice(1)).join('');
   const p = resolve(rendererDir, `${pascal}Block.tsx`);
-  return existsSync(p) ? p : null;
+  if (existsSync(p)) return p;
+  // Acronym-cased filenames (CTABlock, YouTubeBlock, FloatingCTABlock) do not
+  // round-trip through kebab→Pascal, so an exact-name check silently skipped
+  // them — and youtube's entry documented a videoId the renderer never reads
+  // while missing the url it does. Match case-insensitively so those blocks are
+  // audited too.
+  const wanted = `${pascal}Block.tsx`.toLowerCase();
+  const hit = readdirSync(rendererDir).find((f) => f.toLowerCase() === wanted);
+  return hit ? resolve(rendererDir, hit) : null;
 }
 
 /** Fields the renderer reads off `data.` — its true consumption surface. */
@@ -39,18 +47,7 @@ function rendererFields(path: string): Set<string> {
  * SHRINK ONLY. Adding a block here is admitting new drift; do that in a commit
  * that says why, or better, fix the registry entry instead.
  */
-const PENDING = new Set([
-  'hero', 'text', 'image', 'cta', 'contact', 'link-grid', 'info-box',
-  'accordion', 'article-grid', 'latest-posts', 'youtube', 'quote', 'separator',
-  'gallery', 'stats', 'chat', 'map', 'form', 'newsletter', 'popup', 'booking',
-  'pricing', 'testimonials', 'team', 'logos', 'comparison', 'features',
-  'timeline', 'tabs', 'marquee', 'embed', 'lottie', 'table', 'countdown',
-  'progress', 'badge', 'social-proof', 'notification-toast', 'floating-cta',
-  'chat-launcher', 'webinar', 'parallax-section', 'bento-grid',
-  'section-divider', 'featured-carousel', 'trust-bar', 'category-nav',
-  'shipping-info', 'ai-assistant', 'quick-links', 'sticky-scroll', 'ai-faq',
-  'pricing-calculator', 'announcement-bar', 'products', 'cart', 'smart-booking',
-]);
+const PENDING = new Set<string>([]);
 
 describe('block registry documents what the renderer can do', () => {
   const audited = BLOCK_REFERENCE.filter(

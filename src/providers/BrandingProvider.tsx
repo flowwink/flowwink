@@ -216,10 +216,11 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
 
     }
     
-    // Reset to default CSS and theme when entering admin (only once)
+    // Admin uses the platform default design tokens, not the customer's
+    // public-site branding. It still respects the user's theme choice
+    // (light/dark/system) so the landing-page toggle carries over.
     if (isAdminRoute && !themeSetRef.current) {
       resetBrandingToDefaults();
-      setTheme('light');
       themeSetRef.current = true;
     }
   }, [branding, setTheme, isAdminRoute]);

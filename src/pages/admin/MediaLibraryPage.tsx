@@ -157,37 +157,44 @@ export default function MediaLibraryPage() {
   }, [lightboxImage, filteredFiles, getPublicUrl]);
 
   const handleUpload = useCallback(async (filesToUpload: FileList | File[]) => {
-    const imageFiles = Array.from(filesToUpload).filter(f => f.type.startsWith('image/'));
-    
-    if (imageFiles.length === 0) {
+    const mediaFiles = Array.from(filesToUpload).filter(
+      f => f.type.startsWith('image/') || f.type.startsWith('video/')
+    );
+
+    if (mediaFiles.length === 0) {
       toast({
-        title: 'No images selected',
-        description: 'Please select image files to upload',
+        title: 'No media selected',
+        description: 'Please select image or video files to upload',
         variant: 'destructive',
       });
       return;
     }
 
     setIsUploading(true);
-    setUploadProgress({ current: 0, total: imageFiles.length });
+    setUploadProgress({ current: 0, total: mediaFiles.length });
 
     let successCount = 0;
     let failCount = 0;
 
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
-      setUploadProgress({ current: i + 1, total: imageFiles.length });
+    for (let i = 0; i < mediaFiles.length; i++) {
+      const file = mediaFiles[i];
+      setUploadProgress({ current: i + 1, total: mediaFiles.length });
 
       try {
-        // Convert to WebP for optimization
-        const webpBlob = await convertToWebP(file);
-        const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.webp`;
+        const isVideo = file.type.startsWith('video/');
+
+        // Videos are stored as-is; images are converted to WebP for optimization.
+        const uploadBlob: Blob = isVideo ? file : await convertToWebP(file);
+        const contentType = isVideo ? file.type : 'image/webp';
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        const ext = isVideo ? (file.name.match(/\.[^/.]+$/)?.[0] || '.mp4') : '.webp';
+        const fileName = `${Date.now()}-${baseName}${ext}`;
         const storagePath = `pages/${fileName}`;
 
         const { error } = await supabase.storage
           .from('cms-images')
-          .upload(storagePath, webpBlob, {
-            contentType: 'image/webp',
+          .upload(storagePath, uploadBlob, {
+            contentType,
             cacheControl: '31536000',
           });
 
@@ -197,19 +204,21 @@ export default function MediaLibraryPage() {
         // alt-text / where-used / variants tracking.
         let width: number | undefined;
         let height: number | undefined;
-        try {
-          const dims = await probeImageDimensions(webpBlob);
-          width = dims.width;
-          height = dims.height;
-        } catch { /* non-fatal */ }
+        if (!isVideo) {
+          try {
+            const dims = await probeImageDimensions(uploadBlob);
+            width = dims.width;
+            height = dims.height;
+          } catch { /* non-fatal */ }
+        }
 
         await upsertMeta
           .mutateAsync({
             storage_path: storagePath,
             folder: 'pages',
             filename: fileName,
-            mime_type: 'image/webp',
-            size_bytes: webpBlob.size,
+            mime_type: contentType,
+            size_bytes: uploadBlob.size,
             width,
             height,
           })

@@ -24,6 +24,28 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Supporting text below the title",
             "type": "string"
           },
+          "eyebrow": {
+            "description": "Small uppercase label above the title, e.g. \"NEW\", \"SINCE 1998\"",
+            "type": "string"
+          },
+          "eyebrowColor": {
+            "description": "Eyebrow tint",
+            "type": "string",
+            "enum": [
+              "default",
+              "primary",
+              "muted"
+            ]
+          },
+          "layout": {
+            "description": "Hero composition: centered content, or content beside the image",
+            "type": "string",
+            "enum": [
+              "centered",
+              "split-left",
+              "split-right"
+            ]
+          },
           "backgroundType": {
             "description": "Background style",
             "type": "string",
@@ -33,12 +55,20 @@ export const BLOCK_CREATION_TOOLS = [
               "video"
             ]
           },
+          "backgroundImage": {
+            "description": "Background image URL — this is the field the renderer reads",
+            "type": "string"
+          },
           "imageSrc": {
-            "description": "Background image URL (when backgroundType is \"image\")",
+            "description": "Legacy: earlier name for the background image URL; prefer backgroundImage",
             "type": "string"
           },
           "videoUrl": {
             "description": "Background video URL or YouTube/Vimeo URL (when backgroundType is \"video\")",
+            "type": "string"
+          },
+          "videoUrlWebm": {
+            "description": "Optional WebM source added alongside videoUrl for browsers that prefer it",
             "type": "string"
           },
           "videoType": {
@@ -50,21 +80,43 @@ export const BLOCK_CREATION_TOOLS = [
               "vimeo"
             ]
           },
+          "videoPosterUrl": {
+            "description": "Poster image shown before the video plays, and the fallback on mobile",
+            "type": "string"
+          },
+          "videoAutoplay": {
+            "description": "Start the background video automatically",
+            "type": "boolean"
+          },
+          "videoLoop": {
+            "description": "Loop the background video",
+            "type": "boolean"
+          },
+          "videoMuted": {
+            "description": "Start the video muted (required for autoplay in most browsers)",
+            "type": "boolean"
+          },
+          "showVideoControls": {
+            "description": "Show play/pause/mute controls for video",
+            "type": "boolean"
+          },
           "heightMode": {
             "description": "Section height",
             "type": "string",
             "enum": [
               "viewport",
+              "80vh",
               "60vh",
               "auto"
             ]
           },
           "contentAlignment": {
-            "description": "Content alignment",
+            "description": "Vertical position of the content block",
             "type": "string",
             "enum": [
-              "left",
-              "center"
+              "top",
+              "center",
+              "bottom"
             ]
           },
           "textAlignment": {
@@ -76,8 +128,17 @@ export const BLOCK_CREATION_TOOLS = [
               "right"
             ]
           },
+          "textTheme": {
+            "description": "Text color scheme; \"auto\" derives it from the overlay",
+            "type": "string",
+            "enum": [
+              "auto",
+              "light",
+              "dark"
+            ]
+          },
           "overlayOpacity": {
-            "description": "Overlay opacity (0-100)",
+            "description": "Overlay opacity over image/video, 0-100",
             "type": "number"
           },
           "overlayColor": {
@@ -89,12 +150,36 @@ export const BLOCK_CREATION_TOOLS = [
               "primary"
             ]
           },
-          "showVideoControls": {
-            "description": "Show play/pause/mute controls for video",
+          "parallaxEffect": {
+            "description": "Pin the background while the page scrows past it (bg-fixed parallax)",
+            "type": "boolean"
+          },
+          "titleSize": {
+            "description": "Title scale",
+            "type": "string",
+            "enum": [
+              "default",
+              "large",
+              "display",
+              "massive"
+            ]
+          },
+          "gradientTitle": {
+            "description": "Render the title with the brand gradient fill",
             "type": "boolean"
           },
           "titleAnimation": {
             "description": "Title entrance animation",
+            "type": "string",
+            "enum": [
+              "none",
+              "fade-in",
+              "slide-up",
+              "typewriter"
+            ]
+          },
+          "subtitleAnimation": {
+            "description": "Subtitle entrance animation, delayed after the title",
             "type": "string",
             "enum": [
               "none",
@@ -113,6 +198,13 @@ export const BLOCK_CREATION_TOOLS = [
           "secondaryButton": {
             "description": "Secondary button { text, url }",
             "type": "object"
+          },
+          "heroStats": {
+            "description": "Proof numbers rendered in a row under the CTA, e.g. \"500+ customers\"",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -129,6 +221,40 @@ export const BLOCK_CREATION_TOOLS = [
       "parameters": {
         "type": "object",
         "properties": {
+          "eyebrow": {
+            "description": "Small uppercase label above the display title, e.g. \"SERVICES\"",
+            "type": "string"
+          },
+          "eyebrowColor": {
+            "description": "Eyebrow color as a CSS/hex value; defaults to brand primary",
+            "type": "string"
+          },
+          "title": {
+            "description": "Optional display heading above the rich text",
+            "type": "string"
+          },
+          "titleSize": {
+            "description": "Title scale",
+            "type": "string",
+            "enum": [
+              "default",
+              "large",
+              "display"
+            ]
+          },
+          "accentText": {
+            "description": "Script-font accent word/phrase paired with the title, e.g. \"Excellence\"",
+            "type": "string"
+          },
+          "accentPosition": {
+            "description": "Where the accent renders relative to the title",
+            "type": "string",
+            "enum": [
+              "start",
+              "end",
+              "inline"
+            ]
+          },
           "content": {
             "description": "Rich text content in Tiptap format (Tiptap JSON: {\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"...\"}]}]})",
             "type": "object"
@@ -149,6 +275,10 @@ export const BLOCK_CREATION_TOOLS = [
               "prose",
               "full"
             ]
+          },
+          "backgroundColor": {
+            "description": "Section background color override (CSS color)",
+            "type": "string"
           }
         },
         "required": [
@@ -165,30 +295,37 @@ export const BLOCK_CREATION_TOOLS = [
       "parameters": {
         "type": "object",
         "properties": {
+          "text": {
+            "description": "The quote text — this is the field the renderer reads",
+            "type": "string"
+          },
           "quote": {
-            "description": "The quote text",
+            "description": "Legacy: earlier name for the quote text; prefer text",
             "type": "string"
           },
           "author": {
             "description": "Quote author name",
             "type": "string"
           },
+          "source": {
+            "description": "Where the quote comes from, e.g. a book, article or company",
+            "type": "string"
+          },
           "role": {
-            "description": "Author role or title",
+            "description": "Legacy: author role or title; not rendered",
             "type": "string"
           },
           "variant": {
-            "description": "Visual style",
+            "description": "Visual style: plain left-rule quote, or a decorative tinted card",
             "type": "string",
             "enum": [
               "simple",
-              "large",
-              "card"
+              "styled"
             ]
           }
         },
         "required": [
-          "quote"
+          "text"
         ]
       }
     }
@@ -210,12 +347,38 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "string"
           },
           "buttonText": {
-            "description": "Button label",
+            "description": "Primary button label",
             "type": "string"
           },
           "buttonUrl": {
-            "description": "Button link URL",
+            "description": "Primary button link URL",
             "type": "string"
+          },
+          "secondaryButtonText": {
+            "description": "Secondary button label",
+            "type": "string"
+          },
+          "secondaryButtonUrl": {
+            "description": "Secondary button link URL",
+            "type": "string"
+          },
+          "variant": {
+            "description": "Layout style: solid/gradient panel, full background image, split image+content, or understated",
+            "type": "string",
+            "enum": [
+              "default",
+              "with-image",
+              "split",
+              "minimal"
+            ]
+          },
+          "backgroundImage": {
+            "description": "Background image URL (used by the \"with-image\" and \"split\" variants)",
+            "type": "string"
+          },
+          "overlayOpacity": {
+            "description": "Darkening overlay over the background image, 0-1",
+            "type": "number"
           },
           "gradient": {
             "description": "Use gradient background",
@@ -243,11 +406,11 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "string"
           },
           "subtitle": {
-            "description": "Section subtitle",
+            "description": "Supporting text under the title",
             "type": "string"
           },
           "features": {
-            "description": "Array of features [{ id, icon, title, description }]",
+            "description": "Array of features [{ id, icon, title, description, link }]",
             "type": "array",
             "items": {
               "type": "object"
@@ -258,7 +421,7 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "number"
           },
           "layout": {
-            "description": "Layout style",
+            "description": "Grid of cards or a stacked list",
             "type": "string",
             "enum": [
               "grid",
@@ -269,19 +432,47 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Visual style",
             "type": "string",
             "enum": [
+              "default",
               "cards",
               "minimal",
               "centered"
             ]
           },
           "iconStyle": {
-            "description": "Icon container style",
+            "description": "Icon background shape",
             "type": "string",
             "enum": [
               "circle",
               "square",
               "none"
             ]
+          },
+          "showLinks": {
+            "description": "Render each feature's link as a \"Read more\" action",
+            "type": "boolean"
+          },
+          "hoverEffect": {
+            "description": "Effect on card hover",
+            "type": "string",
+            "enum": [
+              "none",
+              "lift",
+              "glow",
+              "border"
+            ]
+          },
+          "cardStyle": {
+            "description": "Card surface treatment",
+            "type": "string",
+            "enum": [
+              "default",
+              "glass",
+              "gradient-border"
+            ]
+          },
+          "staggeredReveal": {
+            "description": "Animate the cards in one by one as they enter the viewport",
+            "type": "boolean"
           }
         },
         "required": [
@@ -303,11 +494,29 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "string"
           },
           "stats": {
-            "description": "Array of stats [{ value, label, icon }]",
+            "description": "Array of stats [{ value, label }]",
             "type": "array",
             "items": {
               "type": "object"
             }
+          },
+          "animated": {
+            "description": "Animate the numbers when they scroll into view",
+            "type": "boolean"
+          },
+          "animationStyle": {
+            "description": "How each number appears",
+            "type": "string",
+            "enum": [
+              "count-up",
+              "fade-in",
+              "slide-up",
+              "typewriter"
+            ]
+          },
+          "animationDuration": {
+            "description": "Animation length in ms — 1000 fast, 2000 normal, 3000 slow",
+            "type": "number"
           }
         },
         "required": [
@@ -371,6 +580,10 @@ export const BLOCK_CREATION_TOOLS = [
           "autoplaySpeed": {
             "description": "Seconds between slides",
             "type": "number"
+          },
+          "subtitle": {
+            "description": "Supporting text under the title",
+            "type": "string"
           }
         },
         "required": [
@@ -515,6 +728,10 @@ export const BLOCK_CREATION_TOOLS = [
           "showDates": {
             "description": "Show date/step labels",
             "type": "boolean"
+          },
+          "staggeredReveal": {
+            "description": "Animate the entries in one by one as they enter the viewport",
+            "type": "boolean"
           }
         },
         "required": [
@@ -566,17 +783,18 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "string"
           },
           "caption": {
-            "description": "Optional caption",
+            "description": "Caption below the image (hidden when overlayText is set)",
             "type": "string"
           },
           "aspectRatio": {
             "description": "Image aspect ratio",
             "type": "string",
             "enum": [
+              "auto",
               "16:9",
               "4:3",
               "1:1",
-              "auto"
+              "21:9"
             ]
           },
           "size": {
@@ -587,6 +805,47 @@ export const BLOCK_CREATION_TOOLS = [
               "medium",
               "large",
               "full"
+            ]
+          },
+          "fullBleed": {
+            "description": "Break out of the container and run edge to edge",
+            "type": "boolean"
+          },
+          "rounded": {
+            "description": "Rounded corners",
+            "type": "boolean"
+          },
+          "shadow": {
+            "description": "Drop shadow depth",
+            "type": "string",
+            "enum": [
+              "none",
+              "sm",
+              "md",
+              "lg"
+            ]
+          },
+          "hoverEffect": {
+            "description": "Effect on hover",
+            "type": "string",
+            "enum": [
+              "none",
+              "zoom",
+              "fade",
+              "lift"
+            ]
+          },
+          "overlayText": {
+            "description": "Text rendered on top of the image instead of a caption",
+            "type": "string"
+          },
+          "overlayPosition": {
+            "description": "Where the overlay text sits",
+            "type": "string",
+            "enum": [
+              "center",
+              "bottom-left",
+              "bottom-center"
             ]
           }
         },
@@ -616,6 +875,15 @@ export const BLOCK_CREATION_TOOLS = [
               "type": "object"
             }
           },
+          "layout": {
+            "description": "Presentation: even grid, swipeable carousel, or masonry with varying heights",
+            "type": "string",
+            "enum": [
+              "grid",
+              "carousel",
+              "masonry"
+            ]
+          },
           "columns": {
             "description": "Number of columns",
             "type": "number"
@@ -644,13 +912,33 @@ export const BLOCK_CREATION_TOOLS = [
       "parameters": {
         "type": "object",
         "properties": {
+          "url": {
+            "description": "YouTube watch, youtu.be, embed URL or a bare 11-character video ID — this is the field the renderer reads",
+            "type": "string"
+          },
           "videoId": {
-            "description": "YouTube video ID (e.g., \"dQw4w9WgXcQ\")",
+            "description": "Legacy: bare video ID; prefer url, which also accepts an ID",
             "type": "string"
           },
           "title": {
-            "description": "Video title for accessibility",
+            "description": "Video title, used as the iframe title and as a caption under the player",
             "type": "string"
+          },
+          "autoplay": {
+            "description": "Start the video automatically (browsers require mute for this to work)",
+            "type": "boolean"
+          },
+          "loop": {
+            "description": "Repeat the video when it ends",
+            "type": "boolean"
+          },
+          "mute": {
+            "description": "Start without sound",
+            "type": "boolean"
+          },
+          "controls": {
+            "description": "Show the YouTube play/pause controls",
+            "type": "boolean"
           },
           "aspectRatio": {
             "description": "Video aspect ratio",
@@ -662,7 +950,7 @@ export const BLOCK_CREATION_TOOLS = [
           }
         },
         "required": [
-          "videoId"
+          "url"
         ]
       }
     }
@@ -918,8 +1206,12 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Form title",
             "type": "string"
           },
+          "description": {
+            "description": "Text under the title explaining what the form is for",
+            "type": "string"
+          },
           "fields": {
-            "description": "Array of fields [{ id, type, label, required, placeholder }]",
+            "description": "Array of fields [{ id, type, label, required, placeholder, width, options }]",
             "type": "array",
             "items": {
               "type": "object"
@@ -932,6 +1224,23 @@ export const BLOCK_CREATION_TOOLS = [
           "successMessage": {
             "description": "Message shown after submission",
             "type": "string"
+          },
+          "notifyEmail": {
+            "description": "Address that receives an email on every submission",
+            "type": "string"
+          },
+          "jobPostingId": {
+            "description": "Bind submissions to a job posting — turns the form into a job application",
+            "type": "string"
+          },
+          "variant": {
+            "description": "Visual style",
+            "type": "string",
+            "enum": [
+              "default",
+              "card",
+              "minimal"
+            ]
           }
         },
         "required": [
@@ -1019,7 +1328,19 @@ export const BLOCK_CREATION_TOOLS = [
         "type": "object",
         "properties": {
           "address": {
-            "description": "Location address",
+            "description": "Location address used to build the map URL",
+            "type": "string"
+          },
+          "locationName": {
+            "description": "Place name shown under the map, e.g. \"Main Office\"",
+            "type": "string"
+          },
+          "title": {
+            "description": "Heading above the map, e.g. \"Find Us\"",
+            "type": "string"
+          },
+          "description": {
+            "description": "Intro text under the heading",
             "type": "string"
           },
           "zoom": {
@@ -1027,11 +1348,37 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "number"
           },
           "height": {
-            "description": "Map height in pixels",
-            "type": "number"
+            "description": "Map height preset",
+            "type": "string",
+            "enum": [
+              "sm",
+              "md",
+              "lg",
+              "xl"
+            ]
+          },
+          "mapType": {
+            "description": "Map tiles",
+            "type": "string",
+            "enum": [
+              "roadmap",
+              "satellite"
+            ]
           },
           "showMarker": {
             "description": "Show location marker",
+            "type": "boolean"
+          },
+          "showBorder": {
+            "description": "Draw a border around the map frame",
+            "type": "boolean"
+          },
+          "rounded": {
+            "description": "Rounded map corners",
+            "type": "boolean"
+          },
+          "loadOnConsent": {
+            "description": "GDPR: do not load Google Maps until the visitor clicks to accept",
             "type": "boolean"
           }
         },
@@ -1058,11 +1405,36 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "string"
           },
           "mode": {
-            "description": "Booking mode",
+            "description": "How visitors book: embedded external calendar, a request form, or the built-in Booking module flow",
             "type": "string",
             "enum": [
+              "embed",
               "form",
-              "calendar"
+              "smart"
+            ]
+          },
+          "provider": {
+            "description": "External calendar provider (mode \"embed\")",
+            "type": "string",
+            "enum": [
+              "calendly",
+              "cal",
+              "hubspot",
+              "custom"
+            ]
+          },
+          "embedUrl": {
+            "description": "Calendar URL or custom embed URL (mode \"embed\")",
+            "type": "string"
+          },
+          "height": {
+            "description": "Embed height: sm 400px, md 550px, lg 700px, xl 850px",
+            "type": "string",
+            "enum": [
+              "sm",
+              "md",
+              "lg",
+              "xl"
             ]
           },
           "submitButtonText": {
@@ -1078,8 +1450,32 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "boolean"
           },
           "showDatePicker": {
-            "description": "Include date picker",
+            "description": "Include date preference field",
             "type": "boolean"
+          },
+          "showServiceSelector": {
+            "description": "Let the visitor pick a service before booking",
+            "type": "boolean"
+          },
+          "services": {
+            "description": "Selectable services (mode \"form\" with showServiceSelector)",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "triggerWebhook": {
+            "description": "Fire the booking automation webhook on submit",
+            "type": "boolean"
+          },
+          "variant": {
+            "description": "Visual style",
+            "type": "string",
+            "enum": [
+              "default",
+              "card",
+              "minimal"
+            ]
           }
         }
       }
@@ -1093,21 +1489,79 @@ export const BLOCK_CREATION_TOOLS = [
       "parameters": {
         "type": "object",
         "properties": {
+          "title": {
+            "description": "Popup heading",
+            "type": "string"
+          },
           "content": {
             "description": "Popup content (Tiptap JSON: {\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"...\"}]}]})",
             "type": "object"
           },
+          "image": {
+            "description": "Image shown above the content",
+            "type": "string"
+          },
+          "buttonText": {
+            "description": "Primary button label",
+            "type": "string"
+          },
+          "buttonUrl": {
+            "description": "Primary button link",
+            "type": "string"
+          },
+          "secondaryButtonText": {
+            "description": "Dismiss-style secondary button label, e.g. \"No thanks\"",
+            "type": "string"
+          },
           "trigger": {
-            "description": "How to trigger",
+            "description": "What opens the popup",
             "type": "string",
             "enum": [
-              "delay",
+              "time",
               "scroll",
-              "exit"
+              "exit-intent"
             ]
           },
+          "delaySeconds": {
+            "description": "Seconds before opening (trigger \"time\")",
+            "type": "number"
+          },
+          "scrollPercentage": {
+            "description": "Scroll depth in percent that opens it (trigger \"scroll\")",
+            "type": "number"
+          },
+          "showOnce": {
+            "description": "Do not show again after it has been dismissed",
+            "type": "boolean"
+          },
+          "cookieDays": {
+            "description": "How many days a dismissal is remembered",
+            "type": "number"
+          },
+          "size": {
+            "description": "Popup width",
+            "type": "string",
+            "enum": [
+              "sm",
+              "md",
+              "lg"
+            ]
+          },
+          "position": {
+            "description": "Where it appears",
+            "type": "string",
+            "enum": [
+              "center",
+              "bottom-right",
+              "bottom-left"
+            ]
+          },
+          "overlayDark": {
+            "description": "Dim and blur the page behind it (centered position only)",
+            "type": "boolean"
+          },
           "delay": {
-            "description": "Delay in seconds (for delay trigger)",
+            "description": "Legacy: earlier name for delaySeconds",
             "type": "number"
           }
         },
@@ -1125,12 +1579,29 @@ export const BLOCK_CREATION_TOOLS = [
       "parameters": {
         "type": "object",
         "properties": {
+          "title": {
+            "description": "Section title",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Supporting text under the title",
+            "type": "string"
+          },
           "tiers": {
             "description": "Array of pricing tiers",
             "type": "array",
             "items": {
               "type": "object"
             }
+          },
+          "productType": {
+            "description": "When pricing is driven by the Products module, which product types to include",
+            "type": "string",
+            "enum": [
+              "all",
+              "recurring",
+              "one_time"
+            ]
           },
           "columns": {
             "description": "Number of columns",
@@ -1140,8 +1611,9 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Visual style",
             "type": "string",
             "enum": [
+              "default",
               "cards",
-              "minimal"
+              "compact"
             ]
           }
         },
@@ -1327,15 +1799,17 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Number of columns",
             "type": "number"
           },
-          "limit": {
-            "description": "Max articles to show",
-            "type": "number"
-          },
-          "category": {
-            "description": "Filter by category slug",
-            "type": "string"
+          "articles": {
+            "description": "Manually curated cards — this block does not read the blog; use latest-posts for that",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
-        }
+        },
+        "required": [
+          "articles"
+        ]
       }
     }
   },
@@ -1396,37 +1870,48 @@ export const BLOCK_CREATION_TOOLS = [
         "type": "object",
         "properties": {
           "message": {
-            "description": "Announcement message",
-            "type": "string"
-          },
-          "link": {
-            "description": "Optional link URL",
+            "description": "Bar text, e.g. \"Free shipping over 500 SEK\"",
             "type": "string"
           },
           "linkText": {
-            "description": "Link text",
+            "description": "Inline link label",
+            "type": "string"
+          },
+          "linkUrl": {
+            "description": "Inline link URL — the link only renders when both linkText and linkUrl are set",
             "type": "string"
           },
           "variant": {
-            "description": "Color variant",
+            "description": "Visual style",
             "type": "string",
             "enum": [
-              "info",
-              "success",
-              "warning",
-              "error"
+              "solid",
+              "gradient",
+              "minimal"
             ]
           },
+          "backgroundColor": {
+            "description": "Background color override (CSS color)",
+            "type": "string"
+          },
+          "textColor": {
+            "description": "Text color override (CSS color)",
+            "type": "string"
+          },
           "dismissable": {
-            "description": "Allow user to dismiss",
+            "description": "Allow visitors to close the bar",
+            "type": "boolean"
+          },
+          "sticky": {
+            "description": "Keep the bar pinned to the top while scrolling",
             "type": "boolean"
           },
           "showCountdown": {
-            "description": "Show countdown timer",
+            "description": "Show a countdown next to the message",
             "type": "boolean"
           },
-          "countdownDate": {
-            "description": "Countdown target date (ISO format)",
+          "countdownTarget": {
+            "description": "ISO date/time the countdown runs to (required when showCountdown is on)",
             "type": "string"
           }
         },
@@ -1555,14 +2040,32 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "URL to embed",
             "type": "string"
           },
-          "title": {
-            "description": "Title for accessibility",
+          "provider": {
+            "description": "Force a provider instead of detecting it from the URL",
+            "type": "string",
+            "enum": [
+              "vimeo",
+              "spotify",
+              "soundcloud",
+              "codepen",
+              "figma",
+              "loom",
+              "custom"
+            ]
+          },
+          "customEmbed": {
+            "description": "Raw embed HTML, used instead of url — rendered as-is, so only paste code you trust",
+            "type": "string"
+          },
+          "caption": {
+            "description": "Caption under the embed",
             "type": "string"
           },
           "aspectRatio": {
-            "description": "Aspect ratio",
+            "description": "Embed aspect ratio",
             "type": "string",
             "enum": [
+              "auto",
               "16:9",
               "4:3",
               "1:1",
@@ -1570,7 +2073,7 @@ export const BLOCK_CREATION_TOOLS = [
             ]
           },
           "maxWidth": {
-            "description": "Maximum width",
+            "description": "Embed width",
             "type": "string",
             "enum": [
               "sm",
@@ -1584,8 +2087,8 @@ export const BLOCK_CREATION_TOOLS = [
             "type": "string",
             "enum": [
               "default",
-              "rounded",
-              "shadow"
+              "card",
+              "minimal"
             ]
           }
         },
@@ -2737,9 +3240,28 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Section title",
             "type": "string"
           },
-          "subtitle": {
-            "description": "Section subtitle",
+          "showForm": {
+            "description": "Render the contact form alongside the details",
+            "type": "boolean"
+          },
+          "phone": {
+            "description": "Phone number; rendered as a tel: link",
             "type": "string"
+          },
+          "email": {
+            "description": "Email address; rendered as a mailto: link",
+            "type": "string"
+          },
+          "address": {
+            "description": "Postal address; line breaks are preserved",
+            "type": "string"
+          },
+          "hours": {
+            "description": "Opening hours rows",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         }
       }

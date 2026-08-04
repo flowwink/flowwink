@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { HeroBlockData, HeroLayout, HeroVideoType, HeroOverlayColor, HeroTextAlignment, HeroTextTheme } from '@/types/cms';
 import { ImageUploader } from '../ImageUploader';
+import { VideoUploadButton } from '../VideoUploadButton';
 import { AITextAssistant } from '../AITextAssistant';
 import { findBestVideo } from '@/data/hero-video-library';
 import { 

@@ -25,8 +25,22 @@ import { BLOCK_REFERENCE, getImportableBlockTypes } from "@/lib/block-reference"
 
 // ─── Mirrored from _shared/normalize-blocks.ts ────────────────────────────────
 
-// Tiptap fields at top level of a block's data object
-const TIPTAP_FIELDS = ['content', 'leftContent', 'rightContent', 'body', 'answer'];
+// Tiptap fields at top level of a block's data object.
+//
+// Parsed from the real file rather than mirrored: the hardcoded copy drifted the
+// first time the source changed — leftColumn/rightColumn were added to
+// normalize-blocks and this test kept failing against its own stale copy while
+// pointing the blame at normalize-blocks.ts. A mirror that names another file as
+// the authority must read that file.
+const TIPTAP_FIELDS: string[] = (() => {
+  const src = readFileSync(
+    resolve(__dirname, '../../../supabase/functions/_shared/normalize-blocks.ts'),
+    'utf-8',
+  );
+  const m = src.match(/export const TIPTAP_FIELDS = \[([^\]]+)\]/);
+  if (!m) throw new Error('TIPTAP_FIELDS not found in normalize-blocks.ts — update the parser');
+  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
+})();
 
 // Nested tiptap field definitions (mirrored from generated block-schema.ts TIPTAP_NESTED_FIELDS)
 const TIPTAP_NESTED_FIELDS = [

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Eye, EyeOff, MessageSquare, Sparkles, Loader2, Bold, Italic, List, ListOrdered, Quote, Heading2, Heading3 } from "lucide-react";
+import { ArrowLeft, Save, Eye, EyeOff, MessageSquare, Sparkles, Loader2, Bold, Italic, List, ListOrdered, Quote, Heading2, Heading3, Globe, Lock } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -52,7 +54,9 @@ export default function KbArticleEditorPage() {
     is_published: true,
     is_featured: false,
     include_in_chat: true,
+    visibility: "public" as "public" | "internal",
   });
+
 
   const editor = useEditor({
     extensions: [
@@ -79,7 +83,10 @@ export default function KbArticleEditorPage() {
         is_published: article.is_published,
         is_featured: article.is_featured,
         include_in_chat: article.include_in_chat,
+        // Rows written before the column existed have no value → public.
+        visibility: article.visibility === "internal" ? "internal" : "public",
       });
+
       // Prefer answer_json (Tiptap doc). Fallback to answer_text for articles
       // created via MCP/agent that only wrote the plain-text mirror.
       const json: any = article.answer_json;
@@ -146,6 +153,8 @@ export default function KbArticleEditorPage() {
       is_published: formData.is_published,
       is_featured: formData.is_featured,
       include_in_chat: formData.include_in_chat,
+      visibility: formData.visibility,
+
       answer_json: answer_json as import("@/integrations/supabase/types").Json,
       answer_text,
     };
@@ -355,12 +364,46 @@ export default function KbArticleEditorPage() {
                   )}
                 </div>
 
+
+                {/* Audience — who may ever see this article */}
+                <div className="space-y-2">
+                  <Label>Audience</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={formData.visibility}
+                    onValueChange={(value) => {
+                      if (value === "public" || value === "internal") {
+                        setFormData(prev => ({ ...prev, visibility: value }));
+                      }
+                    }}
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    <ToggleGroupItem value="public" className="justify-center gap-2 border rounded-md data-[state=on]:bg-primary/10 data-[state=on]:text-primary">
+                      <Globe className="h-4 w-4" />
+                      Public
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="internal" className="justify-center gap-2 border rounded-md data-[state=on]:bg-warning/10 data-[state=on]:text-warning">
+                      <Lock className="h-4 w-4" />
+                      Internal
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.visibility === "internal"
+                      ? "Internal — staff only. Live for signed-in staff and staff-facing agents, invisible to visitors and the site chat. Not the same as unpublished: unpublished is a draft nobody sees, staff included."
+                      : "Public — visitors and the site chat. Anyone can read it once published. Not the same as unpublished: unpublished is a draft nobody sees, staff included."}
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-2">
                     {formData.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     <div>
                       <Label>Published</Label>
-                      <p className="text-xs text-muted-foreground">Visible on public pages</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.is_published
+                          ? formData.visibility === "internal" ? "Live for staff" : "Live on public pages"
+                          : "Draft — nobody sees it, staff included"}
+                      </p>
                     </div>
                   </div>
                   <Switch
@@ -368,6 +411,7 @@ export default function KbArticleEditorPage() {
                     onCheckedChange={checked => setFormData(prev => ({ ...prev, is_published: checked }))}
                   />
                 </div>
+
 
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-2">

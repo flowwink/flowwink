@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Folder, FileText, MessageSquare, Search, MoreHorizontal, Pencil, Trash2, Check, X, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Plus, Folder, FileText, MessageSquare, Search, MoreHorizontal, Pencil, Trash2, Check, X, AlertTriangle, ThumbsUp, ThumbsDown, Globe, Lock } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageContainer } from "@/components/admin/AdminPageContainer";
@@ -41,8 +43,11 @@ import {
 import { useIsModuleEnabled } from "@/hooks/useModules";
 import { KbCategoryDialog } from "@/components/admin/kb/KbCategoryDialog";
 
+type AudienceFilter = 'all' | 'public' | 'internal';
+
 export default function KnowledgeBasePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [audienceFilter, setAudienceFilter] = useState<AudienceFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -57,10 +62,18 @@ export default function KnowledgeBasePage() {
   const bulkUpdateChat = useBulkUpdateKbArticlesChatStatus();
   const clearImprovementFlag = useClearKbImprovementFlag();
 
-  const filteredArticles = articles?.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.question.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredArticles = articles?.filter(article => {
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.question.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    // Rows written before the visibility column existed count as public.
+    const isInternal = article.visibility === 'internal';
+    if (audienceFilter === 'internal') return isInternal;
+    if (audienceFilter === 'public') return !isInternal;
+    return true;
+  });
+
 
   const allSelected = useMemo(() => {
     if (!filteredArticles || filteredArticles.length === 0) return false;
@@ -125,17 +138,22 @@ export default function KnowledgeBasePage() {
           </Button>
         </AdminPageHeader>
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Stats — public and internal are never merged into one number */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCardCompact
             label="Categories"
             value={stats?.categories}
             variant="default"
           />
           <StatCardCompact
-            label="Published Articles"
-            value={stats?.articles}
+            label="Published — Public"
+            value={stats?.publicArticles}
             variant="default"
+          />
+          <StatCardCompact
+            label="Published — Internal"
+            value={stats?.internalArticles}
+            variant="warning"
           />
           <StatCardCompact
             label="In AI Chat Context"
@@ -143,6 +161,7 @@ export default function KnowledgeBasePage() {
             variant={chatModuleEnabled ? 'primary' : 'muted'}
           />
         </div>
+
 
         <div className="grid gap-6 lg:grid-cols-4">
           {/* Categories sidebar */}
@@ -206,7 +225,7 @@ export default function KnowledgeBasePage() {
 
           {/* Articles list */}
           <div className="lg:col-span-3 space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -216,7 +235,24 @@ export default function KnowledgeBasePage() {
                   className="pl-9"
                 />
               </div>
+              <ToggleGroup
+                type="single"
+                value={audienceFilter}
+                onValueChange={(value) => value && setAudienceFilter(value as AudienceFilter)}
+                className="justify-start"
+              >
+                <ToggleGroupItem value="all" className="border rounded-md px-3">All</ToggleGroupItem>
+                <ToggleGroupItem value="public" className="border rounded-md px-3 gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  Public
+                </ToggleGroupItem>
+                <ToggleGroupItem value="internal" className="border rounded-md px-3 gap-1.5">
+                  <Lock className="h-3.5 w-3.5" />
+                  Internal
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
+
 
             {/* Bulk actions bar */}
             {selectedArticles.size > 0 && (
@@ -298,9 +334,16 @@ export default function KnowledgeBasePage() {
                             >
                               {article.title}
                             </Link>
+                            {article.visibility === 'internal' && (
+                              <Badge className="shrink-0 bg-warning/15 text-warning border-warning/30 hover:bg-warning/15">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Internal
+                              </Badge>
+                            )}
                             {!article.is_published && (
                               <Badge variant="secondary">Draft</Badge>
                             )}
+
                             {article.include_in_chat && (
                               <Badge variant="outline" className="text-xs">
                                 <MessageSquare className="h-3 w-3 mr-1" />

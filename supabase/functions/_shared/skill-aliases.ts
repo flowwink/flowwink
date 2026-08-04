@@ -29,6 +29,15 @@ export function normalizeSkillArgs(raw: Record<string, unknown>): Record<string,
   for (const [from, to] of Object.entries(aliasMap)) {
     if (merged[from] !== undefined && merged[to] === undefined) {
       const v = merged[from];
+      // Only money is money. `value` is also the plain parameter name of
+      // manage_site_settings, so a settings object was being renamed to
+      // value_cents and deleted — the skill answered "updated: true" while
+      // writing the column default. An object, array or boolean is never an
+      // amount; leave it alone and let the handler have its argument.
+      const isMonetary =
+        typeof v === 'number' ||
+        (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)));
+      if (!isMonetary) continue;
       // If looks like whole units (small int), upscale to cents
       merged[to] = typeof v === 'number' && Number.isInteger(v) && v < 1_000_000 ? v * 100 : v;
       delete merged[from];

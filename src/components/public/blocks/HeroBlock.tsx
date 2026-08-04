@@ -162,7 +162,7 @@ export function HeroBlock({ data }: HeroBlockProps) {
         <div className="absolute inset-0 overflow-hidden">
           <iframe
             src={`https://www.youtube.com/embed/${videoId}?autoplay=${autoplay}&loop=${loop}&mute=${mute}&controls=0&showinfo=0&rel=0&modestbranding=1&playlist=${videoId}&playsinline=1`}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto pointer-events-none"
             allow="autoplay; encrypted-media"
             allowFullScreen
             style={{ border: 0 }}
@@ -183,7 +183,7 @@ export function HeroBlock({ data }: HeroBlockProps) {
         <div className="absolute inset-0 overflow-hidden">
           <iframe
             src={`https://player.vimeo.com/video/${videoId}?autoplay=${autoplay}&loop=${loop}&muted=${muted}&background=1&quality=auto`}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto pointer-events-none"
             allow="autoplay; encrypted-media"
             allowFullScreen
             style={{ border: 0 }}
@@ -291,7 +291,7 @@ export function HeroBlock({ data }: HeroBlockProps) {
                 <div className="absolute inset-0 overflow-hidden">
                   <iframe
                     src={`https://www.youtube.com/embed/${extractVideoId(data.videoUrl!, 'youtube')}?autoplay=${data.videoAutoplay !== false ? 1 : 0}&loop=1&mute=${isMuted ? 1 : 0}&controls=0&showinfo=0&rel=0&modestbranding=1&playlist=${extractVideoId(data.videoUrl!, 'youtube')}&playsinline=1`}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto pointer-events-none"
                     allow="autoplay; encrypted-media"
                     allowFullScreen
                     style={{ border: 0 }}
@@ -301,7 +301,7 @@ export function HeroBlock({ data }: HeroBlockProps) {
                 <div className="absolute inset-0 overflow-hidden">
                   <iframe
                     src={`https://player.vimeo.com/video/${extractVideoId(data.videoUrl!, 'vimeo')}?autoplay=${data.videoAutoplay !== false ? 1 : 0}&loop=1&muted=${isMuted ? 1 : 0}&background=1`}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[177.78vh] min-h-[56.25vw] w-auto h-auto pointer-events-none"
                     allow="autoplay; encrypted-media"
                     allowFullScreen
                     style={{ border: 0 }}

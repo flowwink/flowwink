@@ -21,7 +21,39 @@ interface CookieConsentV2Settings {
     analytics: ConsentCategoryConfig;
     marketing: ConsentCategoryConfig;
   };
+  /**
+   * Banner copy. The category labels were configurable from the start while the
+   * title, body and buttons were hardcoded English — so a Swedish site whose
+   * whole pitch is GDPR greeted visitors with "We use cookies". Text is data:
+   * an operator (or an agent over the gateway) can translate the banner without
+   * a code change. Every field is optional and falls back to the English below.
+   */
+  text?: Partial<BannerText>;
 }
+
+interface BannerText {
+  title: string;
+  description: string;
+  customize: string;
+  acceptAll: string;
+  essentialOnly: string;
+  preferencesTitle: string;
+  back: string;
+  saveSelection: string;
+}
+
+const defaultText: BannerText = {
+  title: 'We use cookies',
+  description:
+    'We use cookies for essential site functions, anonymous analytics, and — when you allow it — ' +
+    'to help our sales team understand your interests. You choose what to allow.',
+  customize: 'Customize',
+  acceptAll: 'Accept all',
+  essentialOnly: 'Essential only',
+  preferencesTitle: 'Cookie preferences',
+  back: 'Back',
+  saveSelection: 'Save selection',
+};
 
 const defaults: CookieConsentV2Settings = {
   enabled: true,
@@ -49,6 +81,7 @@ export function CookieBanner() {
   });
 
   const settings = data ?? defaults;
+  const text: BannerText = { ...defaultText, ...(settings.text ?? {}) };
 
   useEffect(() => {
     if (getConsent()) return; // already decided
@@ -74,25 +107,24 @@ export function CookieBanner() {
         {!showDetails ? (
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <div className="flex-1 space-y-2">
-              <h3 className="font-serif font-semibold text-lg">We use cookies</h3>
+              <h3 className="font-serif font-semibold text-lg">{text.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                We use cookies for essential site functions, anonymous analytics, and — when you allow it —
-                to help our sales team understand your interests. You choose what to allow.
+                {text.description}
               </p>
               <button
                 type="button"
                 onClick={() => setShowDetails(true)}
                 className="text-sm text-primary hover:underline inline-flex items-center gap-1"
               >
-                <Settings2 className="h-3.5 w-3.5" /> Customize
+                <Settings2 className="h-3.5 w-3.5" /> {text.customize}
               </button>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto shrink-0">
               <Button variant="outline" onClick={handleReject} className="w-full sm:w-auto">
-                Essential only
+                {text.essentialOnly}
               </Button>
               <Button onClick={handleAcceptAll} className="w-full sm:w-auto">
-                Accept all
+                {text.acceptAll}
               </Button>
             </div>
             <button
@@ -106,9 +138,9 @@ export function CookieBanner() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-serif font-semibold text-lg">Cookie preferences</h3>
+              <h3 className="font-serif font-semibold text-lg">{text.preferencesTitle}</h3>
               <button onClick={() => setShowDetails(false)} className="text-sm text-muted-foreground hover:text-foreground">
-                Back
+                {text.back}
               </button>
             </div>
 
@@ -137,13 +169,13 @@ export function CookieBanner() {
 
             <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
               <Button variant="outline" onClick={handleReject} className="w-full sm:w-auto">
-                Essential only
+                {text.essentialOnly}
               </Button>
               <Button variant="outline" onClick={handleSave} className="w-full sm:w-auto">
-                Save selection
+                {text.saveSelection}
               </Button>
               <Button onClick={handleAcceptAll} className="w-full sm:w-auto sm:ml-auto">
-                Accept all
+                {text.acceptAll}
               </Button>
             </div>
           </div>

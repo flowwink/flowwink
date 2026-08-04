@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useUiText } from '@/lib/ui-text';
 import { Button } from "@/components/ui/button";
 
 interface BlogPaginationProps {
@@ -8,6 +9,7 @@ interface BlogPaginationProps {
 }
 
 export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPaginationProps) {
+  const t = useUiText();
   if (totalPages <= 1) return null;
 
   const pages: (number | "...")[] = [];
@@ -42,7 +44,7 @@ export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPa
         size="icon"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        aria-label="Previous page"
+        aria-label={t('pagination.prev', 'Previous page')}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -71,7 +73,7 @@ export function BlogPagination({ currentPage, totalPages, onPageChange }: BlogPa
         size="icon"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        aria-label="Next page"
+        aria-label={t('pagination.next', 'Next page')}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

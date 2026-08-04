@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LocalePackProvider } from "@/providers/LocalePackProvider";
+import { UiTextProvider } from "@/lib/ui-text";
 import { DateFnsLocaleSync } from "@/components/DateFnsLocaleSync";
 import { ThemeProvider } from "next-themes";
 import { lazy, Suspense } from "react";
@@ -437,6 +438,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <DateFnsLocaleSync />
     <LocalePackProvider>
+      <UiTextProvider>
       <HelmetProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
@@ -452,6 +454,7 @@ const App = () => (
           </AuthProvider>
         </ThemeProvider>
       </HelmetProvider>
+      </UiTextProvider>
     </LocalePackProvider>
   </QueryClientProvider>
 );

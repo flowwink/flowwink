@@ -11,6 +11,8 @@ interface NewsletterBlockData {
   successMessage?: string;
   variant?: "default" | "card" | "minimal";
   showNameField?: boolean;
+  emailPlaceholder?: string;
+  namePlaceholder?: string;
 }
 
 interface NewsletterBlockProps {

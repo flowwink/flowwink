@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useUiText } from '@/lib/ui-text';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronDown } from 'lucide-react';
@@ -23,6 +24,7 @@ interface NavPage {
 }
 
 export function PublicNavigation() {
+  const t = useUiText();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openMegaMenu, setOpenMegaMenu] = useState<string | null>(null);
   const megaMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -515,7 +517,7 @@ export function PublicNavigation() {
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 rounded-md hover:bg-muted transition-colors"
-                aria-label="Close menu"
+                aria-label={t('nav.closeMenu', 'Close menu')}
               >
                 <X className="h-6 w-6" />
               </button>
@@ -576,7 +578,7 @@ export function PublicNavigation() {
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 rounded-md hover:bg-muted transition-colors"
-                aria-label="Close menu"
+                aria-label={t('nav.closeMenu', 'Close menu')}
               >
                 <X className="h-6 w-6" />
               </button>

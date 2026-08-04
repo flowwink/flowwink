@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useUiText } from '@/lib/ui-text';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ interface ChatLauncherBlockProps {
 }
 
 export function ChatLauncherBlock({ data }: ChatLauncherBlockProps) {
+  const t = useUiText();
   const navigate = useNavigate();
   const { data: chatSettings } = useChatSettings();
   const [inputValue, setInputValue] = useState('');
@@ -113,13 +115,13 @@ export function ChatLauncherBlock({ data }: ChatLauncherBlockProps) {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={placeholder}
-              aria-label="Your message"
+              aria-label={t('chat.messageLabel', 'Your message')}
               className="flex-1 border-0 bg-transparent pl-12 pr-14 py-6 text-base focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <Button
               onClick={() => handleSubmit()}
               size="icon"
-              aria-label="Send message"
+              aria-label={t('chat.send', 'Send message')}
               className="absolute right-2 h-10 w-10 rounded-lg"
             >
               <ArrowRight className="h-5 w-5" />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useUiText } from '@/lib/ui-text';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function BlogComments({ postId }: Props) {
+  const t = useUiText();
   const { data: comments = [], isLoading } = useApprovedComments(postId);
   const submit = useSubmitComment();
   const { toast } = useToast();
@@ -60,7 +62,7 @@ export function BlogComments({ postId }: Props) {
       <div className="space-y-4 mb-8">
         {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
         {!isLoading && comments.length === 0 && (
-          <p className="text-sm text-muted-foreground">Be the first to comment.</p>
+          <p className="text-sm text-muted-foreground">{t('comments.empty', 'Be the first to comment.')}</p>
         )}
         {comments.map((c) => (
           <Card key={c.id}>
@@ -79,7 +81,7 @@ export function BlogComments({ postId }: Props) {
 
       <Card>
         <CardContent className="p-6">
-          <h4 className="font-medium mb-4">Leave a comment</h4>
+          <h4 className="font-medium mb-4">{t('comments.leave', 'Leave a comment')}</h4>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">

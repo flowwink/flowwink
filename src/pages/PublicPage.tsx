@@ -1,4 +1,5 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useUiText } from '@/lib/ui-text';
 import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +39,7 @@ function parseContent(data: {
 }
 
 export default function PublicPage() {
+  const t = useUiText();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -399,8 +401,8 @@ export default function PublicPage() {
         <div className="flex items-center justify-center py-32">
           <div className="text-center">
             <h1 className="font-serif text-4xl font-bold mb-4">404</h1>
-            <p className="text-muted-foreground mb-6">Page could not be found</p>
-            <a href="/" className="text-primary hover:underline">Back to homepage</a>
+            <p className="text-muted-foreground mb-6">{t('page.notFound', 'Page could not be found')}</p>
+            <a href="/" className="text-primary hover:underline">{t('page.backHome', 'Back to homepage')}</a>
           </div>
         </div>
       </div>
@@ -497,7 +499,7 @@ export default function PublicPage() {
           ) : (
             <div className="py-16 px-6">
               <div className="container mx-auto max-w-3xl text-center text-muted-foreground">
-                <p>This page has no content yet.</p>
+                <p>{t('page.empty', 'This page has no content yet.')}</p>
               </div>
             </div>
           )}

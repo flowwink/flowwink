@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useUiText } from '@/lib/ui-text';
 import { ArrowLeft, Calendar, Clock, User, CheckCircle } from "lucide-react";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { PublicNavigation } from "@/components/public/PublicNavigation";
@@ -17,6 +18,7 @@ import { isTiptapDocument, renderToHtml } from "@/lib/tiptap-utils";
 import NotFound from "./NotFound";
 
 export default function BlogPostPage() {
+  const t = useUiText();
   const { slug } = useParams();
   const { data: post, isLoading, error } = useBlogPost(slug);
   const { data: blogSettings } = useBlogSettings();
@@ -208,7 +210,7 @@ export default function BlogPostPage() {
           {/* Author bio */}
           {blogSettings?.showAuthorBio && post.author && (
             <div className="mb-12">
-              <h3 className="text-lg font-semibold mb-4">About the author</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('blog.aboutAuthor', 'About the author')}</h3>
               <AuthorCard author={post.author} />
               <div className="mt-3">
                 <Link
@@ -231,7 +233,7 @@ export default function BlogPostPage() {
           {/* Related posts */}
           {relatedPosts.length > 0 && (
             <div>
-              <h3 className="text-lg font-semibold mb-4">Related posts</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('blog.related', 'Related posts')}</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 {relatedPosts.map((relatedPost) => (
                   <BlogPostCard

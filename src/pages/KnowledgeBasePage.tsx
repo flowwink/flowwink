@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useUiText } from '@/lib/ui-text';
 import { Search, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { PublicNavigation } from "@/components/public/PublicNavigation";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -14,6 +15,7 @@ import { Link } from "react-router-dom";
 import { useIsModuleEnabled } from "@/hooks/useModules";
 
 export default function KnowledgeBasePage() {
+  const t = useUiText();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedArticles, setExpandedArticles] = useState<Set<string>>(new Set());
@@ -107,7 +109,7 @@ export default function KnowledgeBasePage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search for questions or answers..."
+                placeholder={t('kb.searchPlaceholder', 'Search for questions or answers...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-14 text-lg rounded-xl shadow-lg"
@@ -167,7 +169,7 @@ export default function KnowledgeBasePage() {
           ) : filteredArticles.length === 0 ? (
             <div className="text-center py-16">
               <Search className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">No results found</h2>
+              <h2 className="text-xl font-semibold mb-2">{t('kb.noResults', 'No results found')}</h2>
               <p className="text-muted-foreground mb-6">
                 Try different search terms or browse all categories
               </p>
@@ -269,7 +271,7 @@ export default function KnowledgeBasePage() {
         <section className="bg-muted/50 py-16 mt-16">
           <div className="container max-w-2xl mx-auto px-4 text-center">
             <h2 className="text-2xl font-bold mb-4">
-              Can't find the answer?
+              {t('kb.noAnswerTitle', "Can't find the answer?")}
             </h2>
             <p className="text-muted-foreground mb-6">
               Our team is happy to help you with your questions

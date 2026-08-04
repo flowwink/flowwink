@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useUiText } from '@/lib/ui-text';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +17,7 @@ const gridCols: Record<number, string> = {
 };
 
 export function LatestPostsBlock({ data }: LatestPostsBlockProps) {
+  const t = useUiText();
   const count = Math.min(Math.max(data.count ?? 3, 1), 6);
   const columns = data.columns ?? 3;
   const showExcerpt = data.showExcerpt ?? true;
@@ -66,7 +68,7 @@ export function LatestPostsBlock({ data }: LatestPostsBlockProps) {
             ))}
           </div>
         ) : !posts || posts.length === 0 ? (
-          <p className="text-center text-muted-foreground">No posts published yet.</p>
+          <p className="text-center text-muted-foreground">{t('blog.empty', 'No posts published yet.')}</p>
         ) : (
           <div className={`grid gap-6 ${gridCols[columns]}`}>
             {posts.map((post) => (

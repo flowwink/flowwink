@@ -41,13 +41,14 @@ export function ParallaxSectionBlockEditor({ data, onChange, isEditing }: Parall
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-xs text-muted-foreground">Background Image URL</Label>
-        <Input
+        <Label className="text-xs text-muted-foreground">Background Image</Label>
+        <ImagePickerField
           value={data.backgroundImage || ''}
-          onChange={(e) => handleChange({ backgroundImage: e.target.value })}
+          onChange={(url) => handleChange({ backgroundImage: url })}
           placeholder="https://images.unsplash.com/..."
         />
       </div>
+
 
       <div>
         <Label className="text-xs text-muted-foreground">Title</Label>

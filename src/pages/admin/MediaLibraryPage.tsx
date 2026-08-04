@@ -236,14 +236,14 @@ export default function MediaLibraryPage() {
 
     if (successCount > 0) {
       toast({
-        title: `${successCount} image${successCount > 1 ? 's' : ''} uploaded`,
-        description: failCount > 0 ? `${failCount} failed` : 'Images are now available in your library',
+        title: `${successCount} file${successCount > 1 ? 's' : ''} uploaded`,
+        description: failCount > 0 ? `${failCount} failed` : 'Files are now available in your library',
       });
       refetch();
     } else {
       toast({
         title: 'Upload failed',
-        description: 'Could not upload images. Please try again.',
+        description: 'Could not upload files. Please try again.',
         variant: 'destructive',
       });
     }

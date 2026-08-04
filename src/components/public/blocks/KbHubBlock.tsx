@@ -141,6 +141,19 @@ export function KbHubBlock({ data }: KbHubBlockProps) {
     return result;
   }, [articles, selectedCategory, searchQuery]);
 
+  /**
+   * Categories a visitor may see. The article query filters on is_published,
+   * but the chips came straight from kb_categories — so unpublishing every
+   * article in a category left its NAME on the public page as a dead filter.
+   * On optic that name was "Sälja privat AI": the sales playbook was gone but
+   * the fact that one exists was still on display. A category is public only
+   * when something published lives in it.
+   */
+  const visibleCategories = useMemo(() => {
+    const withArticles = new Set((articles || []).map(a => a.category_id));
+    return (categories || []).filter(c => withArticles.has(c.id));
+  }, [categories, articles]);
+
   // Group articles by category
   const articlesByCategory = useMemo(() => {
     const grouped: Record<string, KbArticle[]> = {};
@@ -203,7 +216,7 @@ export function KbHubBlock({ data }: KbHubBlockProps) {
         )}
 
         {/* Categories */}
-        {showCategories && categories && categories.length > 0 && (
+        {showCategories && visibleCategories.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center mb-8">
             <Button
               variant={selectedCategory === null ? 'default' : 'outline'}
@@ -218,7 +231,7 @@ export function KbHubBlock({ data }: KbHubBlockProps) {
                 <Skeleton key={i} className="h-9 w-24 rounded-full" />
               ))
             ) : (
-              categories.map(category => (
+              visibleCategories.map(category => (
                 <Button
                   key={category.id}
                   variant={selectedCategory === category.id ? 'default' : 'outline'}

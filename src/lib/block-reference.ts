@@ -388,6 +388,10 @@ export const BLOCK_REFERENCE: BlockInfo[] = [
       { name: 'description', type: 'string', required: false, description: 'Description text' },
       { name: 'buttonText', type: 'string', required: false, description: 'Submit button label', default: 'Subscribe' },
       { name: 'successMessage', type: 'string', required: false, description: 'Success message' },
+      { name: 'emailPlaceholder', type: 'string', required: false, description: "Email field placeholder — set it in the site's own language", default: 'Enter your email' },
+      { name: 'namePlaceholder', type: 'string', required: false, description: 'Name field placeholder (only rendered when showNameField is on)', default: 'Your name (optional)' },
+      { name: 'variant', type: 'string', required: false, description: 'Visual style', default: 'default' },
+      { name: 'showNameField', type: 'boolean', required: false, description: 'Also ask for a name', default: false },
     ],
   },
   {

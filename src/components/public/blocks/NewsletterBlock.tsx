@@ -31,6 +31,12 @@ export function NewsletterBlock({ data }: NewsletterBlockProps) {
     successMessage = "Thanks for subscribing! Please check your email to confirm.",
     variant = "default",
     showNameField = false,
+    // Placeholders were the only strings in this block that could not be
+    // edited — so a Swedish site could translate the heading, the button and
+    // the thank-you and still ask visitors to "Enter your email". Text is
+    // data, same rule as the cookie banner; English stays the fallback.
+    emailPlaceholder = "Enter your email",
+    namePlaceholder = "Your name (optional)",
   } = data;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,7 +93,7 @@ export function NewsletterBlock({ data }: NewsletterBlockProps) {
         <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
           <Input
             type="email"
-            placeholder="Enter your email"
+            placeholder={emailPlaceholder}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -117,14 +123,14 @@ export function NewsletterBlock({ data }: NewsletterBlockProps) {
             {showNameField && (
               <Input
                 type="text"
-                placeholder="Your name (optional)"
+                placeholder={namePlaceholder}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             )}
             <Input
               type="email"
-              placeholder="Enter your email"
+              placeholder={emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -160,7 +166,7 @@ export function NewsletterBlock({ data }: NewsletterBlockProps) {
           {showNameField && (
             <Input
               type="text"
-              placeholder="Your name (optional)"
+              placeholder={namePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="max-w-md mx-auto"
@@ -169,7 +175,7 @@ export function NewsletterBlock({ data }: NewsletterBlockProps) {
           <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
             <Input
               type="email"
-              placeholder="Enter your email"
+              placeholder={emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

@@ -502,12 +502,12 @@ export default function MediaLibraryPage() {
           >
             <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-1">
-              {searchQuery ? 'No images found' : 'Drop images here or click to upload'}
+              {searchQuery ? 'No files found' : 'Drop files here or click to upload'}
             </h3>
             <p className="text-muted-foreground text-sm">
               {searchQuery 
                 ? 'Try a different search'
-                : 'Supports JPG, PNG, GIF, WebP • Automatically optimized'
+                : 'Images (JPG, PNG, GIF, WebP — auto-optimized) and videos (MP4, WebM)'
               }
             </p>
           </div>

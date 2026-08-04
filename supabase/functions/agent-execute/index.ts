@@ -4040,7 +4040,14 @@ async function executeKbAction(
         c.slug === category.toLowerCase().replace(/\s+/g, '-') ||
         c.name?.toLowerCase() === category.toLowerCase()
       );
-      categoryId = match?.id ?? cats[0].id;
+      // No match means the caller named a category that does not exist yet, and
+      // the answer is to CREATE it (the branch below), not to file the article
+      // under whichever category happens to sort first. The old `?? cats[0].id`
+      // fallback silently mis-categorised: an agent creating articles across six
+      // categories got one category with everything in it, and every API
+      // response still said success. A wrongly filed article is worse than a
+      // failed call, because nobody is told to look.
+      categoryId = match?.id ?? null;
     }
     if (!categoryId) {
       // Auto-create a default "General" category

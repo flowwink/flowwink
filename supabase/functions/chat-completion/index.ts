@@ -451,8 +451,19 @@ serve(async (req) => {
     const shouldLoadSkills = settings?.toolCallingEnabled && provider.supportsToolCalling;
     // Infrastructure tools — independent of FlowPilot/tool-calling master switch.
     // They are simple "sensor" tools that don't require agent reasoning to be useful.
+    // "May the chat search the web", not "search with Firecrawl". The tool calls
+    // the web-search function, which picks a provider from the central priority
+    // order (SearXNG first by default, then Firecrawl, then Jina) — so gating on
+    // Firecrawl specifically left chat search dead on any instance running
+    // SearXNG or Jina, while the agents' search_web went through the very same
+    // function without complaint. Any enabled provider opens the gate; the
+    // absent-means-enabled reading matches web-search's own default.
+    const anySearchProvider =
+      integrations?.firecrawl?.enabled !== false ||
+      integrations?.searxng?.enabled !== false ||
+      integrations?.jina?.enabled !== false;
     const firecrawlActive =
-      settings?.firecrawlSearchEnabled && integrations?.firecrawl?.enabled && provider.supportsToolCalling;
+      settings?.firecrawlSearchEnabled && anySearchProvider && provider.supportsToolCalling;
     const handoffActive = settings?.humanHandoffEnabled && provider.supportsToolCalling;
     const profileSaveActive = !!conversationId && provider.supportsToolCalling;
     const visitorIdentifier = customerEmail || sessionId;

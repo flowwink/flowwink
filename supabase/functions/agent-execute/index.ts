@@ -974,7 +974,16 @@ serve(async (req) => {
     // NOT inject a chat_messages row here — chat is for dialogue, not exec logs.
     // (See mem://features/internal-flowchat-and-noise-separation.)
 
-    return new Response(JSON.stringify({ status: 'success', result, trust_level: trustLevel }), {
+    // The envelope tells the same truth as the journal. This used to hardcode
+    // 'success' three lines after computing handlerFailed and logging 'failed'
+    // to agent_activity — so every caller that trusted the top-level status saw
+    // four green checkmarks over four failed page updates, while the log quietly
+    // disagreed. An agent that believes that envelope then reports work it never
+    // did, which is the exact incident class the objective-evidence guardrail
+    // exists for. Known consumers (callSkill, the pilot's step evaluator) already
+    // check result.error as well, so honesty here breaks nobody and fixes the
+    // ones that only read status.
+    return new Response(JSON.stringify({ status: handlerFailed ? 'failed' : 'success', result, trust_level: trustLevel }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -3092,7 +3101,20 @@ async function executePagesAction(
   switch (skillName) {
     case 'manage_page':
     case 'manage_pages': {
-      const { action = 'list', page_id, slug, title, status, meta, blocks } = args as any;
+      const { action = 'list', slug, title, status, meta, blocks } = args as any;
+      let { page_id } = args as any;
+
+      // Accept a slug wherever an id is wanted, same contract as manage_wiki_page
+      // and manage_page_blocks (which already routes through resolvePageId).
+      // The tool schema says slug is "for get or create", so an agent that has
+      // just listed pages holds slugs — and update used to answer only
+      // "page_id is required", failing four straight calls whose caller had a
+      // perfectly good identifier in hand. Create is deliberately excluded:
+      // there the slug names the NEW page and must not be treated as a lookup.
+      if (['update', 'publish', 'archive', 'delete', 'rollback'].includes(action)) {
+        if (page_id) page_id = await resolvePageId(String(page_id));
+        else if (slug) page_id = await resolvePageId(String(slug));
+      }
 
       if (action === 'list') {
         let query = supabase.from('pages')

@@ -153,11 +153,11 @@ Per-page summary with images_fixed count and the actual alt strings generated.
             },
             page_id: {
               type: 'string',
-              description: 'Page UUID (for get/update/publish/archive/delete/rollback)',
+              description: 'Page UUID or slug (for get/update/publish/archive/delete/rollback — slugs are resolved automatically)',
             },
             slug: {
               type: 'string',
-              description: 'Page slug (for get or create)',
+              description: 'Page slug. Identifies an existing page for get/update/publish/archive/delete/rollback when page_id is omitted; names the NEW page for create.',
             },
             title: {
               type: 'string',

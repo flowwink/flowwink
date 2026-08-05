@@ -238,7 +238,14 @@ export function SeoHead({
     : siteTitle;
   
   const finalDescription = description || seoSettings?.defaultDescription || '';
-  const finalOgImage = ogImage || seoSettings?.ogImage || '';
+  // Social crawlers (WhatsApp, Facebook, LinkedIn, Slack) require an ABSOLUTE
+  // https URL for og:image — a relative /media/x.jpg is silently dropped.
+  const rawOgImage = ogImage || seoSettings?.ogImage || '';
+  const finalOgImage = rawOgImage
+    ? /^https?:\/\//i.test(rawOgImage)
+      ? rawOgImage
+      : `${typeof window !== 'undefined' ? window.location.origin : ''}${rawOgImage.startsWith('/') ? '' : '/'}${rawOgImage}`
+    : '';
   
   // Development mode overrides all other settings
   const isDevelopmentMode = seoSettings?.developmentMode ?? false;

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useUiText } from '@/lib/ui-text';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -56,6 +57,7 @@ interface KbArticle {
 }
 
 export function KbHubBlock({ data }: KbHubBlockProps) {
+  const t = useUiText();
   const {
     title = 'How can we help you?',
     subtitle = 'Search our knowledge base or browse by category',
@@ -229,7 +231,7 @@ export function KbHubBlock({ data }: KbHubBlockProps) {
               onClick={() => setSelectedCategory(null)}
               className="rounded-full"
             >
-              Alla
+              {t('kb.allCategories', 'All')}
             </Button>
             {categoriesLoading ? (
               Array.from({ length: 4 }).map((_, i) => (

@@ -59,9 +59,15 @@ describe('fetch_ecb_rates internal handler', () => {
 });
 
 describe('qualify_lead internal handler', () => {
-  it('missing id → exact alias-documenting error', async () => {
-    const res = await executeQualifyLead(stubDb(), {}, ctx);
-    expect(res).toEqual({ error: 'Lead ID is required (pass leadId or lead_id)' });
+  it('missing id → sweep mode over pending leads, not an error', async () => {
+    // The contract changed on purpose: no id no longer rejects — it sweeps
+    // leads where ai_qualified_at is null. Browser-side qualification never
+    // ran for actual visitors (internal skill, anon key), so the scheduled
+    // sweep is the path that makes form leads get scored at all.
+    const db = stubDb({ data: [] });
+    (db._q as any).is = vi.fn(() => db._q);
+    const res = await executeQualifyLead(db, {}, ctx);
+    expect(res).toEqual({ swept: 0, message: 'No unqualified leads.' });
   });
 
   it('accepts snake_case lead_id (MCP-agent alias) and reports not-found', async () => {

@@ -6,7 +6,7 @@
  * and staying quiet through a genuine outage because the API returned nothing.
  */
 import { describe, it, expect } from 'vitest';
-// @ts-expect-error — plain .mjs helper, consumed by the workflow via github-script
+// plain .mjs helper, consumed by the workflow via github-script
 import { decide, issueBody } from '../../../scripts/main-red-alert.mjs';
 
 const NOW = Date.parse('2026-08-05T12:00:00Z');

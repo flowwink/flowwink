@@ -1,5 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  DEFAULT_WIDGET_ORDER,
+  buildPresetLayout,
+  presetKeyForRoles,
+  isWidgetRoleRelevant,
+} from '@/lib/dashboard-presets';
+import type { AppRole } from '@/types/cms';
 
 export interface DashboardWidgetConfig {
   id: string;
@@ -12,126 +19,99 @@ export interface DashboardLayout {
 
 const STORAGE_KEY = 'flowwink-dashboard-layout';
 
-function getStorageKey(userId: string) {
-  return `${STORAGE_KEY}-${userId}`;
+function getStorageKey(userId: string, presetKey: string) {
+  // Preset key is part of the storage key so a role-preview switch shows the
+  // previewed role's dashboard instead of the admin's saved layout.
+  return `${STORAGE_KEY}-${userId}-${presetKey}`;
 }
 
-const DEFAULT_WIDGET_ORDER = [
-  'needs-attention',
-  'content-overview',
-  'leads',
-  'live-support',
-  'chat-analytics',
-  'chat-feedback',
-  'aeo',
-  'automation-health',
-  'recent-pages',
-  'quick-actions',
-];
-
-function getDefaultLayout(): DashboardLayout {
+function mergeWithCatalog(stored: DashboardLayout): DashboardLayout {
+  const existing = new Set(stored.widgets.map((w) => w.id));
   return {
-    widgets: DEFAULT_WIDGET_ORDER.map(id => ({ id, visible: true })),
+    widgets: [
+      ...stored.widgets.filter((w) => DEFAULT_WIDGET_ORDER.includes(w.id)),
+      ...DEFAULT_WIDGET_ORDER.filter((id) => !existing.has(id)).map((id) => ({ id, visible: true })),
+    ],
   };
 }
 
+function load(userId: string, presetKey: AppRole | 'admin'): DashboardLayout {
+  try {
+    const raw = localStorage.getItem(getStorageKey(userId, presetKey));
+    if (raw) return mergeWithCatalog(JSON.parse(raw) as DashboardLayout);
+  } catch (_e) { /* ignore */ }
+  return { widgets: buildPresetLayout(presetKey) };
+}
+
 export function useDashboardLayout() {
-  const { profile } = useAuth();
+  const { profile, roles, isAdmin } = useAuth();
   const userId = profile?.id || 'anonymous';
+  const presetKey = presetKeyForRoles(roles ?? [], isAdmin);
 
-  const [layout, setLayout] = useState<DashboardLayout>(() => {
-    try {
-      const stored = localStorage.getItem(getStorageKey(userId));
-      if (stored) {
-        const parsed = JSON.parse(stored) as DashboardLayout;
-        // Merge with defaults to pick up new widgets
-        const existingIds = new Set(parsed.widgets.map(w => w.id));
-        const merged = [
-          ...parsed.widgets,
-          ...DEFAULT_WIDGET_ORDER
-            .filter(id => !existingIds.has(id))
-            .map(id => ({ id, visible: true })),
-        ];
-        return { widgets: merged };
-      }
-    } catch (_e) { /* ignore */ }
-    return getDefaultLayout();
-  });
+  const [layout, setLayout] = useState<DashboardLayout>(() => load(userId, presetKey));
 
-  // Re-read from localStorage when userId changes
   useEffect(() => {
+    setLayout(load(userId, presetKey));
+  }, [userId, presetKey]);
+
+  const persist = useCallback((next: DashboardLayout) => {
     try {
-      const stored = localStorage.getItem(getStorageKey(userId));
-      if (stored) {
-        const parsed = JSON.parse(stored) as DashboardLayout;
-        const existingIds = new Set(parsed.widgets.map(w => w.id));
-        const merged = [
-          ...parsed.widgets,
-          ...DEFAULT_WIDGET_ORDER
-            .filter(id => !existingIds.has(id))
-            .map(id => ({ id, visible: true })),
-        ];
-        setLayout({ widgets: merged });
-      } else {
-        setLayout(getDefaultLayout());
-      }
-    } catch (_e) {
-      setLayout(getDefaultLayout());
-    }
-  }, [userId]);
+      localStorage.setItem(getStorageKey(userId, presetKey), JSON.stringify(next));
+    } catch (_e) { /* ignore */ }
+  }, [userId, presetKey]);
 
   const saveLayout = useCallback((newLayout: DashboardLayout) => {
     setLayout(newLayout);
-    try {
-      localStorage.setItem(getStorageKey(userId), JSON.stringify(newLayout));
-    } catch (_e) { /* ignore */ }
-  }, [userId]);
+    persist(newLayout);
+  }, [persist]);
 
   const toggleWidget = useCallback((widgetId: string) => {
-    setLayout(prev => {
+    setLayout((prev) => {
       const updated = {
-        widgets: prev.widgets.map(w =>
-          w.id === widgetId ? { ...w, visible: !w.visible } : w
+        widgets: prev.widgets.map((w) =>
+          w.id === widgetId ? { ...w, visible: !w.visible } : w,
         ),
       };
-      try {
-        localStorage.setItem(getStorageKey(userId), JSON.stringify(updated));
-      } catch (_e) { /* ignore */ }
+      persist(updated);
       return updated;
     });
-  }, [userId]);
+  }, [persist]);
 
   const reorderWidgets = useCallback((fromIndex: number, toIndex: number) => {
-    setLayout(prev => {
+    setLayout((prev) => {
       const widgets = [...prev.widgets];
       const [moved] = widgets.splice(fromIndex, 1);
       widgets.splice(toIndex, 0, moved);
       const updated = { widgets };
-      try {
-        localStorage.setItem(getStorageKey(userId), JSON.stringify(updated));
-      } catch (_e) { /* ignore */ }
+      persist(updated);
       return updated;
     });
-  }, [userId]);
+  }, [persist]);
 
   const resetLayout = useCallback(() => {
-    const defaultLayout = getDefaultLayout();
-    setLayout(defaultLayout);
+    const preset = { widgets: buildPresetLayout(presetKey) };
+    setLayout(preset);
     try {
-      localStorage.removeItem(getStorageKey(userId));
+      localStorage.removeItem(getStorageKey(userId, presetKey));
     } catch (_e) { /* ignore */ }
-  }, [userId]);
+  }, [userId, presetKey]);
+
+  /** Apply another role's preset without changing the user's roles. */
+  const applyPreset = useCallback((key: AppRole | 'admin') => {
+    saveLayout({ widgets: buildPresetLayout(key) });
+  }, [saveLayout]);
 
   const isWidgetVisible = useCallback((widgetId: string) => {
-    return layout.widgets.find(w => w.id === widgetId)?.visible ?? true;
-  }, [layout]);
+    if (!isWidgetRoleRelevant(widgetId, roles ?? [], isAdmin)) return false;
+    return layout.widgets.find((w) => w.id === widgetId)?.visible ?? true;
+  }, [layout, roles, isAdmin]);
 
-  const getWidgetOrder = useCallback(() => {
-    return layout.widgets.map(w => w.id);
-  }, [layout]);
+  const getWidgetOrder = useCallback(() => layout.widgets.map((w) => w.id), [layout]);
 
   return {
     layout,
+    presetKey,
+    applyPreset,
     toggleWidget,
     reorderWidgets,
     resetLayout,

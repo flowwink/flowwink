@@ -344,29 +344,9 @@ export default function LeadDetailPage() {
           {/* Visitor Intelligence — behavioral timeline (module: visitorIntelligence) */}
           <VisitorTimelineWidget leadId={lead.id} />
 
-          {/* Add Note */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Add Note</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Write a note..."
-                  rows={2}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleAddNote}
-                  disabled={!note.trim() || addNote.isPending}
-                >
-                  Save
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Notes live in the Discuss composer's Note tab below — a separate
+              "Add Note" card wrote to the same lead_activities log twice over. */}
+
 
           {/* Discuss: composer + unified cross-module timeline */}
           <RecordDiscussPanel leadId={lead.id} email={lead.email} />

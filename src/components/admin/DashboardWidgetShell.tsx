@@ -44,7 +44,7 @@ export function WidgetShell({
       </CardHeader>
       <CardContent className="pt-0">
         {isLoading ? (
-          <div className={`grid grid-cols-${tileCount} gap-3`}>
+          <div className={`grid gap-3 ${tileCount === 4 ? 'grid-cols-2 md:grid-cols-4' : tileCount === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {[...Array(tileCount)].map((_, i) => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}

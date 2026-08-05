@@ -238,7 +238,14 @@ export function SeoHead({
     : siteTitle;
   
   const finalDescription = description || seoSettings?.defaultDescription || '';
-  const finalOgImage = ogImage || seoSettings?.ogImage || '';
+  // Social crawlers (WhatsApp, Facebook, LinkedIn, Slack) require an ABSOLUTE
+  // https URL for og:image — a relative /media/x.jpg is silently dropped.
+  const rawOgImage = ogImage || seoSettings?.ogImage || '';
+  const finalOgImage = rawOgImage
+    ? /^https?:\/\//i.test(rawOgImage)
+      ? rawOgImage
+      : `${typeof window !== 'undefined' ? window.location.origin : ''}${rawOgImage.startsWith('/') ? '' : '/'}${rawOgImage}`
+    : '';
   
   // Development mode overrides all other settings
   const isDevelopmentMode = seoSettings?.developmentMode ?? false;
@@ -327,6 +334,9 @@ export function SeoHead({
       {finalDescription && <meta property="og:description" content={finalDescription} />}
       <meta property="og:type" content={pageType === 'article' ? 'article' : 'website'} />
       {finalOgImage && <meta property="og:image" content={finalOgImage} />}
+      {finalOgImage && <meta property="og:image:secure_url" content={finalOgImage} />}
+      {finalOgImage && <meta property="og:image:width" content="1200" />}
+      {finalOgImage && <meta property="og:image:height" content="630" />}
       {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
       <meta property="og:site_name" content={siteTitle} />
 

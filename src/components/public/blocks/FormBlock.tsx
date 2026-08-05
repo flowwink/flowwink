@@ -153,8 +153,16 @@ export function FormBlock({ data, blockId, pageId }: FormBlockProps) {
 
       // Create/update lead automatically
       const emailField = data.fields.find(f => f.type === 'email');
-      const nameField = data.fields.find(f => f.label.toLowerCase().includes('name'));
-      const companyField = data.fields.find(f => f.label.toLowerCase().includes('company'));
+      // Field detection must speak the site's language. On optic the labels
+      // are "Namn" and "Verksamhet" — .includes('name') matches neither, so
+      // the lead arrived with an email and nothing else while the visitor had
+      // typed their name right there in the form.
+      const matchLabel = (needles: string[]) => (f: { label: string }) =>
+        needles.some((n) => f.label.toLowerCase().includes(n));
+      const nameField = data.fields.find(matchLabel(['name', 'namn']));
+      const companyField = data.fields.find(
+        matchLabel(['company', 'företag', 'verksamhet', 'organisation', 'bolag']),
+      );
       const phoneField = data.fields.find(f => f.type === 'phone');
 
       if (emailField && formData[emailField.id]) {

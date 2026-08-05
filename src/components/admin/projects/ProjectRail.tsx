@@ -83,8 +83,8 @@ export function ProjectRail({
         ))}
       </div>
 
-      <ScrollArea className="flex-1 -mx-1">
-        <div className="space-y-1 px-1">
+      <ScrollArea className="w-full flex-1">
+        <div className="w-full space-y-1">
           {visible.map((p) => {
             const s = stats?.get(p.id);
             const selected = selectedId === p.id;

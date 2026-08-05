@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260805210000",
-      "migrations_count": 293,
+      "migration_head": "20260805220000",
+      "migrations_count": 294,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1177,6 +1177,10 @@
         {
           "version": "20260805210000",
           "name": "crm-follow-through"
+        },
+        {
+          "version": "20260805220000",
+          "name": "user-dashboard-layouts"
         }
       ]
     },

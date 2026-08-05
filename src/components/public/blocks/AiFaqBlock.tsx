@@ -89,7 +89,16 @@ export function AiFaqBlock({ data }: Props) {
             messages: [
               {
                 role: 'system',
-                content: `You are a helpful assistant answering questions on a website. Use the FAQ context below when relevant, and answer concisely (2-4 sentences). If unsure, say so.\n\n### FAQ context\n${context || '(no FAQ provided)'}`,
+                // A hint, not a cage. chat-completion builds the real system
+                // prompt — identity, soul, and knowledge retrieved from the
+                // whole KB — so pinning the model to these few FAQ entries
+                // would make the block dumber than the site's own chat and
+                // unable to answer anything outside the visible list, which
+                // is the entire reason a visitor presses "ask".
+                content:
+                  `The visitor is reading an FAQ section and asked a question that may not be in it. ` +
+                  `Answer concisely (2-4 sentences) from the site's knowledge. Say plainly when you do not know.` +
+                  (context ? `\n\n### Questions already answered on this page\n${context}` : ''),
               },
               { role: 'user', content: q },
             ],
@@ -97,13 +106,42 @@ export function AiFaqBlock({ data }: Props) {
         },
       );
       if (!res.ok) throw new Error(`Assistant unavailable (${res.status})`);
-      const json = await res.json();
-      const content =
-        json?.choices?.[0]?.message?.content ??
-        json?.message ??
-        json?.content ??
-        '';
-      setAiAnswer(String(content).trim() || 'No response.');
+
+      // chat-completion streams Server-Sent Events. Calling res.json() on that
+      // yielded `Unexpected token 'd', "data: {"id"...` — the raw SSE prefix —
+      // so the button was broken for every visitor who pressed it. Read it the
+      // same way useChat does, and show the answer as it arrives.
+      if (!res.body) throw new Error('No response from server');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let answer = '';
+      let done = false;
+      while (!done) {
+        const { done: finished, value } = await reader.read();
+        if (finished) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') { done = true; break; }
+          try {
+            const parsed = JSON.parse(payload);
+            const delta = parsed.choices?.[0]?.delta?.content
+              ?? parsed.choices?.[0]?.message?.content;
+            if (delta) { answer += delta; setAiAnswer(answer); }
+          } catch {
+            // Half a chunk — put it back and wait for the rest.
+            buffer = line + '\n' + buffer;
+            break;
+          }
+        }
+      }
+      setAiAnswer(answer.trim() || 'No response.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {

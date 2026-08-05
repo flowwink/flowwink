@@ -334,18 +334,22 @@ export default function LeadDetailPage() {
           {/* Tasks */}
           <CrmTasksCard leadId={lead.id} />
 
-          {/* Email communication linked via related_entity (DB trigger) + open quotes */}
+          {/* Discuss: composer + unified cross-module timeline.
+              Sits directly under the record's open work (deals, tasks) because
+              it is the ACTION surface — you come here to write, not to read.
+              Notes are the Note tab; a separate "Add Note" card used to write
+              to the same lead_activities log twice over. */}
+          <RecordDiscussPanel leadId={lead.id} email={lead.email} />
+
+          {/* Channel detail below the unified log: Communication is the
+              email-only view (full bodies, open quotes), Visitor Intelligence
+              the behavioural one. Both are drill-downs into what the timeline
+              above already summarises — hence last, not competing for the top. */}
           <LeadCommunicationsCard leadId={lead.id} />
 
           {/* Visitor Intelligence — behavioral timeline (module: visitorIntelligence) */}
           <VisitorTimelineWidget leadId={lead.id} />
 
-          {/* Notes live in the Discuss composer's Note tab below — a separate
-              "Add Note" card wrote to the same lead_activities log twice over. */}
-
-
-          {/* Discuss: composer + unified cross-module timeline */}
-          <RecordDiscussPanel leadId={lead.id} email={lead.email} />
         </div>
 
         {/* Sidebar */}

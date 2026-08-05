@@ -88,6 +88,7 @@ export function useCreateProjectTask() {
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["project_tasks", variables.project_id] });
+      qc.invalidateQueries({ queryKey: ["project_task_stats"] });
       toast.success("Task added");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -104,6 +105,7 @@ export function useUpdateProjectTask() {
     },
     onSuccess: (projectId) => {
       qc.invalidateQueries({ queryKey: ["project_tasks", projectId] });
+      qc.invalidateQueries({ queryKey: ["project_task_stats"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -154,6 +156,7 @@ export function useDeleteProjectTask() {
     },
     onSuccess: (projectId) => {
       qc.invalidateQueries({ queryKey: ["project_tasks", projectId] });
+      qc.invalidateQueries({ queryKey: ["project_task_stats"] });
       toast.success("Task deleted");
     },
     onError: (e: Error) => toast.error(e.message),

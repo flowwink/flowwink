@@ -85,7 +85,7 @@ export function TicketsDashboardWidget() {
     staleTime: STALE,
     queryFn: async () => {
       const nowIso = new Date().toISOString();
-      const openFilter = ['new', 'open', 'in_progress', 'waiting'];
+      const openFilter = ['new', 'open', 'in_progress', 'waiting'] as const;
       const [open, unassigned, breached, urgent] = await Promise.all([
         supabase.from('tickets').select('id', { count: 'exact', head: true }).in('status', openFilter),
         supabase.from('tickets').select('id', { count: 'exact', head: true }).in('status', openFilter).is('assigned_to', null),

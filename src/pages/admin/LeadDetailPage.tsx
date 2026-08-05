@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
-import { useLead, useLeadActivities, useUpdateLead, useAddLeadNote, useQualifyLead, useDeleteLead } from '@/hooks/useLeads';
+import { useLead, useLeadActivities, useUpdateLead, useQualifyLead, useDeleteLead } from '@/hooks/useLeads';
 import { useCompanies, useCreateCompany } from '@/hooks/useCompanies';
 import { useAddLeadActivity, type ActivityType } from '@/hooks/useActivities';
 import { getLeadStatusInfo, type LeadStatus } from '@/lib/lead-utils';
@@ -54,11 +54,10 @@ export default function LeadDetailPage() {
   const { data: companies } = useCompanies();
   const createCompany = useCreateCompany();
   const updateLead = useUpdateLead();
-  const addNote = useAddLeadNote();
   const qualifyLead = useQualifyLead();
   const addActivity = useAddLeadActivity();
   const deleteLead = useDeleteLead();
-  const [note, setNote] = useState('');
+
   const [companyOpen, setCompanyOpen] = useState(false);
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -188,11 +187,8 @@ export default function LeadDetailPage() {
     });
   };
 
-  const handleAddNote = () => {
-    if (!note.trim()) return;
-    addNote.mutate({ leadId: lead.id, note });
-    setNote('');
-  };
+
+
 
   const handleQualify = () => {
     qualifyLead.mutate(lead.id);
@@ -344,29 +340,9 @@ export default function LeadDetailPage() {
           {/* Visitor Intelligence — behavioral timeline (module: visitorIntelligence) */}
           <VisitorTimelineWidget leadId={lead.id} />
 
-          {/* Add Note */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Add Note</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Write a note..."
-                  rows={2}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleAddNote}
-                  disabled={!note.trim() || addNote.isPending}
-                >
-                  Save
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Notes live in the Discuss composer's Note tab below — a separate
+              "Add Note" card wrote to the same lead_activities log twice over. */}
+
 
           {/* Discuss: composer + unified cross-module timeline */}
           <RecordDiscussPanel leadId={lead.id} email={lead.email} />

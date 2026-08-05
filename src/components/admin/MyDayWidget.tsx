@@ -43,7 +43,7 @@ function useMyDay(userId: string | undefined) {
           .limit(10),
         supabase
           .from('tickets')
-          .select('id,subject,due_at,status')
+          .select('id,subject,sla_deadline,status')
           .eq('assigned_to', userId!)
           .not('status', 'in', '(resolved,closed)')
           .limit(10),
@@ -74,12 +74,12 @@ function useMyDay(userId: string | undefined) {
           href: `/admin/projects?project=${r.project_id}`,
         });
       }
-      for (const r of (tickets.data ?? []) as { id: string; subject: string; due_at: string | null }[]) {
+      for (const r of (tickets.data ?? []) as { id: string; subject: string; sla_deadline: string | null }[]) {
         items.push({
           id: `tk-${r.id}`,
           kind: 'Ticket',
           title: r.subject,
-          due: r.due_at,
+          due: r.sla_deadline,
           href: `/admin/tickets?id=${r.id}`,
         });
       }

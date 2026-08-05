@@ -68,12 +68,34 @@ export async function executeProspectFitAnalysis(
       relatedDeals = data || [];
     }
 
+    // Load OUR side: ICP + positioning (Business Identity) and sender profile.
+    // Dynamic import keeps this module importable from Node-based unit tests
+    // (sales-context.ts resolves an https: Deno specifier at module load).
+    let ourContext: Record<string, unknown> | null = null;
+    try {
+      const { loadSalesContext } = await import('../sales-context.ts');
+      const ctxData = await loadSalesContext({
+        userId: ctx?.callerUserId ?? undefined,
+        includePages: true,
+      });
+      ourContext = {
+        formatted: ctxData.formatted,
+        icp: (ctxData.companyProfile as Record<string, unknown>)?.icp ?? null,
+        value_proposition: (ctxData.companyProfile as Record<string, unknown>)?.value_proposition ?? null,
+        target_industries: (ctxData.companyProfile as Record<string, unknown>)?.target_industries ?? null,
+        sender_profile: ctxData.userProfile,
+      };
+    } catch (ctxError) {
+      console.error('[prospect_fit_analysis] Failed to load sales context:', ctxError);
+    }
+
     // Return raw data — FlowPilot does the analysis
     return {
       success: true,
       company: company || { name: company_name, note: 'Not found in CRM' },
       related_leads: relatedLeads,
       related_deals: relatedDeals,
+      our_context: ourContext,
       data_completeness: {
         has_industry: !!company?.industry,
         has_size: !!company?.size,
@@ -82,8 +104,11 @@ export async function executeProspectFitAnalysis(
         is_enriched: !!company?.enriched_at,
         lead_count: relatedLeads.length,
         deal_count: relatedDeals.length,
+        icp_defined: !!ourContext?.icp,
+        sender_profile_defined: !!ourContext?.sender_profile,
       },
     };
+
   } catch (error) {
     console.error('Prospect fit analysis error:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error' };

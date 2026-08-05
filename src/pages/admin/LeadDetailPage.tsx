@@ -188,11 +188,8 @@ export default function LeadDetailPage() {
     });
   };
 
-  const handleAddNote = () => {
-    if (!note.trim()) return;
-    addNote.mutate({ leadId: lead.id, note });
-    setNote('');
-  };
+
+
 
   const handleQualify = () => {
     qualifyLead.mutate(lead.id);

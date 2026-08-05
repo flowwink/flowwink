@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
-import { useLead, useLeadActivities, useUpdateLead, useAddLeadNote, useQualifyLead, useDeleteLead } from '@/hooks/useLeads';
+import { useLead, useLeadActivities, useUpdateLead, useQualifyLead, useDeleteLead } from '@/hooks/useLeads';
 import { useCompanies, useCreateCompany } from '@/hooks/useCompanies';
 import { useAddLeadActivity, type ActivityType } from '@/hooks/useActivities';
 import { getLeadStatusInfo, type LeadStatus } from '@/lib/lead-utils';

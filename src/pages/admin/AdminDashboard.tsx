@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { StatusBadge } from '@/components/StatusBadge';
 
+import { MyDayWidget } from '@/components/admin/MyDayWidget';
 import { LeadsDashboardWidget } from '@/components/admin/LeadsDashboardWidget';
 import { AeoDashboardWidget } from '@/components/admin/AeoDashboardWidget';
 import { ChatFeedbackDashboardWidget } from '@/components/admin/ChatFeedbackDashboardWidget';
@@ -30,23 +31,10 @@ import { useLeadStats } from '@/hooks/useLeads';
 import { useSupportConversations } from '@/hooks/useSupportConversations';
 import { useChatSettings } from '@/hooks/useSiteSettings';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { WIDGET_META, ROLE_PRESETS, isWidgetRoleRelevant } from '@/lib/dashboard-presets';
+import { ROLE_LABELS, type AppRole } from '@/types/cms';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-
-// Widget metadata
-const WIDGET_META: Record<string, { title: string; description: string; moduleId?: string }> = {
-  'business-pulse': { title: 'Business Pulse', description: 'Health score, key metrics & daily briefing' },
-  'needs-attention': { title: 'Needs Attention', description: 'Action items requiring your attention' },
-  'content-overview': { title: 'Content Overview', description: 'Page statistics overview' },
-  'leads': { title: 'Leads', description: 'Recent leads and stats', moduleId: 'leads' },
-  'live-support': { title: 'Live Support', description: 'Support conversations', moduleId: 'liveSupport' },
-  'chat-analytics': { title: 'Chat Analytics', description: 'AI chat usage statistics', moduleId: 'chat' },
-  'chat-feedback': { title: 'Chat Feedback', description: 'User feedback on AI chat', moduleId: 'chat' },
-  'aeo': { title: 'AEO Insights', description: 'Answer Engine Optimization' },
-  'automation-health': { title: 'Automation Health', description: 'Automation run counts and error rates' },
-  'flowpilot': { title: 'FlowPilot', description: 'AI agent activity and goals' },
-  'recent-pages': { title: 'Recent Pages', description: 'Recently updated pages' },
-  'quick-actions': { title: 'Quick Actions', description: 'Common shortcuts' },
-};
 
 function SortableWidgetItem({ id, visible, onToggle }: { id: string; visible: boolean; onToggle: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -116,7 +104,8 @@ export default function AdminDashboard() {
   const chatEnabled = useIsModuleEnabled('chat');
   const liveSupportEnabled = useIsModuleEnabled('liveSupport');
   const flowpilotEnabled = useIsModuleEnabled('flowpilot');
-  const { layout, toggleWidget, reorderWidgets, resetLayout, isWidgetVisible } = useDashboardLayout();
+  const { roles, isAdmin } = useAuth();
+  const { layout, toggleWidget, reorderWidgets, resetLayout, isWidgetVisible, presetKey, applyPreset } = useDashboardLayout();
   const [customizeOpen, setCustomizeOpen] = useState(false);
 
   const sensors = useSensors(
@@ -152,6 +141,7 @@ export default function AdminDashboard() {
 
   // Module availability map
   const moduleAvailable: Record<string, boolean> = {
+    'my-day': true,
     'business-pulse': true,
     'needs-attention': true,
     'content-overview': true,
@@ -172,6 +162,9 @@ export default function AdminDashboard() {
     if (!moduleAvailable[widgetId]) return null;
 
     switch (widgetId) {
+      case 'my-day':
+        return <MyDayWidget key={widgetId} />;
+
       case 'business-pulse':
         return <BusinessPulseWidget key={widgetId} />;
 
@@ -487,6 +480,24 @@ export default function AdminDashboard() {
                   </SheetDescription>
                 </SheetHeader>
                 <div className="mt-6 space-y-4">
+                  {isAdmin && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground">Role preset</p>
+                      <Select value={presetKey} onValueChange={(v) => applyPreset(v as AppRole | 'admin')}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(ROLE_PRESETS) as (AppRole | 'admin')[]).map((k) => (
+                            <SelectItem key={k} value={k}>
+                              {k === 'admin' ? 'Admin (everything)' : ROLE_LABELS[k as AppRole]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Applies a widget set tuned for that role. You can still toggle individual widgets below.
+                      </p>
+                    </div>
+                  )}
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -500,6 +511,7 @@ export default function AdminDashboard() {
                         {layout.widgets.map(widget => {
                           const meta = WIDGET_META[widget.id];
                           if (!meta) return null;
+                          if (!isWidgetRoleRelevant(widget.id, roles ?? [], isAdmin)) return null;
                           const available = moduleAvailable[widget.id];
                           return (
                             <div key={widget.id} className={!available ? 'opacity-50' : ''}>

@@ -334,6 +334,9 @@ export function SeoHead({
       {finalDescription && <meta property="og:description" content={finalDescription} />}
       <meta property="og:type" content={pageType === 'article' ? 'article' : 'website'} />
       {finalOgImage && <meta property="og:image" content={finalOgImage} />}
+      {finalOgImage && <meta property="og:image:secure_url" content={finalOgImage} />}
+      {finalOgImage && <meta property="og:image:width" content="1200" />}
+      {finalOgImage && <meta property="og:image:height" content="630" />}
       {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
       <meta property="og:site_name" content={siteTitle} />
 

@@ -137,6 +137,14 @@ export function LeadKanban({ leads, isLoading, onLeadClick }: Props) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
+        {unstaged.length > 0 && (
+          <LeadColumn
+            stage={{ id: '__unstaged__', key: '__unstaged__', name: 'Unassigned', sort_order: -1, is_lost: false, is_won: false, fold: false } as PipelineStage}
+            index={-1}
+            leads={unstaged}
+            onLeadClick={onLeadClick}
+          />
+        )}
         {stages.map((stage, idx) => (
           <LeadColumn
             key={stage.id}

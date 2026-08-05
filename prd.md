@@ -66,3 +66,19 @@ Quick 1-to-few video meetings with shareable URLs — like Google Meet, built in
 - Invite fan-out — auto-send the join link via email / SMS / Telegram (per `mem/features/webinars-and-webmeet-plan.md`).
 - Optional TURN config per site.
 - Optional recording → push to `documents`.
+
+## Admin Dashboard (role-aware)
+
+The dashboard is a widget surface tuned per functional role instead of one CMS-centric page for everybody.
+
+**What ships now:**
+- **Widget catalog** — `src/lib/dashboard-presets.ts` holds all 20 widgets with `moduleId` (module toggle gating) and `roles` (relevance gating). Admin sees everything, same super-role rule as the sidebar.
+- **Role presets** — one widget set + order per role (`admin`, sales, marketing, support, accounting, hr, warehouse, purchasing, projects). Admins can apply another role's preset from Customize.
+- **My Day** (`MyDayWidget.tsx`) — cross-module personal queue: CRM tasks, project tasks and tickets assigned to the signed-in user plus pending approvals, deadline-sorted with overdue in red. Complements Needs Attention, which is org-wide.
+- **Module KPI widgets** (`ModuleDashboardWidgets.tsx`, shared chrome in `DashboardWidgetShell.tsx`) — Receivables, Support Queue, Approvals, Inventory, Purchasing, People, Projects. Read-only aggregates, every tile deep-links into its module.
+- **Persistence** — `user_dashboard_layouts (user_id, preset_key, widgets jsonb)`, RLS scoped to `auth.uid()`. `localStorage` remains a first-paint cache; the DB row is the source of truth so a layout follows the user across browsers.
+
+**Design principles:**
+- Widgets never own business logic — they read aggregates and link into the module.
+- Layout is stored per user AND per preset key, so "View as role" shows the previewed role's dashboard rather than the admin's saved one.
+- A widget hidden by role relevance is also hidden in Customize — no dead toggles.

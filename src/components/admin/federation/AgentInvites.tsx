@@ -367,6 +367,13 @@ export function AgentInvites() {
       // Operators get dispatch mode: broad reach to all skills via 2 tools
       // (search_skills + execute_skill) instead of hundreds of tool schemas.
       const connectUrl = isOperator ? `${mcpUrl}?mode=dispatch` : mcpUrl;
+      // The instance the key belongs to, said out loud. Keys are per-instance;
+      // naming it here is what stops "update the token" from silently keeping
+      // an old URL — the failure that cost an external operator a full round of
+      // debugging aimed entirely at the key.
+      const instanceRef = (() => {
+        try { return new URL(mcpUrl).host.split('.')[0]; } catch { return 'this instance'; }
+      })();
       const introLine = isOperator
         ? `You are being onboarded as the **primary operator** of a FlowWink business platform. There is no built-in agent — you have full operational control.`
         : `You have been invited to inspect and audit a FlowWink site.`;
@@ -388,11 +395,24 @@ Call \`tools/list\` to see what you can execute, then \`tools/call\` to run a to
 
 ## Connection
 
-- **Transport**: MCP over Streamable HTTP (JSON-RPC over POST)
-- **URL**: ${connectUrl}
-- **Authentication**: \`Authorization: Bearer ${rawKey}\`
+Paste this whole block into your MCP client config — **URL and key together**.
+A FlowWink key is minted for ONE instance and is rejected everywhere else, so
+swapping only the token into an existing config fails with
+\`Invalid or expired API key\` even though the key is perfectly good.
 
-Add the URL and Authorization header to your MCP client config. No onboarding or REST calls are required — connect and use the standard MCP surfaces: \`resources/list\`, \`resources/read\`, \`tools/list\`, \`tools/call\`.
+\`\`\`json
+{
+  "mcpServers": {
+    "flowwink": {
+      "url": "${connectUrl}",
+      "headers": { "Authorization": "Bearer ${rawKey}" }
+    }
+  }
+}
+\`\`\`
+
+- **Instance**: \`${instanceRef}\` — this key works only against this host
+- **Transport**: MCP over Streamable HTTP (JSON-RPC over POST) No onboarding or REST calls are required — connect and use the standard MCP surfaces: \`resources/list\`, \`resources/read\`, \`tools/list\`, \`tools/call\`.
 
 ## First steps
 

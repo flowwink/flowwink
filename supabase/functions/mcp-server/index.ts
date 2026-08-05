@@ -1140,7 +1140,24 @@ app.use("/*", async (c, next) => {
   const authHeader = xApiKey ? `Bearer ${xApiKey}` : c.req.header("Authorization");
   const auth = await authenticateApiKey(authHeader);
   if (!auth.valid) {
-    return c.json({ error: "Invalid or expired API key" }, 401);
+    // Keys are per-instance: every deployment hashes its own. Sending a
+    // perfectly good key to the wrong instance produced the same bare
+    // "Invalid or expired API key" as a revoked one, and the reader has no way
+    // to tell them apart — an external operator handed optic's key but left
+    // pointing at dev spent its round listing five theories about the KEY and
+    // none about the URL. Naming the instance turns that hunt into a glance.
+    // The host is already in the request; saying it back leaks nothing.
+    const host = (() => {
+      try { return new URL(c.req.url).host; } catch { return "this instance"; }
+    })();
+    const ref = host.split(".")[0] || host;
+    return c.json({
+      error: "Invalid or expired API key",
+      instance: ref,
+      hint: `This key is not valid for '${ref}'. API keys belong to ONE FlowWink `
+        + `instance — check that the URL you are calling is the instance the key `
+        + `was minted on, then that the key is still active in Developer → MCP Keys.`,
+    }, 401);
   }
   c.set("apiKeyScopes" as any, auth.scopes);
   c.set("apiKeyCreatedBy" as any, auth.createdBy);

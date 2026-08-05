@@ -1225,7 +1225,7 @@
         "invite-employee": "sha256:87bf2502e9d9e67f6d659342ef5abaca3009eb46e0fa9937c833b465f3c4efcd",
         "knowledge-indexer": "sha256:c6f628a21822a011e37b3719ef639f93b0dedab23c5becc0255e0c16e9c31289",
         "llms-txt": "sha256:0a8a132d383590b810617ff9cdcd4893980208233d0c26b65d6c17a80af4f452",
-        "mcp-server": "sha256:0d98de809c2402fe0712a26e39f515ec9a6f55f71cb8f1739bf894ef7e45d9a3",
+        "mcp-server": "sha256:83e0932b52f3749a016849f32ea1a619cfacd4c8f07aea14dab9b2c375c81d7b",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:766be614771b490303abefc25efff5ade8417a833fc8c8ed0fc4e725f84fec81",
         "newsletter": "sha256:e0d314e514159b86b4ff263f4e6084753265f2b8cef27a01711595f52e102ee1",

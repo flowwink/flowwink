@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { callSkill } from "@/lib/call-skill";
 import { toast } from "sonner";
 import { Search, Loader2, Target, Sparkles } from "lucide-react";

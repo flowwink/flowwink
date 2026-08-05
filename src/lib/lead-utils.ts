@@ -119,6 +119,34 @@ export async function createLeadFromForm(options: {
 }): Promise<{ lead: Lead | null; isNew: boolean; error: string | null }> {
   const { email, name, company, phone, formName, formData, sourceId, pageId } = options;
 
+  // The RPC is the working path. The client-side flow below fails for every
+  // anonymous visitor: the duplicate check runs as anon so RLS filters it to
+  // nothing, and .insert().select() needs RETURNING, which needs read rights
+  // the July security sweep (correctly) removed — the whole INSERT is
+  // rejected, the error is swallowed, and the visitor still sees "thank you".
+  // ingest_form_lead is SECURITY DEFINER: real dedupe, no read grant, and it
+  // returns nothing so an outsider cannot probe which emails exist in the CRM.
+  // The legacy path stays as fallback for instances that have not run the
+  // migration yet (the fleet runs several schema versions at once by design).
+  try {
+    const { error: rpcError } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => ReturnType<typeof supabase.rpc>)('ingest_form_lead', {
+      p_email: email,
+      p_name: name ?? null,
+      p_company: company ?? null,
+      p_phone: phone ?? null,
+      p_form_name: formName,
+      p_source_id: sourceId ?? null,
+      p_page_id: pageId ?? null,
+      p_form_data: (formData ?? {}) as never,
+    });
+    if (!rpcError) {
+      return { lead: null, isNew: true, error: null };
+    }
+    logger.warn('ingest_form_lead unavailable, falling back to client path', rpcError.message);
+  } catch (e) {
+    logger.warn('ingest_form_lead threw, falling back to client path', e);
+  }
+
   try {
     // Check if lead exists
     const { data: existingLead } = await supabase

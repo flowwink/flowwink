@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260805090000",
-      "migrations_count": 291,
+      "migration_head": "20260805190000",
+      "migrations_count": 292,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1169,6 +1169,10 @@
         {
           "version": "20260805090000",
           "name": "kb-article-visibility"
+        },
+        {
+          "version": "20260805190000",
+          "name": "ingest-form-lead-rpc"
         }
       ]
     },

@@ -1207,11 +1207,11 @@
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:be751f599ce2018e7a2452df8a7a5310d3deaa4856d39d0e65917c7f5040fc2f",
+      "shared_hash": "sha256:b930275f047eb4ebde0d64f0a8ad2cc03b93f52fcd6fb0cda74dbedeb4f6819c",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:82739d8e4bd4822d5e9e0bfd9529008df47b4c515b82c033fd6e577d07afbc97",
+        "agent-execute": "sha256:18078760de89fd3386043cff721067234d27ccc4586636aa6e7b80c5edd226f2",
         "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
         "ai-task": "sha256:6a0c6b21f9f0575650d9e478bc9184ce24541d3a18d00bb6c80c64a60f5e28aa",
         "automation-dispatcher": "sha256:c0ffa7a2c623209bf82030bd4b6feb1ed9ae92baa4ea5a08772eaa3fa912ea3e",

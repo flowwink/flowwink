@@ -104,10 +104,18 @@ export default async function handler(req: Request): Promise<Response> {
 
   const fullTitle = title === siteName ? title : titleTemplate.replace('%s', title);
 
+  // No SEO image configured: fall back to the brand logo so a share still
+  // shows something recognisable rather than a bare link.
+  const usingLogo = !image && !!logoFallback;
+  if (usingLogo) image = logoFallback;
+
   // WhatsApp/Facebook/LinkedIn drop relative image paths — always absolutize.
   if (image && !/^https?:\/\//i.test(image)) {
     image = `${origin}${image.startsWith('/') ? '' : '/'}${image}`;
   }
+
+  // summary_large_image without an image renders as a bare link on X/Twitter.
+  const twitterCard = image ? (usingLogo ? 'summary' : 'summary_large_image') : 'summary';
 
   const tags = [
     `<title>${esc(fullTitle)}</title>`,
@@ -119,9 +127,11 @@ export default async function handler(req: Request): Promise<Response> {
     siteName && `<meta property="og:site_name" content="${esc(siteName)}">`,
     image && `<meta property="og:image" content="${esc(image)}">`,
     image && `<meta property="og:image:secure_url" content="${esc(image)}">`,
-    image && `<meta property="og:image:width" content="1200">`,
-    image && `<meta property="og:image:height" content="630">`,
-    `<meta name="twitter:card" content="summary_large_image">`,
+    // Only claim 1200x630 for a purpose-made social image, not the logo.
+    !usingLogo && image && `<meta property="og:image:width" content="1200">`,
+    !usingLogo && image && `<meta property="og:image:height" content="630">`,
+    `<meta name="twitter:card" content="${twitterCard}">`,
+
     `<meta name="twitter:title" content="${esc(fullTitle)}">`,
     description && `<meta name="twitter:description" content="${esc(description)}">`,
     image && `<meta name="twitter:image" content="${esc(image)}">`,

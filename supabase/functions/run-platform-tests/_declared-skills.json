@@ -260,6 +260,7 @@
     "manage_equipment",
     "manage_expense_policy",
     "manage_expenses",
+    "manage_flowtable_base",
     "manage_flowtable_field",
     "manage_flowtable_record",
     "manage_flowtable_table",

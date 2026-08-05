@@ -55,6 +55,34 @@ const FLOWTABLE_SKILLS: SkillSeed[] = [
     },
   },
   {
+    name: 'manage_flowtable_base',
+    description: 'Create or update a Flowtable BASE — the top-level container tables live in. Use when: starting a new data surface (e.g. "put product info in a table" on an instance with no suitable base); renaming or re-describing a base. Idempotent: creating an existing slug returns that base instead of an error. NOT for: tables inside a base (manage_flowtable_table); records (manage_flowtable_record); deleting a base (UI-only by design).',
+    category: 'crm',
+    handler: 'rpc:manage_flowtable_base',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'manage_flowtable_base',
+        description: 'Create or update a Flowtable base. create needs name (slug derived); update identifies the base by slug or id and changes only the fields you pass.',
+        parameters: {
+          type: 'object',
+          required: ['action'],
+          properties: {
+            action: { type: 'string', enum: ['create', 'update'] },
+            name: { type: 'string', description: 'Base display name (required for create)' },
+            slug: { type: 'string', description: 'Optional slug; derived from name if omitted' },
+            description: { type: 'string', description: 'What the base holds — write it for a colleague finding it later' },
+            icon: { type: 'string', description: 'Lucide icon name, default Table' },
+            color: { type: 'string', description: 'Accent color, default blue' },
+            base: { type: 'string', description: 'For update: the base slug or id' },
+          },
+        },
+      },
+    },
+    instructions: 'Typical flow on a fresh instance: manage_flowtable_base create → manage_flowtable_table create (with fields) → manage_flowtable_record. Agent-created bases are workspace-shared so colleagues see them. The create response includes already_existed — true means the slug was taken and you got the existing base; check its tables before assuming it is empty.',
+  },
+  {
     name: 'list_flowtable_records',
     description:
       'List records inside a Flowtable table. Use when: reading rows from a user-owned ad-hoc table (call lists, prospect sheets). Each record has a free-form `values` JSONB matching the table\'s field keys.',

@@ -70,12 +70,19 @@ serve(async (req) => {
 
     console.log(`Creating user: ${email} with role: ${role}`);
 
-    // Create user with admin API (email_confirm: true skips verification)
+    // Create user with admin API (email_confirm: true skips verification).
+    // signup_type is passed so handle_new_user() (which fails CLOSED to
+    // 'customer' for absent metadata) does not seed a role we then have to
+    // fight. We still reconcile below so the stored role set is exactly the
+    // one the admin picked.
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: full_name || email }
+      user_metadata: {
+        full_name: full_name || email,
+        signup_type: role === 'admin' ? 'admin' : 'customer',
+      }
     });
 
     if (createError) {
@@ -88,18 +95,26 @@ serve(async (req) => {
 
     console.log(`User created with ID: ${newUser.user.id}`);
 
-    // The signup trigger creates a default 'writer' role — replace it with the
-    // requested role (upsert so it also works when no default row exists).
-    if (role !== 'writer') {
-      const { error: roleUpdateError } = await supabaseAdmin
-        .from('user_roles')
-        .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
+    // Reconcile: exactly the requested role, nothing the signup trigger seeded.
+    const { error: roleInsertError } = await supabaseAdmin
+      .from('user_roles')
+      .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
 
-      if (roleUpdateError) {
-        console.error('Role update error:', roleUpdateError);
-        // Don't throw - user is created, just log the issue
-      }
+    if (roleInsertError) {
+      console.error('Role insert error:', roleInsertError);
+      // Don't throw - user is created, just log the issue
     }
+
+    const { error: rolePruneError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', newUser.user.id)
+      .neq('role', role);
+
+    if (rolePruneError) {
+      console.error('Role prune error:', rolePruneError);
+    }
+
 
     // Log the action for GDPR compliance
     const { error: auditError } = await supabaseAdmin

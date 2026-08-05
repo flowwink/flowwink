@@ -159,3 +159,57 @@ export function useDeleteProjectTask() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+export type ProjectTaskStats = {
+  total: number;
+  done: number;
+  open: number;
+  inProgress: number;
+  overdue: number;
+  dueSoon: number;
+  progress: number; // 0-100
+};
+
+/**
+ * One query for the whole portfolio: per-project task rollups used by the
+ * project rail and the KPI strip. Avoids N per-project queries.
+ */
+export function useProjectTaskStats() {
+  return useQuery({
+    queryKey: ["project_task_stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .select("project_id,status,due_date");
+      if (error) throw error;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const soon = new Date(today);
+      soon.setDate(soon.getDate() + 7);
+
+      const map = new Map<string, ProjectTaskStats>();
+      for (const row of (data ?? []) as { project_id: string; status: string; due_date: string | null }[]) {
+        const s =
+          map.get(row.project_id) ??
+          { total: 0, done: 0, open: 0, inProgress: 0, overdue: 0, dueSoon: 0, progress: 0 };
+        s.total += 1;
+        if (row.status === "done") s.done += 1;
+        else {
+          s.open += 1;
+          if (row.status === "in_progress") s.inProgress += 1;
+          if (row.due_date) {
+            const due = new Date(row.due_date);
+            if (due < today) s.overdue += 1;
+            else if (due <= soon) s.dueSoon += 1;
+          }
+        }
+        map.set(row.project_id, s);
+      }
+      for (const s of map.values()) {
+        s.progress = s.total ? Math.round((s.done / s.total) * 100) : 0;
+      }
+      return map;
+    },
+  });
+}

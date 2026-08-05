@@ -1,17 +1,25 @@
 // prospect_fit_analysis — internal skill handler.
 //
-// Data Aggregator (No AI). Collects company data and returns it for FlowPilot
-// (or UI) to score. OpenClaw alignment: "hand" not "brain".
+// Data Aggregator (No AI). Collects BOTH sides of the fit question and returns
+// them for FlowPilot (or the admin UI, via useProspectFit) to score:
+//   - the prospect side: company, related leads, related deals
+//   - our side (`our_context`): ICP + positioning from Business Identity
+//     (site_settings.company_profile) and the sender profile from
+//     sales_intelligence_profiles
+// The reasoning stays in FlowPilot. OpenClaw alignment: "hand" not "brain".
 //
 // Moved from the standalone `prospect-fit-analysis` edge function
-// (edge-surface refactor B1a, wave 1). Response objects unchanged.
+// (edge-surface refactor B1a, wave 1). Response objects are additive-only.
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { HandlerCtx } from './qualify-lead.ts';
 
 export async function executeProspectFitAnalysis(
   supabase: SupabaseClient,
   args: Record<string, unknown>,
+  ctx?: HandlerCtx,
 ): Promise<Record<string, unknown>> {
+
   try {
     const { company_id, company_name } = args as { company_id?: string; company_name?: string };
 

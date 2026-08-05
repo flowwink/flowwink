@@ -138,6 +138,12 @@ export async function createLeadFromForm(options: {
       p_source_id: sourceId ?? null,
       p_page_id: pageId ?? null,
       p_form_data: (formData ?? {}) as never,
+      // The tracked-visitor cookie id — lets the server stitch the browsing
+      // history onto the lead (page_views.lead_id backfill). Null when the
+      // visitor declined analytics cookies, and the server treats that as
+      // "no journey to attach", which is the consent-respecting answer.
+      p_visitor_id:
+        typeof localStorage !== 'undefined' ? localStorage.getItem('pez_visitor_id') : null,
     });
     if (!rpcError) {
       return { lead: null, isNew: true, error: null };

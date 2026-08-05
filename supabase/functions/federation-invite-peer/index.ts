@@ -180,6 +180,15 @@ serve(async (req: Request) => {
           ...(body.metadata ?? {}),
         },
         mcp_api_key: mcpKey,
+        // The MCP gateway resolves a caller to its peer via a2a_peers.api_key_id
+        // (authenticateApiKey → resolvePeerGroups → mission lookup). Storing the
+        // link only in federation_connections left this column NULL, so the very
+        // first call found no peer for the key and auto-registered a SECOND one
+        // named after the key. The invited peer kept the mission and no key; the
+        // duplicate got the key and no mission. They never met, and every invite
+        // ended with `flowwink://mission` → "No mission assigned to this peer" —
+        // the first instruction we give every agent, failing for everyone.
+        api_key_id: apiKey.id,
       })
       .select()
       .single();

@@ -1213,7 +1213,7 @@
         "email-webhook": "sha256:0ab483c28ad242ba4cbadc329f56a029ef246c89e669bd81184ce9017ede007d",
         "event-dispatcher": "sha256:1226b1ce317cb70cfdae46441f59499f8559b159fd08ee5063105ebfd98e5aa0",
         "extract-pdf-text": "sha256:96f98e21532f261f3e41dc8843dee623e9a010a6106d4e40d3664d743df46304",
-        "federation-invite-peer": "sha256:ea8c2c09c4f6cd1839da87a93932794086ff5a37f7e9419864b38928f5d61bac",
+        "federation-invite-peer": "sha256:f75a07661700e2c926b972336df93b67f6d4d4180ff9f1d05e3ee26bedf5a4e1",
         "flowpilot-heartbeat": "sha256:21acbb3522ba6b2d9a117ac63fbfb548bd21ea282715bc5d032047d9f9b310cd",
         "flowpilot-lifecycle": "sha256:01398e7de05ded81c439fa20d3fff9480aae9096fabe2c16add31a8c63c5c143",
         "gatewayapi-ingest": "sha256:9daeb71012e0b49d3eee1583d2511a50224cec4e1b69de46a471e1a63d7f066a",

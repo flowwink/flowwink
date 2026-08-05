@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260805220000",
-      "migrations_count": 294,
+      "migration_head": "20260805230000",
+      "migrations_count": 295,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1181,6 +1181,10 @@
         {
           "version": "20260805220000",
           "name": "user-dashboard-layouts"
+        },
+        {
+          "version": "20260805230000",
+          "name": "form-lead-visitor-stitch"
         }
       ]
     },

@@ -100,6 +100,11 @@ export default async function handler(req: Request): Promise<Response> {
 
   const fullTitle = title === siteName ? title : titleTemplate.replace('%s', title);
 
+  // WhatsApp/Facebook/LinkedIn drop relative image paths — always absolutize.
+  if (image && !/^https?:\/\//i.test(image)) {
+    image = `${origin}${image.startsWith('/') ? '' : '/'}${image}`;
+  }
+
   const tags = [
     `<title>${esc(fullTitle)}</title>`,
     description && `<meta name="description" content="${esc(description)}">`,

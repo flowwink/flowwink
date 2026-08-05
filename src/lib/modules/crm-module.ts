@@ -227,6 +227,72 @@ Full lead management: list, get, update status/score, delete.
 - Re-opening a lost lead (setting any non-lost status) automatically clears lost_reason and lost_note.`,
   },
   {
+    name: 'assign_lead',
+    description: 'Assign a lead to a person — set who the seller/owner is. Takes the lead\'s email or id and the assignee\'s EMAIL (resolved to a user id server-side), so a shared agent can act on "magnus@froste.eu is the seller on this one". Use when: someone says who owns/handles/sells a lead; distributing inbound leads among colleagues. NOT for: assigning companies (assign_company); changing lead status (manage_leads).',
+    category: 'crm',
+    handler: 'rpc:assign_lead',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'assign_lead',
+        description: 'Set the assigned owner of a lead. Identify the lead by email or id; the assignee by their platform-user email (or id).',
+        parameters: {
+          type: 'object',
+          required: ['lead', 'assignee'],
+          properties: {
+            lead: { type: 'string', description: "The lead's email address or uuid" },
+            assignee: { type: 'string', description: "The owning user's email (must be a platform user) or uuid" },
+          },
+        },
+      },
+    },
+    instructions: 'The result echoes the row after the write (lead_email, assignee_email) — report THOSE values back, not the request. If the response contains an error about the assignee, the person is not a platform user yet: tell the requester to invite them under Settings → Users first.',
+  },
+  {
+    name: 'assign_company',
+    description: 'Set the account owner of a company — who is responsible for the account. Takes the company\'s exact name or id and the owner\'s EMAIL (resolved server-side). Use when: someone says who owns/manages a customer or account. NOT for: leads (assign_lead); editing other company fields (manage_company).',
+    category: 'crm',
+    handler: 'rpc:assign_company',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'assign_company',
+        description: 'Set account_owner on a company. Identify the company by exact name or uuid; the owner by platform-user email or uuid.',
+        parameters: {
+          type: 'object',
+          required: ['company', 'owner'],
+          properties: {
+            company: { type: 'string', description: "The company's exact name or uuid" },
+            owner: { type: 'string', description: "The owning user's email (must be a platform user) or uuid" },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'crm_followup_report',
+    description: 'What has slipped through the cracks: stale leads (no activity for N days), unassigned leads, and overdue project tasks — each with the responsible person\'s email. The daily-check answer for "vad har vi missat / what needs attention / anything overdue?". Use when: a morning or status check; someone asks what is overdue, stale, unhandled or forgotten. NOT for: listing ALL leads (manage_leads); project overviews (manage_project_task).',
+    category: 'crm',
+    handler: 'rpc:crm_followup_report',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'crm_followup_report',
+        description: 'One call returns stale_leads, unassigned_leads, overdue_tasks (with days overdue and assignee emails) and a count of open tasks lacking a due date.',
+        parameters: {
+          type: 'object',
+          properties: {
+            stale_days: { type: 'number', description: 'Days without activity before a lead counts as stale. Default 14.' },
+          },
+        },
+      },
+    },
+    instructions: 'Summarise per PERSON when reporting (the assignee emails are included for exactly this) so each colleague hears their own follow-ups. tasks_without_due_date > 0 is worth mentioning once: those tasks can never show up as overdue, which is how things get lost — suggest setting due dates.',
+  },
+  {
     name: 'crm_task_list',
     description: 'List CRM tasks with optional filters for lead, deal, priority, and completion status. Use when: reviewing upcoming tasks; checking tasks for a specific lead; auditing task completion. NOT for: creating a new task (crm_task_create); updating a task (crm_task_update).',
     category: 'crm',

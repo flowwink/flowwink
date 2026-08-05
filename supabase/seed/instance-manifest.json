@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260805190000",
-      "migrations_count": 292,
+      "migration_head": "20260805210000",
+      "migrations_count": 293,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1173,12 +1173,16 @@
         {
           "version": "20260805190000",
           "name": "ingest-form-lead-rpc"
+        },
+        {
+          "version": "20260805210000",
+          "name": "crm-follow-through"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:beebaaec72d7f39a7e80ebb84905d1f69fb9e3b8cb0bddcd9e360c38302efbbf",
-      "skill_count": 517,
+      "seed_hash": "sha256:f3f3c3a69dec4f8f799268e1a42e6c9735639819b77e95418724d46c8a849b95",
+      "skill_count": 520,
       "module_count": 68
     },
     "edge_functions": {

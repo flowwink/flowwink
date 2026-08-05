@@ -80,9 +80,13 @@ export function LeadKanban({ leads, isLoading, onLeadClick }: Props) {
 
   const byStage: Record<string, LeadWithCompany[]> = {};
   for (const s of stages) byStage[s.id] = [];
+  // Contacts whose stage/status maps to no configured stage must stay visible —
+  // otherwise the board silently hides real records (looked like "empty CRM").
+  const unstaged: LeadWithCompany[] = [];
   for (const l of leads) {
     const sid = leadStageId(l);
     if (sid) (byStage[sid] ??= []).push(l);
+    else unstaged.push(l);
   }
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null;

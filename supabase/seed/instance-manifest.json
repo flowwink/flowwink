@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260805090000",
-      "migrations_count": 290,
+      "migrations_count": 291,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1161,6 +1161,10 @@
         {
           "version": "20260804150000",
           "name": "seed-role-module-access-defaults"
+        },
+        {
+          "version": "20260805003142",
+          "name": "e56aef5d-db4d-418f-b0d0-f54e80719265"
         },
         {
           "version": "20260805090000",

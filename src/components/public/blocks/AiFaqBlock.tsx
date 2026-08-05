@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useUiText } from '@/lib/ui-text';
 import { Sparkles, Search, Loader2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export function AiFaqBlock({ data }: Props) {
+  const t = useUiText();
   const {
     title = 'Frequently asked questions',
     subtitle,
@@ -203,7 +205,7 @@ export function AiFaqBlock({ data }: Props) {
               <p className="text-sm text-muted-foreground mb-4">{emptyStateText}</p>
               <Button variant="outline" onClick={askAi} disabled={!query.trim()}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                Ask the assistant
+                {t('faq.askAssistant', 'Ask the assistant')}
               </Button>
             </div>
           )}
@@ -215,14 +217,14 @@ export function AiFaqBlock({ data }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              Assistant answer
+              {t('faq.answerTitle', 'Assistant answer')}
             </DialogTitle>
             <DialogDescription className="italic">"{query}"</DialogDescription>
           </DialogHeader>
           <div className="min-h-[80px]">
             {loading ? (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" /> Thinking…
+                <Loader2 className="h-4 w-4 animate-spin" /> {t('faq.thinking', 'Thinking…')}
               </div>
             ) : error ? (
               <p className="text-sm text-destructive">{error}</p>
@@ -234,7 +236,7 @@ export function AiFaqBlock({ data }: Props) {
           </div>
           <div className="pt-2 flex justify-end">
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
-              Close
+              {t('common.close', 'Close')}
             </Button>
           </div>
         </DialogContent>

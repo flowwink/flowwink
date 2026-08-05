@@ -24,6 +24,13 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   { id: 'live-support', title: 'Live Support', description: 'Support conversations', moduleId: 'liveSupport', roles: ['support'] },
   { id: 'chat-analytics', title: 'Chat Analytics', description: 'AI chat usage statistics', moduleId: 'chat', roles: ['support', 'marketing'] },
   { id: 'chat-feedback', title: 'Chat Feedback', description: 'User feedback on AI chat', moduleId: 'chat', roles: ['support', 'marketing'] },
+  { id: 'finance', title: 'Receivables', description: 'Outstanding, overdue & draft invoices', moduleId: 'invoicing', roles: ['accounting', 'sales'] },
+  { id: 'tickets', title: 'Support Queue', description: 'Open, unassigned & SLA-breached tickets', moduleId: 'tickets', roles: ['support'] },
+  { id: 'approvals', title: 'Approvals', description: 'Pending approval requests and amount at stake', moduleId: 'approvals', roles: ['accounting', 'purchasing', 'hr'] },
+  { id: 'inventory', title: 'Inventory', description: 'Low stock, out of stock & open stock moves', moduleId: 'inventory', roles: ['warehouse'] },
+  { id: 'purchasing', title: 'Purchasing', description: 'Draft POs, late deliveries & committed spend', moduleId: 'purchasing', roles: ['purchasing'] },
+  { id: 'hr', title: 'People', description: 'Headcount, leave to approve & open roles', moduleId: 'hr', roles: ['hr'] },
+  { id: 'projects', title: 'Projects', description: 'Active projects, overdue & unassigned tasks', moduleId: 'projects', roles: ['projects'] },
   { id: 'aeo', title: 'AEO Insights', description: 'Answer Engine Optimization', roles: ['marketing'] },
   { id: 'automation-health', title: 'Automation Health', description: 'Automation run counts and error rates' },
   { id: 'flowpilot', title: 'FlowPilot', description: 'AI agent activity and goals' },
@@ -43,15 +50,15 @@ export const DEFAULT_WIDGET_ORDER = DASHBOARD_WIDGETS.map((w) => w.id);
  * are still available (togglable in Customize) but start hidden.
  */
 export const ROLE_PRESETS: Partial<Record<AppRole | 'admin', string[]>> = {
-  admin: ['my-day', 'business-pulse', 'needs-attention', 'content-overview', 'leads', 'live-support', 'flowpilot', 'automation-health', 'chat-analytics', 'chat-feedback', 'aeo', 'recent-pages', 'quick-actions'],
-  sales: ['my-day', 'needs-attention', 'leads', 'business-pulse', 'quick-actions'],
+  admin: ['my-day', 'business-pulse', 'needs-attention', 'finance', 'tickets', 'approvals', 'content-overview', 'leads', 'live-support', 'flowpilot', 'automation-health', 'chat-analytics', 'chat-feedback', 'aeo', 'recent-pages', 'quick-actions'],
+  sales: ['my-day', 'needs-attention', 'leads', 'finance', 'business-pulse', 'quick-actions'],
   marketing: ['my-day', 'content-overview', 'aeo', 'leads', 'chat-analytics', 'chat-feedback', 'recent-pages', 'quick-actions'],
-  support: ['my-day', 'needs-attention', 'live-support', 'chat-analytics', 'chat-feedback', 'quick-actions'],
-  accounting: ['my-day', 'needs-attention', 'business-pulse', 'quick-actions'],
-  hr: ['my-day', 'needs-attention', 'quick-actions'],
-  warehouse: ['my-day', 'needs-attention', 'quick-actions'],
-  purchasing: ['my-day', 'needs-attention', 'quick-actions'],
-  projects: ['my-day', 'needs-attention', 'quick-actions'],
+  support: ['my-day', 'needs-attention', 'tickets', 'live-support', 'chat-analytics', 'chat-feedback', 'quick-actions'],
+  accounting: ['my-day', 'needs-attention', 'finance', 'approvals', 'business-pulse', 'quick-actions'],
+  hr: ['my-day', 'needs-attention', 'hr', 'approvals', 'quick-actions'],
+  warehouse: ['my-day', 'needs-attention', 'inventory', 'quick-actions'],
+  purchasing: ['my-day', 'needs-attention', 'purchasing', 'approvals', 'inventory', 'quick-actions'],
+  projects: ['my-day', 'needs-attention', 'projects', 'quick-actions'],
 };
 
 /** Roles that may see a widget, taking admin's super-role into account. */

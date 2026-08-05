@@ -16,6 +16,15 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { StatusBadge } from '@/components/StatusBadge';
 
 import { MyDayWidget } from '@/components/admin/MyDayWidget';
+import {
+  FinanceDashboardWidget,
+  TicketsDashboardWidget,
+  ApprovalsDashboardWidget,
+  InventoryDashboardWidget,
+  PurchasingDashboardWidget,
+  HrDashboardWidget,
+  ProjectsDashboardWidget,
+} from '@/components/admin/ModuleDashboardWidgets';
 import { LeadsDashboardWidget } from '@/components/admin/LeadsDashboardWidget';
 import { AeoDashboardWidget } from '@/components/admin/AeoDashboardWidget';
 import { ChatFeedbackDashboardWidget } from '@/components/admin/ChatFeedbackDashboardWidget';
@@ -104,6 +113,13 @@ export default function AdminDashboard() {
   const chatEnabled = useIsModuleEnabled('chat');
   const liveSupportEnabled = useIsModuleEnabled('liveSupport');
   const flowpilotEnabled = useIsModuleEnabled('flowpilot');
+  const invoicingEnabled = useIsModuleEnabled('invoicing');
+  const ticketsEnabled = useIsModuleEnabled('tickets');
+  const approvalsEnabled = useIsModuleEnabled('approvals');
+  const inventoryEnabled = useIsModuleEnabled('inventory');
+  const purchasingEnabled = useIsModuleEnabled('purchasing');
+  const hrEnabled = useIsModuleEnabled('hr');
+  const projectsEnabled = useIsModuleEnabled('projects');
   const { roles, isAdmin } = useAuth();
   const { layout, toggleWidget, reorderWidgets, resetLayout, isWidgetVisible, presetKey, applyPreset } = useDashboardLayout();
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -149,6 +165,13 @@ export default function AdminDashboard() {
     'live-support': liveSupportEnabled !== false,
     'chat-analytics': chatEnabled,
     'chat-feedback': chatEnabled,
+    'finance': invoicingEnabled !== false,
+    'tickets': ticketsEnabled !== false,
+    'approvals': approvalsEnabled !== false,
+    'inventory': inventoryEnabled !== false,
+    'purchasing': purchasingEnabled !== false,
+    'hr': hrEnabled !== false,
+    'projects': projectsEnabled !== false,
     'aeo': true,
     'automation-health': true,
     'flowpilot': true,
@@ -167,6 +190,27 @@ export default function AdminDashboard() {
 
       case 'business-pulse':
         return <BusinessPulseWidget key={widgetId} />;
+
+      case 'finance':
+        return <FinanceDashboardWidget key={widgetId} />;
+
+      case 'tickets':
+        return <TicketsDashboardWidget key={widgetId} />;
+
+      case 'approvals':
+        return <ApprovalsDashboardWidget key={widgetId} />;
+
+      case 'inventory':
+        return <InventoryDashboardWidget key={widgetId} />;
+
+      case 'purchasing':
+        return <PurchasingDashboardWidget key={widgetId} />;
+
+      case 'hr':
+        return <HrDashboardWidget key={widgetId} />;
+
+      case 'projects':
+        return <ProjectsDashboardWidget key={widgetId} />;
 
       case 'needs-attention':
         return totalActionItems > 0 ? (

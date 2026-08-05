@@ -83,7 +83,7 @@ export function useDashboardLayout() {
         .eq('preset_key', presetKey)
         .maybeSingle();
       if (cancelled || dirtyRef.current) return;
-      const widgets = data?.widgets as DashboardWidgetConfig[] | undefined;
+      const widgets = data?.widgets as unknown as DashboardWidgetConfig[] | undefined;
       if (Array.isArray(widgets) && widgets.length > 0) {
         const merged = mergeWithCatalog({ widgets });
         setLayout(merged);

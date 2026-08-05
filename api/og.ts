@@ -52,21 +52,25 @@ export default async function handler(req: Request): Promise<Response> {
   let siteName = '';
   let description = '';
   let image = '';
+  let logoFallback = '';
   let twitter = '';
   let titleTemplate = '%s';
   let isArticle = false;
 
   if (base && key) {
-    const settings = await pg(base, key, 'site_settings?key=in.(seo,general)&select=key,value');
+    const settings = await pg(base, key, 'site_settings?key=in.(seo,general,branding)&select=key,value');
     const byKey: Record<string, any> = {};
     for (const row of settings) byKey[row.key] = row.value || {};
     const seo = byKey.seo || {};
-    title = seo.siteTitle || 'Website';
-    siteName = seo.siteTitle || title;
-    description = seo.defaultDescription || '';
+    const branding = byKey.branding || {};
+    title = seo.siteTitle || branding.organizationName || 'Website';
+    siteName = seo.siteTitle || branding.organizationName || title;
+    description = seo.defaultDescription || branding.brandTagline || '';
     image = seo.ogImage || '';
+    logoFallback = branding.logo || '';
     twitter = seo.twitterHandle || '';
     titleTemplate = seo.titleTemplate || '%s';
+
 
     const blog = path.match(/^\/blog\/(.+)$/);
     if (blog) {

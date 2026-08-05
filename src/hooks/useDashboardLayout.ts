@@ -102,12 +102,14 @@ export function useDashboardLayout() {
       localStorage.setItem(getStorageKey(userId, presetKey), JSON.stringify(next));
     } catch (_e) { /* ignore */ }
     if (!isAuthed) return;
-    void supabase
+    // PostgrestBuilder is lazy — it only runs when consumed, hence .then().
+    supabase
       .from('user_dashboard_layouts')
       .upsert(
         { user_id: profile!.id, preset_key: presetKey, widgets: next.widgets as never },
         { onConflict: 'user_id,preset_key' },
-      );
+      )
+      .then(() => undefined);
   }, [userId, presetKey, isAuthed, profile]);
 
   const saveLayout = useCallback((newLayout: DashboardLayout) => {
@@ -146,11 +148,12 @@ export function useDashboardLayout() {
       localStorage.removeItem(getStorageKey(userId, presetKey));
     } catch (_e) { /* ignore */ }
     if (isAuthed) {
-      void supabase
+      supabase
         .from('user_dashboard_layouts')
         .delete()
         .eq('user_id', profile!.id)
-        .eq('preset_key', presetKey);
+        .eq('preset_key', presetKey)
+        .then(() => undefined);
     }
   }, [userId, presetKey, isAuthed, profile]);
 

@@ -108,9 +108,9 @@ export default function LeadsPage() {
 
   const statCards = [
     { label: 'Total', value: stats?.total || 0, icon: Users, color: 'text-foreground' },
-    { label: 'Contacts', value: stats?.leads || 0, icon: TrendingUp, color: 'text-blue-500' },
-    { label: 'Opportunities', value: stats?.opportunities || 0, icon: Sparkles, color: 'text-amber-500' },
-    { label: 'Customers', value: stats?.customers || 0, icon: UserCheck, color: 'text-green-500' },
+    { label: 'New', value: stats?.leads || 0, icon: TrendingUp, color: 'text-primary' },
+    { label: 'Opportunities', value: stats?.opportunities || 0, icon: Sparkles, color: 'text-warning' },
+    { label: 'Customers', value: stats?.customers || 0, icon: UserCheck, color: 'text-success' },
   ];
 
   // pipeline column rendering now lives inside <LeadKanban /> (dynamic stages).

@@ -43,7 +43,27 @@ export async function executeQualifyLead(
     const leadId = body.leadId ?? body.lead_id;
 
     if (!leadId) {
-      return { error: 'Lead ID is required (pass leadId or lead_id)' };
+      // Sweep mode: no id → qualify every pending lead. This is what the
+      // scheduled automation calls. Qualification used to be fired from the
+      // browser after form submit — which never worked for the people forms
+      // exist for: qualify_lead is an internal skill, and a visitor holds the
+      // anon key. Server-side sweep is the honest home for it.
+      const { data: pending } = await supabase
+        .from('leads')
+        .select('id, email')
+        .is('ai_qualified_at', null)
+        .eq('status', 'lead')
+        .order('created_at', { ascending: true })
+        .limit(10);
+      if (!pending || pending.length === 0) {
+        return { swept: 0, message: 'No unqualified leads.' };
+      }
+      const results: Array<Record<string, unknown>> = [];
+      for (const row of pending) {
+        const one = await executeQualifyLead(supabase, { leadId: row.id }, ctx);
+        results.push({ lead_id: row.id, email: row.email, ...one });
+      }
+      return { swept: results.length, results };
     }
 
     // Fetch lead

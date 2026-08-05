@@ -72,7 +72,7 @@ Adds a new lead to the CRM system.
   },
   {
     name: 'qualify_lead',
-    description: 'Score and qualify a lead based on activities and engagement data. Use when: evaluating lead quality; automating lead scoring; prioritizing sales pipeline. NOT for: adding new leads (add_lead); managing lead records (manage_leads).',
+    description: 'Score and qualify a lead based on activities and engagement data. Use when: evaluating lead quality; automating lead scoring; prioritizing sales pipeline. NOT for: adding new leads (add_lead); managing lead records (manage_leads). Call WITHOUT leadId to sweep: qualifies up to 10 pending leads (ai_qualified_at null) oldest first — this is what the qualify_new_leads automation runs.',
     category: 'crm',
     handler: 'internal:qualify_lead',
     scope: 'internal',
@@ -910,6 +910,19 @@ export const crmModule = defineModule<CRMLeadInput, CRMLeadOutput>({
     tables: ['lead_activities', 'leads', 'crm_tasks', 'activities'],
   },
   skillSeeds: CRM_SKILLS,
+
+  automations: [
+    {
+      name: 'qualify_new_leads',
+      description:
+        'Sweeps unqualified leads (ai_qualified_at is null) every 15 minutes and scores them. Replaces the old browser-side trigger, which called an internal skill with the anon key and therefore never ran for actual visitors — the only people forms exist for.',
+      trigger_type: 'cron',
+      trigger_config: { expression: '*/15 * * * *' },
+      skill_name: 'qualify_lead',
+      skill_arguments: {},
+      executor: 'platform',
+    },
+  ],
 
   async publish(input: CRMLeadInput): Promise<CRMLeadOutput> {
     try {

@@ -1181,13 +1181,13 @@
       ]
     },
     "skills": {
-      "seed_hash": "sha256:f3f3c3a69dec4f8f799268e1a42e6c9735639819b77e95418724d46c8a849b95",
+      "seed_hash": "sha256:adabbe560f3c23d18ce468375e4f029c77a7fa62c938024e623950afac9ad158",
       "skill_count": 520,
       "module_count": 68
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:e6f55eb20e3ec24ebd8dd38c6271cd000497ea29ccfce098cddf62e584f5aa28",
+      "shared_hash": "sha256:be751f599ce2018e7a2452df8a7a5310d3deaa4856d39d0e65917c7f5040fc2f",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

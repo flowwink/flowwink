@@ -64,9 +64,9 @@ const MISSION_TEMPLATES: MissionTemplate[] = [
 
 ## Bootstrap
 
-1. Read \`/rest/resources/briefing\` FIRST — it gives you identity, health metrics, active objectives, modules, and skill count in one call (~50ms).
-2. Read \`/rest/resources/skills\` to discover all available capabilities.
-3. Read \`/rest/resources/modules\` to understand which business modules are active.
+1. Read the \`flowwink://briefing\` resource FIRST (\`resources/read\`) — identity, health metrics, active objectives, modules, and skill count in one call.
+2. Read \`flowwink://modules\` to understand which business modules are active.
+3. Discover capabilities with \`search_skills\` as you need them — don't preload the full registry.
 
 ## Your Responsibilities
 
@@ -88,12 +88,16 @@ Run a periodic check (suggested: every few hours):
 
 ## Concurrency
 
-Use \`acquire_lock\` / \`release_lock\` for any multi-step operation:
+Humans and other agents may touch the same records. For any multi-step operation,
+hold a lock — \`acquire_lock\` / \`release_lock\` are real tools in your toolset
+(they appear in \`tools/list\` next to \`search_skills\`):
 \`\`\`
-POST /rest/execute {"tool": "acquire_lock", "arguments": {"lane": "lead:abc123", "ttl_seconds": 120}}
+acquire_lock({ "lane": "lead:abc123", "ttl_seconds": 120 })
 ... do work ...
-POST /rest/execute {"tool": "release_lock", "arguments": {"lane": "lead:abc123"}}
+release_lock({ "lane": "lead:abc123" })
 \`\`\`
+(REST clients instead use \`POST /rest/lock/acquire\` and \`/rest/lock/release\` —
+the lock tools are NOT callable through \`/rest/execute\`.)
 
 ## Key Principle
 
@@ -110,8 +114,8 @@ You own the initiative. Don't wait for instructions — observe the platform sta
 
 ## Bootstrap
 
-1. Read \`/rest/resources/briefing\` for identity, health, modules, and skill count.
-2. Read \`/rest/resources/skills\` (or use \`search_skills\`) to discover the tools to test.
+1. Read the \`flowwink://briefing\` resource for identity, health, modules, and skill count.
+2. Read \`flowwink://skills\` (or use \`search_skills\`) to discover the tools to test.
 
 ## Report findings — this is the whole point
 
@@ -149,8 +153,8 @@ A red call you don't report is wasted. The team reviews your findings on the Fed
 
 ## Bootstrap
 
-1. Read \`/rest/resources/briefing\` for current metrics (lead count, deal count, conversion rates).
-2. Read \`/rest/resources/skills\` — filter for CRM, Lead, and Deal tools.
+1. Read the \`flowwink://briefing\` resource for current metrics (lead count, deal count, conversion rates).
+2. Use \`search_skills\` to surface CRM, Lead, and Deal tools as you need them.
 
 ## Growth Loop
 
@@ -179,8 +183,8 @@ Every action should tie back to revenue. Score leads, advance deals, optimize pa
 
 ## Bootstrap
 
-1. Read \`/rest/resources/briefing\` for order counts and revenue metrics.
-2. Read \`/rest/resources/skills\` — filter for Commerce, Order, and Product tools.
+1. Read the \`flowwink://briefing\` resource for order counts and revenue metrics.
+2. Use \`search_skills\` to surface Commerce, Order, and Product tools as you need them.
 
 ## Commerce Loop
 
@@ -214,8 +218,8 @@ Don't assume tool names — discover them. Use \`search_skills\` with intent lik
 
 ## Bootstrap
 
-1. Read \`/rest/resources/briefing\` for headcount and active HR objectives.
-2. Read \`/rest/resources/skills\` — filter for HR, Recruitment, Contract, and Onboarding tools.
+1. Read the \`flowwink://briefing\` resource for headcount and active HR objectives.
+2. Use \`search_skills\` to surface HR, Recruitment, Contract, and Onboarding tools as you need them.
 
 ## HR Loop
 
@@ -240,8 +244,8 @@ Close the Hire-to-Onboard loop end-to-end — application in, fully onboarded em
 
 ## Bootstrap
 
-1. Read \`/rest/resources/briefing\` for revenue, AR, and open period state.
-2. Read \`/rest/resources/skills\` — filter for Invoicing, Expenses, Accounting and Reconciliation tools.
+1. Read the \`flowwink://briefing\` resource for revenue, AR, and open period state.
+2. Use \`search_skills\` to surface Invoicing, Expenses, Accounting and Reconciliation tools as you need them.
 
 ## Finance Loop
 
@@ -381,7 +385,7 @@ export function AgentInvites() {
       const toolsSection = isOperator
         ? `## Working with tools
 
-This platform has 200+ skills. To keep your context lean, your toolset is just **two tools**:
+This platform has 500+ skills. To keep your context lean, your toolset is small — two discovery tools plus the lock pair (\`acquire_lock\` / \`release_lock\`) for multi-step work:
 
 - \`search_skills({ query, groups? })\` — describe what you want to do; returns the most relevant skills (name, description, input schema).
 - \`execute_skill({ name, arguments })\` — run a chosen skill by name.
@@ -412,7 +416,7 @@ swapping only the token into an existing config fails with
 \`\`\`
 
 - **Instance**: \`${instanceRef}\` — this key works only against this host
-- **Transport**: MCP over Streamable HTTP (JSON-RPC over POST) No onboarding or REST calls are required — connect and use the standard MCP surfaces: \`resources/list\`, \`resources/read\`, \`tools/list\`, \`tools/call\`.
+- **Transport**: MCP over Streamable HTTP (JSON-RPC over POST). No onboarding or REST calls are required — connect and use the standard MCP surfaces: \`resources/list\`, \`resources/read\`, \`tools/list\`, \`tools/call\`.
 
 ## First steps
 
@@ -431,7 +435,7 @@ ${mission.focusResources.map(r => {
 
 ## Your Mission: ${mission.name}
 
-**CRITICAL**: Your detailed mission instructions live at the \`flowwink://mission\` resource and MUST be read from there. The text below is for reference only.
+The same mission is stored durably at the \`flowwink://mission\` resource — re-read it there in future sessions, when this message has scrolled out of your context. The resource and the text below are the same mission; this copy is just your starting point.
 
 ${instructions}
 ${isOperator ? '' : `
@@ -481,7 +485,6 @@ Read the \`flowwink://briefing\` resource — it should return identity, health 
             Invite Agent via MCP
           </CardTitle>
           <CardDescription>
-            Generate a structured prompt to onboard an external agent (e.g. OpenClaw) via MCP.
             Generate a structured prompt to onboard an external agent (e.g. OpenClaw, Hermes) as an <strong>operator</strong> of this FlowWink platform. Only missions whose required modules are enabled are shown.
           </CardDescription>
         </CardHeader>

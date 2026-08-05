@@ -1318,7 +1318,14 @@ app.get("/rest/resources/templates/:id", async (c) => {
 
 app.get("/rest/resources/:key", async (c) => {
   const key = c.req.param("key");
-  const data = await fetchResource(key);
+  // The mission resource resolves the caller's peer via requestContext — the
+  // MCP transport populates it, but this REST route ran fetchResource outside
+  // the store, so REST callers always got "No authenticated peer context".
+  const callerApiKeyId = (c.get("apiKeyId" as any) as string | null) ?? null;
+  const data = await requestContext.run(
+    { callerUserId: null, callerApiKeyId },
+    () => fetchResource(key),
+  );
   return c.json({ resource: key, data }, 200, corsHeaders);
 });
 

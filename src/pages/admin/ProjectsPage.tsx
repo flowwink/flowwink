@@ -437,12 +437,26 @@ function ProjectCard({ project, selected, onSelect }: { project: Project; select
 
 export default function ProjectsPage() {
   const { data: projects, isLoading } = useProjects();
+  const { data: stats } = useProjectTaskStats();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [tab, setTab] = useTabParam("board", "view");
+  const del = useDeleteProject();
   // `?new=1` and `?new=task` both open the project create dialog — there is no
   // standalone "new task" flow at this level (tasks are created inside a project).
   useOpenOnQueryParam('new', '1', () => setNewProjectOpen(true));
   useOpenOnQueryParam('new', 'task', () => setNewProjectOpen(true));
+
+  // Default to the first project so the workspace is never empty on arrival.
+  useEffect(() => {
+    if (!selectedId && projects?.length) {
+      const firstActive = projects.find((p) => p.is_active !== false) ?? projects[0];
+      setSelectedId(firstActive.id);
+    }
+  }, [projects, selectedId]);
+
+  const selected = projects?.find((p) => p.id === selectedId) ?? null;
 
   return (
     <AdminLayout>
@@ -454,59 +468,92 @@ export default function ProjectsPage() {
         {isLoading ? (
           <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
         ) : !projects?.length ? (
-          <Card><CardContent className="py-12 text-center text-muted-foreground">
-            <FolderKanban className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No projects yet.</p>
-          </CardContent></Card>
+          <EmptyState
+            icon={FolderKanban}
+            title="No projects yet"
+            description="Create your first project to track tasks, milestones and capacity."
+            action={<Button onClick={() => setNewProjectOpen(true)}><Plus className="h-4 w-4 mr-2" /> New project</Button>}
+          />
         ) : (
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="space-y-2">
-              {projects.map(p => (
-                <ProjectCard
-                  key={p.id}
-                  project={p}
-                  selected={selectedId === p.id}
-                  onSelect={() => setSelectedId(p.id)}
-                />
-              ))}
-            </div>
-            <div className="lg:col-span-2 space-y-4">
-              {selectedId ? (
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+            <aside className="lg:sticky lg:top-20 w-full shrink-0 lg:w-64 lg:max-h-[calc(100vh-7rem)]">
+              <ProjectRail
+                projects={projects}
+                stats={stats}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onNewProject={() => setNewProjectOpen(true)}
+              />
+            </aside>
+
+            <div className="min-w-0 flex-1 space-y-4">
+              {selected ? (
                 <>
-                  <ProjectMilestonesPanel projectId={selectedId} />
-                  <Tabs defaultValue="board">
-                    <TabsList>
-                      <TabsTrigger value="board">Board</TabsTrigger>
-                      <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                      <TabsTrigger value="capacity">Capacity</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="board">
-                      <Card>
-                        <CardHeader><CardTitle>Tasks</CardTitle></CardHeader>
-                        <CardContent><TaskBoard projectId={selectedId} /></CardContent>
-                      </Card>
+                  <ProjectSummaryStrip project={selected} stats={stats?.get(selected.id)} />
+
+                  <Tabs value={tab} onValueChange={setTab}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <TabsList>
+                        <TabsTrigger value="board">Board</TabsTrigger>
+                        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                        <TabsTrigger value="milestones">Milestones</TabsTrigger>
+                        <TabsTrigger value="capacity">Capacity</TabsTrigger>
+                      </TabsList>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
+                          <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Delete project">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete project?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete "{selected.name}" and all its tasks. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => del.mutate(selected.id, { onSuccess: () => setSelectedId(null) })}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+
+                    <TabsContent value="board" className="mt-4">
+                      <TaskBoard projectId={selected.id} />
                     </TabsContent>
-                    <TabsContent value="timeline">
-                      <ProjectGantt projectId={selectedId} />
+                    <TabsContent value="timeline" className="mt-4">
+                      <ProjectGantt projectId={selected.id} />
                     </TabsContent>
-                    <TabsContent value="capacity">
-                      <ProjectCapacity projectId={selectedId} />
+                    <TabsContent value="milestones" className="mt-4">
+                      <ProjectMilestonesPanel projectId={selected.id} />
+                    </TabsContent>
+                    <TabsContent value="capacity" className="mt-4">
+                      <ProjectCapacity projectId={selected.id} />
                     </TabsContent>
                   </Tabs>
+
+                  {editOpen && (
+                    <EditProjectDialog project={selected} open={editOpen} onOpenChange={setEditOpen} />
+                  )}
                 </>
               ) : (
-                <Tabs defaultValue="hint">
-                  <TabsList>
-                    <TabsTrigger value="hint">Overview</TabsTrigger>
-                    <TabsTrigger value="capacity">Capacity (global)</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="hint">
-                    <Card><CardContent className="py-12 text-center text-muted-foreground">Select a project to see tasks</CardContent></Card>
-                  </TabsContent>
-                  <TabsContent value="capacity">
-                    <ProjectCapacity projectId={null} />
-                  </TabsContent>
-                </Tabs>
+                <EmptyState
+                  icon={FolderKanban}
+                  title="Select a project"
+                  description="Pick a project from the list to see its board, timeline and milestones."
+                />
               )}
             </div>
           </div>
@@ -515,3 +562,4 @@ export default function ProjectsPage() {
     </AdminLayout>
   );
 }
+

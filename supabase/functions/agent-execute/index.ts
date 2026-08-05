@@ -3957,18 +3957,26 @@ function normalizeKbAnswer(answer: unknown): { answer_text: string; answer_json:
     const text = (answer as any).content.map(extractText).join('\n\n').trim();
     return { answer_text: text, answer_json: answer };
   }
-  const text = String(answer ?? '').trim();
-  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  const doc = {
-    type: 'doc',
-    content: paragraphs.length > 0
-      ? paragraphs.map((p) => ({
-          type: 'paragraph',
-          content: [{ type: 'text', text: p }],
-        }))
-      : [{ type: 'paragraph' }],
+  // Agents write Markdown — it is the natural output of a language model and
+  // the format every other content skill accepts. This split on blank lines
+  // was not a converter: "- **Förbjuden AI**: …" became ONE paragraph whose
+  // literal text contained the dash and the asterisks, so the public article
+  // rendered the punctuation and lost the list. markdownToTiptap already
+  // exists for exactly this, is imported at the top of this file, and has
+  // backed write_blog_post all along — KB simply never called it.
+  const raw = String(answer ?? '').trim();
+  const doc = markdownToTiptap(raw);
+  // answer_text feeds search and the chat's retrieval context, so it must be
+  // PLAIN — asterisks and dashes are noise to a model reading for meaning.
+  // Deriving it from the doc keeps both branches of this function consistent.
+  const extractText = (node: any): string => {
+    if (!node) return '';
+    if (node.type === 'text') return String(node.text || '');
+    if (Array.isArray(node.content)) return node.content.map(extractText).join('');
+    return '';
   };
-  return { answer_text: text, answer_json: doc };
+  const text = (doc.content || []).map(extractText).filter(Boolean).join('\n\n').trim();
+  return { answer_text: text || raw, answer_json: doc };
 }
 
 async function executeKbAction(

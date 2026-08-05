@@ -23,7 +23,11 @@ describe('an invite links the key to the peer it was minted for', () => {
   // the very code it was written to protect.
   const peerInsert = src.slice(
     src.indexOf('// Create the new peer'),
-    src.indexOf('federation_connections'),
+    // End on the actual next statement, not on the word: the explanatory
+    // comment inside the insert mentions federation_connections, so a plain
+    // text search cut the slice in half and the guard failed against the very
+    // line it exists to protect.
+    src.indexOf('from("federation_connections")'),
   );
 
   it('sets api_key_id on the peer row', () => {

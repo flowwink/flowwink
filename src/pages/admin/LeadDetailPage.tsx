@@ -54,11 +54,10 @@ export default function LeadDetailPage() {
   const { data: companies } = useCompanies();
   const createCompany = useCreateCompany();
   const updateLead = useUpdateLead();
-  const addNote = useAddLeadNote();
   const qualifyLead = useQualifyLead();
   const addActivity = useAddLeadActivity();
   const deleteLead = useDeleteLead();
-  const [note, setNote] = useState('');
+
   const [companyOpen, setCompanyOpen] = useState(false);
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');

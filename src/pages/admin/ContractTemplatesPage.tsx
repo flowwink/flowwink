@@ -10,7 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Pencil, Plus, Trash2, FileText, Languages, Copy, Loader2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, FileText, Languages, Copy, Loader2, Download } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -53,6 +56,42 @@ const EMPTY: Partial<ContractTemplate> = {
 export default function ContractTemplatesPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<ContractTemplate> | null>(null);
+  // Read view: legal source text must have reading as the default posture —
+  // the edit dialog's raw-markdown textarea is one stray keystroke from
+  // changing agreement wording.
+  const [reading, setReading] = useState<ContractTemplate | null>(null);
+
+  // Läskopia: the customer's lawyers get THE TEMPLATE, stamped as such.
+  // The print window copies the sheet's already-rendered HTML — one renderer,
+  // zero chance the exported copy differs from what the screen shows.
+  const printTemplate = (t: ContractTemplate) => {
+    const body = document.querySelector('[data-template-body]')?.innerHTML ?? '';
+    const w = window.open('', '_blank', 'noopener,width=800,height=1000');
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8">
+      <title>${t.name} — läskopia</title>
+      <style>
+        body { font-family: Georgia, 'Times New Roman', serif; max-width: 44rem; margin: 2rem auto; padding: 0 1.5rem; color: #111; line-height: 1.55; }
+        .stamp { border: 2px solid #111; padding: .6rem 1rem; font-family: system-ui, sans-serif; font-size: .8rem; font-weight: 600; letter-spacing: .03em; margin-bottom: 2rem; }
+        .meta { font-family: system-ui, sans-serif; font-size: .75rem; color: #555; margin-top: 2.5rem; border-top: 1px solid #ccc; padding-top: .75rem; }
+        h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; margin-top: 1.8em; } h3 { font-size: 1.05rem; }
+        table { border-collapse: collapse; width: 100%; font-size: .85em; }
+        th, td { border: 1px solid #bbb; padding: .35rem .5rem; text-align: left; }
+        blockquote { border-left: 3px solid #999; margin-left: 0; padding-left: 1rem; color: #444; }
+        code { background: #eee; padding: 0 .25em; }
+      </style></head><body>
+      <div class="stamp">MALL / LÄSKOPIA — DETTA ÄR INTE ETT AVTAL<br>
+        <span style="font-weight:400">Platshållare som {{…}} och [HAKPARENTESER] fylls i först när ett avtal upprättas ur mallen.</span>
+      </div>
+      ${body}
+      <div class="meta">
+        ${t.name} — senast uppdaterad ${new Date(t.updated_at).toLocaleDateString('sv-SE')} —
+        läskopia renderad ${new Date().toLocaleString('sv-SE')} ur plattformens levande mall.
+      </div>
+      </body></html>`);
+    w.document.close();
+    w.onload = () => w.print();
+  };
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['contract-templates'],
@@ -156,7 +195,9 @@ export default function ContractTemplatesPage() {
                       <div className="space-y-1">
                         <CardTitle className="text-base flex items-center gap-2">
                           <FileText className="h-4 w-4" />
-                          {t.name}
+                          <button type="button" onClick={() => setReading(t)} className="hover:underline text-left">
+                            {t.name}
+                          </button>
                         </CardTitle>
                         <div className="flex gap-1.5">
                           <Badge variant="outline" className="text-xs">{t.language.toUpperCase()}</Badge>
@@ -207,6 +248,43 @@ export default function ContractTemplatesPage() {
           saving={saveMut.isPending}
         />
       )}
+
+      {/* Read view — the template rendered as the document it is. The läskopia
+          export prints THE TEMPLATE, clearly stamped as not-an-agreement:
+          unfilled {{tokens}} and [BRACKETS] are a feature here, they show the
+          customer's lawyers exactly what is variable. */}
+      <Sheet open={!!reading} onOpenChange={(o) => !o && setReading(null)}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {reading && (
+            <>
+              <SheetHeader>
+                <div className="flex items-start justify-between gap-3 pr-8">
+                  <SheetTitle className="text-left">{reading.name}</SheetTitle>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => printTemplate(reading)}>
+                      <Download className="h-4 w-4" />
+                      Läskopia (PDF)
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setEditing(reading); setReading(null); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex gap-1.5">
+                  <Badge variant="outline" className="text-xs">{reading.contract_type}</Badge>
+                  <Badge variant="outline" className="text-xs">{reading.language.toUpperCase()}</Badge>
+                  <span className="text-xs text-muted-foreground self-center">
+                    Uppdaterad {new Date(reading.updated_at).toLocaleDateString('sv-SE')}
+                  </span>
+                </div>
+              </SheetHeader>
+              <article data-template-body className="prose prose-sm dark:prose-invert max-w-none mt-4 pb-8">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{reading.body_markdown}</ReactMarkdown>
+              </article>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </AdminLayout>
   );
 }

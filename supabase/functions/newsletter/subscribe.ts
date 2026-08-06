@@ -244,6 +244,16 @@ export async function handle(req: Request): Promise<Response> {
         });
       }
 
+      // Still pending: refresh the token so this attempt re-sends the
+      // confirmation email — "I never got the email" must be fixable by
+      // subscribing again.
+      if (existing.status === "pending") {
+        await supabase
+          .from("newsletter_subscribers")
+          .update({ confirmation_token: crypto.randomUUID() })
+          .eq("id", existing.id);
+      }
+
       // Re-activate if unsubscribed
       if (existing.status === "unsubscribed") {
         const { error: updateError } = await supabase
@@ -265,6 +275,10 @@ export async function handle(req: Request): Promise<Response> {
         email: email.toLowerCase(),
         name: name || null,
         status: "pending",
+        // The confirmation-send below gates on this token. Without it a new
+        // subscriber was born pending with nothing to confirm and no email —
+        // double opt-in with no opt-in, so newsletters had zero recipients.
+        confirmation_token: crypto.randomUUID(),
       });
 
       if (insertError) {

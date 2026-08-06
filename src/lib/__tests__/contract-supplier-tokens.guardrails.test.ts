@@ -117,7 +117,7 @@ describe('the validator and the renderer agree on the token list', () => {
   // or `manage_contract_template` rejects a template that renders perfectly.
   const allowlist = sql.slice(sql.indexOf('_contract_template_unrendered_tokens'));
 
-  it.each(SUPPLIER.map(([t]) => t).concat(['counterparty.address']))(
+  it.each(SUPPLIER.map(([t]): string => t).concat(['counterparty.address']))(
     'accepts %s when authoring a template',
     (token) => {
       expect(allowlist).toContain(`'${token}'`);

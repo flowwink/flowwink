@@ -5,7 +5,8 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Plus, Settings2 } from 'lucide-react';
+import { QuoteProcessSettingsDialog } from '@/components/admin/quotes/QuoteProcessSettingsDialog';
 import { useQuotes, getQuoteCustomerName, getQuoteCustomerEmail, getQuoteCompanyName, type QuoteStatus } from '@/hooks/useQuotes';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,6 +31,7 @@ export default function QuotesPage() {
   const [view, setView] = useState<'list' | 'recurring'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get('id'));
   const [createOpen, setCreateOpen] = useState(false);
+  const [processOpen, setProcessOpen] = useState(false);
   useOpenOnQueryParam('new', '1', () => setCreateOpen(true));
 
   useEffect(() => {
@@ -55,10 +57,14 @@ export default function QuotesPage() {
     <AdminLayout>
       <AdminPageContainer>
         <AdminPageHeader title="Quotes">
+          <Button size="sm" variant="outline" onClick={() => setProcessOpen(true)}>
+            <Settings2 className="h-4 w-4 mr-1" /> Process
+          </Button>
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> New Quote
           </Button>
         </AdminPageHeader>
+        <QuoteProcessSettingsDialog open={processOpen} onOpenChange={setProcessOpen} />
 
         <Tabs value={view} onValueChange={(v) => setView(v as any)} className="mb-3">
           <TabsList>

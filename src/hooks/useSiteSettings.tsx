@@ -566,6 +566,10 @@ export function useQuoteProcessSettings() {
   return useSiteSettings<QuoteProcessSettings>('quotes', defaultQuoteProcessSettings);
 }
 
+export function useUpdateQuoteProcessSettings() {
+  return useUpdateSiteSettings<QuoteProcessSettings>('quotes', 'Quote process updated.');
+}
+
 export function usePlatformLocaleSettings() {
   return useSiteSettings<PlatformLocaleSettings>('platform_locale', defaultPlatformLocaleSettings);
 }

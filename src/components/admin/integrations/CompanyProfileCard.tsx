@@ -545,3 +545,42 @@ export function CompanyProfileCard() {
     </Card>
   );
 }
+
+function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-baseline gap-2 border-b pb-2">
+        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({
+  label,
+  htmlFor,
+  hint,
+  value,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  hint?: string;
+  value?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor={htmlFor} className="text-xs font-medium">{label}</Label>
+        {typeof value === "string" && value.length > 0 && (
+          <span className="text-[10px] text-muted-foreground tabular-nums">{value.length} chars</span>
+        )}
+      </div>
+      {children}
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}

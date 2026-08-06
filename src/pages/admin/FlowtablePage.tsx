@@ -865,6 +865,8 @@ export default function FlowtablePage() {
                       />
                     ) : activeTable.view_mode === 'card' ? (
                       <CardView
+                        columns={cardColumns}
+
                         fields={fields}
                         records={displayedRecords}
                         onExpand={setExpandedIndex}

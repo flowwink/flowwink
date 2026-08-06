@@ -320,6 +320,16 @@ export default function CompanyInsightsPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        <div className="flex items-center justify-between border-t pt-4">
+          <p className="text-xs text-muted-foreground">
+            {isDirty ? "You have unsaved changes" : "All changes saved"}
+          </p>
+          <Button onClick={handleSave} disabled={isSaving || !isDirty} className="gap-1.5">
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save Business Identity
+          </Button>
+        </div>
       </div>
     </AdminLayout>
   );

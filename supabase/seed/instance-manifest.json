@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808140000",
-      "migrations_count": 307,
+      "migration_head": "20260808150000",
+      "migrations_count": 308,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1233,6 +1233,10 @@
         {
           "version": "20260808140000",
           "name": "contract-billing-into-work-queue"
+        },
+        {
+          "version": "20260808150000",
+          "name": "contract-render-org-number"
         }
       ]
     },
@@ -1243,7 +1247,7 @@
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:f9ae2449759278a645bd61f6b883117da04333802b65b59957d9706f1d6e1c0a",
+      "shared_hash": "sha256:3029321b16f66e844ab4616fa7e05d8a0fae8964fa8ebf973e42e0a626d28f66",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

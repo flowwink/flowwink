@@ -13,6 +13,37 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { HandlerCtx } from './qualify-lead.ts';
 
+
+/**
+ * Swedish organisationsnummer: NNNNNN-NNNN where the tenth digit is a Luhn
+ * check digit over the first nine. Swedish sites routinely print it in the
+ * footer — the enrichment scrape already holds it; it was just never read.
+ */
+function luhnValid(digits: string): boolean {
+  let sum = 0;
+  for (let i = 0; i < 10; i++) {
+    let d = parseInt(digits[i], 10);
+    if (i % 2 === 0) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+  }
+  return sum % 10 === 0;
+}
+
+export function extractOrgNumber(text: string): string | null {
+  const seen = new Map<string, number>();
+  for (const m of text.matchAll(/\b(\d{6})\s*[-–]\s*(\d{4})\b/g)) {
+    const digits = m[1] + m[2];
+    // Group digit ≥ 2 separates orgnr from personnummer-formatted dates.
+    if (parseInt(digits[2], 10) < 2) continue;
+    if (!luhnValid(digits)) continue;
+    const formatted = `${m[1]}-${m[2]}`;
+    seen.set(formatted, (seen.get(formatted) ?? 0) + 1);
+  }
+  if (seen.size === 0) return null;
+  // Most frequent candidate wins — a footer number repeats across the page.
+  return [...seen.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
 export async function executeEnrichCompany(
   supabase: SupabaseClient,
   args: Record<string, unknown>,
@@ -24,11 +55,12 @@ export async function executeEnrichCompany(
     // Resolve domain from companyId if needed
     let enrichDomain = domain;
     let targetCompanyId = companyId;
+    let companyName: string | null = null;
 
     if (!enrichDomain && companyId) {
       const { data: company, error: companyError } = await supabase
         .from('companies')
-        .select('id, domain, enriched_at')
+        .select('id, name, domain, enriched_at')
         .eq('id', companyId)
         .single();
 
@@ -46,6 +78,7 @@ export async function executeEnrichCompany(
 
       enrichDomain = company.domain;
       targetCompanyId = company.id;
+      companyName = (company as { name?: string }).name ?? null;
     }
 
     if (!enrichDomain) {
@@ -79,10 +112,43 @@ export async function executeEnrichCompany(
     console.log(`Scraped via provider: ${scrapeData.provider}`);
 
     // Extract data from metadata (deterministic — no AI)
+    // Org number: read the page first (Swedish sites print it in the footer).
+    // If absent, one search round — accept only a number that appears in at
+    // least two independent snippets, so a lookalike from a directory listing
+    // for some OTHER company doesn't get written into master data.
+    let orgNumber = extractOrgNumber(pageContent);
+    if (!orgNumber && companyName) {
+      // Two attempts: the search provider chain is measurably flaky (about one
+      // empty response in three), and an empty round must not read as "this
+      // company has no registered number".
+      for (let attempt = 0; attempt < 2 && !orgNumber; attempt++) {
+        try {
+          const sr = await fetch(`${ctx.supabaseUrl}/functions/v1/web-search`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${ctx.serviceKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: `${companyName} organisationsnummer`, limit: 5 }),
+          });
+          if (!sr.ok) continue;
+          const sd = await sr.json();
+          const counts = new Map<string, number>();
+          for (const r of (sd.results ?? [])) {
+            const hit = extractOrgNumber(`${r.title ?? ''} ${r.description ?? ''}`);
+            if (hit) counts.set(hit, (counts.get(hit) ?? 0) + 1);
+          }
+          console.log(`org-number search attempt ${attempt + 1}: ${sd.results?.length ?? 0} results, candidates:`, [...counts.entries()]);
+          const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+          if (best && best[1] >= 2) orgNumber = best[0];
+        } catch (e) {
+          console.warn('org-number search fallback failed:', e);
+        }
+      }
+    }
+
     const enrichment = {
       website: url,
       description: metadata.description || metadata.ogDescription || null,
       phone: extractPhone(pageContent),
+      org_number: orgNumber,
       address: null as string | null,
       raw_content: pageContent.substring(0, 5000), // For FlowPilot to analyze later
     };
@@ -100,6 +166,16 @@ export async function executeEnrichCompany(
           enriched_at: new Date().toISOString(),
         })
         .eq('id', targetCompanyId);
+
+      // Master data is written conservatively: only when the column is empty.
+      // Enrichment must never overwrite an operator-entered org number.
+      if (enrichment.org_number) {
+        await supabase
+          .from('companies')
+          .update({ org_number: enrichment.org_number })
+          .eq('id', targetCompanyId)
+          .is('org_number', null);
+      }
 
       if (updateError) {
         console.error('Failed to update company:', updateError);

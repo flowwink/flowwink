@@ -226,7 +226,7 @@ export function CompanyProfileCard() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-8">
         {/* Enrich from Website */}
         <div className="p-3 rounded-lg border border-dashed bg-muted/30 space-y-2">
           <Label className="text-xs font-medium flex items-center gap-1.5">
@@ -257,253 +257,291 @@ export function CompanyProfileCard() {
           </p>
         </div>
 
-        {/* Company Name */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-name" className="text-xs font-medium">Company Name</Label>
-          <Input
-            id="cp-name"
-            value={profile.company_name}
-            onChange={(e) => update("company_name", e.target.value)}
-            placeholder="Acme Consulting AB"
-            className="h-9"
-          />
-        </div>
+        {/* ── Basics ───────────────────────────────── */}
+        <Section title="Basics" hint="Identity facts used everywhere the company is named.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Company Name" htmlFor="cp-name">
+              <Input
+                id="cp-name"
+                value={profile.company_name}
+                onChange={(e) => update("company_name", e.target.value)}
+                placeholder="Acme Consulting AB"
+                className="h-9"
+              />
+            </Field>
+            <Field label="Industry" htmlFor="cp-industry">
+              <Input
+                id="cp-industry"
+                value={profile.industry}
+                onChange={(e) => update("industry", e.target.value)}
+                placeholder="Digital Agency, SaaS, Consulting..."
+                className="h-9"
+              />
+            </Field>
+          </div>
 
-        {/* Industry */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-industry" className="text-xs font-medium">Industry</Label>
-          <Input
-            id="cp-industry"
-            value={profile.industry}
-            onChange={(e) => update("industry", e.target.value)}
-            placeholder="Digital Agency, SaaS, Consulting..."
-            className="h-9"
-          />
-        </div>
-
-        {/* About Us */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-about" className="text-xs font-medium">About Us</Label>
-          <Textarea
-            id="cp-about"
+          <Field
+            label="About Us"
+            htmlFor="cp-about"
+            hint="The paragraph the AI reuses when introducing you."
             value={profile.about_us}
-            onChange={(e) => update("about_us", e.target.value)}
-            placeholder="Brief description of your company, mission, and what you do..."
-            rows={3}
-          />
-        </div>
-
-        {/* Value Proposition */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-vp" className="text-xs font-medium">Value Proposition</Label>
-          <Textarea
-            id="cp-vp"
-            value={profile.value_proposition}
-            onChange={(e) => update("value_proposition", e.target.value)}
-            placeholder="What unique value do you deliver to clients?"
-            rows={2}
-          />
-        </div>
-
-        {/* ICP */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-icp" className="text-xs font-medium">Ideal Customer Profile</Label>
-          <Textarea
-            id="cp-icp"
-            value={profile.icp}
-            onChange={(e) => update("icp", e.target.value)}
-            placeholder="Describe your ideal customer: size, industry, challenges..."
-            rows={2}
-          />
-        </div>
-
-        {/* Services */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Services</Label>
-          {Object.entries(profile.services).length > 0 && (
-            <div className="space-y-1.5">
-              {Object.entries(profile.services).map(([name, desc]) => (
-                <div key={name} className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{name}</p>
-                    {desc && <p className="text-xs text-muted-foreground">{desc}</p>}
-                  </div>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => removeService(name)}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="flex gap-2">
-            <Input
-              value={newServiceName}
-              onChange={(e) => setNewServiceName(e.target.value)}
-              placeholder="Service name"
-              className="h-8 text-sm flex-1"
-              onKeyDown={(e) => e.key === "Enter" && addService()}
+          >
+            <Textarea
+              id="cp-about"
+              value={profile.about_us}
+              onChange={(e) => update("about_us", e.target.value)}
+              placeholder="Brief description of your company, mission, and what you do..."
+              className="min-h-[140px] resize-y leading-relaxed"
             />
-            <Input
-              value={newServiceDesc}
-              onChange={(e) => setNewServiceDesc(e.target.value)}
-              placeholder="Brief description"
-              className="h-8 text-sm flex-1"
-              onKeyDown={(e) => e.key === "Enter" && addService()}
-            />
-            <Button variant="outline" size="sm" className="h-8 px-2 shrink-0" onClick={addService}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
+          </Field>
+        </Section>
+
+        {/* ── Positioning ──────────────────────────── */}
+        <Section title="Positioning" hint="How you win — feeds Sales Intelligence and outreach drafts.">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field
+              label="Value Proposition"
+              htmlFor="cp-vp"
+              value={profile.value_proposition}
+            >
+              <Textarea
+                id="cp-vp"
+                value={profile.value_proposition}
+                onChange={(e) => update("value_proposition", e.target.value)}
+                placeholder="What unique value do you deliver to clients?"
+                className="min-h-[120px] resize-y leading-relaxed"
+              />
+            </Field>
+            <Field
+              label="Ideal Customer Profile"
+              htmlFor="cp-icp"
+              hint="Size, industry, buying trigger, pain."
+              value={profile.icp}
+            >
+              <Textarea
+                id="cp-icp"
+                value={profile.icp}
+                onChange={(e) => update("icp", e.target.value)}
+                placeholder="Describe your ideal customer: size, industry, challenges..."
+                className="min-h-[120px] resize-y leading-relaxed"
+              />
+            </Field>
           </div>
-        </div>
 
-        {/* Delivered Value */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-value" className="text-xs font-medium">Delivered Value</Label>
-          <Textarea
-            id="cp-value"
+          <Field
+            label="Delivered Value"
+            htmlFor="cp-value"
+            hint="Concrete, measurable outcomes — the most quoted field in proposals."
             value={profile.delivered_value}
-            onChange={(e) => update("delivered_value", e.target.value)}
-            placeholder="What measurable outcomes do you deliver? E.g. '30% increase in lead conversion'..."
-            rows={2}
-          />
-        </div>
+          >
+            <Textarea
+              id="cp-value"
+              value={profile.delivered_value}
+              onChange={(e) => update("delivered_value", e.target.value)}
+              placeholder="What measurable outcomes do you deliver? E.g. '30% increase in lead conversion'..."
+              className="min-h-[120px] resize-y leading-relaxed"
+            />
+          </Field>
 
-        {/* Competitors */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-competitors" className="text-xs font-medium">Competitors</Label>
-          <Input
-            id="cp-competitors"
-            value={profile.competitors}
-            onChange={(e) => update("competitors", e.target.value)}
-            placeholder="Competitor A, Competitor B..."
-            className="h-9"
-          />
-        </div>
+          <div className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Target Industries</Label>
+              {(profile.target_industries || []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {(profile.target_industries || []).map((ind, i) => (
+                    <Badge key={i} variant="secondary" className="gap-1 text-xs">
+                      {ind}
+                      <button onClick={() => removeTag("target_industries", i)} className="ml-0.5 hover:text-destructive">
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={newIndustry}
+                  onChange={(e) => setNewIndustry(e.target.value)}
+                  placeholder="Add industry..."
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && addTag("target_industries", newIndustry, setNewIndustry)}
+                />
+                <Button variant="outline" size="sm" className="h-8 px-2 shrink-0" onClick={() => addTag("target_industries", newIndustry, setNewIndustry)}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
 
-        {/* Pricing Notes */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-pricing" className="text-xs font-medium">Pricing Strategy</Label>
-          <Textarea
-            id="cp-pricing"
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Key Differentiators</Label>
+              {(profile.differentiators || []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {(profile.differentiators || []).map((diff, i) => (
+                    <Badge key={i} variant="secondary" className="gap-1 text-xs">
+                      {diff}
+                      <button onClick={() => removeTag("differentiators", i)} className="ml-0.5 hover:text-destructive">
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={newDifferentiator}
+                  onChange={(e) => setNewDifferentiator(e.target.value)}
+                  placeholder="Add differentiator..."
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && addTag("differentiators", newDifferentiator, setNewDifferentiator)}
+                />
+                <Button variant="outline" size="sm" className="h-8 px-2 shrink-0" onClick={() => addTag("differentiators", newDifferentiator, setNewDifferentiator)}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Offering ─────────────────────────────── */}
+        <Section title="Offering" hint="Services the agent may reference, quote and sell.">
+          <div className="space-y-2">
+            {Object.entries(profile.services).length > 0 && (
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {Object.entries(profile.services).map(([name, desc]) => (
+                  <div key={name} className="flex items-start gap-2 p-2.5 rounded-md border bg-muted/40">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{name}</p>
+                      {desc && <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words">{desc}</p>}
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => removeService(name)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                value={newServiceName}
+                onChange={(e) => setNewServiceName(e.target.value)}
+                placeholder="Service name"
+                className="h-8 text-sm sm:w-1/3"
+                onKeyDown={(e) => e.key === "Enter" && addService()}
+              />
+              <div className="flex flex-1 gap-2">
+                <Input
+                  value={newServiceDesc}
+                  onChange={(e) => setNewServiceDesc(e.target.value)}
+                  placeholder="Brief description"
+                  className="h-8 text-sm flex-1"
+                  onKeyDown={(e) => e.key === "Enter" && addService()}
+                />
+                <Button variant="outline" size="sm" className="h-8 px-2 shrink-0" onClick={addService}>
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <Field
+            label="Pricing Strategy"
+            htmlFor="cp-pricing"
+            hint="Model and ranges — never shown publicly, only used for internal reasoning."
             value={profile.pricing_notes}
-            onChange={(e) => update("pricing_notes", e.target.value)}
-            placeholder="Pricing model, ranges, or strategy notes..."
-            rows={2}
-          />
-        </div>
-
-        {/* Clients */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-clients" className="text-xs font-medium">Notable Clients</Label>
-          <Input
-            id="cp-clients"
-            value={profile.clients}
-            onChange={(e) => update("clients", e.target.value)}
-            placeholder="Volvo, IKEA, Spotify..."
-            className="h-9"
-          />
-        </div>
-
-        {/* Client Testimonials */}
-        <div className="space-y-1.5">
-          <Label htmlFor="cp-testimonials" className="text-xs font-medium">Client Testimonials</Label>
-          <Textarea
-            id="cp-testimonials"
-            value={profile.client_testimonials}
-            onChange={(e) => update("client_testimonials", e.target.value)}
-            placeholder="Short quotes from happy clients..."
-            rows={2}
-          />
-        </div>
-
-        {/* Contact Info */}
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-email" className="text-xs font-medium">Contact Email</Label>
-            <Input
-              id="cp-email"
-              value={profile.contact_email}
-              onChange={(e) => update("contact_email", e.target.value)}
-              placeholder="info@company.com"
-              className="h-9"
+          >
+            <Textarea
+              id="cp-pricing"
+              value={profile.pricing_notes}
+              onChange={(e) => update("pricing_notes", e.target.value)}
+              placeholder="Pricing model, ranges, or strategy notes..."
+              className="min-h-[110px] resize-y leading-relaxed"
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-phone" className="text-xs font-medium">Contact Phone</Label>
-            <Input
-              id="cp-phone"
-              value={profile.contact_phone}
-              onChange={(e) => update("contact_phone", e.target.value)}
-              placeholder="+46 8 123 45 67"
-              className="h-9"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cp-address" className="text-xs font-medium">Address</Label>
-            <Input
-              id="cp-address"
-              value={profile.address}
-              onChange={(e) => update("address", e.target.value)}
-              placeholder="Street, City"
-              className="h-9"
-            />
-          </div>
-        </div>
+          </Field>
+        </Section>
 
-        {/* Target Industries */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Target Industries</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {(profile.target_industries || []).map((ind, i) => (
-              <Badge key={i} variant="secondary" className="gap-1 text-xs">
-                {ind}
-                <button onClick={() => removeTag("target_industries", i)} className="ml-0.5 hover:text-destructive">
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </Badge>
-            ))}
+        {/* ── Proof ────────────────────────────────── */}
+        <Section title="Proof" hint="Social proof the agent can quote in content and outreach.">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Notable Clients" htmlFor="cp-clients">
+              <Input
+                id="cp-clients"
+                value={profile.clients}
+                onChange={(e) => update("clients", e.target.value)}
+                placeholder="Volvo, IKEA, Spotify..."
+                className="h-9"
+              />
+              <div className="pt-4">
+                <Label htmlFor="cp-competitors" className="text-xs font-medium">Competitors</Label>
+                <Input
+                  id="cp-competitors"
+                  value={profile.competitors}
+                  onChange={(e) => update("competitors", e.target.value)}
+                  placeholder="Competitor A, Competitor B..."
+                  className="h-9 mt-1.5"
+                />
+              </div>
+            </Field>
+            <Field
+              label="Client Testimonials"
+              htmlFor="cp-testimonials"
+              value={profile.client_testimonials}
+            >
+              <Textarea
+                id="cp-testimonials"
+                value={profile.client_testimonials}
+                onChange={(e) => update("client_testimonials", e.target.value)}
+                placeholder="Short quotes from happy clients..."
+                className="min-h-[140px] resize-y leading-relaxed"
+              />
+            </Field>
           </div>
-          <div className="flex gap-2">
-            <Input
-              value={newIndustry}
-              onChange={(e) => setNewIndustry(e.target.value)}
-              placeholder="Add industry..."
-              className="h-8 text-sm"
-              onKeyDown={(e) => e.key === "Enter" && addTag("target_industries", newIndustry, setNewIndustry)}
-            />
-            <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => addTag("target_industries", newIndustry, setNewIndustry)}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
+        </Section>
 
-        {/* Differentiators */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Key Differentiators</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {(profile.differentiators || []).map((diff, i) => (
-              <Badge key={i} variant="secondary" className="gap-1 text-xs">
-                {diff}
-                <button onClick={() => removeTag("differentiators", i)} className="ml-0.5 hover:text-destructive">
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </Badge>
-            ))}
+        {/* ── Contact ──────────────────────────────── */}
+        <Section title="Contact" hint="Used in signatures, footers and structured data.">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Contact Email" htmlFor="cp-email">
+              <Input
+                id="cp-email"
+                value={profile.contact_email}
+                onChange={(e) => update("contact_email", e.target.value)}
+                placeholder="info@company.com"
+                className="h-9"
+              />
+            </Field>
+            <Field label="Contact Phone" htmlFor="cp-phone">
+              <Input
+                id="cp-phone"
+                value={profile.contact_phone}
+                onChange={(e) => update("contact_phone", e.target.value)}
+                placeholder="+46 8 123 45 67"
+                className="h-9"
+              />
+            </Field>
+            <Field label="Address" htmlFor="cp-address">
+              <Input
+                id="cp-address"
+                value={profile.address}
+                onChange={(e) => update("address", e.target.value)}
+                placeholder="Street, City"
+                className="h-9"
+              />
+            </Field>
           </div>
-          <div className="flex gap-2">
-            <Input
-              value={newDifferentiator}
-              onChange={(e) => setNewDifferentiator(e.target.value)}
-              placeholder="Add differentiator..."
-              className="h-8 text-sm"
-              onKeyDown={(e) => e.key === "Enter" && addTag("differentiators", newDifferentiator, setNewDifferentiator)}
-            />
-            <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => addTag("differentiators", newDifferentiator, setNewDifferentiator)}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+        </Section>
+
+        <div className="flex justify-end border-t pt-4">
+          <Button
+            onClick={() => saveMutation.mutate(profile)}
+            disabled={saveMutation.isPending}
+            className="gap-1.5"
+          >
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save Business Identity
+          </Button>
         </div>
       </CardContent>
+
     </Card>
   );
 }

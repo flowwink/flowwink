@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260808170000",
-      "migrations_count": 310,
+      "migrations_count": 311,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1245,6 +1245,10 @@
         {
           "version": "20260808170000",
           "name": "document-files-follow-visibility"
+        },
+        {
+          "version": "20260808170000",
+          "name": "public-terms"
         }
       ]
     },

@@ -2238,14 +2238,22 @@ function ListView({ fields, records, selected, setSelected, onUpdate, onExpand }
 }
 
 // ---------- Card view ----------
-function CardView({ fields, records, onUpdate, onExpand }: {
+function CardView({ fields, records, onUpdate, onExpand, columns = 3 }: {
   fields: FlowtableField[]; records: FlowtableRecord[];
   onUpdate: (id: string, values: Record<string, unknown>) => void;
   onExpand?: (index: number) => void;
+  /** Cards per row (1–6). Chosen in the toolbar; wider = more text per card. */
+  columns?: number;
 }) {
   const primary = fields[0];
+  // Explicit template instead of Tailwind grid-cols-N so the count stays
+  // dynamic without relying on classes that JIT can't see.
+  const cols = Math.min(6, Math.max(1, columns));
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
+    <div
+      className="grid gap-3 p-4"
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+    >
       {records.map((r, idx) => (
         <Card key={r.id} className="group relative p-3 space-y-2">
           {onExpand && (
@@ -2264,14 +2272,22 @@ function CardView({ fields, records, onUpdate, onExpand }: {
           <div className="space-y-1 text-xs">
             {fields.slice(1).map((f) => {
               const v = r.values?.[f.key];
+              const text = v == null || v === '' ? '—' : String(v);
               return (
                 <div key={f.id} className="flex gap-2">
                   <span className="text-muted-foreground w-20 shrink-0 truncate">{f.name}</span>
-                  <span className="flex-1 truncate">{v == null || v === '' ? '—' : String(v)}</span>
+                  {/* Wrap rather than truncate — a card exists to show content */}
+                  <span className="flex-1 whitespace-pre-wrap break-words" title={text}>{text}</span>
                 </div>
               );
             })}
           </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
         </Card>
       ))}
     </div>

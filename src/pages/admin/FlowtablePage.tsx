@@ -756,6 +756,36 @@ export default function FlowtablePage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
+                    {activeTable.view_mode === 'card' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant={cardColumns === 3 ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className="h-8 px-2 gap-1 text-xs"
+                            title="Cards per row"
+                          >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">
+                              {cardColumns} {cardColumns === 1 ? 'card' : 'cards'}
+                            </span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Cards per row</DropdownMenuLabel>
+                          {[1, 2, 3, 4, 5, 6].map((n) => (
+                            <DropdownMenuItem key={n} onClick={() => changeCardColumns(n)}>
+                              <span className={cardColumns === n ? 'font-medium' : ''}>
+                                {n} {n === 1 ? 'card — widest' : n === 6 ? 'cards — densest' : 'cards'}
+                                {cardColumns === n ? ' ✓' : ''}
+                              </span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+
                     <ViewToolbar
                       fields={fields}
                       config={activeTable.view_config ?? {}}

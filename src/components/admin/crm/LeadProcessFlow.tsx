@@ -86,7 +86,8 @@ export function LeadProcessFlow({ leadId, email }: Props) {
   return (
     <Card>
       <CardContent className="pt-5 pb-4">
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
           <TooltipProvider>
             {steps.map((step, i) => (
               <div key={step.key} className="flex items-center gap-1">
@@ -124,8 +125,9 @@ export function LeadProcessFlow({ leadId, email }: Props) {
               </div>
             ))}
           </TooltipProvider>
+          </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2 md:ml-auto shrink-0">
             {nextStep ? (
               <>
                 <span className="hidden text-xs text-muted-foreground sm:inline">

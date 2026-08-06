@@ -245,6 +245,35 @@ export function useUpdateDeal() {
   });
 }
 
+/**
+ * Hard delete — for test and training data only. A real lost deal is moved to
+ * closed_lost so the funnel keeps its history; deleting rewrites win-rate.
+ * RLS restricts this to admins ("Admins can manage deals"), and the agent
+ * surface deliberately refuses the verb — this is a considered human action.
+ */
+export function useDeleteDeal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (deal: { id: string; lead_id: string }) => {
+      const { error } = await supabase.from('deals').delete().eq('id', deal.id);
+      if (error) throw error;
+      return deal;
+    },
+    onSuccess: (deal) => {
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['deal-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['lead', deal.lead_id] });
+      toast.success('Deal deleted');
+    },
+    onError: (error) => {
+      logger.error('Delete deal error:', error);
+      toast.error('Could not delete deal — only admins can delete deals');
+    },
+  });
+}
+
 export function useDealStats() {
   return useQuery({
     queryKey: ['deal-stats'],

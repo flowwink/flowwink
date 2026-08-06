@@ -6,7 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDeal, useUpdateDeal, getDealStageInfo, type DealStage } from '@/hooks/useDeals';
+import { useDeal, useUpdateDeal, useDeleteDeal, getDealStageInfo, type DealStage } from '@/hooks/useDeals';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useLead } from '@/hooks/useLeads';
 import { useDealActivities, useAddDealActivity, useUpdateDealActivity, type ActivityType } from '@/hooks/useActivities';
 import { ActivityTimeline } from '@/components/admin/ActivityTimeline';
@@ -17,7 +29,7 @@ import { DealQuotesCard } from '@/components/admin/deals/DealQuotesCard';
 import { DealHistoryTimeline } from '@/components/admin/deals/DealHistoryTimeline';
 import { LostReasonDialog, lostReasonLabel } from '@/components/admin/crm/LostReasonDialog';
 import { useDealTeams, useLatestExchangeRates, useBaseCurrency, convertAmount } from '@/hooks/useDealsParity';
-import { ArrowLeft, Calendar, DollarSign, User, Package, Building, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, User, Package, Building, Users, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
@@ -28,6 +40,8 @@ export default function DealDetailPage() {
   const { data: lead } = useLead(deal?.lead_id);
   const { data: activities, isLoading: activitiesLoading } = useDealActivities(id);
   const updateDeal = useUpdateDeal();
+  const deleteDeal = useDeleteDeal();
+  const { isAdmin } = useAuth();
   const addActivity = useAddDealActivity();
   const updateActivity = useUpdateDealActivity();
   const { data: teams = [] } = useDealTeams();
@@ -114,7 +128,48 @@ export default function DealDetailPage() {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <EntityTags entityType="deal" entityId={deal.id} scope="deal" />
-        <EntityFollowers entityType="deal" entityId={deal.id} compact />
+        <div className="flex items-center gap-2">
+          <EntityFollowers entityType="deal" entityId={deal.id} compact />
+          {/* Admin-only hard delete, for test and training data. A real lost
+              deal is moved to closed_lost — deleting rewrites funnel history,
+              which is why the agent surface refuses this verb entirely. */}
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this deal?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently removes the deal from the pipeline and its
+                    history from funnel statistics. Use it for test and training
+                    data. For a real deal that didn't close, choose{' '}
+                    <strong>Closed Lost</strong> instead — that keeps your
+                    win-rate honest.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() =>
+                      deleteDeal.mutate(
+                        { id: deal.id, lead_id: deal.lead_id },
+                        { onSuccess: () => navigate('/admin/deals') },
+                      )
+                    }
+                  >
+                    Delete deal
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

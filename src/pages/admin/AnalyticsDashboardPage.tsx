@@ -333,7 +333,7 @@ export default function AnalyticsDashboardPage() {
             </SelectContent>
           </Select>
           <Button variant="outline" asChild>
-            <Link to="/admin/analytics/attribution">
+            <Link to="/admin/growth/attribution">
               <ExternalLink className="h-4 w-4 mr-2" />
               Attribution
             </Link>

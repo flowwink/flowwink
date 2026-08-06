@@ -804,7 +804,7 @@ export default function FlowtablePage() {
                         tables={tables}
                         selected={selected}
                         setSelected={setSelected}
-                        density={density}
+                        rowHeight={rowHeight}
                         onExpand={setExpandedIndex}
                         onUpdateRecord={(id, values) =>
                           updateRecord.mutate({ id, table_id: activeTable.id, values })

@@ -160,7 +160,7 @@ export function usePublicContract(token: string | undefined) {
       // direct query returned nothing for the one caller this page exists for —
       // the counterparty following the signing link. The token is the credential.
       const { data, error } = await supabase
-        .rpc('get_public_contract', { p_token: token })
+        .rpc('get_public_contract' as never, { p_token: token } as never)
         .maybeSingle();
       if (error) throw error;
       return data;

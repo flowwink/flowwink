@@ -44,7 +44,7 @@ export function useDocuments(category?: string) {
       if (category && category !== "all") q = q.eq("category", category);
       const { data, error } = await q;
       if (error) throw error;
-      return data as Document[];
+      return data as unknown as Document[];
     },
   });
 }
@@ -62,7 +62,7 @@ export function useEntityDocuments(entityType?: string | null, entityId?: string
         .eq("related_entity_id", entityId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Document[];
+      return data as unknown as Document[];
     },
   });
 }

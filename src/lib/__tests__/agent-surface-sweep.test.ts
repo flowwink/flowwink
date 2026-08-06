@@ -17,7 +17,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-// @ts-expect-error — bun script, consumed here for its pure helpers
 import { classify, probeFor, diffAgainstBaseline } from '../../../scripts/agent-surface-sweep.ts';
 
 describe('classify — a defect versus a fact about the instance', () => {

@@ -45,7 +45,7 @@ import { resolve } from 'node:path';
 // Resolved lazily: `import.meta.dir` is bun-only, and this module is also
 // imported by vitest for its pure helpers, where evaluating it at module level
 // would throw before a single test ran.
-const repoRoot = () => resolve(import.meta.dir ?? process.cwd(), import.meta.dir ? '..' : '.');
+const repoRoot = () => resolve((import.meta as unknown as { dir?: string }).dir ?? process.cwd(), (import.meta as unknown as { dir?: string }).dir ? '..' : '.');
 const baselinePath = () => resolve(repoRoot(), 'supabase/seed/agent-surface-baseline.json');
 const skillsPath = () => resolve(repoRoot(), 'supabase/seed/module-skills.json');
 
@@ -296,4 +296,4 @@ async function main() {
   if (regressions.length || newlyBroken.length) process.exit(1);
 }
 
-if (import.meta.main) await main();
+if ((import.meta as unknown as { main?: boolean }).main) await main();

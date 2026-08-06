@@ -2288,11 +2288,7 @@ function CardView({ fields, records, onUpdate, onExpand, columns = 3 }: {
   );
 }
 
-        </Card>
-      ))}
-    </div>
-  );
-}
+
 
 // ---------- CRM mapping ----------
 function CrmMappingForm({ fields, onCancel, onConfirm }: {

@@ -1100,8 +1100,16 @@ function GridView(props: {
             const isSelected = selected.has(r.id);
             return (
             <tr key={r.id} className="group hover:bg-muted/30">
-              <td className="border-r border-b w-16 min-w-16 max-w-16 p-0 align-middle">
-                <div className="relative flex h-full min-h-9 items-center justify-center">
+              <td className="relative border-r border-b w-16 min-w-16 max-w-16 p-0 align-middle">
+                {/* The spacer keeps the rail measurable; the overlay fills the full row height. */}
+                <div className="min-h-9" aria-hidden="true" />
+                <div
+                  className={`absolute inset-0 flex items-center justify-center gap-1 transition-opacity ${
+                    isSelected
+                      ? 'opacity-100'
+                      : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
+                  }`}
+                >
                   {/* Keep the control rail fixed so hover never changes table layout. */}
                   <span
                     className={`text-xs text-muted-foreground tabular-nums transition-opacity ${
@@ -1110,28 +1118,20 @@ function GridView(props: {
                   >
                     {idx + 1}
                   </span>
-                  <div
-                    className={`absolute inset-0 flex items-center justify-center gap-1 transition-opacity ${
-                      isSelected
-                        ? 'opacity-100'
-                        : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
-                    }`}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleOne(r.id)}
-                    />
-                    {props.onExpand && (
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground"
-                        title="Open record"
-                        onClick={() => props.onExpand!(idx)}
-                      >
-                        <Maximize2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleOne(r.id)}
+                  />
+                  {props.onExpand && (
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      title="Open record"
+                      onClick={() => props.onExpand!(idx)}
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </td>
               {fields.map((f) => (

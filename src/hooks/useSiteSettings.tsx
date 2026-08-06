@@ -542,6 +542,24 @@ const defaultPlatformLocaleSettings: PlatformLocaleSettings = {
   default_timezone: 'Europe/Stockholm',
 };
 
+export interface QuoteProcessSettings {
+  /** What accepting a quote means for the business.
+   *  'invoice'  — Quote-to-Cash: accept auto-creates a draft invoice and the
+   *               public page offers Pay now. Right for straightforward sales.
+   *  'contract' — Two-step: accept expresses intent, the binding moment is the
+   *               agreement signature, invoicing follows delivery. quote-sign
+   *               reads the same setting server-side. */
+  accept_behavior: 'invoice' | 'contract';
+}
+
+const defaultQuoteProcessSettings: QuoteProcessSettings = {
+  accept_behavior: 'invoice',
+};
+
+export function useQuoteProcessSettings() {
+  return useSiteSettings<QuoteProcessSettings>('quotes', defaultQuoteProcessSettings);
+}
+
 export function usePlatformLocaleSettings() {
   return useSiteSettings<PlatformLocaleSettings>('platform_locale', defaultPlatformLocaleSettings);
 }

@@ -157,8 +157,24 @@ Deno.serve(async (req: Request) => {
 
     let invoice: any = null;
 
+    // Accept behavior is a business-model choice, not a universal truth.
+    // 'invoice' (default) is Quote-to-Cash: accept → draft invoice → Pay now
+    // on the quote page — right for straightforward service sales.
+    // 'contract' is the two-step model: accept expresses intent, the binding
+    // moment is the agreement signature, and invoicing follows delivery.
+    // An infrastructure customer who accepts a quote and is immediately asked
+    // to pay the full amount has skipped the entire contract stage.
+    const { data: qsettings } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'quotes')
+      .maybeSingle();
+    const acceptBehavior =
+      ((qsettings?.value as any)?.accept_behavior as string) === 'contract'
+        ? 'contract' : 'invoice';
+
     // 5) On accept → auto-create invoice (Quote-to-Cash close)
-    if (body.action === 'accept' && !quote.converted_to_invoice_id && !quote.invoice_id) {
+    if (acceptBehavior === 'invoice' && body.action === 'accept' && !quote.converted_to_invoice_id && !quote.invoice_id) {
       // Canonical INV-YYYY-NNNNN series (matches manage_invoice / convert_to_invoice /
       // send_invoice_for_order). The old INV-${count+1} scheme diverged in format AND
       // counted every invoice-row series (SUB-/CN-/POS-/CTR-), breaking sequential

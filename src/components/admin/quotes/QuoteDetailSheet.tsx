@@ -13,6 +13,7 @@ import {
   type QuoteStatus,
 } from '@/hooks/useQuotes';
 import { useRequestQuoteApproval, useSendQuote, useSendQuoteReminder, publicQuoteUrl } from '@/hooks/useQuoteWorkflow';
+import { useQuoteProcessSettings } from '@/hooks/useSiteSettings';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { NewContractDialog } from '@/components/admin/contracts/NewContractDialog';
 import { QuoteAttachmentsPanel } from './QuoteAttachmentsPanel';
@@ -45,6 +46,10 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
   const deleteQuote = useDeleteQuote();
   const convertToInvoice = useConvertQuoteToInvoice();
   const [contractOpen, setContractOpen] = useState(false);
+  // The instance's accept model decides which follow-through is primary here:
+  // contract mode leads with the agreement, invoice mode with Quote-to-Cash.
+  const { data: quoteProcess } = useQuoteProcessSettings();
+  const contractFirst = quoteProcess?.accept_behavior === 'contract';
   const requestApproval = useRequestQuoteApproval();
   const sendQuote = useSendQuote();
   const sendReminder = useSendQuoteReminder();
@@ -400,7 +405,7 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
             ))}
             {quote.status === 'accepted' && !quote.invoice_id && (
               <Button
-                variant="default"
+                variant={contractFirst ? 'outline' : 'default'}
                 onClick={handleConvert}
                 disabled={convertToInvoice.isPending}
               >
@@ -412,7 +417,7 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
                 and there was no way to do it from here — the salesperson had to
                 leave for Contracts and retype the customer and the amount. */}
             {quote.status === 'accepted' && (
-              <Button variant="outline" onClick={() => setContractOpen(true)}>
+              <Button variant={contractFirst ? 'default' : 'outline'} onClick={() => setContractOpen(true)}>
                 <FileSignature className="h-4 w-4 mr-1" />
                 Draft contract
               </Button>

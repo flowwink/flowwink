@@ -40,7 +40,7 @@ export function LeadProcessFlow({ leadId, email, status }: Props) {
       key: 'deal',
       label: 'Opportunity',
       help: 'A concrete sales opportunity with value and stage. Everything downstream hangs off the deal.',
-      done: !!data?.deal.done || status === 'opportunity' || status === 'customer',
+      done: !!data?.deal.done,
       meta: data?.deal.count ? `${data.deal.count} · ${formatCurrency(data.deal.amountCents, undefined, { minimumFractionDigits: 0 })}` : null,
     },
     {

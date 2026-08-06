@@ -1012,8 +1012,9 @@ function GridView(props: {
             const isSelected = selected.has(r.id);
             return (
             <tr key={r.id} className="group hover:bg-muted/30">
-              <td className="border-r border-b w-16 p-0">
+              <td className="border-r border-b w-16 p-0 align-top">
                 <div className="h-9 flex items-center justify-center gap-1">
+
                   {/* Airtable-style: row number by default, checkbox + expand on hover */}
                   <span
                     className={`text-xs text-muted-foreground tabular-nums ${

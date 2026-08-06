@@ -333,7 +333,25 @@ export default function FlowtablePage() {
   // Expanded record view: index into displayedRecords (the filtered/sorted set
   // the user is actually looking at), so prev/next steps what the eye expects.
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('compact');
+  // Row height is a per-table reading preference (Airtable's short/medium/tall
+  // plus a true "fit to text" that grows a row to its tallest cell). Kept in
+  // localStorage per table id so switching tables doesn't lose the setting.
+  const [rowHeight, setRowHeight] = useState<RowHeight>('short');
+  useEffect(() => {
+    if (!activeTable?.id) return;
+    try {
+      const stored = localStorage.getItem(`flowtable-rowheight-${activeTable.id}`);
+      setRowHeight(ROW_HEIGHTS.some((r) => r.value === stored) ? (stored as RowHeight) : 'short');
+    } catch {
+      setRowHeight('short');
+    }
+  }, [activeTable?.id]);
+  const changeRowHeight = (value: RowHeight) => {
+    setRowHeight(value);
+    try {
+      if (activeTable?.id) localStorage.setItem(`flowtable-rowheight-${activeTable.id}`, value);
+    } catch { /* storage unavailable — session-only */ }
+  };
   const displayedRecords = useMemo(
     () => applyViewConfig(records, activeTable?.view_config),
     [records, activeTable?.view_config],

@@ -87,10 +87,13 @@ export function LeadProcessFlow({ leadId, email }: Props) {
     <Card>
       <CardContent className="pt-5 pb-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
           <TooltipProvider>
             {steps.map((step, i) => (
               <div key={step.key} className="flex items-center gap-1">
+                {i > 0 && (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
@@ -119,9 +122,6 @@ export function LeadProcessFlow({ leadId, email }: Props) {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">{step.help}</TooltipContent>
                 </Tooltip>
-                {i < steps.length - 1 && (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                )}
               </div>
             ))}
           </TooltipProvider>

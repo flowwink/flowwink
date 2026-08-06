@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808190000",
-      "migrations_count": 313,
+      "migration_head": "20260808200000",
+      "migrations_count": 314,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1257,6 +1257,10 @@
         {
           "version": "20260808190000",
           "name": "flowtable-list-tables-expose-options"
+        },
+        {
+          "version": "20260808200000",
+          "name": "profile-preferences"
         }
       ]
     },

@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PinnedPage {
   href: string;
@@ -8,35 +10,19 @@ export interface PinnedPage {
 
 const MAX_PINS = 8;
 
-function getStorageKey(userId: string) {
-  return `flowwink-pinned-${userId}`;
-}
-
-// Cross-instance pub/sub so every <usePinnedPages> hook (sidebar, header, …)
-// stays in sync without a page refresh — and across browser tabs via the
-// native `storage` event.
-type Listener = (pins: PinnedPage[]) => void;
-const listeners = new Map<string, Set<Listener>>();
-
-function subscribe(userId: string, fn: Listener) {
-  let set = listeners.get(userId);
-  if (!set) {
-    set = new Set();
-    listeners.set(userId, set);
-  }
-  set.add(fn);
-  return () => {
-    set!.delete(fn);
-  };
-}
-
-function broadcast(userId: string, pins: PinnedPage[]) {
-  listeners.get(userId)?.forEach((fn) => fn(pins));
-}
-
-function readFromStorage(userId: string): PinnedPage[] {
+/**
+ * Pinned pages live in profiles.preferences (jsonb, key 'pinned_pages') — the
+ * database, not localStorage. The old implementation was "persistent per
+ * user" only per browser per ORIGIN: the day the instance moved to its real
+ * domain, every user's pins vanished with the old origin's storage.
+ *
+ * The old localStorage value is read ONCE as a migration seed: a user on the
+ * same origin keeps their pins; a user on a new origin starts clean (the old
+ * origin's storage is unreachable by design — nothing to migrate from).
+ */
+function legacySeed(userId: string): PinnedPage[] {
   try {
-    const stored = localStorage.getItem(getStorageKey(userId));
+    const stored = localStorage.getItem(`flowwink-pinned-${userId}`);
     return stored ? (JSON.parse(stored) as PinnedPage[]) : [];
   } catch {
     return [];
@@ -44,60 +30,82 @@ function readFromStorage(userId: string): PinnedPage[] {
 }
 
 export function usePinnedPages(userId: string | undefined) {
-  const [pins, setPins] = useState<PinnedPage[]>(() =>
-    userId ? readFromStorage(userId) : [],
-  );
+  const qc = useQueryClient();
+  const queryKey = ['pinned-pages', userId];
 
-  // Hydrate + subscribe to in-app + cross-tab updates.
-  useEffect(() => {
-    if (!userId) {
-      setPins([]);
-      return;
-    }
-    setPins(readFromStorage(userId));
+  const { data: pins = [] } = useQuery({
+    queryKey,
+    enabled: !!userId,
+    queryFn: async (): Promise<PinnedPage[]> => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('preferences')
+        .eq('id', userId!)
+        .maybeSingle();
+      if (error) throw error;
+      const prefs = ((data as { preferences?: unknown } | null)?.preferences ?? {}) as { pinned_pages?: PinnedPage[] };
+      if (Array.isArray(prefs.pinned_pages)) return prefs.pinned_pages;
 
-    const unsub = subscribe(userId, setPins);
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === getStorageKey(userId)) {
-        setPins(readFromStorage(userId));
+      // First run after the storage move: seed from same-origin localStorage
+      // so nobody on the original domain loses their pins in the migration.
+      const seed = legacySeed(userId!);
+      if (seed.length > 0) {
+        await supabase
+          .from('profiles')
+          .update({ preferences: { ...prefs, pinned_pages: seed } } as never)
+          .eq('id', userId!);
       }
-    };
-    window.addEventListener('storage', onStorage);
-
-    return () => {
-      unsub();
-      window.removeEventListener('storage', onStorage);
-    };
-  }, [userId]);
-
-  const persist = useCallback(
-    (next: PinnedPage[]) => {
-      if (!userId) return;
-      localStorage.setItem(getStorageKey(userId), JSON.stringify(next));
-      broadcast(userId, next);
+      return seed;
     },
-    [userId],
-  );
+    staleTime: 60_000,
+  });
+
+  const write = useMutation({
+    mutationFn: async (next: PinnedPage[]) => {
+      // Merge into the preferences object — pins must never clobber a future
+      // sibling preference written by another surface.
+      const { data } = await supabase
+        .from('profiles')
+        .select('preferences')
+        .eq('id', userId!)
+        .maybeSingle();
+      const prefs = ((data as { preferences?: unknown } | null)?.preferences ?? {}) as Record<string, unknown>;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ preferences: { ...prefs, pinned_pages: next } } as never)
+        .eq('id', userId!);
+      if (error) throw error;
+      return next;
+    },
+    onMutate: async (next) => {
+      // Optimistic: the sidebar star should not wait for a round-trip.
+      await qc.cancelQueries({ queryKey });
+      const prev = qc.getQueryData<PinnedPage[]>(queryKey);
+      qc.setQueryData(queryKey, next);
+      return { prev };
+    },
+    onError: (_e, _next, ctx) => {
+      if (ctx?.prev) qc.setQueryData(queryKey, ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey }),
+  });
 
   const addPin = useCallback(
     (page: PinnedPage) => {
       if (!userId) return;
-      const prev = readFromStorage(userId);
-      if (prev.length >= MAX_PINS) return;
-      if (prev.some((p) => p.href === page.href)) return;
-      persist([...prev, page]);
+      if (pins.length >= MAX_PINS) return;
+      if (pins.some((p) => p.href === page.href)) return;
+      write.mutate([...pins, page]);
     },
-    [persist, userId],
+    [userId, pins, write],
   );
 
   const removePin = useCallback(
     (href: string) => {
       if (!userId) return;
-      const prev = readFromStorage(userId);
-      persist(prev.filter((p) => p.href !== href));
+      write.mutate(pins.filter((p) => p.href !== href));
     },
-    [persist, userId],
+    [userId, pins, write],
   );
 
   const isPinned = useCallback(

@@ -1385,7 +1385,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
     const configured = field.options?.choices as string[] | undefined;
     const choices = (configured && configured.length) ? configured : ['New', 'In progress', 'Done'];
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <select
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value || null)}
@@ -1406,7 +1406,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
   if (field.type === 'currency') {
     const code = (field.options?.currency_code as string) || 'SEK';
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="flex items-center h-9">
           <input
             type="number"
@@ -1425,7 +1425,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
   if (field.type === 'rating') {
     const n = Number(value) || 0;
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="h-9 px-2 flex items-center gap-0.5">
           {[1, 2, 3, 4, 5].map((i) => (
             <button
@@ -1447,7 +1447,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
   if (field.type === 'date') {
     const display = toDateInputValue(value);
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <input
           type="date"
           key={display}
@@ -1585,7 +1585,7 @@ function LinkCell({ field, value, onChange, cellStyle, common }: {
 
   if (!targetId) {
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="h-9 px-2 flex items-center text-xs text-muted-foreground">Configure link target</div>
       </td>
     );
@@ -1593,7 +1593,7 @@ function LinkCell({ field, value, onChange, cellStyle, common }: {
 
   const current = value as string | undefined;
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button className={`${common} text-left truncate`}>
@@ -1653,7 +1653,7 @@ function UserCell({ field, value, onChange, cellStyle, common }: {
   const displayName = (p?: TeamProfile) => p?.full_name || p?.email || '(unknown)';
 
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button className={`${common} text-left truncate`}>
@@ -1719,7 +1719,7 @@ function LookupCell({ field, record, fields, cellStyle }: {
   const targetRow = linkedId ? rows.find((r) => r.id === linkedId) : undefined;
   const out = targetRow && targetField ? targetRow.values?.[targetField] : undefined;
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <div className="h-9 px-2 flex items-center text-sm text-muted-foreground truncate">
         {!viaKey || !targetField
           ? <span className="text-xs italic">configure lookup</span>
@@ -1762,7 +1762,7 @@ function RollupCell({ field, record, cellStyle }: {
     }
   }
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <div className="h-9 px-2 flex items-center text-sm tabular-nums text-muted-foreground">
         {out === 'configure rollup' ? <span className="text-xs italic">{out}</span> : out}
       </div>

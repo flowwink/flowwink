@@ -19,6 +19,8 @@ import { useAddLeadActivity, type ActivityType } from '@/hooks/useActivities';
 import { getLeadStatusInfo, type LeadStatus } from '@/lib/lead-utils';
 import { DealSection } from '@/components/admin/DealSection';
 import { RecordDiscussPanel } from '@/components/admin/crm/RecordDiscussPanel';
+import { LeadProcessFlow } from '@/components/admin/crm/LeadProcessFlow';
+
 import { CrmTasksCard } from '@/components/admin/crm/CrmTasksCard';
 import { SendEmailDialog } from '@/components/admin/crm/SendEmailDialog';
 import { LeadCommunicationsCard } from '@/components/admin/crm/LeadCommunicationsCard';
@@ -211,8 +213,13 @@ export default function LeadDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Process flow — where this record stands in quote-to-cash.
+              Onboarding surface: new colleagues read the chain, not the modules. */}
+          <LeadProcessFlow leadId={lead.id} email={lead.email} />
+
           {/* Status & Actions */}
           <Card>
+
             <CardContent className="pt-6">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -329,7 +336,10 @@ export default function LeadDetailPage() {
           )}
 
           {/* Deals Section */}
-          <DealSection leadId={lead.id} />
+          <div id="lead-deals">
+            <DealSection leadId={lead.id} />
+          </div>
+
 
           {/* Tasks */}
           <CrmTasksCard leadId={lead.id} />

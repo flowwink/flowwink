@@ -668,16 +668,38 @@ export default function FlowtablePage() {
                           </button>
                         );
                       })}
-                      <Button
-                        variant={density === 'comfortable' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        className="h-7 px-2"
-                        title="Fit row height to text"
-                        onClick={() => setDensity(density === 'comfortable' ? 'compact' : 'comfortable')}
-                      >
-                        <WrapText className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
+                    {activeTable.view_mode !== 'kanban' && activeTable.view_mode !== 'card' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant={rowHeight === 'short' ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className="h-8 px-2 gap-1 text-xs"
+                            title="Row height"
+                          >
+                            <WrapText className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">{rowHeightSpec(rowHeight).label}</span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Row height</DropdownMenuLabel>
+                          {ROW_HEIGHTS.map((r) => (
+                            <DropdownMenuItem
+                              key={r.value}
+                              onClick={() => changeRowHeight(r.value)}
+                              className="flex flex-col items-start gap-0"
+                            >
+                              <span className={rowHeight === r.value ? 'font-medium' : ''}>
+                                {r.label}{rowHeight === r.value ? ' ✓' : ''}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">{r.hint}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <ViewToolbar
                       fields={fields}
                       config={activeTable.view_config ?? {}}

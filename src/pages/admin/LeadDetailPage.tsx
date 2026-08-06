@@ -19,6 +19,8 @@ import { useAddLeadActivity, type ActivityType } from '@/hooks/useActivities';
 import { getLeadStatusInfo, type LeadStatus } from '@/lib/lead-utils';
 import { DealSection } from '@/components/admin/DealSection';
 import { RecordDiscussPanel } from '@/components/admin/crm/RecordDiscussPanel';
+import { LeadProcessFlow } from '@/components/admin/crm/LeadProcessFlow';
+
 import { CrmTasksCard } from '@/components/admin/crm/CrmTasksCard';
 import { SendEmailDialog } from '@/components/admin/crm/SendEmailDialog';
 import { LeadCommunicationsCard } from '@/components/admin/crm/LeadCommunicationsCard';

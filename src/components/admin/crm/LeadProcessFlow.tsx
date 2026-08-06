@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 interface Props {
   leadId: string;
   email: string | null | undefined;
-  status: string;
 }
 
 /**
@@ -20,7 +19,7 @@ interface Props {
  * at a glance which step this record has reached and what the next action is,
  * without knowing which module owns which object.
  */
-export function LeadProcessFlow({ leadId, email, status }: Props) {
+export function LeadProcessFlow({ leadId, email }: Props) {
   const { data } = useLeadPipelineChain(leadId, email ?? undefined);
   const { formatCurrency } = usePlatformFormat();
 

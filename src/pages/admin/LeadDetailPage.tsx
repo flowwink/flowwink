@@ -215,7 +215,7 @@ export default function LeadDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Process flow — where this record stands in quote-to-cash.
               Onboarding surface: new colleagues read the chain, not the modules. */}
-          <LeadProcessFlow leadId={lead.id} email={lead.email} status={lead.status} />
+          <LeadProcessFlow leadId={lead.id} email={lead.email} />
 
           {/* Status & Actions */}
           <Card>

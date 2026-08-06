@@ -1,11 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
-
-// Dynamic import of Resend
-const getResend = async () => {
-  const { Resend } = await import("https://esm.sh/resend@2.0.0");
-  return Resend;
-};
+import { loadEmailShell } from '../_shared/email-shell.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +20,6 @@ export async function handle(req: Request): Promise<Response> {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     const supabase = getServiceClient();
 
@@ -297,81 +291,81 @@ export async function handle(req: Request): Promise<Response> {
       .eq("email", email.toLowerCase())
       .single();
 
-    // Send confirmation email if Resend is configured
-    if (resendApiKey && subscriber?.confirmation_token) {
-      try {
-        // Get email configuration from site_settings (same as newsletter send)
-        const { data: integrationSettings } = await supabase
-          .from("site_settings")
-          .select("value")
-          .eq("key", "integrations")
-          .maybeSingle();
+    // Confirmation mail goes through `email-send`, the platform's router —
+    // NOT a direct Resend client, which is what this did before. Talking to
+    // one provider directly meant the confirmation mail skipped the branded
+    // shell and the suppression list, and — the real defect — could not be
+    // sent at all by a self-hosted operator running SMTP: the old
+    // `if (resendApiKey && …)` guard silently fell through to auto-confirm,
+    // so double opt-in was quietly not double opt-in.
+    // What we tell the visitor must follow what actually happened, not what
+    // was configured: "check your email" printed because an API key exists is
+    // the same lie in a friendlier voice.
+    let confirmationSent = false;
 
-        const resendSettings = (integrationSettings?.value as any)?.resend;
-        const resendEnabled = resendSettings?.enabled ?? false;
-
-        if (!resendEnabled) {
-          console.log("[newsletter-subscribe] Resend integration is disabled, auto-confirming");
-          await supabase
-            .from("newsletter_subscribers")
-            .update({
-              status: "confirmed",
-              confirmed_at: new Date().toISOString(),
-            })
-            .eq("email", email.toLowerCase());
-
-          return new Response(JSON.stringify({ success: true, message: "Subscribed successfully" }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        // Get email configuration from settings
-        const emailConfig = resendSettings?.config?.emailConfig || {
-          fromEmail: "onboarding@resend.dev",
-          fromName: "Newsletter",
-        };
-
-        console.log(`[newsletter-subscribe] Using sender: ${emailConfig.fromName} <${emailConfig.fromEmail}>`);
-
-        const ResendClass = await getResend();
-        const resendClient = new ResendClass(resendApiKey);
-        const confirmUrl = `${supabaseUrl}/functions/v1/newsletter/subscribe?action=confirm&token=${subscriber.confirmation_token}`;
-
-        await resendClient.emails.send({
-          from: `${emailConfig.fromName} <${emailConfig.fromEmail}>`,
-          to: [email],
-          subject: "Confirm your subscription",
-          html: `
-            <h2>Welcome!</h2>
-            <p>Please confirm your newsletter subscription by clicking the link below:</p>
-            <p><a href="${confirmUrl}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 6px;">Confirm Subscription</a></p>
-            <p>If you didn't subscribe, you can safely ignore this email.</p>
-          `,
-        });
-
-        console.log(`[newsletter-subscribe] Confirmation email sent to: ${email}`);
-      } catch (emailError) {
-        console.error("[newsletter-subscribe] Email send error:", emailError);
-        // Continue anyway - subscription is created
-      }
-    } else {
-      // Auto-confirm if no email service
+    const autoConfirm = async (reason: string) => {
       await supabase
         .from("newsletter_subscribers")
-        .update({
-          status: "confirmed",
-          confirmed_at: new Date().toISOString(),
-        })
+        .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
         .eq("email", email.toLowerCase());
+      console.log(`[newsletter-subscribe] Auto-confirmed (${reason}): ${email}`);
+    };
 
-      console.log(`[newsletter-subscribe] Auto-confirmed (no email service): ${email}`);
+    if (!subscriber?.confirmation_token) {
+      // No token means nothing to confirm against; confirming here is the only
+      // outcome that does not strand the subscriber in `pending` forever.
+      await autoConfirm("no confirmation token");
+    } else {
+      const confirmUrl = `${supabaseUrl}/functions/v1/newsletter/subscribe?action=confirm&token=${subscriber.confirmation_token}`;
+
+      // A fragment, not a document — email-send wraps it in the operator's
+      // branded shell. The button borrows the brand colour from the same
+      // settings the shell reads, so it cannot drift from the frame around it.
+      const shell = await loadEmailShell(supabase);
+      const html = `
+        <h2 style="margin:0 0 12px;font-size:20px;">Confirm your subscription</h2>
+        <p>Please confirm your newsletter subscription by clicking the button below.</p>
+        <p style="margin:24px 0;">
+          <a href="${confirmUrl}" style="display:inline-block;padding:12px 24px;background-color:${shell.primaryHex};color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Confirm subscription</a>
+        </p>
+        <p style="color:#666666;font-size:13px;">If you didn't subscribe, you can safely ignore this email.</p>
+      `;
+
+      const { data: sendData, error: sendErr } = await supabase.functions.invoke("email-send", {
+        body: {
+          to: email,
+          subject: "Confirm your subscription",
+          html,
+          source: "newsletter-confirm",
+          tags: { source: "newsletter-confirm" },
+        },
+      });
+
+      if (sendErr || !(sendData as any)?.success) {
+        // Stay `pending`. An unsent confirmation is not consent — confirming
+        // anyway would manufacture an opt-in that the subscriber never gave.
+        console.error(
+          `[newsletter-subscribe] Confirmation mail failed for ${email}:`,
+          sendErr ?? (sendData as any)?.error,
+        );
+      } else if ((sendData as any).simulated) {
+        // The router reports success with simulated=true when NO provider is
+        // configured — nothing actually left the building. Treating that as a
+        // sent mail is how subscribers ended up pending forever with the
+        // newsletter reporting "No subscribers to send to".
+        await autoConfirm("no email provider configured");
+      } else {
+        confirmationSent = true;
+        console.log(`[newsletter-subscribe] Confirmation email sent to: ${email}`);
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: resendApiKey ? "Please check your email to confirm" : "Subscribed successfully",
+        message: confirmationSent
+          ? "Please check your email to confirm"
+          : "Subscribed successfully",
       }),
       {
         status: 200,

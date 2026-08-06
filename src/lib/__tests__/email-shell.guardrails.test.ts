@@ -172,10 +172,67 @@ describe('newsletter reads siteUrl from the row that actually holds it', () => {
     expect(code).toMatch(/eq\(\s*["']key["']\s*,\s*["']general["']\s*\)/);
   });
 
+  it('unsubscribe copy stays in the platform language', () => {
+    // The fleet is multi-tenant: www and autoversio are English instances.
+    // Hardcoding one customer's language in platform code ships it to all.
+    const htmlBlock = code.slice(code.indexOf('const html = `'), code.indexOf('email-send'));
+    expect(htmlBlock).toContain('Unsubscribe');
+  });
+
   it('stays a fragment so email-send can brand it', () => {
     // If the newsletter emitted a full document it would become the only
     // unbranded mail the platform sends.
     const htmlBlock = code.slice(code.indexOf('const html = `'), code.indexOf('email-send'));
     expect(htmlBlock).not.toMatch(/<!doctype|<html[\s>]|<body[\s>]/i);
+  });
+});
+
+describe('newsletter confirmation goes through the router', () => {
+  const src = readFileSync(
+    resolve(__dirname, '../../../supabase/functions/newsletter/subscribe.ts'),
+    'utf-8',
+  );
+  const code = src
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'))
+    .join('\n');
+
+  it('does not talk to Resend directly', () => {
+    // A direct provider client skipped the branded shell and the suppression
+    // list, and — the real defect — made double opt-in impossible for an
+    // operator running SMTP: no RESEND_API_KEY meant no confirmation mail at
+    // all, silently auto-confirmed.
+    expect(code).not.toMatch(/esm\.sh\/resend/);
+    expect(code).not.toMatch(/new\s+ResendClass/);
+    expect(code).not.toMatch(/RESEND_API_KEY/);
+  });
+
+  it('sends via email-send', () => {
+    expect(code).toMatch(/functions\.invoke\(\s*["']email-send["']/);
+  });
+
+  it('treats a simulated send as "no mail was sent"', () => {
+    // email-send answers {success:true, simulated:true} when NO provider is
+    // configured. Reading that as a delivered mail leaves the subscriber
+    // pending forever — the exact shape of the bug this replaced.
+    expect(code).toMatch(/\.simulated/);
+    const branch = code.slice(code.indexOf('.simulated'), code.indexOf('.simulated') + 260);
+    expect(branch).toContain('autoConfirm');
+  });
+
+  it('does not confirm a subscriber whose mail failed to send', () => {
+    // An unsent confirmation is not consent. Only an explicitly simulated
+    // send (no provider at all) may auto-confirm.
+    const failBranch = code.slice(
+      code.indexOf('if (sendErr'),
+      code.indexOf('} else if'),
+    );
+    expect(failBranch).not.toContain('autoConfirm');
+  });
+
+  it('promises "check your email" only when one was actually sent', () => {
+    // The old message keyed off the API key existing, not off a send.
+    expect(code).toMatch(/confirmationSent\s*$|confirmationSent\s*\n?\s*\?/m);
+    expect(code).not.toMatch(/resendApiKey\s*\?/);
   });
 });

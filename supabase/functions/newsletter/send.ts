@@ -124,7 +124,7 @@ export async function sendNewsletterCore(
       const html = `
         ${processedContent}
         <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid #eeeeee;font-size:12px;line-height:18px;color:#888888;">
-          <a href="${personalUnsubscribe}" style="color:#888888;">Avsluta prenumeration</a>
+          <a href="${personalUnsubscribe}" style="color:#888888;">Unsubscribe</a>
         </p>
         ${trackingPixel}
       `;

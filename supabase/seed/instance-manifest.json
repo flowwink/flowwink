@@ -1324,7 +1324,7 @@
         "mcp-server": "sha256:9a3e6835bd7b865935f27e499677cb50b538a261144a96364e28d4bd19b2b2a2",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:766be614771b490303abefc25efff5ade8417a833fc8c8ed0fc4e725f84fec81",
-        "newsletter": "sha256:f4a54e315db4bddb0f699fbf1cef5d16f71950555cde13c46a7a653ce5aacbfa",
+        "newsletter": "sha256:48b37b233cdfed2433269c8fc89518f77a5539d872b140f8db1dc5b5aaebfc31",
         "openclaw-responses": "sha256:70efb4b23cd1fb08427337148ccd47097d30a0e746bb27ad17120b39498dec3b",
         "process-image": "sha256:b7a65c7cf8f1b80ec4ae22aec5ab2ec7521ead15ee3f96e08921da90ed41b985",
         "process-job-application": "sha256:25776893a0080b2bce6674c66d0c6539a0d0238a5eb18f1d0755c17248d0f900",

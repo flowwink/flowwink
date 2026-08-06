@@ -211,8 +211,13 @@ export default function LeadDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Process flow — where this record stands in quote-to-cash.
+              Onboarding surface: new colleagues read the chain, not the modules. */}
+          <LeadProcessFlow leadId={lead.id} email={lead.email} status={lead.status} />
+
           {/* Status & Actions */}
           <Card>
+
             <CardContent className="pt-6">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">

@@ -98,7 +98,7 @@ export function LeadProcessFlow({ leadId, email }: Props) {
                   <TooltipTrigger asChild>
                     <div
                       className={cn(
-                        'flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm',
+                        'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs',
                         step.done
                           ? 'border-primary/30 bg-primary/10 text-foreground'
                           : nextStep?.key === step.key

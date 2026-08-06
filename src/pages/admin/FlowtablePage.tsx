@@ -895,7 +895,7 @@ function GridView(props: {
   tables: FlowtableTable[];
   selected: Set<string>;
   setSelected: (s: Set<string>) => void;
-  density?: 'compact' | 'comfortable';
+  rowHeight?: RowHeight;
   onExpand?: (index: number) => void;
   onUpdateRecord: (id: string, values: Record<string, unknown>) => void;
   onAddField: (name: string, type: FlowtableFieldType, options: Record<string, unknown>) => void;

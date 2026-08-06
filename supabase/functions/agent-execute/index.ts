@@ -1747,7 +1747,9 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
       skills: c.skills, experience_years: c.experience_years,
       certifications: c.certifications || [], languages: c.languages || ['English'],
       availability: c.availability, hourly_rate_cents: c.hourly_rate_cents || null,
-      currency: c.currency || 'USD', avatar_url: c.avatar_url || null,
+      // Omit when the template carries no currency — the column default is the
+      // instance's own currency, and a hardcoded fallback here overrides it.
+      currency: c.currency || undefined, avatar_url: c.avatar_url || null,
       linkedin_url: c.linkedin_url || null, is_active: c.is_active ?? true,
     }).select('id').single();
     if (error) { errors.push(`Consultant "${c.name}": ${error.message}`); continue; }

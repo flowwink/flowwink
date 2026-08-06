@@ -18,6 +18,7 @@ import {
 import type { LeadWithCompany } from '@/hooks/useLeads';
 import type { Company } from '@/hooks/useCompanies';
 import type { Product } from '@/hooks/useProducts';
+import { FALLBACK_CURRENCY } from '@/lib/platform-fallbacks';
 
 export function useExportLeads() {
   return async (leads: LeadWithCompany[]) => {
@@ -204,7 +205,7 @@ export function useExportProducts() {
       name: p.name,
       description: p.description || '',
       price: (p.price_cents / 100).toString(),
-      currency: p.currency || 'USD',
+      currency: p.currency || FALLBACK_CURRENCY,
       type: p.type || 'one_time',
       image_url: p.image_url || '',
     }));
@@ -242,7 +243,9 @@ export function useImportProducts() {
           name: row.name.trim(),
           description: row.description || null,
           price_cents: parsePriceToCents(row.price),
-          currency: row.currency?.toUpperCase()?.trim() || 'USD',
+          // Omitted when the CSV has no currency column — the table default is
+          // the instance's currency, and JSON.stringify drops undefined keys.
+          currency: row.currency?.toUpperCase()?.trim() || undefined,
           type: (validateProductType(row.type?.toLowerCase()?.replace('-', '_')?.trim() ?? null)
             ? row.type!.toLowerCase().replace('-', '_').trim()
             : 'one_time') as 'one_time' | 'recurring',

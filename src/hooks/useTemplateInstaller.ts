@@ -578,7 +578,7 @@ export function useTemplateInstaller() {
             skills: c.skills, experience_years: c.experience_years,
             certifications: c.certifications || [], languages: c.languages || ['English'],
             availability: c.availability, hourly_rate_cents: c.hourly_rate_cents || null,
-            currency: c.currency || 'USD', avatar_url: c.avatar_url || null,
+            currency: c.currency || undefined, avatar_url: c.avatar_url || null,
             linkedin_url: c.linkedin_url || null, is_active: c.is_active ?? true,
           }).select('id').single();
           if (data?.id) createdConsultantIds.push(data.id);

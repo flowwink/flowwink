@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { FALLBACK_CURRENCY, FALLBACK_LOCALE } from '@/lib/platform-fallbacks';
 
 export type ProductType = 'one_time' | 'recurring';
 
@@ -163,11 +164,15 @@ export function useDeleteProduct() {
   });
 }
 
-export function formatPrice(cents: number, currency: string = 'USD'): string {
+export function formatPrice(cents: number, currency: string = FALLBACK_CURRENCY): string {
   // Show the real fractional price: 12995 → "129,95 kr", not "130" (the old
   // maximumFractionDigits:0 rounded display prices away from the charged amount).
   // Zero-decimal currencies (JPY) still render whole via their own default.
-  return new Intl.NumberFormat('sv-SE', {
+  //
+  // Plain-function legacy formatter: it cannot read platform_locale (no hook),
+  // so it uses the platform-wide fallbacks. In components, prefer
+  // usePlatformFormat().formatCurrency — it follows the configured setting.
+  return new Intl.NumberFormat(FALLBACK_LOCALE, {
     style: 'currency',
     currency,
   }).format(cents / 100);

@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
+import { FALLBACK_CURRENCY, FALLBACK_LOCALE } from '@/lib/platform-fallbacks';
 
 interface SlackNotification {
   type: 'new_lead' | 'deal_won' | 'form_submit';
@@ -109,11 +110,13 @@ export function notifyDealWon(options: {
   contactName: string;
   valueCents: number;
   leadId: string;
+  /** The deal's own currency — pass it; the fallback is a last resort. */
+  currency?: string;
 }): void {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const valueFormatted = new Intl.NumberFormat('en-US', {
+  const valueFormatted = new Intl.NumberFormat(FALLBACK_LOCALE, {
     style: 'currency',
-    currency: 'USD',
+    currency: options.currency || FALLBACK_CURRENCY,
     minimumFractionDigits: 0,
   }).format(options.valueCents / 100);
 

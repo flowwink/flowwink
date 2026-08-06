@@ -124,7 +124,10 @@ export function useCreateDeal() {
         .insert({
           ...deal,
           stage: deal.stage || 'proposal',
-          currency: deal.currency || 'USD',
+          // No client-side currency fallback: the column default is the
+          // instance's own currency. `|| 'USD'` here used to override it —
+          // every deal on a Swedish instance was born in dollars.
+          currency: deal.currency || undefined,
         })
         .select('*, product:products(*)')
         .single();
@@ -206,6 +209,7 @@ export function useUpdateDeal() {
           dealName: data.product?.name || `Deal ${data.id.slice(0, 8)}`,
           contactName: data.lead_id,
           valueCents: data.value_cents || 0,
+          currency: data.currency,
           leadId: data.lead_id,
         });
       }

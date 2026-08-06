@@ -248,7 +248,10 @@ export const handler = async (req: Request): Promise<Response> => {
     if (booking.service?.price_cents && booking.service.price_cents > 0) {
       const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: booking.service.currency || 'USD',
+        // SEK, not USD: services.currency has a SEK column default, so this
+        // fallback only fires on legacy NULL rows — and the platform-wide
+        // formatting fallback is SEK (see src/lib/platform-fallbacks.ts).
+        currency: booking.service.currency || 'SEK',
         minimumFractionDigits: 0,
       });
       priceText = `<p><strong>Price:</strong> ${formatter.format(booking.service.price_cents / 100)}</p>`;

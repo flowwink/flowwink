@@ -11,6 +11,8 @@
  * admin DunningPreview component.
  */
 
+import { FALLBACK_CURRENCY, FALLBACK_LOCALE } from '@/lib/platform-fallbacks';
+
 export type DunningTemplateKey = 'reminder' | 'urgent' | 'final';
 
 export interface DunningTemplateData {
@@ -35,9 +37,9 @@ const esc = (s: unknown): string =>
 
 const fmt = (cents: number, currency: string): string => {
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(FALLBACK_LOCALE, {
       style: 'currency',
-      currency: (currency || 'USD').toUpperCase(),
+      currency: (currency || FALLBACK_CURRENCY).toUpperCase(),
     }).format(cents / 100);
   } catch {
     return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;

@@ -102,20 +102,14 @@ export default function PublicQuotePage() {
     setPayPending(false);
   };
 
-  const itemsKey = ['public-quote-items', quote?.id];
-  const { data: items = [] } = useQuery({
-    queryKey: itemsKey,
-    queryFn: async () => {
-      if (!quote?.id) return [];
-      const { data } = await supabase
-        .from('quote_items')
-        .select('*')
-        .eq('quote_id', quote.id)
-        .order('position', { ascending: true });
-      return data || [];
-    },
-    enabled: !!quote?.id,
-  });
+  // Items arrive with the quote from get_public_quote — the anon client has no
+  // read on the quote_items table, and admin-composed quotes keep their lines
+  // in the line_items jsonb the RPC falls back to. One fetch, one truth.
+  const items = ((quote as { _public_items?: unknown[] } | null)?._public_items ?? []) as {
+    id: string; description: string; quantity: number; unit?: string;
+    unit_price_cents: number; line_total_cents: number;
+    is_optional?: boolean; selected_by_customer?: boolean;
+  }[];
 
   const toggleOptional = async (itemId: string, selected: boolean) => {
     if (!token) return;
@@ -123,7 +117,8 @@ export default function PublicQuotePage() {
       _accept_token: token, _item_id: itemId, _selected: selected,
     } as never);
     if (!error) {
-      qc.invalidateQueries({ queryKey: itemsKey });
+      // Items travel inside the public-quote payload now — refetching the
+      // quote refreshes them and the recalculated totals together.
       refetch();
     }
   };

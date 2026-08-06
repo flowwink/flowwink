@@ -156,10 +156,11 @@ export function usePublicContract(token: string | undefined) {
     queryKey: ['public-contract', token],
     queryFn: async () => {
       if (!token) return null;
+      // Via RPC, not a table read: contracts has no anon SELECT policy, so the
+      // direct query returned nothing for the one caller this page exists for —
+      // the counterparty following the signing link. The token is the credential.
       const { data, error } = await supabase
-        .from('contracts')
-        .select('id,title,counterparty_name,counterparty_email,status,body_markdown,signed_at,version,currency,value_cents,start_date,end_date')
-        .eq('accept_token', token)
+        .rpc('get_public_contract', { p_token: token })
         .maybeSingle();
       if (error) throw error;
       return data;

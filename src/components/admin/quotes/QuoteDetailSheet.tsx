@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Trash2, Plus, Building2, FileCheck, Send, ShieldCheck, Link as LinkIcon } from 'lucide-react';
+import { Trash2, Plus, Building2, FileCheck, FileSignature, Send, ShieldCheck, Link as LinkIcon } from 'lucide-react';
 import { computeInvoiceTotals, type InvoiceLineItem } from '@/hooks/useInvoices';
 import {
   useQuote, useUpdateQuote, useDeleteQuote, useConvertQuoteToInvoice,
@@ -14,6 +14,7 @@ import {
 } from '@/hooks/useQuotes';
 import { useRequestQuoteApproval, useSendQuote, useSendQuoteReminder, publicQuoteUrl } from '@/hooks/useQuoteWorkflow';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { NewContractDialog } from '@/components/admin/contracts/NewContractDialog';
 import { QuoteAttachmentsPanel } from './QuoteAttachmentsPanel';
 import { QuoteRevisionsPanel } from './QuoteRevisionsPanel';
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
   const updateQuote = useUpdateQuote();
   const deleteQuote = useDeleteQuote();
   const convertToInvoice = useConvertQuoteToInvoice();
+  const [contractOpen, setContractOpen] = useState(false);
   const requestApproval = useRequestQuoteApproval();
   const sendQuote = useSendQuote();
   const sendReminder = useSendQuoteReminder();
@@ -406,12 +408,32 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
                 Create Invoice
               </Button>
             )}
+            {/* An accepted quote is exactly the moment an agreement gets drafted,
+                and there was no way to do it from here — the salesperson had to
+                leave for Contracts and retype the customer and the amount. */}
+            {quote.status === 'accepted' && (
+              <Button variant="outline" onClick={() => setContractOpen(true)}>
+                <FileSignature className="h-4 w-4 mr-1" />
+                Draft contract
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={handleDelete} className="ml-auto text-destructive">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </SheetContent>
+
+      <NewContractDialog
+        open={contractOpen}
+        onOpenChange={setContractOpen}
+        prefill={{
+          counterparty_name: quote.leads?.name || '',
+          counterparty_email: quote.leads?.email || '',
+          value_cents: quote.total_cents,
+          title: `Avtal — ${quote.quote_number}`,
+        }}
+      />
     </Sheet>
   );
 }

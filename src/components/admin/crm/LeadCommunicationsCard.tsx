@@ -90,7 +90,7 @@ export function LeadCommunicationsCard({ leadId }: { leadId: string }) {
             </div>
             {quotes.map((q) => (
               <div key={q.id} className="flex items-center justify-between gap-2 text-sm">
-                <Link to="/admin/quotes" className="font-mono text-xs hover:underline">
+                <Link to={`/admin/quotes?id=${q.id}`} className="font-mono text-xs hover:underline">
                   {q.quote_number}
                 </Link>
                 <span className="truncate flex-1 text-muted-foreground text-xs">{q.title ?? ''}</span>

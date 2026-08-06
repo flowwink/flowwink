@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260807090000",
-      "migrations_count": 302,
+      "migration_head": "20260807140000",
+      "migrations_count": 303,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1213,6 +1213,10 @@
         {
           "version": "20260807090000",
           "name": "manage-contract-template"
+        },
+        {
+          "version": "20260807140000",
+          "name": "public-contract-by-token"
         }
       ]
     },

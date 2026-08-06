@@ -235,7 +235,13 @@ export const navigationGroups: NavGroup[] = [
         moduleId: "recruitment",
         allowedRoles: ["hr"],
       },
-      { name: "Contracts", href: "/admin/contracts", icon: FileSignature, moduleId: "contracts", allowedRoles: ["hr"] },
+      // allowedRoles: ["hr"] was left over from employment contracts. It hid the
+      // whole customer-agreement half of the sales chain from the people who
+      // sell: a salesperson could draft a quote and never see the contract it
+      // turns into. Roles are still enforced by RLS; the nav entry no longer
+      // pretends contracts are an HR-only concern.
+      { name: "Contracts", href: "/admin/contracts", icon: FileSignature, moduleId: "contracts" },
+      { name: "Contract templates", href: "/admin/contracts/templates", icon: FileText, moduleId: "contracts" },
       { name: "Documents", href: "/admin/documents", icon: FolderOpen, moduleId: "documents" },
       { name: "Maintenance", href: "/admin/maintenance", icon: Wrench, moduleId: "maintenance" },
       { name: "SLA Monitor", href: "/admin/sla", icon: Shield, moduleId: "sla" },

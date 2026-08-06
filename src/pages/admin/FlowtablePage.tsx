@@ -1465,7 +1465,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
     field.type === 'url' ? 'url' :
     field.type === 'phone' ? 'tel' : 'text';
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <input
         type={inputType}
         defaultValue={(value as string | number | undefined) ?? ''}
@@ -1478,6 +1478,86 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
     </td>
   );
 }
+
+// Wrapping text cell — the reading half of the row-height control. Idle state
+// is plain wrapped text (clamped to spec.lines, or the full value in "Fit to
+// text"); clicking or pressing Enter swaps in an auto-growing textarea so the
+// cell you edit is exactly as tall as its content. Esc reverts, blur saves.
+function WrapTextCell({ value, onChange, cellStyle, spec, multiline }: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+  cellStyle: { width: number; minWidth: number };
+  spec: (typeof ROW_HEIGHTS)[number];
+  multiline: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const text = value == null ? '' : String(value);
+
+  const autosize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    if (editing && ref.current) {
+      autosize(ref.current);
+      ref.current.focus();
+      ref.current.setSelectionRange(ref.current.value.length, ref.current.value.length);
+    }
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
+        <textarea
+          ref={ref}
+          defaultValue={text}
+          onInput={(e) => autosize(e.currentTarget)}
+          onBlur={(e) => {
+            setEditing(false);
+            if (e.target.value !== text) onChange(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') { e.currentTarget.value = text; setEditing(false); }
+            if (e.key === 'Enter' && !multiline && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur(); }
+          }}
+          className="w-full px-2 py-1.5 text-sm leading-snug bg-background border-0 resize-none outline-none ring-2 ring-inset ring-primary/40 max-h-[60vh] overflow-auto"
+          style={{ minHeight: spec.minPx }}
+        />
+      </td>
+    );
+  }
+
+  return (
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
+      <div
+        role="textbox"
+        tabIndex={0}
+        title={spec.lines && text ? text : undefined}
+        onClick={() => setEditing(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); setEditing(true); }
+        }}
+        className="px-2 py-1.5 text-sm leading-snug whitespace-pre-wrap break-words cursor-text outline-none focus:ring-2 focus:ring-inset focus:ring-primary/40"
+        style={{
+          minHeight: spec.minPx,
+          ...(spec.lines
+            ? {
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical' as const,
+                WebkitLineClamp: spec.lines,
+                overflow: 'hidden',
+              }
+            : {}),
+        }}
+      >
+        {text || <span className="text-muted-foreground/40">—</span>}
+      </div>
+    </td>
+  );
+}
+
 
 // Link cell — a searchable picker over the target table's rows (Airtable
 // "link to another record"). Stores the linked record id in values[key];

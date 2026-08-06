@@ -1338,14 +1338,15 @@ function FieldConfigDialog({ field, tables, fields, onClose, onSave }: {
   );
 }
 
-function CellEditor({ field, value, record, fields, onChange, density = 'compact' }: {
+function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short' }: {
   field: FlowtableField;
   value: unknown;
   record?: FlowtableRecord;
   fields?: FlowtableField[];
   onChange: (v: unknown) => void;
-  density?: 'compact' | 'comfortable';
+  rowHeight?: RowHeight;
 }) {
+  const spec = rowHeightSpec(rowHeight);
   const common = 'h-9 w-full px-2 bg-transparent border-0 outline-none focus:ring-2 focus:ring-primary/40 focus:bg-background';
   const cellStyle = { width: field.width, minWidth: field.width } as const;
   if (field.type === 'lookup') {
@@ -1356,25 +1357,28 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
   }
   if (field.type === 'checkbox') {
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="h-9 px-2 flex items-center">
           <Checkbox checked={!!value} onCheckedChange={(v) => onChange(!!v)} />
         </div>
       </td>
     );
   }
-  if (field.type === 'longtext') {
+  // Text columns are where row height actually matters: read as wrapped text
+  // (clamped to the chosen number of lines, or unclamped in "Fit to text"),
+  // edit in an auto-growing textarea that never hides content behind a scroll.
+  if (field.type === 'longtext' || (field.type === 'text' && rowHeight !== 'short')) {
     return (
-      <td className="border-r border-b p-0 align-top" style={cellStyle}>
-        <Textarea
-          defaultValue={(value as string) ?? ''}
-          onBlur={(e) => e.target.value !== (value ?? '') && onChange(e.target.value)}
-          rows={density === 'comfortable' ? 4 : 1}
-          className="border-0 rounded-none min-h-9 resize-y focus-visible:ring-2 focus-visible:ring-offset-0"
-        />
-      </td>
+      <WrapTextCell
+        value={value}
+        onChange={onChange}
+        cellStyle={cellStyle}
+        spec={spec}
+        multiline={field.type === 'longtext'}
+      />
     );
   }
+
   if (field.type === 'select') {
     // User-defined choices from options; only fall back to a starter set when
     // the field was never configured (keeps old select columns working).

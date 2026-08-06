@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { useQuoteProcessSettings } from '@/hooks/useSiteSettings';
 
 interface CertificateSignature {
   action: 'accept' | 'reject';
@@ -69,6 +70,8 @@ export default function SignatureCertificatePage() {
   const location = useLocation();
   const { formatCurrency } = usePlatformFormat();
   const kind: 'quote' | 'contract' = location.pathname.startsWith('/contract/') ? 'contract' : 'quote';
+  const { data: quoteProcess } = useQuoteProcessSettings();
+  const contractMode = quoteProcess?.accept_behavior === 'contract';
 
   const { data: cert, isLoading } = useQuery({
     queryKey: ['signature-certificate', kind, token],
@@ -118,7 +121,7 @@ export default function SignatureCertificatePage() {
   return (
     <div className="min-h-screen bg-muted/20 print:bg-background py-8 px-4">
       <Helmet>
-        <title>{`Signature certificate — ${cert.reference}`}</title>
+        <title>{`${kind === 'quote' && contractMode ? 'Acceptance record' : 'Signature certificate'} — ${cert.reference}`}</title>
         <meta name="robots" content="noindex" />
       </Helmet>
       <div className="max-w-2xl mx-auto space-y-4">
@@ -139,9 +142,17 @@ export default function SignatureCertificatePage() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-8 w-8 text-primary" />
                 <div>
-                  <h1 className="text-xl font-semibold">Signature Certificate</h1>
+                  {/* In contract mode a QUOTE accept is an approval, not a
+                      signature — the signature certificate belongs to the
+                      agreement. Contract certificates keep the signature
+                      framing in both modes. */}
+                  <h1 className="text-xl font-semibold">
+                    {kind === 'quote' && contractMode ? 'Acceptance Record' : 'Signature Certificate'}
+                  </h1>
                   <p className="text-sm text-muted-foreground">
-                    Electronic signature evidence — {docLabel.toLowerCase()} {cert.reference}
+                    {kind === 'quote' && contractMode
+                      ? `Record of approval — ${docLabel.toLowerCase()} ${cert.reference}`
+                      : `Electronic signature evidence — ${docLabel.toLowerCase()} ${cert.reference}`}
                   </p>
                 </div>
               </div>
@@ -187,7 +198,7 @@ export default function SignatureCertificatePage() {
                     ) : (
                       <XCircle className="h-4 w-4 text-destructive" />
                     )}
-                    {accepted ? 'Signed' : 'Declined'} by {sig.signer_name || 'Unknown'}
+                    {accepted ? (kind === 'quote' && contractMode ? 'Approved' : 'Signed') : 'Declined'} by {sig.signer_name || 'Unknown'}
                     {sig.signer_email && (
                       <span className="text-muted-foreground font-normal">&lt;{sig.signer_email}&gt;</span>
                     )}

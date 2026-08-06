@@ -18,6 +18,7 @@ import { SignaturePad } from '@/components/public/SignaturePad';
 import { usePublicQuote, useSignQuote, markQuoteViewed } from '@/hooks/useQuoteWorkflow';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { useQuoteProcessSettings } from '@/hooks/useSiteSettings';
 
 interface QuotePaymentStatus {
   invoice_number: string;
@@ -49,6 +50,16 @@ export default function PublicQuotePage() {
   const [payNotice, setPayNotice] = useState<string | null>(null);
 
   const quoteStatus = (quote as { status?: string } | null)?.status;
+
+  // The accept-behavior dial decides what this page's language may claim.
+  // In 'invoice' mode the quote IS the final document, so accepting it is a
+  // binding e-signature. In 'contract' mode the binding moment is the
+  // agreement signature that follows — calling the quote accept a signature
+  // would have the customer "signing" twice for one deal, and makes the
+  // second, real signature look like a formality. site_settings is
+  // anon-readable, so the same hook the admin UI uses works here.
+  const { data: quoteProcess } = useQuoteProcessSettings();
+  const contractMode = quoteProcess?.accept_behavior === 'contract';
 
   // Payment state for accepted quotes (anon-safe token-gated RPC — invoices
   // are not readable by anon directly).
@@ -321,7 +332,7 @@ export default function PublicQuotePage() {
             {!isFinal && mode === 'view' && (
               <div className="print:hidden border-t pt-4 flex flex-wrap gap-2">
                 <Button onClick={() => setMode('accept')} disabled={isExpired} className="gap-2">
-                  <CheckCircle2 className="h-4 w-4" /> Accept Quote
+                  <CheckCircle2 className="h-4 w-4" /> {contractMode ? 'Approve Quote' : 'Accept Quote'}
                 </Button>
                 <Button onClick={() => setMode('reject')} variant="outline" className="gap-2">
                   <XCircle className="h-4 w-4" /> Decline
@@ -331,7 +342,11 @@ export default function PublicQuotePage() {
 
             {!isFinal && mode !== 'view' && (
               <div className="print:hidden border-t pt-4 space-y-3">
-                <h3 className="font-medium">{mode === 'accept' ? 'Confirm acceptance' : 'Decline this quote'}</h3>
+                <h3 className="font-medium">
+                  {mode === 'accept'
+                    ? (contractMode ? 'Confirm approval' : 'Confirm acceptance')
+                    : 'Decline this quote'}
+                </h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>Your name</Label>
@@ -346,7 +361,11 @@ export default function PublicQuotePage() {
                   <Label>Comment (optional)</Label>
                   <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} />
                 </div>
-                {mode === 'accept' && (
+                {/* The signature pad belongs only to invoice mode, where the
+                    quote is the final document. In contract mode the customer
+                    signs ONE thing — the agreement — and offering a pad here
+                    would stage a second signing ceremony for the same deal. */}
+                {mode === 'accept' && !contractMode && (
                   <div className="space-y-1">
                     <Label>Signature</Label>
                     <Tabs defaultValue="type" onValueChange={(v) => { if (v === 'type') setSignatureImage(null); }}>
@@ -366,7 +385,9 @@ export default function PublicQuotePage() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  By {mode === 'accept' ? 'signing' : 'typing your name'} and clicking {mode === 'accept' ? 'Accept' : 'Decline'} you create a binding electronic signature.
+                  {mode === 'accept' && contractMode
+                    ? 'By clicking Approve you confirm your order. The formal agreement follows for signature — that signature is the binding step.'
+                    : `By ${mode === 'accept' ? 'signing' : 'typing your name'} and clicking ${mode === 'accept' ? 'Accept' : 'Decline'} you create a binding electronic signature.`}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -374,7 +395,7 @@ export default function PublicQuotePage() {
                     disabled={!signerName.trim() || !signerEmail.trim() || signQuote.isPending}
                     variant={mode === 'accept' ? 'default' : 'destructive'}
                   >
-                    {mode === 'accept' ? 'Accept & Sign' : 'Decline'}
+                    {mode === 'accept' ? (contractMode ? 'Approve quote' : 'Accept & Sign') : 'Decline'}
                   </Button>
                   <Button variant="ghost" onClick={() => setMode('view')}>Cancel</Button>
                 </div>
@@ -387,8 +408,21 @@ export default function PublicQuotePage() {
                   <>
                     <div className="flex items-center gap-2 text-primary">
                       <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-medium">This quote has been accepted. Thank you!</span>
+                      <span className="font-medium">
+                        {contractMode
+                          ? 'This quote has been approved. Thank you!'
+                          : 'This quote has been accepted. Thank you!'}
+                      </span>
                     </div>
+                    {contractMode && (
+                      // Set the expectation for step two, so the agreement
+                      // arriving for signature reads as the plan, not a
+                      // surprise second round of paperwork.
+                      <p className="text-sm text-muted-foreground">
+                        We are preparing your agreement — it will be sent to you
+                        for signature.
+                      </p>
+                    )}
 
                     {/* Sign-and-pay: settle the auto-created invoice right here */}
                     {payStatus && payStatus.remaining_cents <= 0 && (
@@ -431,7 +465,8 @@ export default function PublicQuotePage() {
                 )}
                 <Button variant="outline" size="sm" asChild>
                   <Link to={`/quote/${token}/certificate`}>
-                    <ShieldCheck className="h-4 w-4 mr-1" /> View signature certificate
+                    <ShieldCheck className="h-4 w-4 mr-1" />
+                    {contractMode ? 'View acceptance record' : 'View signature certificate'}
                   </Link>
                 </Button>
               </div>

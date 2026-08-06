@@ -28,8 +28,9 @@ function buildHtml(opts: {
   reminder: boolean;
   custom: string;
   siteName: string;
+  contractMode: boolean;
 }) {
-  const { quote, items, url, reminder, custom, siteName } = opts;
+  const { quote, items, url, reminder, custom, siteName, contractMode } = opts;
   const currency = quote.currency || 'SEK';
   const total = fmtMoney(quote.total_cents, currency);
   const subtotal = fmtMoney(quote.subtotal_cents, currency);
@@ -75,7 +76,7 @@ function buildHtml(opts: {
       ${validUntil ? `<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:#6b7280"><span>Valid until</span><span>${validUntil}</span></div>` : ''}
     </div>
     <div style="text-align:center;margin:24px 0">
-      <a href="${url}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">View &amp; sign quote</a>
+      <a href="${url}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">${contractMode ? 'View &amp; approve quote' : 'View &amp; sign quote'}</a>
     </div>
     <p style="margin:16px 0 0;font-size:12px;color:#6b7280;word-break:break-all">Or copy this link: <br/>${url}</p>
     <hr style="border:none;border-top:1px solid #e6e8ec;margin:24px 0"/>
@@ -141,6 +142,17 @@ export async function handler(req: Request): Promise<Response> {
       replyTo?: string;
     };
 
+    // The accept-behavior dial governs this mail's language too: in contract
+    // mode the customer approves the quote and signs the AGREEMENT, so the
+    // button must not promise a signature here. Same rule the public quote
+    // page follows — quote-sign reads the same setting server-side.
+    const { data: qproc } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'quotes')
+      .maybeSingle();
+    const contractMode = ((qproc?.value as any)?.accept_behavior as string) === 'contract';
+
     const { data: items } = await supabase
       .from('quote_items')
       .select('*')
@@ -154,6 +166,7 @@ export async function handler(req: Request): Promise<Response> {
       reminder: !!body.reminder,
       custom: body.custom_message || '',
       siteName,
+      contractMode,
     });
 
     const subject = body.reminder

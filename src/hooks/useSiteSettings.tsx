@@ -13,7 +13,7 @@ export interface GeneralSettings {
   /**
    * Public site URL (e.g. https://www.autoversio.ai). Used by backend skills
    * to build absolute links (contract signing, invoice PDFs, briefings, etc).
-   * Falls back to PUBLIC_SITE_URL env or the lovable preview when empty.
+   * Falls back to the PUBLIC_SITE_URL env var on the backend when empty.
    */
   siteUrl?: string;
   /**

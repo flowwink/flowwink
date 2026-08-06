@@ -428,8 +428,8 @@ export default function SiteSettingsPage() {
               <CardDescription>
                 The canonical URL of this site (e.g. <code>https://www.yourcompany.com</code>).
                 Used by FlowPilot and MCP skills to build absolute links — contract signing
-                URLs, invoice/quote links, briefing emails, etc. Leave empty to fall back to
-                the Lovable preview domain.
+                URLs, invoice/quote links, briefing emails, etc. Leave empty to fall back to the
+                PUBLIC_SITE_URL environment variable on the backend.
               </CardDescription>
               </CardHeader>
               <CardContent>

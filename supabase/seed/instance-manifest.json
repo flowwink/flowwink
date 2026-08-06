@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808170000",
-      "migrations_count": 311,
+      "migration_head": "20260808180000",
+      "migrations_count": 312,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1249,6 +1249,10 @@
         {
           "version": "20260808170000",
           "name": "public-terms"
+        },
+        {
+          "version": "20260808180000",
+          "name": "terms-url-token"
         }
       ]
     },

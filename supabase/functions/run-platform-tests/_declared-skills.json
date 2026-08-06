@@ -251,6 +251,7 @@
     "manage_consultant_rates",
     "manage_contract",
     "manage_contract_obligation",
+    "manage_contract_template",
     "manage_deal",
     "manage_disciplinary",
     "manage_discount_code",

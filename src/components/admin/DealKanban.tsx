@@ -23,7 +23,7 @@ import { Briefcase } from 'lucide-react';
 import { DealKanbanCard } from './DealKanbanCard';
 import { useUpdateDeal, type Deal, type DealStage } from '@/hooks/useDeals';
 import { usePipelineStages, getStageColor, type PipelineStage } from '@/hooks/usePipelineStages';
-import { formatPrice } from '@/hooks/useProducts';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { cn } from '@/lib/utils';
 import { LostReasonDialog } from './crm/LostReasonDialog';
 
@@ -80,7 +80,7 @@ function KanbanColumn({ stage, index, deals, totalValue, startCollapsed }: Kanba
             </CardTitle>
           </div>
           {!collapsed && !isClosed && totalValue > 0 && (
-            <p className="text-xs text-muted-foreground">{formatPrice(totalValue)}</p>
+            <p className="text-xs text-muted-foreground">{formatCurrency(totalValue, null, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
           )}
           {!collapsed && overLimit && (
             <p className="text-[11px] text-destructive font-medium">Over WIP limit</p>
@@ -115,6 +115,7 @@ function KanbanColumn({ stage, index, deals, totalValue, startCollapsed }: Kanba
 }
 
 export function DealKanban({ deals, isLoading, onStageChanged }: DealKanbanProps) {
+  const { formatCurrency } = usePlatformFormat();
   const updateDeal = useUpdateDeal();
   const { data: stages = [], isLoading: stagesLoading } = usePipelineStages('deal');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -240,7 +241,7 @@ export function DealKanban({ deals, isLoading, onStageChanged }: DealKanbanProps
                 <p className="text-xs text-muted-foreground">{activeDeal.lead.company.name}</p>
               )}
               <p className="text-lg font-bold">
-                {formatPrice(activeDeal.value_cents, activeDeal.currency)}
+                {formatCurrency(activeDeal.value_cents, activeDeal.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
             </CardContent>
           </Card>

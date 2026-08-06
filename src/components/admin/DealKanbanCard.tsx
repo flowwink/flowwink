@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, GripVertical, Building2, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
-import { formatPrice } from '@/hooks/useProducts';
 import type { Deal } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
 import { NextStepChip } from './crm/NextStepChip';
@@ -61,7 +60,7 @@ export function DealKanbanCard({ deal }: DealKanbanCardProps) {
               </p>
             )}
             <p className="text-lg font-bold mt-1">
-              {formatPrice(deal.value_cents, deal.currency)}
+              {formatCurrency(deal.value_cents, deal.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </p>
           </div>
           <button

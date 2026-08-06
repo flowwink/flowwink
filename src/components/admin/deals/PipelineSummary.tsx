@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, Hash, Calculator, Calendar } from 'lucide-react';
-import { formatPrice } from '@/hooks/useProducts';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import type { Deal } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { differenceInDays, parseISO } from 'date-fns';
@@ -15,6 +15,7 @@ interface PipelineSummaryProps {
  * forecast adapts to whatever pipeline an admin has configured.
  */
 export function PipelineSummary({ deals }: PipelineSummaryProps) {
+  const { formatCurrency } = usePlatformFormat();
   const { data: stages = [] } = usePipelineStages('deal');
   const closedKeys = new Set(stages.filter(s => s.is_won || s.is_lost).map(s => s.key));
 
@@ -33,9 +34,9 @@ export function PipelineSummary({ deals }: PipelineSummaryProps) {
     : 0;
 
   const items = [
-    { icon: TrendingUp, label: 'Open value', value: formatPrice(totalValue) },
+    { icon: TrendingUp, label: 'Open value', value: formatCurrency(totalValue, null, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) },
     { icon: Hash, label: 'Open deals', value: String(count) },
-    { icon: Calculator, label: 'Avg deal', value: count > 0 ? formatPrice(avg) : '—' },
+    { icon: Calculator, label: 'Avg deal', value: count > 0 ? formatCurrency(avg, null, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—' },
     { icon: Calendar, label: 'Avg age', value: count > 0 ? `${avgAgeDays}d` : '—' },
   ];
 

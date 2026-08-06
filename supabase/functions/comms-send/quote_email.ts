@@ -161,11 +161,20 @@ export async function handler(req: Request): Promise<Response> {
       : `Quote ${quote.quote_number} from ${siteName}`;
 
     // Route via the provider-agnostic email-send function.
+    //
+    // expects_reply: a quote is the salesperson's conversation, not a
+    // transactional receipt — the customer is supposed to hit reply. That flag
+    // flips the provider order to Composio (the connected mailbox) → SMTP →
+    // Resend. Without it the router picked Resend first, which on an instance
+    // with no verified sender domain answered 403 "example.com is not
+    // verified" and the send died — while a perfectly connected Gmail sat
+    // unused one step down the chain.
     const { data: sendData, error: sendErr } = await supabase.functions.invoke('email-send', {
       body: {
         to: recipientEmail,
         subject,
         html,
+        expects_reply: true,
         fromOverride: quoteCfg.fromOverride,
         replyTo: quoteCfg.replyTo,
         tags: { kind: body.reminder ? 'quote_reminder' : 'quote', quote_id: quote.id },

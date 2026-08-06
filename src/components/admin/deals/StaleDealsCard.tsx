@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Clock, TrendingDown, Building2, Package } from 'lucide-react';
 import { useStaleDeals } from '@/hooks/useStaleDeals';
-import { formatPrice } from '@/hooks/useProducts';
+import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { getDealStageInfo, type DealStage } from '@/hooks/useDeals';
 
 interface StaleDealsCardProps {
@@ -16,6 +16,7 @@ interface StaleDealsCardProps {
  * Powered by the `deal_stale_check` MCP skill — works without FlowPilot.
  */
 export function StaleDealsCard({ daysThreshold = 14 }: StaleDealsCardProps) {
+  const { formatCurrency } = usePlatformFormat();
   const { data, isLoading, error } = useStaleDeals(daysThreshold);
 
   return (
@@ -33,7 +34,7 @@ export function StaleDealsCard({ daysThreshold = 14 }: StaleDealsCardProps) {
           {data && data.total_value_at_risk_cents > 0 && (
             <span className="ml-2 inline-flex items-center gap-1 text-warning">
               <TrendingDown className="h-3 w-3" />
-              {formatPrice(data.total_value_at_risk_cents)} at risk
+              {formatCurrency(data.total_value_at_risk_cents, null, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} at risk
             </span>
           )}
         </CardDescription>
@@ -92,7 +93,7 @@ export function StaleDealsCard({ daysThreshold = 14 }: StaleDealsCardProps) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-semibold text-sm">
-                      {formatPrice(d.value_cents, d.currency)}
+                      {formatCurrency(d.value_cents, d.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                     <p className="text-xs text-warning flex items-center gap-1 justify-end">
                       <Clock className="h-3 w-3" />

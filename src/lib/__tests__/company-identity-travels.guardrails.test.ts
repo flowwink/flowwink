@@ -90,3 +90,48 @@ describe('the human surface shows what documents will say', () => {
     expect(page).toMatch(/editForm\.vat_number/);
   });
 });
+
+describe('the quote-lines seam (20260808240000)', () => {
+  const seam = readFileSync(
+    resolve(__dirname, '../../../supabase/migrations/20260808240000_quote-lines-into-contract.sql'),
+    'utf-8',
+  )
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('--'))
+    .join('\n');
+
+  it('reproduces lines, never derives amounts', () => {
+    // The rule from the currency work: no guessed number reaches legal text.
+    // A lines table is reproduction; a computed "monthly amount" would be
+    // derivation — assert no such aggregation exists over the lines.
+    expect(seam).toContain("'{{quote.lines}}'");
+    expect(seam).not.toMatch(/sum\(qi\.|avg\(|monthly/i);
+  });
+
+  it('reads quote_items first, legacy jsonb as fallback', () => {
+    const items = seam.indexOf('FROM public.quote_items qi');
+    const legacy = seam.indexOf('jsonb_array_elements(v_q.line_items)');
+    expect(items).toBeGreaterThan(-1);
+    expect(legacy).toBeGreaterThan(items);
+  });
+
+  it('excludes optional lines the customer did not select', () => {
+    expect(seam).toMatch(/NOT qi\.is_optional OR qi\.selected_by_customer/);
+  });
+
+  it('renders a visible bracket when no quote resolves', () => {
+    expect(seam).toContain('[PRISER ENLIGT ACCEPTERAD OFFERT]');
+  });
+
+  it('declares the token to the validator — renderer and validator agree', () => {
+    const allowlist = seam.slice(seam.indexOf('_contract_template_unrendered_tokens'));
+    expect(allowlist).toContain("'quote.lines'");
+  });
+
+  it('formats amounts Swedish-style via the helper, not raw to_char', () => {
+    expect(seam).toContain('_fmt_amount_sv');
+    // No bare G/D to_char left in the lines block.
+    const linesBlock = seam.slice(seam.indexOf('v_rows'), seam.indexOf('{{quote.lines}}'));
+    expect(linesBlock).not.toMatch(/to_char\([^)]*FM999G999G990D00/);
+  });
+});

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808120000",
-      "migrations_count": 305,
+      "migration_head": "20260808140000",
+      "migrations_count": 307,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1225,6 +1225,14 @@
         {
           "version": "20260808120000",
           "name": "public-quote-by-token"
+        },
+        {
+          "version": "20260808130000",
+          "name": "schedule-event-dispatcher"
+        },
+        {
+          "version": "20260808140000",
+          "name": "contract-billing-into-work-queue"
         }
       ]
     },

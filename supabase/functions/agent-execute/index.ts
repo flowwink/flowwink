@@ -10123,8 +10123,33 @@ async function executeFlowtableQuery(
 
   // Validate filter fields up front — a typo'd key should error with the real
   // keys listed, not silently match nothing.
-  const filterList: Array<{ field: string; op: string; value?: unknown }> =
-    Array.isArray(filters) ? filters : [];
+  //
+  // The shape itself used to fail silently: anything that wasn't an array
+  // became [], so `filters: {produkt: "Privat AI"}` returned the WHOLE table
+  // and called it success. An operator composing a quote would have shown the
+  // customer every product's lines. Both shapes are accepted now, and a shape
+  // we cannot read is an error rather than an unfiltered result.
+  const normalizeFilters = (raw: unknown):
+    { list: Array<{ field: string; op: string; value?: unknown }> } | { error: string } => {
+    if (raw === undefined || raw === null) return { list: [] };
+    if (Array.isArray(raw)) return { list: raw as any };
+    if (typeof raw === 'object') {
+      const obj = raw as Record<string, unknown>;
+      // A single condition passed unwrapped: {field, op, value}
+      if (typeof obj.field === 'string') {
+        return { list: [{ field: obj.field, op: (obj.op as string) || 'eq', value: obj.value }] };
+      }
+      // The shorthand an agent reaches for first: {fieldKey: value}
+      const entries = Object.entries(obj);
+      return { list: entries.map(([field, value]) => ({ field, op: 'eq', value })) };
+    }
+    return {
+      error: `filters must be an array of {field, op, value} (or an object of {field_key: value}); got ${typeof raw}. Passing an unreadable filter would silently return every row.`,
+    };
+  };
+  const normalized = normalizeFilters(filters);
+  if ('error' in normalized) return { error: normalized.error };
+  const filterList = normalized.list;
   for (const f of filterList) {
     if (!f?.field || !safeFlowtableKey(f.field)) return { error: `Invalid filter field '${f?.field}'` };
     if (!fieldKeys.has(f.field)) {

@@ -52,6 +52,18 @@ import {
   useDroppable, useDraggable, type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core';
 
+// Row height ("fit to text") — a reading preference, not data. `auto` lets a
+// row grow to its tallest cell; the fixed steps clamp long text to N lines so
+// the grid stays scannable. Cells stay editable in every mode.
+type RowHeight = 'short' | 'medium' | 'tall' | 'auto';
+const ROW_HEIGHTS: { value: RowHeight; label: string; hint: string; lines: number | null; minPx: number }[] = [
+  { value: 'short', label: 'Short', hint: 'One line, densest', lines: 1, minPx: 36 },
+  { value: 'medium', label: 'Medium', hint: 'Up to 3 lines', lines: 3, minPx: 64 },
+  { value: 'tall', label: 'Tall', hint: 'Up to 6 lines', lines: 6, minPx: 112 },
+  { value: 'auto', label: 'Fit to text', hint: 'Grow to full content', lines: null, minPx: 36 },
+];
+const rowHeightSpec = (h: RowHeight) => ROW_HEIGHTS.find((r) => r.value === h) ?? ROW_HEIGHTS[0];
+
 const FIELD_TYPES: { value: FlowtableFieldType; label: string }[] = [
   { value: 'text', label: 'Single line text' },
   { value: 'longtext', label: 'Long text' },

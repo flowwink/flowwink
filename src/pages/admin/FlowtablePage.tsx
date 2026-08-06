@@ -1101,8 +1101,15 @@ function GridView(props: {
             return (
             <tr key={r.id} className="group hover:bg-muted/30">
               <td className="relative border-r border-b w-16 min-w-16 max-w-16 p-0 align-middle">
-                {/* The spacer keeps the rail measurable; the overlay fills the full row height. */}
+                {/* The spacer keeps the rail measurable; the overlays fill the full row height. */}
                 <div className="min-h-9" aria-hidden="true" />
+                <span
+                  className={`absolute inset-0 flex items-center justify-center text-xs text-muted-foreground tabular-nums transition-opacity ${
+                    isSelected ? 'opacity-0' : 'group-hover:opacity-0'
+                  }`}
+                >
+                  {idx + 1}
+                </span>
                 <div
                   className={`absolute inset-0 flex items-center justify-center gap-1 transition-opacity ${
                     isSelected
@@ -1111,13 +1118,6 @@ function GridView(props: {
                   }`}
                 >
                   {/* Keep the control rail fixed so hover never changes table layout. */}
-                  <span
-                    className={`text-xs text-muted-foreground tabular-nums transition-opacity ${
-                      isSelected ? 'opacity-0' : 'group-hover:opacity-0'
-                    }`}
-                  >
-                    {idx + 1}
-                  </span>
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => toggleOne(r.id)}

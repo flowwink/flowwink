@@ -52,6 +52,18 @@ import {
   useDroppable, useDraggable, type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core';
 
+// Row height ("fit to text") — a reading preference, not data. `auto` lets a
+// row grow to its tallest cell; the fixed steps clamp long text to N lines so
+// the grid stays scannable. Cells stay editable in every mode.
+type RowHeight = 'short' | 'medium' | 'tall' | 'auto';
+const ROW_HEIGHTS: { value: RowHeight; label: string; hint: string; lines: number | null; minPx: number }[] = [
+  { value: 'short', label: 'Short', hint: 'One line, densest', lines: 1, minPx: 36 },
+  { value: 'medium', label: 'Medium', hint: 'Up to 3 lines', lines: 3, minPx: 64 },
+  { value: 'tall', label: 'Tall', hint: 'Up to 6 lines', lines: 6, minPx: 112 },
+  { value: 'auto', label: 'Fit to text', hint: 'Grow to full content', lines: null, minPx: 36 },
+];
+const rowHeightSpec = (h: RowHeight) => ROW_HEIGHTS.find((r) => r.value === h) ?? ROW_HEIGHTS[0];
+
 const FIELD_TYPES: { value: FlowtableFieldType; label: string }[] = [
   { value: 'text', label: 'Single line text' },
   { value: 'longtext', label: 'Long text' },
@@ -333,7 +345,25 @@ export default function FlowtablePage() {
   // Expanded record view: index into displayedRecords (the filtered/sorted set
   // the user is actually looking at), so prev/next steps what the eye expects.
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('compact');
+  // Row height is a per-table reading preference (Airtable's short/medium/tall
+  // plus a true "fit to text" that grows a row to its tallest cell). Kept in
+  // localStorage per table id so switching tables doesn't lose the setting.
+  const [rowHeight, setRowHeight] = useState<RowHeight>('short');
+  useEffect(() => {
+    if (!activeTable?.id) return;
+    try {
+      const stored = localStorage.getItem(`flowtable-rowheight-${activeTable.id}`);
+      setRowHeight(ROW_HEIGHTS.some((r) => r.value === stored) ? (stored as RowHeight) : 'short');
+    } catch {
+      setRowHeight('short');
+    }
+  }, [activeTable?.id]);
+  const changeRowHeight = (value: RowHeight) => {
+    setRowHeight(value);
+    try {
+      if (activeTable?.id) localStorage.setItem(`flowtable-rowheight-${activeTable.id}`, value);
+    } catch { /* storage unavailable — session-only */ }
+  };
   const displayedRecords = useMemo(
     () => applyViewConfig(records, activeTable?.view_config),
     [records, activeTable?.view_config],
@@ -638,16 +668,38 @@ export default function FlowtablePage() {
                           </button>
                         );
                       })}
-                      <Button
-                        variant={density === 'comfortable' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        className="h-7 px-2"
-                        title="Fit row height to text"
-                        onClick={() => setDensity(density === 'comfortable' ? 'compact' : 'comfortable')}
-                      >
-                        <WrapText className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
+                    {activeTable.view_mode !== 'kanban' && activeTable.view_mode !== 'card' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant={rowHeight === 'short' ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className="h-8 px-2 gap-1 text-xs"
+                            title="Row height"
+                          >
+                            <WrapText className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">{rowHeightSpec(rowHeight).label}</span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Row height</DropdownMenuLabel>
+                          {ROW_HEIGHTS.map((r) => (
+                            <DropdownMenuItem
+                              key={r.value}
+                              onClick={() => changeRowHeight(r.value)}
+                              className="flex flex-col items-start gap-0"
+                            >
+                              <span className={rowHeight === r.value ? 'font-medium' : ''}>
+                                {r.label}{rowHeight === r.value ? ' ✓' : ''}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">{r.hint}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <ViewToolbar
                       fields={fields}
                       config={activeTable.view_config ?? {}}
@@ -752,7 +804,7 @@ export default function FlowtablePage() {
                         tables={tables}
                         selected={selected}
                         setSelected={setSelected}
-                        density={density}
+                        rowHeight={rowHeight}
                         onExpand={setExpandedIndex}
                         onUpdateRecord={(id, values) =>
                           updateRecord.mutate({ id, table_id: activeTable.id, values })
@@ -843,7 +895,7 @@ function GridView(props: {
   tables: FlowtableTable[];
   selected: Set<string>;
   setSelected: (s: Set<string>) => void;
-  density?: 'compact' | 'comfortable';
+  rowHeight?: RowHeight;
   onExpand?: (index: number) => void;
   onUpdateRecord: (id: string, values: Record<string, unknown>) => void;
   onAddField: (name: string, type: FlowtableFieldType, options: Record<string, unknown>) => void;
@@ -960,8 +1012,9 @@ function GridView(props: {
             const isSelected = selected.has(r.id);
             return (
             <tr key={r.id} className="group hover:bg-muted/30">
-              <td className="border-r border-b w-16 p-0">
+              <td className="border-r border-b w-16 p-0 align-top">
                 <div className="h-9 flex items-center justify-center gap-1">
+
                   {/* Airtable-style: row number by default, checkbox + expand on hover */}
                   <span
                     className={`text-xs text-muted-foreground tabular-nums ${
@@ -994,7 +1047,7 @@ function GridView(props: {
                   value={r.values?.[f.key]}
                   record={r}
                   fields={fields}
-                  density={props.density}
+                  rowHeight={props.rowHeight}
                   onChange={(v) => props.onUpdateRecord(r.id, { ...r.values, [f.key]: v })}
                 />
               ))}
@@ -1285,14 +1338,15 @@ function FieldConfigDialog({ field, tables, fields, onClose, onSave }: {
   );
 }
 
-function CellEditor({ field, value, record, fields, onChange, density = 'compact' }: {
+function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short' }: {
   field: FlowtableField;
   value: unknown;
   record?: FlowtableRecord;
   fields?: FlowtableField[];
   onChange: (v: unknown) => void;
-  density?: 'compact' | 'comfortable';
+  rowHeight?: RowHeight;
 }) {
+  const spec = rowHeightSpec(rowHeight);
   const common = 'h-9 w-full px-2 bg-transparent border-0 outline-none focus:ring-2 focus:ring-primary/40 focus:bg-background';
   const cellStyle = { width: field.width, minWidth: field.width } as const;
   if (field.type === 'lookup') {
@@ -1303,32 +1357,35 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
   }
   if (field.type === 'checkbox') {
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="h-9 px-2 flex items-center">
           <Checkbox checked={!!value} onCheckedChange={(v) => onChange(!!v)} />
         </div>
       </td>
     );
   }
-  if (field.type === 'longtext') {
+  // Text columns are where row height actually matters: read as wrapped text
+  // (clamped to the chosen number of lines, or unclamped in "Fit to text"),
+  // edit in an auto-growing textarea that never hides content behind a scroll.
+  if (field.type === 'longtext' || (field.type === 'text' && rowHeight !== 'short')) {
     return (
-      <td className="border-r border-b p-0 align-top" style={cellStyle}>
-        <Textarea
-          defaultValue={(value as string) ?? ''}
-          onBlur={(e) => e.target.value !== (value ?? '') && onChange(e.target.value)}
-          rows={density === 'comfortable' ? 4 : 1}
-          className="border-0 rounded-none min-h-9 resize-y focus-visible:ring-2 focus-visible:ring-offset-0"
-        />
-      </td>
+      <WrapTextCell
+        value={value}
+        onChange={onChange}
+        cellStyle={cellStyle}
+        spec={spec}
+        multiline={field.type === 'longtext'}
+      />
     );
   }
+
   if (field.type === 'select') {
     // User-defined choices from options; only fall back to a starter set when
     // the field was never configured (keeps old select columns working).
     const configured = field.options?.choices as string[] | undefined;
     const choices = (configured && configured.length) ? configured : ['New', 'In progress', 'Done'];
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <select
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value || null)}
@@ -1349,7 +1406,7 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
   if (field.type === 'currency') {
     const code = (field.options?.currency_code as string) || 'SEK';
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="flex items-center h-9">
           <input
             type="number"
@@ -1368,7 +1425,7 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
   if (field.type === 'rating') {
     const n = Number(value) || 0;
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="h-9 px-2 flex items-center gap-0.5">
           {[1, 2, 3, 4, 5].map((i) => (
             <button
@@ -1390,7 +1447,7 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
   if (field.type === 'date') {
     const display = toDateInputValue(value);
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <input
           type="date"
           key={display}
@@ -1408,7 +1465,7 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
     field.type === 'url' ? 'url' :
     field.type === 'phone' ? 'tel' : 'text';
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <input
         type={inputType}
         defaultValue={(value as string | number | undefined) ?? ''}
@@ -1421,6 +1478,86 @@ function CellEditor({ field, value, record, fields, onChange, density = 'compact
     </td>
   );
 }
+
+// Wrapping text cell — the reading half of the row-height control. Idle state
+// is plain wrapped text (clamped to spec.lines, or the full value in "Fit to
+// text"); clicking or pressing Enter swaps in an auto-growing textarea so the
+// cell you edit is exactly as tall as its content. Esc reverts, blur saves.
+function WrapTextCell({ value, onChange, cellStyle, spec, multiline }: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+  cellStyle: { width: number; minWidth: number };
+  spec: (typeof ROW_HEIGHTS)[number];
+  multiline: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const text = value == null ? '' : String(value);
+
+  const autosize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    if (editing && ref.current) {
+      autosize(ref.current);
+      ref.current.focus();
+      ref.current.setSelectionRange(ref.current.value.length, ref.current.value.length);
+    }
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
+        <textarea
+          ref={ref}
+          defaultValue={text}
+          onInput={(e) => autosize(e.currentTarget)}
+          onBlur={(e) => {
+            setEditing(false);
+            if (e.target.value !== text) onChange(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') { e.currentTarget.value = text; setEditing(false); }
+            if (e.key === 'Enter' && !multiline && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur(); }
+          }}
+          className="w-full px-2 py-1.5 text-sm leading-snug bg-background border-0 resize-none outline-none ring-2 ring-inset ring-primary/40 max-h-[60vh] overflow-auto"
+          style={{ minHeight: spec.minPx }}
+        />
+      </td>
+    );
+  }
+
+  return (
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
+      <div
+        role="textbox"
+        tabIndex={0}
+        title={spec.lines && text ? text : undefined}
+        onClick={() => setEditing(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); setEditing(true); }
+        }}
+        className="px-2 py-1.5 text-sm leading-snug whitespace-pre-wrap break-words cursor-text outline-none focus:ring-2 focus:ring-inset focus:ring-primary/40"
+        style={{
+          minHeight: spec.minPx,
+          ...(spec.lines
+            ? {
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical' as const,
+                WebkitLineClamp: spec.lines,
+                overflow: 'hidden',
+              }
+            : {}),
+        }}
+      >
+        {text || <span className="text-muted-foreground/40">—</span>}
+      </div>
+    </td>
+  );
+}
+
 
 // Link cell — a searchable picker over the target table's rows (Airtable
 // "link to another record"). Stores the linked record id in values[key];
@@ -1448,7 +1585,7 @@ function LinkCell({ field, value, onChange, cellStyle, common }: {
 
   if (!targetId) {
     return (
-      <td className="border-r border-b p-0" style={cellStyle}>
+      <td className="border-r border-b p-0 align-top" style={cellStyle}>
         <div className="h-9 px-2 flex items-center text-xs text-muted-foreground">Configure link target</div>
       </td>
     );
@@ -1456,7 +1593,7 @@ function LinkCell({ field, value, onChange, cellStyle, common }: {
 
   const current = value as string | undefined;
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button className={`${common} text-left truncate`}>
@@ -1516,7 +1653,7 @@ function UserCell({ field, value, onChange, cellStyle, common }: {
   const displayName = (p?: TeamProfile) => p?.full_name || p?.email || '(unknown)';
 
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button className={`${common} text-left truncate`}>
@@ -1582,7 +1719,7 @@ function LookupCell({ field, record, fields, cellStyle }: {
   const targetRow = linkedId ? rows.find((r) => r.id === linkedId) : undefined;
   const out = targetRow && targetField ? targetRow.values?.[targetField] : undefined;
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <div className="h-9 px-2 flex items-center text-sm text-muted-foreground truncate">
         {!viaKey || !targetField
           ? <span className="text-xs italic">configure lookup</span>
@@ -1625,7 +1762,7 @@ function RollupCell({ field, record, cellStyle }: {
     }
   }
   return (
-    <td className="border-r border-b p-0" style={cellStyle}>
+    <td className="border-r border-b p-0 align-top" style={cellStyle}>
       <div className="h-9 px-2 flex items-center text-sm tabular-nums text-muted-foreground">
         {out === 'configure rollup' ? <span className="text-xs italic">{out}</span> : out}
       </div>

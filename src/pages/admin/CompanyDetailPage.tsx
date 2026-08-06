@@ -66,6 +66,12 @@ export default function CompanyDetailPage() {
     phone: '',
     address: '',
     notes: '',
+    // B2B master data. These existed in the schema and the agent surface
+    // (manage_company, enrichment writes org_number) long before this form —
+    // contracts render them into legal text, so the human must be able to
+    // see and correct what the documents will say.
+    org_number: '',
+    vat_number: '',
   });
 
   const handleEdit = () => {
@@ -79,6 +85,8 @@ export default function CompanyDetailPage() {
         phone: company.phone || '',
         address: company.address || '',
         notes: company.notes || '',
+        org_number: company.org_number || '',
+        vat_number: company.vat_number || '',
       });
       setIsEditing(true);
     }
@@ -96,6 +104,8 @@ export default function CompanyDetailPage() {
       phone: editForm.phone || null,
       address: editForm.address || null,
       notes: editForm.notes || null,
+      org_number: editForm.org_number.trim() || null,
+      vat_number: editForm.vat_number.trim() || null,
     });
     setIsEditing(false);
   };
@@ -301,6 +311,24 @@ export default function CompanyDetailPage() {
                       onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Org number</Label>
+                      <Input
+                        value={editForm.org_number}
+                        onChange={(e) => setEditForm({ ...editForm, org_number: e.target.value })}
+                        placeholder="556616-1658"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>VAT number</Label>
+                      <Input
+                        value={editForm.vat_number}
+                        onChange={(e) => setEditForm({ ...editForm, vat_number: e.target.value })}
+                        placeholder="SE556616165801"
+                      />
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label>Address</Label>
                     <Textarea
@@ -358,6 +386,25 @@ export default function CompanyDetailPage() {
                       <span className="text-muted-foreground">{company.address}</span>
                     </div>
                   )}
+
+                  {/* Registered identity — what contracts render into legal
+                      text. Shown even when empty: an absent org number is a
+                      gap the operator should SEE (the contract will show
+                      "[KUNDENS ORGNR]"), not discover in a signed document. */}
+                  <div className="pt-4 border-t space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Org number</span>
+                      {company.org_number
+                        ? <span className="font-mono">{company.org_number}</span>
+                        : <Badge variant="outline" className="text-amber-600 dark:text-amber-500 font-normal">missing</Badge>}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">VAT number</span>
+                      {company.vat_number
+                        ? <span className="font-mono">{company.vat_number}</span>
+                        : <span className="text-muted-foreground/60">—</span>}
+                    </div>
+                  </div>
                   
                   {company.notes && (
                     <div className="pt-4 border-t">

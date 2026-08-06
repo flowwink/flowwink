@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808220000",
-      "migrations_count": 316,
+      "migration_head": "20260808230000",
+      "migrations_count": 317,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1269,6 +1269,10 @@
         {
           "version": "20260808220000",
           "name": "contracts-quote-link-and-number"
+        },
+        {
+          "version": "20260808230000",
+          "name": "company-identity-travels"
         }
       ]
     },

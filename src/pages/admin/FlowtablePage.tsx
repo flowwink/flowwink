@@ -399,6 +399,27 @@ export default function FlowtablePage() {
       if (activeTable?.id) localStorage.setItem(`flowtable-rowheight-${activeTable.id}`, value);
     } catch { /* storage unavailable — session-only */ }
   };
+
+  // Card view density: how many cards fit per row. A reading preference like
+  // row height, so it lives in localStorage per table rather than in the saved
+  // view config.
+  const [cardColumns, setCardColumns] = useState(3);
+  useEffect(() => {
+    if (!activeTable?.id) return;
+    try {
+      const stored = Number(localStorage.getItem(`flowtable-cardcols-${activeTable.id}`));
+      setCardColumns(stored >= 1 && stored <= 6 ? stored : 3);
+    } catch {
+      setCardColumns(3);
+    }
+  }, [activeTable?.id]);
+  const changeCardColumns = (value: number) => {
+    setCardColumns(value);
+    try {
+      if (activeTable?.id) localStorage.setItem(`flowtable-cardcols-${activeTable.id}`, String(value));
+    } catch { /* storage unavailable — session-only */ }
+  };
+
   const displayedRecords = useMemo(
     () => applyViewConfig(records, activeTable?.view_config),
     [records, activeTable?.view_config],
@@ -735,6 +756,36 @@ export default function FlowtablePage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
+                    {activeTable.view_mode === 'card' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant={cardColumns === 3 ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className="h-8 px-2 gap-1 text-xs"
+                            title="Cards per row"
+                          >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">
+                              {cardColumns} {cardColumns === 1 ? 'card' : 'cards'}
+                            </span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Cards per row</DropdownMenuLabel>
+                          {[1, 2, 3, 4, 5, 6].map((n) => (
+                            <DropdownMenuItem key={n} onClick={() => changeCardColumns(n)}>
+                              <span className={cardColumns === n ? 'font-medium' : ''}>
+                                {n} {n === 1 ? 'card — widest' : n === 6 ? 'cards — densest' : 'cards'}
+                                {cardColumns === n ? ' ✓' : ''}
+                              </span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+
                     <ViewToolbar
                       fields={fields}
                       config={activeTable.view_config ?? {}}
@@ -814,6 +865,8 @@ export default function FlowtablePage() {
                       />
                     ) : activeTable.view_mode === 'card' ? (
                       <CardView
+                        columns={cardColumns}
+
                         fields={fields}
                         records={displayedRecords}
                         onExpand={setExpandedIndex}
@@ -1399,10 +1452,17 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
       </td>
     );
   }
-  // Text columns are where row height actually matters: read as wrapped text
-  // (clamped to the chosen number of lines, or unclamped in "Fit to text"),
-  // edit in an auto-growing textarea that never hides content behind a scroll.
-  if (field.type === 'longtext' || (field.type === 'text' && rowHeight !== 'short')) {
+  // Text-ish columns are where row height actually matters: read as wrapped
+  // text (clamped to the chosen number of lines, or unclamped in "Fit to
+  // text"), edit in an auto-growing textarea that never hides content behind a
+  // scroll. Single-line <input> columns (email/url/phone/plain text) silently
+  // cut off long values, so they wrap too as soon as the row is taller than one
+  // line.
+  const wrapsAsText =
+    field.type === 'longtext' ||
+    (rowHeight !== 'short' &&
+      (field.type === 'text' || field.type === 'email' || field.type === 'url' || field.type === 'phone'));
+  if (wrapsAsText) {
     return (
       <WrapTextCell
         value={value}
@@ -1413,6 +1473,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
       />
     );
   }
+
 
   if (field.type === 'select') {
     // The current value is always offered, even when it is not among the
@@ -2177,14 +2238,22 @@ function ListView({ fields, records, selected, setSelected, onUpdate, onExpand }
 }
 
 // ---------- Card view ----------
-function CardView({ fields, records, onUpdate, onExpand }: {
+function CardView({ fields, records, onUpdate, onExpand, columns = 3 }: {
   fields: FlowtableField[]; records: FlowtableRecord[];
   onUpdate: (id: string, values: Record<string, unknown>) => void;
   onExpand?: (index: number) => void;
+  /** Cards per row (1–6). Chosen in the toolbar; wider = more text per card. */
+  columns?: number;
 }) {
   const primary = fields[0];
+  // Explicit template instead of Tailwind grid-cols-N so the count stays
+  // dynamic without relying on classes that JIT can't see.
+  const cols = Math.min(6, Math.max(1, columns));
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-4">
+    <div
+      className="grid gap-3 p-4"
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+    >
       {records.map((r, idx) => (
         <Card key={r.id} className="group relative p-3 space-y-2">
           {onExpand && (
@@ -2203,10 +2272,12 @@ function CardView({ fields, records, onUpdate, onExpand }: {
           <div className="space-y-1 text-xs">
             {fields.slice(1).map((f) => {
               const v = r.values?.[f.key];
+              const text = v == null || v === '' ? '—' : String(v);
               return (
                 <div key={f.id} className="flex gap-2">
                   <span className="text-muted-foreground w-20 shrink-0 truncate">{f.name}</span>
-                  <span className="flex-1 truncate">{v == null || v === '' ? '—' : String(v)}</span>
+                  {/* Wrap rather than truncate — a card exists to show content */}
+                  <span className="flex-1 whitespace-pre-wrap break-words" title={text}>{text}</span>
                 </div>
               );
             })}
@@ -2216,6 +2287,8 @@ function CardView({ fields, records, onUpdate, onExpand }: {
     </div>
   );
 }
+
+
 
 // ---------- CRM mapping ----------
 function CrmMappingForm({ fields, onCancel, onConfirm }: {

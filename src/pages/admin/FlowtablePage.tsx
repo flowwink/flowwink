@@ -1399,10 +1399,17 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
       </td>
     );
   }
-  // Text columns are where row height actually matters: read as wrapped text
-  // (clamped to the chosen number of lines, or unclamped in "Fit to text"),
-  // edit in an auto-growing textarea that never hides content behind a scroll.
-  if (field.type === 'longtext' || (field.type === 'text' && rowHeight !== 'short')) {
+  // Text-ish columns are where row height actually matters: read as wrapped
+  // text (clamped to the chosen number of lines, or unclamped in "Fit to
+  // text"), edit in an auto-growing textarea that never hides content behind a
+  // scroll. Single-line <input> columns (email/url/phone/plain text) silently
+  // cut off long values, so they wrap too as soon as the row is taller than one
+  // line.
+  const wrapsAsText =
+    field.type === 'longtext' ||
+    (rowHeight !== 'short' &&
+      (field.type === 'text' || field.type === 'email' || field.type === 'url' || field.type === 'phone'));
+  if (wrapsAsText) {
     return (
       <WrapTextCell
         value={value}
@@ -1413,6 +1420,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
       />
     );
   }
+
 
   if (field.type === 'select') {
     // The current value is always offered, even when it is not among the

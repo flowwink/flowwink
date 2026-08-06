@@ -250,6 +250,113 @@ where RLS allows and for `--no-verify-jwt` public functions.
 
 ## Open queue (next session starts here)
 
+### ⇄ Handoff to local Claude — documents can be marked sensitive, and the FILE follows the row (2026-08-06, cloud session)
+
+Peter (COO/CFO) asked before getting his login: **if HR starts using the
+platform, does the salesperson see the employment contracts?** For the
+structured version the answer was already good (`employment_contracts` is
+scoped to admin or the employee). For the file it was not — `documents` had a
+SELECT policy whose qual was literally `true` and no visibility field at all.
+
+`20260808160000` adds `visibility` (`shared | role | private`) + `visible_to_role`,
+**shared by default** — deliberately the mirror image of Flowtable's
+private-by-default, because a BOS's value is everyone having the same picture;
+the friction belongs on restricting, not on sharing.
+
+**The part worth reading twice.** `20260808100000_documents-bucket-in-repo.sql`
+landed the same day from a different thread of work and granted every
+authenticated user `SELECT ... USING (bucket_id = 'documents')` on
+`storage.objects`. Both migrations are individually correct; together they
+produce a visibility control that **reads as protection and is bypassable one
+layer down** — the storage API lists objects directly, so a salesperson does not
+even have to guess a path. `20260808170000` closes it, and does NOT restate the
+rules: RLS on a table referenced inside another policy's expression is evaluated
+as the querying user, so `EXISTS (SELECT 1 FROM public.documents …)` makes the
+file inherit the row's visibility by construction. The UPDATE policy had the
+same shape (any authenticated user could overwrite any file while the row, its
+title and its audit trail stayed untouched) and is scoped too.
+
+Proven live on optic in three directions, all inside rolled-back transactions:
+a real `sales` user saw only the shared file; the same person with `hr` added
+saw both; and **restoring the old bucket-wide policy made the HR file reappear**
+— so the leak was demonstrated, not inferred. Both migrations are already
+applied to optic; the other four instances get them on your next migration pass.
+
+**This is a bridge, not a destination**, recorded in the migration header so it
+survives us: an employment contract can be a `contract` with signatures and a
+lifecycle exactly like a customer agreement. HR is not there yet, so files must
+be safe meanwhile — without this becoming the permanent answer to where
+sensitive documents live.
+
+### ⇄ Handoff to local Claude — the event lane is finally live (2026-08-06, cloud session)
+
+**Four kill switches sat on the same lane. All four are now closed**, and the
+lane was proven end to end with a live call rather than by reading code — an
+event emitted from the database was processed within the minute and its
+automation fired (`run_count: 1`, no error). Worth knowing exactly which was
+which, so nobody re-debugs a working path:
+
+| # | switch | closed by |
+|---|---|---|
+| 1 | `send-webhook` matched `trigger_config.event_name` while every seed writes `{event: ...}` | #148 (cloud) |
+| 2 | a non-enum event name made the webhooks lookup throw *before* the automations lane ran | #149 (cloud) |
+| 3 | `dispatch_automation_event` read an empty vault, so DB-born events never left the database | `5e850949a` (you) |
+| 4 | **nothing drained `agent_events`** — `event-dispatcher` is deployed and ACTIVE, its dual-key matcher was fixed deliberately, and no migration in the repo had ever scheduled it | #156 (cloud) |
+
+Switch 4 was not instance drift: the schedule was absent from the repo, so the
+function had never run anywhere. On optic the table held 32 rows, every one
+unprocessed, the oldest from 4 August.
+
+**The backlog was NOT replayed**, and checking what was in it changed that call:
+the 9 `email.received` were all automated sender mail (Unsplash marketing,
+GitHub notifications, a Google account notice), the 20 `lead.created` were
+mostly `manage_deal`'s auto-generated placeholder leads, and one
+`subscription.created`. Draining it would have produced nine junk tickets from
+newsletters. Marked `processed_at`, not deleted — a deliberate replay is one
+`UPDATE ... SET processed_at = NULL` away.
+
+#### The payload shape, for when you wire lead→deal automations
+
+I nearly filed "lead.created carries no email" as a finding. **It does** — the
+payload is a full row snapshot one level deeper than the obvious path:
+
+```jsonc
+{ "id": "<lead uuid>", "data": { "id": ..., "email": ..., "name": ..., "status": ... } }
+```
+
+So an automation template wants `{{event.payload.data.email}}`, not
+`{{event.payload.email}}`. Reading it wrong yields an empty string rather than
+an error, which is the same silent shape as the `inbound_email_to_ticket`
+mapping bug already pinned by `event-automation-payload.guardrails.test.ts` —
+worth extending that guard to `lead.created` when the first listener lands.
+
+#### The rest of the billing family — designed, not built
+
+Subscriptions (#152) and contracts (#156) are in the queue. The remaining two
+are **different work, not more of the same**, which is why they were left:
+
+**Recurring quotes.** There is no `generate_quote_from_template(template_id)` —
+the per-template logic is inlined in `run_recurring_quotes`, so there is nothing
+to name in a task. Extracting one touches `document_counters`, and that counter
+is monotonic by design for the gapless numbering Bokföringslagen requires. A
+refactor with its own risk surface, not a move.
+
+**Dunning / invoice reminders.** `send_dunning_reminders` sweeps unpaid invoices
+and sends at `due_date + N` for several N — so one invoice needs *several*
+tasks, one per step. The queue's unique index on
+`(subject_type, subject_id, skill_name)` would then block step 2 while step 1 is
+open. It needs a per-step key: either `subject_type = 'invoice_dunning_step_2'`
+or a distinct skill per step. And it is the only member of the family where a
+wrong task **sends something to a customer**.
+
+#### Still open from earlier handoffs
+
+The 31 contract gaps, 2 broken skills and 3 silent failures from the agent-surface
+sweep are listed in the handoff immediately below, with the exact runtime error per
+skill. `supabase/seed/agent-surface-baseline.json` carries the same text under
+`details`, so that table is regenerable rather than trusted.
+
+
 ### ⇄ Handoff to local Claude — the agent surface, swept live (2026-08-06, cloud session)
 
 `scripts/agent-surface-sweep.ts` now drives all 258 probeable skills against a

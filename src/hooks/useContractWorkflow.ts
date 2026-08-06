@@ -159,9 +159,11 @@ export function usePublicContract(token: string | undefined) {
       // Via RPC, not a table read: contracts has no anon SELECT policy, so the
       // direct query returned nothing for the one caller this page exists for —
       // the counterparty following the signing link. The token is the credential.
-      const { data, error } = await supabase
-        .rpc('get_public_contract' as never, { p_token: token } as never)
-        .maybeSingle();
+      // Cast: this RPC is newer than the generated Supabase types.
+      const client = supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => { maybeSingle: () => Promise<{ data: unknown; error: unknown }> };
+      };
+      const { data, error } = await client.rpc('get_public_contract', { p_token: token }).maybeSingle();
       if (error) throw error;
       return data;
     },

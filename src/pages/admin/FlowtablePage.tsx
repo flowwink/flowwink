@@ -399,6 +399,27 @@ export default function FlowtablePage() {
       if (activeTable?.id) localStorage.setItem(`flowtable-rowheight-${activeTable.id}`, value);
     } catch { /* storage unavailable — session-only */ }
   };
+
+  // Card view density: how many cards fit per row. A reading preference like
+  // row height, so it lives in localStorage per table rather than in the saved
+  // view config.
+  const [cardColumns, setCardColumns] = useState(3);
+  useEffect(() => {
+    if (!activeTable?.id) return;
+    try {
+      const stored = Number(localStorage.getItem(`flowtable-cardcols-${activeTable.id}`));
+      setCardColumns(stored >= 1 && stored <= 6 ? stored : 3);
+    } catch {
+      setCardColumns(3);
+    }
+  }, [activeTable?.id]);
+  const changeCardColumns = (value: number) => {
+    setCardColumns(value);
+    try {
+      if (activeTable?.id) localStorage.setItem(`flowtable-cardcols-${activeTable.id}`, String(value));
+    } catch { /* storage unavailable — session-only */ }
+  };
+
   const displayedRecords = useMemo(
     () => applyViewConfig(records, activeTable?.view_config),
     [records, activeTable?.view_config],

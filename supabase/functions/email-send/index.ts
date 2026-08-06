@@ -12,6 +12,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { isFullDocument, loadEmailShell, wrapInShell } from "../_shared/email-shell.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +39,7 @@ interface SendBody {
   provider?: Provider;       // Per-call provider preference (e.g. send_email_to_lead asks for 'composio')
   expects_reply?: boolean;   // Hint: prefer reply-friendly channels (Composio → SMTP → Resend) on fallback
   skip_signature?: boolean;  // Explicit opt-out of appending stored signature
+  skip_branding?: boolean;   // Explicit opt-out of the branded shell (fragments are wrapped by default)
   // logging hints
   source?: string;
   related_entity_type?: string;
@@ -371,6 +373,24 @@ serve(async (req: Request) => {
       if (sigHtml) {
         body.html = `${body.html}<div class="email-signature" style="margin-top:24px;color:#555;font-size:13px">${sigHtml}</div>`;
         if (body.text) body.text = `${body.text}\n\n--\n${sigHtml.replace(/<[^>]+>/g, "")}`;
+      }
+    }
+
+    // Branded shell — applied here, after the signature, so the signature ends
+    // up inside the frame. Runs LAST because it must see the final fragment.
+    //
+    // Only fragments get wrapped: a dozen callers (invoice_email, quote_email,
+    // order_confirmation, contract-sign, …) already send complete documents
+    // with their own header, and wrapping those would duplicate logo + footer.
+    // `isFullDocument` makes that a property of the content, not a list of
+    // caller names that would drift the moment someone adds a thirteenth.
+    if (!body.skip_branding && !isFullDocument(body.html)) {
+      try {
+        const shell = await loadEmailShell(supabase);
+        body.html = wrapInShell(body.html, shell);
+      } catch (e) {
+        // Branding is decoration; a settings hiccup must never block the send.
+        console.error("[email-send] branding shell skipped:", e);
       }
     }
 

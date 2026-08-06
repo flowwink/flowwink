@@ -1275,7 +1275,7 @@
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:3029321b16f66e844ab4616fa7e05d8a0fae8964fa8ebf973e42e0a626d28f66",
+      "shared_hash": "sha256:af2d6fff71f79f6061916c26d3f7940cd214d231f456f83297e7a26eb376590d",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
@@ -1305,7 +1305,7 @@
         "document-sign-request": "sha256:43d75660ec58b6c85670c33d8f32508db5abd71e3b008c8a6e99422386a5b6dc",
         "dunning-processor": "sha256:e05e55a6624859ed9f36f296aa5eccbb313f5d70f861a84067af4a4738b12679",
         "elks46-ingest": "sha256:a1b085f53ec559914dd98a664838bb751ea12ec965cd181230e3eff8bed6635b",
-        "email-send": "sha256:42c1eec8967d18b790e5e584b0d4b3647b85db8169f745c0587d9450c2a4f351",
+        "email-send": "sha256:d61fc007ce402b8fbbe29b3b4b3ff2ac8cea0c4b9b996441df5c17a483a365c1",
         "email-webhook": "sha256:0ab483c28ad242ba4cbadc329f56a029ef246c89e669bd81184ce9017ede007d",
         "event-dispatcher": "sha256:1226b1ce317cb70cfdae46441f59499f8559b159fd08ee5063105ebfd98e5aa0",
         "extract-pdf-text": "sha256:96f98e21532f261f3e41dc8843dee623e9a010a6106d4e40d3664d743df46304",
@@ -1324,7 +1324,7 @@
         "mcp-server": "sha256:9a3e6835bd7b865935f27e499677cb50b538a261144a96364e28d4bd19b2b2a2",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:766be614771b490303abefc25efff5ade8417a833fc8c8ed0fc4e725f84fec81",
-        "newsletter": "sha256:cf353003b65b1e5febcc4a3925d363da4af6f653525d44a6b6a0a4dda34515b2",
+        "newsletter": "sha256:f4a54e315db4bddb0f699fbf1cef5d16f71950555cde13c46a7a653ce5aacbfa",
         "openclaw-responses": "sha256:70efb4b23cd1fb08427337148ccd47097d30a0e746bb27ad17120b39498dec3b",
         "process-image": "sha256:b7a65c7cf8f1b80ec4ae22aec5ab2ec7521ead15ee3f96e08921da90ed41b985",
         "process-job-application": "sha256:25776893a0080b2bce6674c66d0c6539a0d0238a5eb18f1d0755c17248d0f900",

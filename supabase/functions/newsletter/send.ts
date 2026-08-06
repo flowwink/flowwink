@@ -63,9 +63,14 @@ export async function sendNewsletterCore(
     return { ok: false, status: 400, error: "No subscribers to send to" };
   }
 
-  const { data: siteUrlSetting } = await supabase
-    .from("site_settings").select("value").eq("key", "siteUrl").maybeSingle();
-  const siteUrl = (siteUrlSetting?.value as string) || "";
+  // siteUrl lives INSIDE the `general` settings row — there has never been a
+  // row keyed 'siteUrl'. The old lookup silently returned nothing, so every
+  // unsubscribe link fell through to the raw functions URL on supabase.co
+  // instead of the operator's own domain. Same column-vs-row shape as the
+  // `.select('modules')` bug: the query succeeds, the value is just absent.
+  const { data: generalSetting } = await supabase
+    .from("site_settings").select("value").eq("key", "general").maybeSingle();
+  const siteUrl = (((generalSetting?.value as any)?.siteUrl as string) || "").replace(/\/+$/, "");
   const trackingBaseUrl = `${supabaseUrl}/functions/v1/newsletter/track`;
   const linkTrackingBaseUrl = `${supabaseUrl}/functions/v1/newsletter/link`;
 
@@ -111,11 +116,15 @@ export async function sendNewsletterCore(
       const contentHtml = (newsletter as any).content_html || "<p>No content</p>";
       const processedContent = await rewriteLinksForTracking(contentHtml, newsletter_id, subscriber.email);
 
+      // Deliberately a FRAGMENT, not a document: `email-send` wraps it in the
+      // operator's branded shell (logo, brand colour, site footer) — the same
+      // frame every other transactional mail gets. Emitting <html> here would
+      // opt the newsletter out of that shell and leave it the only unbranded
+      // mail the platform sends.
       const html = `
         ${processedContent}
-        <hr style="margin-top: 40px; border: none; border-top: 1px solid #eee;" />
-        <p style="font-size: 12px; color: #666; text-align: center;">
-          <a href="${personalUnsubscribe}" style="color: #666;">Unsubscribe</a>
+        <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid #eeeeee;font-size:12px;line-height:18px;color:#888888;">
+          <a href="${personalUnsubscribe}" style="color:#888888;">Avsluta prenumeration</a>
         </p>
         ${trackingPixel}
       `;

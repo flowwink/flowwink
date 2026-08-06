@@ -63,6 +63,12 @@ export interface BrandingSettings {
   // Identity
   logo?: string;
   logoDark?: string;
+  /**
+   * Raster logo (PNG/JPG) for outbound email. Gmail and Outlook block SVG in
+   * mail bodies, so when `logo` is an SVG the email shell falls back to a text
+   * wordmark unless this is set. Not used anywhere on the website.
+   */
+  logoEmail?: string;
   favicon?: string;
   organizationName?: string;
   brandTagline?: string;

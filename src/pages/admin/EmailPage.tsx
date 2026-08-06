@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { EmailTemplatePreview, EmailLogoNotice } from '@/components/admin/email/EmailTemplatePreview';
+import { buildSampleValues, detectTokens } from '@/lib/email-preview';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -51,6 +54,7 @@ function TemplatesTab() {
   const remove = useDeleteEmailTemplate();
   const [editing, setEditing] = useState<EmailTemplate | null>(null);
   const [open, setOpen] = useState(false);
+  const [previewing, setPreviewing] = useState<EmailTemplate | null>(null);
 
   return (
     <Card>
@@ -73,7 +77,16 @@ function TemplatesTab() {
               <TableBody>
                 {data!.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-medium font-mono text-xs">{t.name}</TableCell>
+                    <TableCell className="font-medium font-mono text-xs">
+                      {/* Reading a template should not require entering edit
+                          mode — same rule as the KB and contract templates. */}
+                      <button
+                        className="text-left hover:underline hover:text-primary"
+                        onClick={() => setPreviewing(t)}
+                      >
+                        {t.name}
+                      </button>
+                    </TableCell>
                     <TableCell className="max-w-md truncate">{t.subject}</TableCell>
                     <TableCell>{t.category ?? '—'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{(t.variables ?? []).join(', ') || '—'}</TableCell>
@@ -89,7 +102,81 @@ function TemplatesTab() {
           )}
       </CardContent>
       <TemplateDialog key={editing?.id ?? 'new'} open={open} onOpenChange={setOpen} template={editing} />
+      <TemplatePreviewSheet
+        template={previewing}
+        onOpenChange={(o) => !o && setPreviewing(null)}
+        onEdit={(t) => { setPreviewing(null); setEditing(t); setOpen(true); }}
+      />
     </Card>
+  );
+}
+
+function TemplatePreviewSheet({
+  template, onOpenChange, onEdit,
+}: {
+  template: EmailTemplate | null;
+  onOpenChange: (open: boolean) => void;
+  onEdit: (t: EmailTemplate) => void;
+}) {
+  const tokens = useMemo(
+    () => detectTokens(template?.subject ?? '', template?.html ?? ''),
+    [template],
+  );
+  const [values, setValues] = useState<Record<string, string>>({});
+  // Sample data is regenerated per template, and operator edits to it are
+  // deliberately not persisted — this is a viewer, not a fixture editor.
+  useEffect(() => { setValues(buildSampleValues(tokens)); }, [tokens]);
+
+  if (!template) return null;
+
+  return (
+    <Sheet open={!!template} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="font-mono text-base">{template.name}</SheetTitle>
+          <SheetDescription>
+            {template.category ? `${template.category} · ` : ''}
+            {template.active ? 'Active' : 'Inactive'}
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-4 space-y-4">
+          <EmailLogoNotice />
+
+          {tokens.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Sample values
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {tokens.map((tok) => (
+                  <div key={tok} className="space-y-1">
+                    <Label className="text-xs font-mono">{`{{${tok}}}`}</Label>
+                    <Input
+                      className="h-8 text-xs"
+                      value={values[tok] ?? ''}
+                      onChange={(e) => setValues((v) => ({ ...v, [tok]: e.target.value }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <EmailTemplatePreview
+            subject={template.subject}
+            html={template.html}
+            values={values}
+            className="w-full h-[520px] bg-white"
+          />
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+            <Button onClick={() => onEdit(template)}>Edit</Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -102,6 +189,14 @@ function TemplateDialog({ open, onOpenChange, template }: { open: boolean; onOpe
   const [category, setCategory] = useState(template?.category ?? '');
   const [variables, setVariables] = useState((template?.variables ?? []).join(', '));
   const [active, setActive] = useState(template?.active ?? true);
+
+  const usedTokens = useMemo(() => detectTokens(subject, html), [subject, html]);
+  const previewValues = useMemo(() => buildSampleValues(usedTokens), [usedTokens]);
+  const declaredVars = useMemo(
+    () => variables.split(',').map((s) => s.trim()).filter(Boolean),
+    [variables],
+  );
+  const undeclaredTokens = usedTokens.filter((t) => !declaredVars.includes(t));
 
   const save = () => {
     upsert.mutate({
@@ -123,9 +218,48 @@ function TemplateDialog({ open, onOpenChange, template }: { open: boolean; onOpe
             <div className="space-y-2"><Label>Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="sales / billing …" /></div>
           </div>
           <div className="space-y-2"><Label>Subject</Label><Input value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
-          <div className="space-y-2"><Label>HTML body</Label><Textarea rows={8} value={html} onChange={(e) => setHtml(e.target.value)} className="font-mono text-xs" /></div>
+          <Tabs defaultValue="html">
+            <TabsList className="h-8">
+              <TabsTrigger value="html" className="text-xs">HTML</TabsTrigger>
+              <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
+            </TabsList>
+            <TabsContent value="html" className="mt-2">
+              <Textarea rows={12} value={html} onChange={(e) => setHtml(e.target.value)} className="font-mono text-xs" />
+            </TabsContent>
+            <TabsContent value="preview" className="mt-2 space-y-2">
+              <EmailLogoNotice />
+              <EmailTemplatePreview
+                subject={subject}
+                html={html}
+                values={previewValues}
+                className="w-full h-[380px] bg-white"
+              />
+              <p className="text-xs text-muted-foreground">
+                Shown with sample values and your branding — the same shell{' '}
+                <code>email-send</code> applies when the mail goes out.
+              </p>
+            </TabsContent>
+          </Tabs>
           <div className="space-y-2"><Label>Text fallback (optional)</Label><Textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Variables (comma-separated)</Label><Input value={variables} onChange={(e) => setVariables(e.target.value)} placeholder="first_name, invoice_number" /></div>
+          <div className="space-y-2">
+            <Label>Variables (comma-separated)</Label>
+            <Input value={variables} onChange={(e) => setVariables(e.target.value)} placeholder="first_name, invoice_number" />
+            {undeclaredTokens.length > 0 && (
+              // Declared variables are what an agent reads to learn how to call
+              // the template; a token used but not declared is invisible to it.
+              <p className="text-xs text-amber-600 dark:text-amber-500">
+                Used in the template but not declared:{' '}
+                <span className="font-mono">{undeclaredTokens.join(', ')}</span>
+                <button
+                  type="button"
+                  className="ml-2 underline hover:no-underline"
+                  onClick={() => setVariables([...declaredVars, ...undeclaredTokens].join(', '))}
+                >
+                  add them
+                </button>
+              </p>
+            )}
+          </div>
           <div className="flex items-center justify-between rounded-md border p-3">
             <Label>Active</Label>
             <Switch checked={active} onCheckedChange={setActive} />

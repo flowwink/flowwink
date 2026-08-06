@@ -336,7 +336,10 @@ export default function LeadDetailPage() {
           )}
 
           {/* Deals Section */}
-          <DealSection leadId={lead.id} />
+          <div id="lead-deals">
+            <DealSection leadId={lead.id} />
+          </div>
+
 
           {/* Tasks */}
           <CrmTasksCard leadId={lead.id} />

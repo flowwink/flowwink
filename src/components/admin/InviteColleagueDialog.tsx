@@ -35,6 +35,7 @@ export function InviteColleagueDialog() {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<AppRole>('sales');
   const [pending, setPending] = useState(false);
+  const [noMail, setNoMail] = useState<{ reason: string; link: string } | null>(null);
 
   const submit = async () => {
     setPending(true);
@@ -46,16 +47,25 @@ export function InviteColleagueDialog() {
       if (!(data as { success?: boolean })?.success) {
         throw new Error((data as { error?: string })?.error ?? 'Invite failed');
       }
-      const status = (data as { status?: string }).status;
+      const res = data as { status?: string; reason?: string; action_link?: string };
+      qc.invalidateQueries({ queryKey: ['admin-users'] });
+
+      if (res.status === 'invited_no_mail') {
+        // The account and role exist; the email did not go out. Say so, and
+        // hand over the link rather than leaving the colleague waiting for a
+        // mail that was never sent.
+        setNoMail({ reason: res.reason ?? 'Email could not be sent.', link: res.action_link ?? '' });
+        return; // keep the dialog open — the admin needs to copy the link
+      }
+
       toast({
-        title: status === 'granted_existing' ? 'Role granted' : 'Invitation sent',
-        description: status === 'granted_existing'
+        title: res.status === 'granted_existing' ? 'Role granted' : 'Invitation sent',
+        description: res.status === 'granted_existing'
           ? `${email} already had an account — granted ${ROLE_LABELS[role]}.`
           : `${email} will receive an email to set a password and join as ${ROLE_LABELS[role]}.`,
       });
-      qc.invalidateQueries({ queryKey: ['admin-users'] });
       setOpen(false);
-      setEmail(''); setFullName(''); setRole('sales');
+      setEmail(''); setFullName(''); setRole('sales'); setNoMail(null);
     } catch (e) {
       toast({ title: 'Error', description: (e as Error).message, variant: 'destructive' });
     } finally {
@@ -74,10 +84,36 @@ export function InviteColleagueDialog() {
         <DialogHeader>
           <DialogTitle>Invite a colleague</DialogTitle>
           <DialogDescription>
-            They get an email to set their own password and join with the role
-            you pick — no shared password.
+            They get an email — sent through your own email integration — to set
+            their own password and join with the role you pick. To set the
+            password yourself instead, use <strong>Create user</strong>.
           </DialogDescription>
         </DialogHeader>
+
+        {noMail && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 space-y-2">
+            <p className="text-sm font-medium">Account created — email not sent</p>
+            <p className="text-xs text-muted-foreground">{noMail.reason}</p>
+            {noMail.link && (
+              <div className="space-y-1">
+                <p className="text-xs">Send this invitation link to {email} yourself:</p>
+                <div className="flex gap-2">
+                  <Input readOnly value={noMail.link} className="text-xs font-mono h-8" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(noMail.link);
+                      toast({ title: 'Link copied' });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">

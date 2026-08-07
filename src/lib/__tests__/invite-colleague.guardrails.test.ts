@@ -45,14 +45,47 @@ describe('the backend gates and reconciles correctly', () => {
     expect(fn).toContain('Admin role required');
   });
 
-  it('sends a real email invite, not an admin-set password', () => {
-    // The whole point vs create-user: Supabase Auth emails the invite and the
-    // colleague sets their own password. So it invites, and never calls
-    // createUser with a password field.
-    expect(fn).toContain('inviteUserByEmail');
+  it('mails through the platform router, not the provider or Supabase', () => {
+    // generateLink creates the user + token and sends NOTHING, so the mail
+    // goes out via email-send (Composio/SMTP/Resend) with the operator's
+    // verified domain and branded shell. inviteUserByEmail would use
+    // Supabase's shared sender: wrong domain, unbranded, and a couple-per-hour
+    // cap that silently drops the third invite.
     const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    expect(code).toContain('generateLink');
+    expect(code).not.toContain('inviteUserByEmail');
+    expect(code).toMatch(/invoke\("email-send"/);
+    // And never sets a password — that is Create user's job.
     expect(code).not.toMatch(/createUser\(/);
     expect(code).not.toMatch(/password:/);
+  });
+
+  it('the invite body is a fragment so the branded shell applies', () => {
+    const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    const html = code.slice(code.indexOf('const html = `'), code.indexOf('invoke("email-send"'));
+    expect(html).not.toMatch(/<!doctype|<html[\s>]|<body[\s>]/i);
+  });
+
+  it('reports honestly when no mail went out', () => {
+    // email-send answers success with simulated=true when NO provider is
+    // configured. Treating that as "invitation sent" would leave a colleague
+    // waiting for an email that never existed.
+    const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    expect(code).toMatch(/simulated/);
+    expect(code).toContain('invited_no_mail');
+    expect(code).toMatch(/action_link/);
+  });
+
+  it('grants the role even when the mail fails', () => {
+    // The account exists either way; an account without its role is worse
+    // than an account without its email. Reconciliation must not sit behind
+    // an early return in the mail branch.
+    const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    const upsertAt = code.indexOf('user_roles").upsert');
+    const mailAt = code.indexOf('invoke("email-send"');
+    expect(upsertAt).toBeGreaterThan(mailAt); // reconciliation comes after, unconditionally
+    const mailBranch = code.slice(mailAt, upsertAt);
+    expect(mailBranch).not.toMatch(/return json/);
   });
 
   it('removes the trigger-seeded customer role on a fresh invite', () => {
@@ -63,7 +96,12 @@ describe('the backend gates and reconciles correctly', () => {
   });
 
   it('does not strip roles when granting to an existing account', () => {
-    // An admin adding a role to a colleague must not silently remove theirs.
-    expect(fn).toMatch(/status === "invited"/);
+    // An admin adding a role to a colleague must not silently remove theirs —
+    // the customer cleanup runs for fresh invites only.
+    const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    const cleanupAt = code.indexOf('eq("role", "customer")');
+    expect(cleanupAt).toBeGreaterThan(-1);
+    const guard = code.slice(code.lastIndexOf('if (', cleanupAt), cleanupAt);
+    expect(guard).toMatch(/status !== "granted_existing"|status === "invited"/);
   });
 });

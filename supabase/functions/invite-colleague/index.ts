@@ -74,24 +74,74 @@ serve(async (req: Request) => {
     );
 
     let userId: string;
-    let status: "invited" | "granted_existing";
+    let status: "invited" | "granted_existing" | "invited_no_mail";
+    // Carried out of the invite branch so role reconciliation always runs —
+    // the account exists whether or not the mail left the building, and an
+    // account without its role is worse than an account without its email.
+    let actionLink: string | undefined;
+    let mailProblem: string | undefined;
 
     if (found) {
       userId = found.id;
       status = "granted_existing";
     } else {
-      // signup_type=customer so the trigger's fail-closed path runs; we
-      // reconcile to the chosen role below. redirectTo lands staff in /admin.
+      // generateLink, NOT inviteUserByEmail: it creates the auth user and the
+      // invite token but sends NOTHING, so the mail goes out through the
+      // platform's own router (email-send → Composio/SMTP/Resend). That is
+      // what gets it the operator's verified domain, the branded shell, and
+      // no shared-sender rate limit — Supabase's built-in mailer is a shared
+      // address with a couple-per-hour cap, which silently drops the third
+      // invite in a row. Same rule as everywhere else: modules never talk to
+      // a mail provider directly.
       const redirectTo = `${req.headers.get("origin") ?? ""}/admin`;
-      const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
-        cleanEmail,
-        { data: { full_name: full_name || cleanEmail, signup_type: "customer" }, redirectTo },
-      );
-      if (inviteErr || !invited?.user) {
-        return json({ error: inviteErr?.message ?? "Invite failed" }, 500);
+      const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+        type: "invite",
+        email: cleanEmail,
+        options: { data: { full_name: full_name || cleanEmail, signup_type: "customer" }, redirectTo },
+      });
+      if (linkErr || !linkData?.user) {
+        return json({ error: linkErr?.message ?? "Could not create invitation" }, 500);
       }
-      userId = invited.user.id;
+      userId = linkData.user.id;
       status = "invited";
+
+      actionLink = (linkData.properties as { action_link?: string } | undefined)?.action_link;
+      const orgName = await loadOrgName(admin);
+      // A FRAGMENT, not a document — email-send wraps it in the operator's
+      // branded shell, so the invitation looks like it came from them.
+      const html = `
+        <h2 style="margin:0 0 12px;font-size:20px;">You have been invited to ${escapeHtml(orgName)}</h2>
+        <p>${escapeHtml(inviterName(userData.user))} has invited you to join
+           ${escapeHtml(orgName)} as <strong>${escapeHtml(roleLabel(role))}</strong>.</p>
+        <p style="margin:24px 0;">
+          <a href="${actionLink}" style="display:inline-block;padding:12px 24px;background-color:#1f6feb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Accept invitation</a>
+        </p>
+        <p style="color:#666666;font-size:13px;">You will be asked to choose your own password. If you were not expecting this invitation you can ignore this email.</p>
+      `;
+
+      const { data: sendData, error: sendErr } = await admin.functions.invoke("email-send", {
+        body: {
+          to: cleanEmail,
+          subject: `Invitation to join ${orgName}`,
+          html,
+          source: "invite-colleague",
+          tags: { source: "invite-colleague" },
+        },
+      });
+
+      // Report the mail outcome honestly. email-send answers success with
+      // simulated=true when NO provider is configured — treating that as
+      // "invitation sent" would leave a colleague waiting for an email that
+      // never existed, which is the envelope lie this codebase keeps
+      // relearning. The admin gets the link to pass on instead.
+      const simulated = Boolean((sendData as { simulated?: boolean } | null)?.simulated);
+      const mailed = !sendErr && Boolean((sendData as { success?: boolean } | null)?.success) && !simulated;
+      if (!mailed) {
+        status = "invited_no_mail";
+        mailProblem = simulated
+          ? "No email provider is configured — enable Resend or Composio under Integrations, or use Create user instead."
+          : `Email failed: ${sendErr?.message ?? "unknown error"}`;
+      }
     }
 
     // Reconcile roles: grant exactly the chosen role, clear anything the
@@ -102,9 +152,10 @@ serve(async (req: Request) => {
       { user_id: userId, role },
       { onConflict: "user_id,role" },
     );
-    if (status === "invited") {
-      // Fresh invite: the only pre-existing role is the trigger's customer
-      // seed. Remove it so the colleague is born as exactly their function.
+    if (status !== "granted_existing") {
+      // Fresh invite (mail sent or not): the only pre-existing role is the
+      // trigger's customer seed. Remove it so the colleague is born as
+      // exactly their function.
       await admin.from("user_roles").delete().eq("user_id", userId).eq("role", "customer");
     }
 
@@ -116,8 +167,45 @@ serve(async (req: Request) => {
       metadata: { email: cleanEmail, role, status },
     });
 
-    return json({ success: true, user_id: userId, role, status });
+    return json({
+      success: true,
+      user_id: userId,
+      role,
+      status,
+      // Only present when the mail did not go out — the admin can pass the
+      // link on manually rather than the colleague waiting for nothing.
+      ...(mailProblem ? { reason: mailProblem, action_link: actionLink } : {}),
+    });
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
 });
+
+// deno-lint-ignore no-explicit-any
+async function loadOrgName(admin: any): Promise<string> {
+  // Same store the branded email shell reads — the registered/organisation
+  // name the recipient will recognise.
+  const { data } = await admin
+    .from("site_settings").select("value").eq("key", "branding").maybeSingle();
+  const b = (data?.value ?? {}) as Record<string, string>;
+  return b.organizationName || b.adminName || "FlowWink";
+}
+
+// deno-lint-ignore no-explicit-any
+function inviterName(user: any): string {
+  return (user?.user_metadata?.full_name as string) || (user?.email as string) || "An administrator";
+}
+
+function roleLabel(role: string): string {
+  const labels: Record<string, string> = {
+    admin: "Administrator", sales: "Sales", hr: "HR", accounting: "Accounting",
+    support: "Support", warehouse: "Warehouse", marketing: "Marketing",
+    purchasing: "Purchasing", projects: "Projects",
+  };
+  return labels[role] ?? role;
+}
+
+function escapeHtml(s: string): string {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}

@@ -53,3 +53,21 @@ describe('contract_email routes through the branded, provider-agnostic rail', ()
     expect(dispatch).toMatch(/contract_email:\s*contractEmail/);
   });
 });
+
+describe('the signing link and sender survive a wrong admin domain', () => {
+  const handler = readFileSync(
+    resolve(__dirname, '../../../supabase/functions/comms-send/contract_email.ts'), 'utf-8',
+  ).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+
+  it('rebuilds the link from siteUrl + the contract token, not the passed URL', () => {
+    // A salesperson on ot.garageai.eu must not mail an ot.garageai.eu link.
+    expect(handler).toMatch(/siteUrl.*contract.*accept_token|\$\{siteUrl\}\/contract\/\$\{contract\.accept_token\}/s);
+    expect(handler).toMatch(/g\.siteUrl/);
+  });
+
+  it('sends as the operator brand, not the generic FlowWink default', () => {
+    // The subject read "from FlowWink" because general.site_name is empty on
+    // most instances. Branding is the source of truth.
+    expect(handler).toMatch(/b\.organizationName/);
+  });
+});

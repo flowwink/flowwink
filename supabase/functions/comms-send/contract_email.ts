@@ -16,6 +16,7 @@ const corsHeaders = {
 
 interface Body {
   contract_id?: string;
+  /** Fallback link. The canonical link is rebuilt from siteUrl + token below. */
   public_url?: string;
   reminder?: boolean;
   custom_message?: string;
@@ -49,23 +50,42 @@ export async function handler(req: Request): Promise<Response> {
   try {
     const supabase = getServiceClient();
     const body: Body = await req.json();
-    if (!body.contract_id || !body.public_url) {
-      return json({ error: 'contract_id and public_url required' }, 400);
+    if (!body.contract_id) {
+      return json({ error: 'contract_id required' }, 400);
     }
 
     const { data: contract, error: cErr } = await supabase
       .from('contracts')
-      .select('id, title, contract_number, counterparty_name, counterparty_email')
+      .select('id, title, contract_number, counterparty_name, counterparty_email, accept_token')
       .eq('id', body.contract_id)
       .single();
     if (cErr || !contract) throw new Error(cErr?.message || 'Contract not found');
     if (!contract.counterparty_email) throw new Error('Contract has no counterparty_email');
 
+    // The sender name is the operator's brand, not a generic default. general
+    // has no site_name on most instances, which is how a signing request went
+    // out "from FlowWink" instead of from Optic. Read branding, same source as
+    // the shell, with general.site_name only as a legacy fallback.
+    const { data: brandingRow } = await supabase
+      .from('site_settings').select('value').eq('key', 'branding').maybeSingle();
     const { data: settings } = await supabase
       .from('site_settings').select('value').eq('key', 'general').maybeSingle();
     // deno-lint-ignore no-explicit-any
-    const siteName = (settings?.value as any)?.site_name || 'FlowWink';
+    const b = (brandingRow?.value as any) ?? {};
+    // deno-lint-ignore no-explicit-any
+    const g = (settings?.value as any) ?? {};
+    const siteName = b.organizationName || b.adminName || g.site_name || 'us';
     const hex = await primaryHex(supabase);
+
+    // Canonical link from siteUrl + the contract's own token, so it always
+    // points at the public domain — not whatever admin origin the salesperson
+    // built the passed public_url from (a salesperson on ot.garageai.eu would
+    // otherwise mail an ot.garageai.eu link). Falls back to the passed URL.
+    const siteUrl = String(g.siteUrl ?? '').replace(/\/+$/, '');
+    const link = (siteUrl && contract.accept_token)
+      ? `${siteUrl}/contract/${contract.accept_token}`
+      : body.public_url;
+    if (!link) throw new Error('No signing link — contract has no token and no public_url given');
 
     const intro = body.reminder
       ? 'A reminder to review and sign the agreement below.'
@@ -82,9 +102,9 @@ export async function handler(req: Request): Promise<Response> {
         <div><span style="color:#6b7280">Agreement</span> &nbsp; <strong>${escapeHtml(contract.contract_number || '')}</strong></div>
       </div>
       <p style="margin:24px 0;">
-        <a href="${body.public_url}" style="display:inline-block;padding:12px 24px;background-color:${hex};color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Review &amp; sign</a>
+        <a href="${link}" style="display:inline-block;padding:12px 24px;background-color:${hex};color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Review &amp; sign</a>
       </p>
-      <p style="font-size:12px;color:#6b7280;word-break:break-all">Or open this link:<br/>${escapeHtml(body.public_url)}</p>
+      <p style="font-size:12px;color:#6b7280;word-break:break-all">Or open this link:<br/>${escapeHtml(link)}</p>
     `;
 
     const subject = body.reminder

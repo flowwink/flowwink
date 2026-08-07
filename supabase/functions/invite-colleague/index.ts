@@ -15,6 +15,7 @@
 // Deployed with default JWT verification; the admin check is enforced here.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { getServiceClient, getUserClient } from "../_shared/supabase-clients.ts";
+import { loadEmailShell } from "../_shared/email-shell.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,7 +94,19 @@ serve(async (req: Request) => {
       // address with a couple-per-hour cap, which silently drops the third
       // invite in a row. Same rule as everywhere else: modules never talk to
       // a mail provider directly.
-      const redirectTo = `${req.headers.get("origin") ?? ""}/admin`;
+      // The canonical public URL from site_settings — the same source
+      // contracts, quotes and terms links use. NOT the Origin header: it is
+      // absent or wrong depending on how the call arrives, and Supabase Auth
+      // silently REPLACES a redirect it does not recognise with its own
+      // SITE_URL. On optic that default was still `http://localhost:3000`
+      // from install, so the first real invitation shipped a link pointing at
+      // the recipient's own machine. Falling back to the header keeps local
+      // dev working.
+      const { data: general } = await admin
+        .from("site_settings").select("value").eq("key", "general").maybeSingle();
+      const siteUrl = ((general?.value as { siteUrl?: string } | null)?.siteUrl ?? "").replace(/\/+$/, "")
+        || (req.headers.get("origin") ?? "");
+      const redirectTo = `${siteUrl}/admin`;
       const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
         type: "invite",
         email: cleanEmail,
@@ -106,7 +119,12 @@ serve(async (req: Request) => {
       status = "invited";
 
       actionLink = (linkData.properties as { action_link?: string } | undefined)?.action_link;
-      const orgName = await loadOrgName(admin);
+      // Same settings the shell reads, so the button matches the frame around
+      // it. A hardcoded blue button inside a brand-coloured shell is exactly
+      // the kind of half-branded mail that looks like a template someone
+      // forgot to finish.
+      const shell = await loadEmailShell(admin);
+      const orgName = shell.organizationName || "FlowWink";
       // A FRAGMENT, not a document — email-send wraps it in the operator's
       // branded shell, so the invitation looks like it came from them.
       const html = `
@@ -114,7 +132,7 @@ serve(async (req: Request) => {
         <p>${escapeHtml(inviterName(userData.user))} has invited you to join
            ${escapeHtml(orgName)} as <strong>${escapeHtml(roleLabel(role))}</strong>.</p>
         <p style="margin:24px 0;">
-          <a href="${actionLink}" style="display:inline-block;padding:12px 24px;background-color:#1f6feb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Accept invitation</a>
+          <a href="${actionLink}" style="display:inline-block;padding:12px 24px;background-color:${shell.primaryHex};color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Accept invitation</a>
         </p>
         <p style="color:#666666;font-size:13px;">You will be asked to choose your own password. If you were not expecting this invitation you can ignore this email.</p>
       `;
@@ -180,16 +198,6 @@ serve(async (req: Request) => {
     return json({ error: (e as Error).message }, 500);
   }
 });
-
-// deno-lint-ignore no-explicit-any
-async function loadOrgName(admin: any): Promise<string> {
-  // Same store the branded email shell reads — the registered/organisation
-  // name the recipient will recognise.
-  const { data } = await admin
-    .from("site_settings").select("value").eq("key", "branding").maybeSingle();
-  const b = (data?.value ?? {}) as Record<string, string>;
-  return b.organizationName || b.adminName || "FlowWink";
-}
 
 // deno-lint-ignore no-explicit-any
 function inviterName(user: any): string {

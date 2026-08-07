@@ -134,6 +134,30 @@ After merging a change that touches **skills, handlers, or edge functions**:
    SELECT register_visitor_intent_trigger('https://<ref>.supabase.co', '<anon-key>');
    ```
 7. Build/host the frontend (Vercel, VPS, or static).
+8. **Set Supabase Auth's SITE_URL + redirect allowlist to the public domain.**
+   Instance config, like secrets — no code can substitute for it. Auth SILENTLY
+   REPLACES any redirect it does not recognise with SITE_URL, and a fresh
+   project ships with `http://localhost:3000` and an EMPTY allowlist. Found the
+   hard way on optic: the first real colleague invitation mailed a working,
+   branded email whose button pointed at the recipient's own machine. It hits
+   every auth mail — password reset and magic links too, not just invites.
+   ```bash
+   curl -X PATCH "https://api.supabase.com/v1/projects/<ref>/config/auth" \
+     -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"site_url":"https://www.example.com",
+          "uri_allow_list":"https://www.example.com/**"}'
+   ```
+   Include every domain the app is reachable on (apex, www, staging) —
+   comma-separated, `/**` suffix. Verify with a GET on the same endpoint;
+   `site_url` echoing back your domain is the proof.
+9. **Point Supabase Auth at the operator's SMTP** (optional but recommended).
+   Without it, auth mails go through Supabase's shared sender: wrong domain,
+   unbranded, and a couple-per-hour cap that silently drops the third invite.
+   Resend's SMTP credentials work directly. NOTE: this is separate from the
+   platform's own `email-send` router — invite-colleague already routes its
+   mail through that, but password resets and confirmations are sent by Auth
+   itself and can only be branded here.
 
 `scripts/flowwink.sh` (run via `npm run cli`) automates much of the per-project
 plumbing (keys, migration status, function list, secrets).

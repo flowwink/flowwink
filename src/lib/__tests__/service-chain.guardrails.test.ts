@@ -84,3 +84,24 @@ describe('the ticket can point at the service', () => {
     expect(migration).toMatch(/ALTER TABLE public\.tickets[\s\S]*subscription_id uuid/);
   });
 });
+
+describe('portal RLS reads the JWT, never auth.users', () => {
+  // The first version selected from auth.users, which `authenticated` cannot
+  // read — "permission denied for table users" failed the WHOLE policy, so
+  // neither customer nor admin saw any subscription (admin page blank). A
+  // policy that reads a privileged table is a policy that reads nothing.
+  const fix = readFileSync(
+    resolve(__dirname, '../../../supabase/migrations/20260808320000_fix-subscription-portal-rls.sql'),
+    'utf-8',
+  );
+
+  it('takes the caller email from the JWT, not a table', () => {
+    expect(fix).toMatch(/auth\.jwt\(\)\s*->>\s*'email'/);
+    const code = fix.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+    expect(code).not.toMatch(/FROM auth\.users/);
+  });
+
+  it('still lets staff see all', () => {
+    expect(fix).toMatch(/is_staff\(auth\.uid\(\)\)/);
+  });
+});

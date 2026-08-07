@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808310000",
-      "migrations_count": 326,
+      "migration_head": "20260808320000",
+      "migrations_count": 327,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1309,6 +1309,10 @@
         {
           "version": "20260808310000",
           "name": "service-chain-contract-to-subscription"
+        },
+        {
+          "version": "20260808320000",
+          "name": "fix-subscription-portal-rls"
         }
       ]
     },

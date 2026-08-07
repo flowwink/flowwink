@@ -26,6 +26,7 @@ Fifteen processes, one platform. Each links to its own doc — one page per proc
 | **Book-to-Meet** | L3 | **More deals** | Booking, Email, Voice (IVR), Calendar, SLA, HR (staff) | [book-to-meet.md](./book-to-meet.md) |
 | **Register-to-Attend** | L4 | **More pipeline** | Webinars, Leads/CRM, Blog (content loop), Automations | [register-to-attend.md](./register-to-attend.md) |
 | **Plan-to-Produce** | L3 | **Lower ops cost** | Manufacturing, Products, Inventory, Purchasing | [plan-to-produce.md](./plan-to-produce.md) |
+| **Sign-to-Serve** | L3 | **Safer recurring revenue** | Deals, Quotes, Contracts, Subscriptions, Account portal, Tickets | [sign-to-serve.md](./sign-to-serve.md) |
 
 ---
 

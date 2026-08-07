@@ -195,6 +195,7 @@ const BLOCK_CONTRACTS: Record<string, { required: string[][]; forbidden?: string
   logos:              { required: [['logos']] },
   timeline:           { required: [['steps']] },
   accordion:          { required: [['items']] },
+  terms:              { required: [] },
   image:              { required: [['src']] },
   gallery:            { required: [['images']] },
   youtube:            { required: [['videoId']] },

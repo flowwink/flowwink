@@ -241,6 +241,9 @@ export const BLOCK_CONTRACTS: Record<string, { required: string[][]; forbidden?:
   'two-column':       { required: [['content', 'imageSrc']] },
   form:               { required: [['fields']] },
   newsletter:         { required: [] },
+  // Terms block: content comes from published contract_templates via RPC —
+  // the block itself has only presentation options, nothing required.
+  terms:              { required: [] },
   map:                { required: [['address']] },
   booking:            { required: [] },
   pricing:            { required: [['tiers']] },

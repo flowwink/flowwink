@@ -36,6 +36,7 @@ import { handler as bookingConfirmation } from './booking_confirmation.ts';
 import { handler as orderConfirmation } from './order_confirmation.ts';
 import { handler as invoiceEmail } from './invoice_email.ts';
 import { handler as quoteEmail } from './quote_email.ts';
+import { handler as contractEmail } from './contract_email.ts';
 import { handler as contactEmail } from './contact_email.ts';
 import { handler as returnConfirmation } from './return_confirmation.ts';
 import { handler as webinarReminders } from './webinar_reminders.ts';
@@ -49,6 +50,7 @@ const HANDLERS: Record<string, (req: Request) => Promise<Response>> = {
   order_confirmation: orderConfirmation,
   invoice_email: invoiceEmail,
   quote_email: quoteEmail,
+  contract_email: contractEmail,
   contact_email: contactEmail,
   return_confirmation: returnConfirmation,
   webinar_reminders: webinarReminders,

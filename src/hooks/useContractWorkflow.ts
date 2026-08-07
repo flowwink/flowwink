@@ -138,13 +138,40 @@ export function useSendContract() {
         .eq('id', contract.id);
       if (error) throw error;
       const url = publicContractUrl(token);
-      return { token, url, version: versionNum };
+
+      // Actually EMAIL the signing link — the button said "Send" but only ever
+      // copied to the clipboard, so a signing request could not leave the app.
+      // Routes through comms-send → email-send (branded, provider-agnostic),
+      // mirroring the quote send flow.
+      let emailed = false;
+      let simulated = false;
+      if (contract.counterparty_email) {
+        const { data, error: mailErr } = await supabase.functions.invoke('comms-send', {
+          body: { kind: 'contract_email', contract_id: contract.id, public_url: url, reminder: contract.status === 'pending_signature' },
+        });
+        simulated = !!(data as { simulated?: boolean } | null)?.simulated;
+        emailed = !mailErr && !!(data as { success?: boolean } | null)?.success && !simulated;
+      }
+      return { token, url, version: versionNum, emailed, simulated, to: contract.counterparty_email };
     },
-    onSuccess: ({ url }) => {
+    onSuccess: ({ url, emailed, simulated, to }) => {
       qc.invalidateQueries({ queryKey: ['contract'] });
       qc.invalidateQueries({ queryKey: ['contracts'] });
-      navigator.clipboard?.writeText(url).catch(() => {});
-      toast.success('Contract ready for signing — link copied');
+      if (emailed) {
+        toast.success(`Signing link sent to ${to}`);
+      } else {
+        // No email went out (no provider, no recipient, or a failure) — copy
+        // the link so the admin can still send it, and say so honestly rather
+        // than claiming it was sent.
+        navigator.clipboard?.writeText(url).catch(() => {});
+        toast.success(
+          simulated
+            ? 'No email provider configured — signing link copied to clipboard'
+            : to
+              ? 'Could not email the link — copied to clipboard instead'
+              : 'No customer email on the contract — signing link copied to clipboard',
+        );
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });

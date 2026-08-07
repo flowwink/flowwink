@@ -30,6 +30,9 @@ Both paths share the **concepts** below. Everything else (guides, modules, refer
 | [`concepts/operator-strategy.md`](./concepts/operator-strategy.md) | Why FlowPilot is a module, not the core |
 | [`concepts/openclaw-law.md`](./concepts/openclaw-law.md) | The 10 inviolable agentic laws |
 | [`concepts/flowchat-vs-flowpilot.md`](./concepts/flowchat-vs-flowpilot.md) | Utility AI vs operator AI |
+| [`architecture/ownership-and-coverage.md`](./architecture/ownership-and-coverage.md) | **Ownership** — the one map, inheritance down the chain, the Mine/All lens, vacation coverage, and why ownership is never RLS |
+| [`processes/sign-to-serve.md`](./processes/sign-to-serve.md) | **Sign-to-serve** — signed contract → service → portal → ticket, and the one-invoicer rule |
+| [`operators/users-access-and-invites.md`](./operators/users-access-and-invites.md) | **Users & access** — invites via your own email rail, functional roles, route gating, deleting a user |
 | [`operators/comparison.md`](./operators/comparison.md) | FlowWink vs Odoo / HubSpot / NetSuite |
 | [`concepts/prd.md`](./concepts/prd.md) | Full system reference — modules, processes, scope |
 

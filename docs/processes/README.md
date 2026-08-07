@@ -8,7 +8,7 @@
 
 ## Core Processes
 
-Fourteen processes, one platform. Each links to its own doc — one page per process, all following the same anatomy (explained in the next section).
+Fifteen processes, one platform. Each links to its own doc — one page per process, all following the same anatomy (explained in the next section).
 
 | Process | Maturity | Business lever | Modules | Doc |
 |---------|----------|----------------|---------|-----|

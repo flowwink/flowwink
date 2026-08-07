@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { CreateUserDialog } from '@/components/admin/CreateUserDialog';
+import { InviteColleagueDialog } from '@/components/admin/InviteColleagueDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -178,6 +179,7 @@ export default function UsersPage() {
           <Button variant="outline" size="sm" asChild>
             <a href="/admin/users/login-activity">Login activity</a>
           </Button>
+          <InviteColleagueDialog />
           <CreateUserDialog />
         </AdminPageHeader>
 

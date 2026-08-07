@@ -1009,3 +1009,47 @@ parsing picked the longest segment, which gets both "tagline - Vercel" and
   marker stamping.
 - Commit footer convention and PR-as-draft; merges only on Magnus's explicit
   "merga".
+
+## Ownership scoping (Odoo-style "own records only") — measured 2026-08-07
+
+Planned next step: let a salesperson see the records they OWN rather than
+everything, the way Odoo's record rules work (own / own+team / all, per
+group). **Measured on optic before anyone builds it, because the numbers
+change the plan:**
+
+| column | filled / rows |
+|---|---|
+| `leads.assigned_to` | **0 / 7** |
+| `deals.owner_id` | **0 / 5** (`team_id` also 0) |
+| `companies.account_owner` | **0 / 2** |
+| `crm_tasks.assigned_to` | **4 / 4** ← the one that works |
+| `activities.assigned_to`, `tickets.assigned_to` | 0 / 0 (empty tables) |
+| `quotes`, `contracts`, `projects` | **no ownership column at all** |
+
+**Scoping RLS on ownership today would show a salesperson ZERO rows** — the
+columns are designed but nothing fills them. That is the same shape as the
+`company_id` chain (column present, never populated, fixed in
+`20260808230000`), and it would recreate the empty-page failure mode that
+`20260808270000`/`…280000` just eliminated — except this time it would look
+like a security feature working correctly.
+
+Order that follows from the measurement:
+1. **Assign ownership first.** Set an owner on create (creator owns it),
+   backfill existing rows, and give the UI a reassign control. `crm_tasks` is
+   the working precedent — copy whatever fills it.
+2. `quotes` should INHERIT its owner from the deal, exactly as it now inherits
+   `company_id`; otherwise the salesperson owns the deal but not the quote
+   born from it.
+3. **Only then scope**, and scope it as a DIAL, not a law: Odoo makes the
+   three levels configurable per group, and for a five-person company "everyone
+   sees everything" is often right. Default must stay *all* so no existing
+   instance silently loses visibility on upgrade — tightening is the
+   operator's deliberate act (same reasoning as `quotes.accept_behavior`).
+
+**This is a DIFFERENT AXIS from the module matrix.** The matrix answers "which
+MODULES do you see" (vertical); ownership answers "which ROWS inside a module"
+(horizontal). Odoo keeps them separate too (groups vs record rules) — do not
+merge them into one mechanism. The vertical axis has its own open item: RLS
+currently uses `is_staff()` (any non-customer role), so it is blunter than the
+matrix; making RLS read the matrix via `can_access_module()` is tracked
+separately.

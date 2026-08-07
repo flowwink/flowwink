@@ -1,6 +1,9 @@
 import { ReactNode, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useRoleModuleAccess } from '@/hooks/useRoleModuleAccess';
+import { isRouteAllowed } from '@/lib/admin-route-access';
+import type { AppRole } from '@/types/cms';
 import { SandboxBanner } from '@/components/SandboxBanner';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminContentHeader } from './AdminContentHeader';
@@ -21,7 +24,8 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, loading, isWriter } = useAuth();
+  const { user, loading, isWriter, isAdmin, roles } = useAuth();
+  const { data: accessMap, isLoading: accessLoading } = useRoleModuleAccess();
   const navigate = useNavigate();
   const location = useLocation();
   const { data: voiceSettings } = useVoiceSettings();
@@ -83,6 +87,27 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </h1>
           <p className="text-muted-foreground">
             You do not have permission to access this page.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Route gate — same source of truth as the sidebar (navigationGroups +
+  // role_module_access). The sidebar HID pages the roles did not grant, but
+  // nothing guarded the routes: a salesperson could type /admin/settings and
+  // get the page. Hiding is not gating. Waits for the access map so a slow
+  // load never flashes a deny at a permitted user.
+  if (!isAdmin && !accessLoading &&
+      !isRouteAllowed(location.pathname, { isAdmin, roles: roles as AppRole[], accessMap })) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="font-serif text-2xl font-bold text-foreground mb-2">
+            Access Denied
+          </h1>
+          <p className="text-muted-foreground">
+            Your role does not include this page.
           </p>
         </div>
       </div>

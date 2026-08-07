@@ -24,7 +24,12 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, User, Settings2 } from 'lucide-react';
+import { Shield, User, Settings2, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import type { AppRole } from '@/types/cms';
 import { ROLE_LABELS, ROLE_DESCRIPTIONS, FUNCTIONAL_ROLES } from '@/types/cms';
 import type { Json } from '@/integrations/supabase/types';
@@ -114,6 +119,28 @@ export default function UsersPage() {
     },
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      // Client cannot delete auth users — the edge function holds the service
+      // key and the guards (not self, not last admin, detach references).
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
+      if (error) throw new Error(error.message);
+      if (!(data as { success?: boolean })?.success) {
+        throw new Error((data as { error?: string })?.error ?? 'Deletion failed');
+      }
+      return data as { deleted_email: string };
+    },
+    onSuccess: (data) => {
+      toast({ title: 'User deleted', description: data.deleted_email });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
   if (!isAdmin) {
     return (
       <AdminLayout>
@@ -178,6 +205,7 @@ export default function UsersPage() {
                     <TableHead>Roles</TableHead>
                     <TableHead className="w-[140px]">Manage</TableHead>
                     <TableHead>Registered</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -271,6 +299,40 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {new Date(user.created_at).toLocaleDateString('en-US')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={isSelf || deleteUser.isPending}
+                                title={isSelf ? 'You cannot delete your own account' : 'Delete user'}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete {user.email}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  The account, its profile and roles are removed permanently.
+                                  Business records the user touched (leads, tasks, posts) are
+                                  kept — only the link to this person is cleared. The last
+                                  admin cannot be deleted.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteUser.mutate(user.id)}
+                                >
+                                  Delete user
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     );

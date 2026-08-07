@@ -54,7 +54,7 @@ export const ALL_EDGE_FUNCTIONS: readonly string[] = [
   'chat-completion', 'chat-stt', 'check-secrets', 'comms-send', 'composio-proxy',
   'composio-webhook', 'content-api',
   'contract-sign', 'create-checkout', 'create-invoice-payment',
-  'create-user', 'customer-signup', 'demo-cycle',
+  'create-user', 'customer-signup', 'delete-user', 'demo-cycle',
   'docs-chat', 'document-share', 'document-sign-request',
   'dunning-processor', 'elks46-ingest',
   'email-send', 'email-webhook', 'event-dispatcher',

@@ -17,6 +17,7 @@ You're an operator if you want to **use** FlowWink for a business — not modify
 | Production deployment (Supabase Cloud + Vercel) | [`../guides/deployment.md`](../guides/deployment.md) |
 | Security & auth model | [`../guides/security.md`](../guides/security.md) |
 | **System Settings reference** (`/admin/settings`) | [`./system-settings.md`](./system-settings.md) |
+| **Users, access & invitations** | [`./users-access-and-invites.md`](./users-access-and-invites.md) |
 
 After install: log in, complete `/admin/onboarding`, pick a template, run the docs sync from `/admin/docs`, then walk through [`system-settings.md`](./system-settings.md) tab by tab.
 
@@ -66,6 +67,7 @@ Business flows that span multiple modules:
 | Content → conversion | [`../processes/content-to-conversion.md`](../processes/content-to-conversion.md) |
 | Lead → customer | [`../processes/lead-to-customer.md`](../processes/lead-to-customer.md) |
 | Quote → cash | [`../processes/quote-to-cash.md`](../processes/quote-to-cash.md) |
+| Sign → serve | [`../processes/sign-to-serve.md`](../processes/sign-to-serve.md) |
 | Order → delivery | [`../processes/order-to-delivery.md`](../processes/order-to-delivery.md) |
 | Procure → pay | [`../processes/procure-to-pay.md`](../processes/procure-to-pay.md) |
 | Record → report | [`../processes/record-to-report.md`](../processes/record-to-report.md) |

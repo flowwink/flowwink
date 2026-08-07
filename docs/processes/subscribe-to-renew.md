@@ -105,6 +105,26 @@ subscription and reviewing draft cycle invoices require an admin.
 - The churn-lista with a "varför?"-column → `record_churn_reason` (+NPS) feeding win-back campaigns
 - The MRR tab someone rebuilt every quarter → `subscription_mrr`, always current
 
+### Where the subscription came from — the three provenances
+
+| `provider` | Born by | Billed by |
+|---|---|---|
+| `stripe` | Stripe checkout | Stripe |
+| `manual` | `create_manual_subscription` | `subscription-billing-cron` |
+| `contract` | signing an agreement (`create_subscription_from_contract`) | `contract-billing-cron` — **never** the subscription cron |
+
+The **one-invoicer rule**: a contract-born service is stamped
+`provider='contract'` and the subscription cron filters on `'manual'` only, so
+nothing double-bills. The full chain (quote → contract → sign → service → portal
+→ ticket) is documented in [Sign-to-Serve](./sign-to-serve.md).
+
+Consequences worth knowing: the "Customer portal" row action is Stripe-only (it
+opens Stripe's hosted billing portal, which a contract service has no customer
+for) — a contract-born row offers "View contract" instead; and `change_subscription`
+proration applies to `manual` rows, while a contract service changes through the
+agreement.
+
+
 ## Agent coverage
 
 | Actor | What they run |

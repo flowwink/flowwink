@@ -82,3 +82,37 @@ The dashboard is a widget surface tuned per functional role instead of one CMS-c
 - Widgets never own business logic — they read aggregates and link into the module.
 - Layout is stored per user AND per preset key, so "View as role" shows the previewed role's dashboard rather than the admin's saved one.
 - A widget hidden by role relevance is also hidden in Customize — no dead toggles.
+
+## Shipped 2026-08-07 / 08 — ownership, the service chain, and access that tells the truth
+
+Three lanes landed in one pass. Full pages: [Sign-to-Serve](docs/processes/sign-to-serve.md),
+[Ownership & coverage](docs/architecture/ownership-and-coverage.md),
+[Users, access and invitations](docs/operators/users-access-and-invites.md).
+
+**CRM ownership (#166–#169)**
+- One ownership map (`src/lib/ownership.ts`) over three legacy column names, plus a new `quotes.owner_id`.
+- Creator owns; **inheritance outranks the creator** — a deal on Anna's lead is Anna's, even when an admin or FlowPilot typed it, and the quote inherits from the deal.
+- **Mina/Alla lens** in Contacts, Deals, Companies, Quotes. One preference for the whole CRM, stored in `profiles.preferences`, defaults to All. Lists only — stat cards stay unlensed so two people see one pipeline number.
+- **Coverage** (`ownership_delegations`): one row says "Anna täcker för Björn" between two dates. Active is a date predicate — no cron, nothing to clean up. Ownership columns never move; the chip shows "covered by Anna". Coverage is given, never taken.
+- Law: ownership is a lens and a label, **never** RLS. Guardrails enforce it across every migration.
+
+**Sign-to-serve — a signed contract becomes a service**
+- Quote's agreed lines land in the agreement's §4, its term in §5; the agreement number (`AGR-…`) and the originating quote now reach the screen.
+- "Send for signature" actually emails the link (new `comms-send` handler `contract_email`), from the operator's branded shell and verified domain, with the link rebuilt from `general.siteUrl` + the contract's own token — not the admin origin.
+- On signature: `create_subscription_from_contract` (idempotent, unique index on `subscriptions(contract_id)`) mints the service, and `_shared/provision-portal-account.ts` invites the customer to a portal account.
+- **One-invoicer rule** made structural: contract-born services are `provider='contract'`, the subscription cron bills `'manual'` only. Guardrail-protected.
+- Customer portal **My services** → "Get help with this service" carries `subscription_id` into the ticket, so support sees service + contract + SLA at once.
+- Invited customers land on `/account/activate` — email read-only from the invite session, password only. A signup form here would orphan the account holding their service.
+- Two dials, not a module split: `store.storefront` hides the cart, `customer_portal.enabled` hides the public account entrance. A service business runs ecommerce with the storefront off.
+
+**Access & user lifecycle**
+- **Invite colleague** by email with a functional role, routed through the operator's own email rail (`generateLink` + `email-send`); honest "email not sent" when no provider is configured.
+- **delete-user** detaches both FK families via `detach_user_references()` walking `pg_constraint` at execution time; authorship is nulled, business rows kept. The `flowtable_bases` CASCADE that would have destroyed a base is defused.
+- **RLS sweep**: 64 tables gated reads on the legacy `approver` role nobody holds — the matrix promised pages the database then emptied. `is_staff()` read paths added, HR/finance tables kept role-scoped. Also dropped policies *named* for the service role but open to everyone (worst: `federation_peer_missions`).
+- Route guard resolves the pathname against the same navigation data the sidebar renders — hiding is not gating. FlowChat is admin-only in nav, matching the engine.
+- Role panel shows the real primary role (admin → functional → customer last) and can remove `customer`.
+
+**CMS / email**
+- New **terms block** — contract templates marked public render as an expandable list on any page at an operator-chosen slug (`general.termsSlug`); the hardcoded `/villkor` route is retired.
+- **Contract template import/export** as plain JSON (no ids, no timestamps); import shows its plan first and skips name collisions rather than overwriting version-frozen references.
+- One branded email shell for every outbound mail; newsletter double opt-in fixed (subscribers were born without a confirmation token).

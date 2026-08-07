@@ -4,11 +4,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 export function AccountIndicator() {
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
+  // Staff belong in /admin; /account is the CUSTOMER portal. Without this, a
+  // salesperson clicking the header icon landed among order history and
+  // wishlists — the door worked, it just led to the wrong building.
+  const isStaff = (roles ?? []).some((r) => r !== 'customer');
+  const target = !user ? '/account/login' : isStaff ? '/admin' : '/account';
 
   return (
     <Link
-      to={user ? '/account' : '/account/login'}
+      to={target}
       className={cn(
         'relative inline-flex items-center justify-center rounded-md p-2 transition-colors',
         'text-muted-foreground hover:bg-muted hover:text-foreground'

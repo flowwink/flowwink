@@ -12,7 +12,7 @@ import { CartIndicator } from './CartIndicator';
 import { AccountIndicator } from './AccountIndicator';
 import { SandboxBanner } from '@/components/SandboxBanner';
 import { useHeaderBlock, defaultHeaderData } from '@/hooks/useGlobalBlocks';
-import { useBlogSettings } from '@/hooks/useSiteSettings';
+import { useBlogSettings, useStoreSettings, useCustomerPortalSettings } from '@/hooks/useSiteSettings';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import type { HeaderNavItem } from '@/types/cms';
 
@@ -34,9 +34,18 @@ export function PublicNavigation() {
   const { resolvedTheme } = useTheme();
   const ecommerceEnabled = useIsModuleEnabled('ecommerce');
   const hrEnabled = useIsModuleEnabled('hr');
+  const { data: storeSettings } = useStoreSettings();
+  const { data: portalSettings } = useCustomerPortalSettings();
   // The account portal is cross-functional: customers (ecommerce) and employee
-  // self-service (hr) share the same entrance. Only the cart is commerce-only.
-  const accountEnabled = ecommerceEnabled || hrEnabled;
+  // self-service (hr) share the same entrance — but the OPERATOR decides
+  // whether that entrance is public (customer_portal.enabled, default true).
+  // A service business running ecommerce for its catalog only can hide it
+  // until the portal has something to show.
+  const accountEnabled = (ecommerceEnabled || hrEnabled) && (portalSettings?.enabled ?? true);
+  // The cart is storefront chrome, not module identity: the ecommerce module's
+  // catalog feeds quotes/contracts too, so the cart follows the storefront
+  // dial (default true — a shop instance sees zero change).
+  const cartEnabled = ecommerceEnabled && (storeSettings?.storefront ?? true);
   const blogModuleEnabled = useIsModuleEnabled('blog');
   
   // Use header global block settings
@@ -424,14 +433,14 @@ export function PublicNavigation() {
             {customNavItems.map((item) => renderNavItem(item))}
             {branding?.allowThemeToggle !== false && <ThemeToggle />}
             {accountEnabled && <AccountIndicator />}
-            {ecommerceEnabled && <CartIndicator />}
+            {cartEnabled && <CartIndicator />}
           </nav>
 
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-2 md:hidden">
             {branding?.allowThemeToggle !== false && <ThemeToggle />}
             {accountEnabled && <AccountIndicator />}
-            {ecommerceEnabled && <CartIndicator />}
+            {cartEnabled && <CartIndicator />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-md hover:bg-muted transition-colors"

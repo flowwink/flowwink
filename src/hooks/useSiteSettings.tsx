@@ -754,6 +754,14 @@ export interface StoreSettings {
   taxDisplay: 'inclusive' | 'exclusive' | 'hidden';
   taxLabel: string;
   storeName: string;
+  /**
+   * Show the public storefront chrome (cart indicator). The ecommerce module
+   * is more than a webshop — its product catalog feeds quotes and contracts —
+   * so a service business (telco, consultancy) runs the module with the
+   * storefront OFF. A dial, not a module split: the module id stays stable
+   * (wire policy) and a shop instance sees zero change (defaults true).
+   */
+  storefront?: boolean;
 }
 
 export const defaultStoreSettings: StoreSettings = {
@@ -762,6 +770,7 @@ export const defaultStoreSettings: StoreSettings = {
   taxDisplay: 'hidden',
   taxLabel: 'VAT',
   storeName: '',
+  storefront: true,
 };
 
 export function useStoreSettings() {

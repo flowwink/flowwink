@@ -118,6 +118,18 @@ Deno.serve(async (req: Request) => {
     const { error: updErr } = await supabase.from('contracts').update(updates).eq('id', contract.id);
     if (updErr) throw updErr;
 
+    // A signed contract becomes an active service the customer sees in their
+    // portal. Idempotent + one-per-contract in the DB, so a re-sign or a
+    // double-fire cannot mint a second. Never blocks the signing — a service
+    // that failed to appear is a follow-up, a signature that failed is a lost
+    // deal.
+    if (body.action === 'accept') {
+      const { error: subErr } = await supabase.rpc('create_subscription_from_contract', {
+        p_contract_id: contract.id,
+      });
+      if (subErr) console.error('[contract-sign] service creation skipped:', subErr.message);
+    }
+
     // Snapshot final version
     const { data: existing } = await supabase
       .from('contract_versions')

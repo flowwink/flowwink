@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260808310000",
-      "migrations_count": 325,
+      "migrations_count": 326,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1305,6 +1305,10 @@
         {
           "version": "20260808310000",
           "name": "ownership-inheritance"
+        },
+        {
+          "version": "20260808310000",
+          "name": "service-chain-contract-to-subscription"
         }
       ]
     },
@@ -1334,7 +1338,7 @@
         "consultant-match": "sha256:1419717affb3711a2d7f13d44c9a228e1557a3d927e3aa05ee5e179584131e1b",
         "content-api": "sha256:64c03bcaa94f7e17575c9e36611830c049cdcf372747ed2af264eb03c70bce42",
         "contract-billing-cron": "sha256:bd4af2f1f3c05253ae5635af48686f9f662f40a55b1b3097001c1828b35f898a",
-        "contract-sign": "sha256:06401c288a209dafe9d0aee05e9f8902fd98ff155617271dbee27d5e54135e8f",
+        "contract-sign": "sha256:4b0e4c2c3d8c14a13389025660ddffe2b437e1eb50259e70da5b0c09bd5a3c37",
         "create-checkout": "sha256:c0321cfa6df8cf1df5ccfa2401e67b78265fedb4adb0a0c6b4f870236a50e915",
         "create-invoice-payment": "sha256:917c78b89d0131f426ed5c6109eea67d8020604def81f1179eba2e5bb0c8bea6",
         "create-user": "sha256:bed454b8a235c1a99baead4133a74618ac2761b221592c346f4fb8f1c6bffc34",

@@ -21,13 +21,17 @@ const root = process.cwd();
 const read = (p: string) => readFileSync(join(root, p), 'utf8');
 
 describe('account portal access', () => {
-  it('the header entrance opens for ecommerce OR hr, the cart for ecommerce only', () => {
+  it('the header entrance follows (ecommerce OR hr) AND the portal dial; the cart follows the storefront dial', () => {
     const nav = read('src/components/public/PublicNavigation.tsx');
-    expect(nav).toMatch(/accountEnabled = ecommerceEnabled \|\| hrEnabled/);
-    // Both desktop and mobile render sites use the shared flag…
+    // The module opens the door; the operator's customer_portal.enabled dial
+    // decides whether it is public (default true — a shop sees no change).
+    expect(nav).toMatch(/accountEnabled = \(ecommerceEnabled \|\| hrEnabled\) && \(portalSettings\?\.enabled \?\? true\)/);
     expect(nav.match(/\{accountEnabled && <AccountIndicator \/>\}/g)?.length).toBe(2);
-    // …and the cart never widened with it.
-    expect(nav.match(/\{ecommerceEnabled && <CartIndicator \/>\}/g)?.length).toBe(2);
+    // The cart is storefront chrome, not module identity: it follows the
+    // store.storefront dial so a service business can run ecommerce for its
+    // catalog with the shop hidden.
+    expect(nav).toMatch(/cartEnabled = ecommerceEnabled && \(storeSettings\?\.storefront \?\? true\)/);
+    expect(nav.match(/\{cartEnabled && <CartIndicator \/>\}/g)?.length).toBe(2);
     expect(nav).not.toMatch(/accountEnabled && <CartIndicator/);
   });
 
@@ -42,6 +46,15 @@ describe('account portal access', () => {
   it('with ecommerce off, the portal index does not land on the Orders page', () => {
     const layout = read('src/pages/account/AccountLayout.tsx');
     expect(layout).toMatch(/!ecommerceEnabled && location\.pathname === '\/account'/);
-    expect(layout).toMatch(/<Navigate to="\/account\/assistant" replace \/>/);
+    // A service business (subscriptions on) lands on My services; otherwise
+    // the assistant. Never the empty Orders page.
+    expect(layout).toMatch(/subscriptionsEnabled \? '\/account\/services' : '\/account\/assistant'/);
+  });
+
+  it('the account header icon sends staff to /admin, customers to /account', () => {
+    // Hiding is not routing: a salesperson clicking the icon belongs in admin,
+    // not among order history and wishlists.
+    const ind = read('src/components/public/AccountIndicator.tsx');
+    expect(ind).toMatch(/isStaff \? '\/admin' : '\/account'/);
   });
 });

@@ -19,6 +19,10 @@ const commerceNav = [
   { to: '/account/wishlist', label: 'Wishlist', icon: Heart },
 ];
 
+const servicesNav = [
+  { to: '/account/services', label: 'My services', icon: Package },
+];
+
 const assistantNav = [
   { to: '/account/assistant', label: 'Assistant', icon: Sparkles },
   { to: '/account/support', label: 'Support requests', icon: LifeBuoy },
@@ -43,12 +47,14 @@ export default function AccountLayout() {
   const { isEmployee } = useEmployeeSelf();
   const { isManager } = useIsManager();
   const ecommerceEnabled = useIsModuleEnabled('ecommerce');
+  const subscriptionsEnabled = useIsModuleEnabled('subscriptions');
   const { isLoading: modulesLoading } = useModules();
   const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
     ...(ecommerceEnabled ? commerceNav : []),
+    ...(subscriptionsEnabled ? servicesNav : []),
     ...assistantNav,
     ...(isEmployee ? employeeNav : []),
     ...(isManager ? managerNav : []),
@@ -75,9 +81,11 @@ export default function AccountLayout() {
   }
 
   // The portal index is the Orders page; with ecommerce off it isn't in the
-  // nav, so land the visitor on the first section that is.
+  // nav, so land the visitor on the first section that is. A service business
+  // (subscriptions on, ecommerce off) lands on My services — the thing the
+  // customer actually came to see.
   if (!ecommerceEnabled && location.pathname === '/account') {
-    return <Navigate to="/account/assistant" replace />;
+    return <Navigate to={subscriptionsEnabled ? '/account/services' : '/account/assistant'} replace />;
   }
 
   const handleSignOut = async () => {

@@ -75,3 +75,25 @@ describe('resolution mechanics', () => {
     expect(isRouteAllowed('/admin/deals', { ...salesAccess, accessMap: undefined })).toBe(false);
   });
 });
+
+describe('FlowChat is admin-only in nav, matching its backend', () => {
+  // agent-operate runs skills with the SERVICE ROLE and gates on
+  // has_role(admin) — a non-admin got the page and a 401 per message.
+  // Nav and engine must agree, or the UI lies about what it can do.
+  it('sales cannot reach /admin/flowchat', () => {
+    expect(isRouteAllowed('/admin/flowchat', salesAccess)).toBe(false);
+  });
+
+  it('admin can', () => {
+    expect(isRouteAllowed('/admin/flowchat', { ...salesAccess, isAdmin: true })).toBe(true);
+  });
+
+  it('FlowWork stays open to non-admins — it reads with the caller\'s own eyes', () => {
+    // workspace-chat retrieves under RLS as the caller, so it cannot surface
+    // anything the user may not see. Different authority, different gate.
+    expect(isRouteAllowed('/admin/flowwork', {
+      ...salesAccess,
+      accessMap: { sales: new Set(['workspaceChat']) } as never,
+    })).toBe(true);
+  });
+});

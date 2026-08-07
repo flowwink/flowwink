@@ -88,7 +88,11 @@ export const navigationGroups: NavGroup[] = [
     label: "Main",
     items: [
       { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-      { name: "FlowChat", href: "/admin/flowchat", icon: MessageSquare },
+      // Admin-only, matching the backend: agent-operate runs skills with the
+      // SERVICE ROLE (bypassing RLS) and gates on has_role(admin), so a
+      // non-admin opening this page got the UI and a 401 on every message.
+      // The nav now says what the engine already enforced.
+      { name: "FlowChat", href: "/admin/flowchat", icon: MessageSquare, allowedRoles: ['admin'] },
       { name: "FlowPilot", href: "/admin/flowpilot", icon: Zap, moduleId: "flowpilot" },
       { name: "Analytics", href: "/admin/analytics", icon: BarChart3, moduleId: "analytics" },
     ],

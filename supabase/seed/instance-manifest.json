@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808260000",
-      "migrations_count": 320,
+      "migration_head": "20260808280000",
+      "migrations_count": 322,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1285,6 +1285,14 @@
         {
           "version": "20260808260000",
           "name": "rls-service-policy-tighten"
+        },
+        {
+          "version": "20260808270000",
+          "name": "matrix-rls-alignment"
+        },
+        {
+          "version": "20260808280000",
+          "name": "approver-legacy-to-staff"
         }
       ]
     },

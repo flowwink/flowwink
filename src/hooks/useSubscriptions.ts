@@ -31,6 +31,7 @@ export interface Subscription {
   provider: string;
   provider_subscription_id: string | null;
   provider_customer_id: string | null;
+  contract_id?: string | null;
   provider_price_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;

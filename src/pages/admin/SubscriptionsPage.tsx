@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import {
   useSubscriptions, useSubscriptionMetrics, useSubscriptionAction,
   openCustomerPortal, type SubscriptionStatus, type Subscription,
 } from '@/hooks/useSubscriptions';
-import { ExternalLink, MoreHorizontal, RefreshCw, XCircle, ArrowUpDown, PlayCircle } from 'lucide-react';
+import { ExternalLink, MoreHorizontal, RefreshCw, XCircle, ArrowUpDown, PlayCircle, FileText } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -268,9 +269,22 @@ function SubscriptionRow({
             <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onPortal}>
-              <ExternalLink className="h-4 w-4 mr-2" />Customer portal
-            </DropdownMenuItem>
+            {/* "Customer portal" is Stripe's hosted billing portal — it needs
+                a Stripe customer. A contract-billed service has none, so the
+                button silently did nothing (Magnus clicked it and nothing
+                happened). Show it only when there's a Stripe customer; a
+                contract service links to its agreement instead. */}
+            {sub.provider_customer_id ? (
+              <DropdownMenuItem onClick={onPortal}>
+                <ExternalLink className="h-4 w-4 mr-2" />Customer portal
+              </DropdownMenuItem>
+            ) : sub.contract_id ? (
+              <DropdownMenuItem asChild>
+                <Link to={`/admin/contracts/${sub.contract_id}`}>
+                  <FileText className="h-4 w-4 mr-2" />View contract
+                </Link>
+              </DropdownMenuItem>
+            ) : null}
             {sub.status === 'trialing' && (
               <DropdownMenuItem onClick={() => convertTrial.mutate(sub.id)}>
                 <PlayCircle className="h-4 w-4 mr-2" />Convert trial → active

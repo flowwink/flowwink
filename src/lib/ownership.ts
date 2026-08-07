@@ -53,7 +53,12 @@ export function ownerColumn(entity: OwnedEntity): string {
  */
 export type OwnershipLens = 'all' | 'mine';
 
-export function applyLens<T extends Record<string, unknown>>(
+// T is unconstrained on purpose: concrete row interfaces (Company, Deal, Lead,
+// Quote) have no index signature, so `T extends Record<string, unknown>`
+// rejected them — and Vite's build never caught it because only
+// `tsc -p tsconfig.app.json` typechecks. The owner column is read through a
+// narrow cast at the one access site instead.
+export function applyLens<T>(
   rows: T[] | undefined,
   entity: OwnedEntity,
   lens: OwnershipLens,
@@ -62,5 +67,5 @@ export function applyLens<T extends Record<string, unknown>>(
   if (!rows) return [];
   if (lens !== 'mine' || !uid) return rows;
   const col = OWNERSHIP[entity].column;
-  return rows.filter((r) => r[col] === uid);
+  return rows.filter((r) => (r as Record<string, unknown>)[col] === uid);
 }

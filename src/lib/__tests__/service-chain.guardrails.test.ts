@@ -105,3 +105,48 @@ describe('portal RLS reads the JWT, never auth.users', () => {
     expect(fix).toMatch(/is_staff\(auth\.uid\(\)\)/);
   });
 });
+
+describe('the signing customer gets a way into their portal', () => {
+  const provision = readFileSync(
+    resolve(__dirname, '../../../supabase/functions/_shared/provision-portal-account.ts'),
+    'utf-8',
+  ).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+
+  it('invites via generateLink + the branded email router, not a shared sender', () => {
+    expect(provision).toContain('generateLink');
+    expect(provision).not.toContain('inviteUserByEmail');
+    expect(provision).toMatch(/invoke\("email-send"/);
+    expect(provision).toContain('loadEmailShell');
+  });
+
+  it('gates on the portal being enabled, but NOT on self-signup', () => {
+    // Operator-initiated: the customer did not self-register, the operator
+    // signed them up by giving them a contract.
+    expect(provision).toMatch(/portalEnabled/);
+    expect(provision).not.toMatch(/allowSelfSignup/);
+  });
+
+  it('is idempotent — an existing account is granted the role, not re-invited', () => {
+    expect(provision).toMatch(/status:\s*"existing"/);
+    expect(provision).toMatch(/onConflict:\s*"user_id,role"/);
+  });
+
+  it('reports honestly when no mail went out, with the link to pass on', () => {
+    expect(provision).toMatch(/invited_no_mail/);
+    expect(provision).toMatch(/action_link/);
+  });
+
+  it('contract-sign bridges the portal after the service is born, best-effort', () => {
+    const cs = readFileSync(
+      resolve(__dirname, '../../../supabase/functions/contract-sign/index.ts'),
+      'utf-8',
+    );
+    // Anchor on the CALL (await provisionPortalAccount), not the import which
+    // appears first and would prove nothing about order.
+    const callAt = cs.indexOf('await provisionPortalAccount');
+    expect(callAt).toBeGreaterThan(-1);
+    expect(callAt).toBeGreaterThan(cs.indexOf('create_subscription_from_contract'));
+    const block = cs.slice(callAt - 400, callAt + 100);
+    expect(block).toMatch(/try\s*\{/);
+  });
+});

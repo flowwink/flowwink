@@ -1323,7 +1323,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:c51cd753e389cd360e369036fd4f20188bce46f938d5c30e3296b5bbd7c60311",
+      "shared_hash": "sha256:177ece8f5e9744065d37ae83c8c6039234df1be7eeb5b587d768f17330c74bce",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
@@ -1342,7 +1342,7 @@
         "consultant-match": "sha256:1419717affb3711a2d7f13d44c9a228e1557a3d927e3aa05ee5e179584131e1b",
         "content-api": "sha256:64c03bcaa94f7e17575c9e36611830c049cdcf372747ed2af264eb03c70bce42",
         "contract-billing-cron": "sha256:bd4af2f1f3c05253ae5635af48686f9f662f40a55b1b3097001c1828b35f898a",
-        "contract-sign": "sha256:4b0e4c2c3d8c14a13389025660ddffe2b437e1eb50259e70da5b0c09bd5a3c37",
+        "contract-sign": "sha256:c61d92fe6a0aaff3e80eab857d40f2581844c61079569bc01510d770920e80a4",
         "create-checkout": "sha256:c0321cfa6df8cf1df5ccfa2401e67b78265fedb4adb0a0c6b4f870236a50e915",
         "create-invoice-payment": "sha256:917c78b89d0131f426ed5c6109eea67d8020604def81f1179eba2e5bb0c8bea6",
         "create-user": "sha256:bed454b8a235c1a99baead4133a74618ac2761b221592c346f4fb8f1c6bffc34",

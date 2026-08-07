@@ -4,6 +4,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { getServiceClient } from '../_shared/supabase-clients.ts';
 import { sha256Hex } from '../_shared/agent-audit.ts';
+import { provisionPortalAccount } from '../_shared/provision-portal-account.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,6 +129,27 @@ Deno.serve(async (req: Request) => {
         p_contract_id: contract.id,
       });
       if (subErr) console.error('[contract-sign] service creation skipped:', subErr.message);
+
+      // The customer signed anonymously via a token and has no login — the
+      // service they now own is unreachable without one. Bridge it: invite
+      // them into the portal to set a password. Best-effort; the signature is
+      // done regardless.
+      try {
+        const { data: general } = await supabase
+          .from('site_settings').select('value').eq('key', 'general').maybeSingle();
+        const siteUrl = (general?.value as { siteUrl?: string } | null)?.siteUrl ?? '';
+        const portal = await provisionPortalAccount(supabase, {
+          email: contract.counterparty_email,
+          name: contract.counterparty_name,
+          siteUrl,
+          subjectNoun: 'service',
+        });
+        if (portal.status !== 'invited' && portal.status !== 'existing') {
+          console.error('[contract-sign] portal invite:', portal.status, portal.reason ?? '');
+        }
+      } catch (e) {
+        console.error('[contract-sign] portal invite skipped:', (e as Error).message);
+      }
     }
 
     // Snapshot final version

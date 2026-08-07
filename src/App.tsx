@@ -110,6 +110,7 @@ const ShopPage = lazy(() => import("./pages/ShopPage"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 const CustomerAuthPage = lazy(() => import("./pages/account/CustomerAuthPage"));
+const ActivateAccountPage = lazy(() => import("./pages/account/ActivateAccountPage"));
 const AccountLayout = lazy(() => import("./pages/account/AccountLayout"));
 const CustomerOrdersPage = lazy(() => import("./pages/account/OrdersPage"));
 const AccountAssistantPage = lazy(() => import("./pages/account/AccountAssistantPage"));
@@ -240,6 +241,7 @@ const router = createBrowserRouter([
       { path: "/shop/:id", element: <ProductDetailPage /> },
       { path: "/cart", element: <CartPage /> },
       { path: "/account/login", element: <CustomerAuthPage /> },
+      { path: "/account/activate", element: <ActivateAccountPage /> },
       {
         path: "/account",
         element: <AccountLayout />,

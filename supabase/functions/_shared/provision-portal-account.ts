@@ -62,7 +62,11 @@ export async function provisionPortalAccount(
   }
 
   const siteUrl = (opts.siteUrl ?? "").replace(/\/+$/, "");
-  const redirectTo = siteUrl ? `${siteUrl}/account` : undefined;
+  // Land the invite on the activation page, not /account. /account bounces an
+  // unauthenticated visitor to the login form — where they could sign up with
+  // the WRONG email and orphan this invited account. /account/activate reads
+  // the bound email from the invite session and only asks for a password.
+  const redirectTo = siteUrl ? `${siteUrl}/account/activate` : undefined;
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "invite",
     email,

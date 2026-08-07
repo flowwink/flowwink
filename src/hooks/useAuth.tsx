@@ -149,10 +149,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const allRoles = (roleData ?? []).map(r => r.role as AppRole);
       setRoles(allRoles);
-      // Primary role: prefer admin, otherwise first row
+      // Primary role: admin first, then any functional role, customer LAST.
+      // "First row" was insertion order — the signup trigger's fail-closed
+      // customer row is always oldest, so a salesperson upgraded from a
+      // customer account was displayed as "Customer" forever.
       const primary = allRoles.includes('admin')
         ? 'admin'
-        : (allRoles[0] ?? null);
+        : (allRoles.find(r => r !== 'customer') ?? allRoles[0] ?? null);
       setRole(primary);
     } catch (error) {
       logger.error('Error fetching user data:', error);

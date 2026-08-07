@@ -37,7 +37,12 @@ interface UserWithRoles {
   created_at: string;
 }
 
-const ASSIGNABLE_ROLES: AppRole[] = ['admin', ...FUNCTIONAL_ROLES];
+// 'customer' is included ON PURPOSE: the signup trigger fails closed to
+// customer for accounts born without metadata, so an admin upgrading such an
+// account to a staff role needs a way to REMOVE customer afterwards. A role
+// that can be held must be manageable — an unlisted role is an unremovable
+// one, which is how a salesperson ended up permanently labeled "Customer".
+const ASSIGNABLE_ROLES: AppRole[] = ['admin', ...FUNCTIONAL_ROLES, 'customer'];
 
 export default function UsersPage() {
   const { isAdmin, user: currentUser } = useAuth();

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Pencil, Plus, Trash2, FileText, Languages, Copy, Loader2, Download } from 'lucide-react';
+import { Pencil, Plus, Trash2, FileText, Languages, Copy, Loader2, Download, FileDown, FileUp, AlertTriangle } from 'lucide-react';
+import {
+  buildBundle, toTransferable, parseBundle, planImport, type ImportPlanItem,
+} from '@/lib/contract-template-transfer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -56,6 +59,55 @@ const EMPTY: Partial<ContractTemplate> = {
 export default function ContractTemplatesPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<ContractTemplate> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importPlan, setImportPlan] = useState<ImportPlanItem[] | null>(null);
+
+  // Export: the operator's templates as a portable, readable file. Data
+  // sovereignty is a promise, not a feature — a self-hosting customer can
+  // take their agreement library with them, or seed a second instance.
+  const exportAll = () => {
+    const bundle = buildBundle(
+      templates.map((t) => toTransferable(t as unknown as Record<string, unknown>)),
+    );
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `contract-templates-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const onImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // same file can be re-picked after a fix
+    if (!file) return;
+    try {
+      const bundle = parseBundle(await file.text());
+      setImportPlan(planImport(bundle, templates.map((t) => t.name)));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const importMut = useMutation({
+    mutationFn: async (items: ImportPlanItem[]) => {
+      // Collisions are skipped, never overwritten: an existing template may be
+      // a version-frozen reference from signed agreements.
+      const rows = items
+        .filter((i) => i.status === 'new')
+        .map((i) => ({ ...i.template, is_default: false }));
+      if (rows.length === 0) return 0;
+      const { error } = await supabase.from('contract_templates').insert(rows as never);
+      if (error) throw error;
+      return rows.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`Imported ${count} template${count === 1 ? '' : 's'}`);
+      qc.invalidateQueries({ queryKey: ['contract-templates'] });
+      setImportPlan(null);
+    },
+    onError: (err) => toast.error(`Import failed: ${(err as Error).message}`),
+  });
   // Read view: legal source text must have reading as the default posture —
   // the edit dialog's raw-markdown textarea is one stray keystroke from
   // changing agreement wording.
@@ -165,9 +217,24 @@ export default function ContractTemplatesPage() {
             title="Contract Templates"
             description="Reusable contract bodies with tokens. Agents render these via list_contract_templates + manage_contract template_id."
           />
-          <Button onClick={() => setEditing({ ...EMPTY })}>
-            <Plus className="h-4 w-4 mr-2" /> New template
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportAll} disabled={templates.length === 0}>
+              <FileDown className="h-4 w-4 mr-2" /> Export
+            </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <FileUp className="h-4 w-4 mr-2" /> Import
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={onImportFile}
+            />
+            <Button onClick={() => setEditing({ ...EMPTY })}>
+              <Plus className="h-4 w-4 mr-2" /> New template
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -285,6 +352,49 @@ export default function ContractTemplatesPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Import confirmation — the plan is shown BEFORE anything is written.
+          Existing names are skipped, never overwritten: they may be
+          version-frozen references from signed agreements. */}
+      <Dialog open={!!importPlan} onOpenChange={(o) => !o && setImportPlan(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import templates</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {(importPlan ?? []).map((item) => (
+              <div key={item.template.name} className="rounded-md border p-3 text-sm space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium truncate">{item.template.name}</span>
+                  <Badge variant={item.status === 'new' ? 'default' : 'outline'}>
+                    {item.status === 'new' ? 'will import' : 'exists — skipped'}
+                  </Badge>
+                </div>
+                {item.unknownTokens.length > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500 flex items-start gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      Uses tokens this instance will not fill:{' '}
+                      <span className="font-mono">{item.unknownTokens.map((t) => `{{${t}}}`).join(', ')}</span>
+                      {' '}— they would appear as literal text in agreements.
+                    </span>
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportPlan(null)}>Cancel</Button>
+            <Button
+              onClick={() => importPlan && importMut.mutate(importPlan)}
+              disabled={importMut.isPending || !(importPlan ?? []).some((i) => i.status === 'new')}
+            >
+              {importMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Import {(importPlan ?? []).filter((i) => i.status === 'new').length} new
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

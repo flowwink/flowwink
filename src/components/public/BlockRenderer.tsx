@@ -53,6 +53,7 @@ const KbFeaturedBlock = lazy(() => import('./blocks/KbFeaturedBlock').then(m => 
 const KbHubBlock = lazy(() => import('./blocks/KbHubBlock').then(m => ({ default: m.KbHubBlock })));
 const KbSearchBlock = lazy(() => import('./blocks/KbSearchBlock').then(m => ({ default: m.KbSearchBlock })));
 const KbAccordionBlock = lazy(() => import('./blocks/KbAccordionBlock').then(m => ({ default: m.KbAccordionBlock })));
+const TermsBlock = lazy(() => import('./blocks/TermsBlock').then(m => ({ default: m.TermsBlock })));
 const TabsBlock = lazy(() => import('./blocks/TabsBlock').then(m => ({ default: m.TabsBlock })));
 const MarqueeBlock = lazy(() => import('./blocks/MarqueeBlock').then(m => ({ default: m.MarqueeBlock })));
 const EmbedBlock = lazy(() => import('./blocks/EmbedBlock').then(m => ({ default: m.EmbedBlock })));
@@ -104,6 +105,7 @@ import type { ProductsBlockData } from './blocks/ProductsBlock';
 import type { CartBlockData } from './blocks/CartBlock';
 import type { KbFeaturedBlockData } from './blocks/KbFeaturedBlock';
 import type { KbAccordionBlockData } from './blocks/KbAccordionBlock';
+import type { TermsBlockData } from './blocks/TermsBlock';
 import type { AnnouncementBarBlockData } from './blocks/AnnouncementBarBlock';
 import type { TabsBlockData } from './blocks/TabsBlock';
 import type { MarqueeBlockData } from './blocks/MarqueeBlock';
@@ -277,6 +279,8 @@ export function BlockRenderer({ block, pageId, index = 0, resolvedBackground }: 
         return <KbSearchBlock data={block.data as Record<string, unknown>} />;
       case 'kb-accordion':
         return <KbAccordionBlock data={block.data as unknown as KbAccordionBlockData} />;
+      case 'terms':
+        return <TermsBlock data={block.data as unknown as TermsBlockData} />;
       case 'announcement-bar':
         return <AnnouncementBarBlock data={block.data as unknown as AnnouncementBarBlockData} />;
       case 'tabs':

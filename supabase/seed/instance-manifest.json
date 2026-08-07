@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808240000",
-      "migrations_count": 318,
+      "migration_head": "20260808250000",
+      "migrations_count": 319,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1277,6 +1277,10 @@
         {
           "version": "20260808240000",
           "name": "quote-lines-into-contract"
+        },
+        {
+          "version": "20260808250000",
+          "name": "terms-slug-setting"
         }
       ]
     },
@@ -1287,7 +1291,7 @@
     },
     "edge_functions": {
       "count": 75,
-      "shared_hash": "sha256:af2d6fff71f79f6061916c26d3f7940cd214d231f456f83297e7a26eb376590d",
+      "shared_hash": "sha256:f90937d505367cae863aaa73ce355a521d357c1c46d4008aaa759d58ec949e11",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

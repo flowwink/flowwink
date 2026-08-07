@@ -442,6 +442,25 @@ export default function SiteSettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Terms page slug — where generated agreements link their terms */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-serif">Terms page slug</CardTitle>
+                <CardDescription>
+                  The page where your published contract terms live — create a page with a
+                  <code> Contract Terms</code> block and enter its slug here. Generated
+                  agreements build their terms link from the public site URL plus this slug.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Input
+                  placeholder="villkor"
+                  value={generalData.termsSlug ?? ''}
+                  onChange={(e) => setGeneralData(prev => ({ ...prev, termsSlug: e.target.value.trim().replace(/^\/+/, '') }))}
+                />
+              </CardContent>
+            </Card>
+
 
             {/* Business country — drives accounting locale suggestion */}
             <Card>

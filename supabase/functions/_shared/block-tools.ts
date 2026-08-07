@@ -1314,6 +1314,22 @@ export const BLOCK_CREATION_TOOLS = [
           "successMessage": {
             "description": "Success message",
             "type": "string"
+          },
+          "emailPlaceholder": {
+            "description": "Email field placeholder — set it in the site's own language",
+            "type": "string"
+          },
+          "namePlaceholder": {
+            "description": "Name field placeholder (only rendered when showNameField is on)",
+            "type": "string"
+          },
+          "variant": {
+            "description": "Visual style",
+            "type": "string"
+          },
+          "showNameField": {
+            "description": "Also ask for a name",
+            "type": "boolean"
           }
         }
       }
@@ -3223,6 +3239,30 @@ export const BLOCK_CREATION_TOOLS = [
               "shopping",
               "search"
             ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_terms_block",
+      "description": "Create a Contract Terms section: Published contract terms (Allmänna villkor, Tjänstevillkor) as an expandable list with per-document PDF copies. Sourced from contract templates marked public — place on any page to give agreements a stable terms URL. Set Terms page slug in Site Settings to the page holding this block.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "description": "Section title",
+            "type": "string"
+          },
+          "subtitle": {
+            "description": "Section subtitle",
+            "type": "string"
+          },
+          "showPrint": {
+            "description": "Offer a print/PDF copy per document",
+            "type": "boolean"
           }
         }
       }

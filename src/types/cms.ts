@@ -141,6 +141,7 @@ export type ContentBlockType =
   | 'kb-hub'
   | 'kb-search'
   | 'kb-accordion'
+  | 'terms'
   | 'announcement-bar'
   | 'tabs'
   | 'marquee'

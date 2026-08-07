@@ -56,6 +56,7 @@ import { KbFeaturedBlockEditor } from './KbFeaturedBlockEditor';
 import { KbHubBlockEditor } from './KbHubBlockEditor';
 import { KbSearchBlockEditor } from './KbSearchBlockEditor';
 import { KbAccordionBlockEditor } from './KbAccordionBlockEditor';
+import { TermsBlockEditor } from './TermsBlockEditor';
 import { AnnouncementBarBlockEditor } from './AnnouncementBarBlockEditor';
 import { TabsBlockEditor } from './TabsBlockEditor';
 import { MarqueeBlockEditor } from './MarqueeBlockEditor';
@@ -95,6 +96,7 @@ import type { CartBlockData } from '@/components/public/blocks/CartBlock';
 import type { KbFeaturedBlockData } from '@/components/public/blocks/KbFeaturedBlock';
 import type { KbHubBlockData } from '@/components/public/blocks/KbHubBlock';
 import type { KbAccordionBlockData } from '@/components/public/blocks/KbAccordionBlock';
+import type { TermsBlockData } from '@/components/public/blocks/TermsBlock';
 import type { AnnouncementBarBlockData } from '@/components/public/blocks/AnnouncementBarBlock';
 import type { TabsBlockData } from '@/components/public/blocks/TabsBlock';
 import type { MarqueeBlockData } from '@/components/public/blocks/MarqueeBlock';
@@ -164,6 +166,7 @@ type BlockDataMap = {
   'kb-hub': KbHubBlockData;
   'kb-search': Record<string, unknown>;
   'kb-accordion': KbAccordionBlockData;
+  'terms': TermsBlockData;
   'announcement-bar': AnnouncementBarBlockData;
   tabs: TabsBlockData;
   marquee: MarqueeBlockData;
@@ -366,6 +369,11 @@ const DEFAULT_BLOCK_DATA: BlockDataMap = {
     allowMultiple: false,
     defaultOpen: 'none',
     variant: 'default',
+  },
+  'terms': {
+    title: 'Avtalsvillkor',
+    subtitle: 'Här publiceras de villkorsversioner våra avtal hänvisar till. Varje avtal anger vilken version som gäller — den versionen ändras inte under avtalets bindningstid.',
+    showPrint: true,
   },
   'announcement-bar': {
     message: 'Welcome! Use code NEW for 10% off.',
@@ -994,6 +1002,14 @@ export function BlockEditor({ blocks, onChange, canEdit }: BlockEditorProps) {
         return (
           <KbAccordionBlockEditor
             data={block.data as unknown as KbAccordionBlockData}
+            onChange={(data) => handleUpdateBlock(block.id, data as unknown as Record<string, unknown>)}
+            isEditing={isEditing}
+          />
+        );
+      case 'terms':
+        return (
+          <TermsBlockEditor
+            data={block.data as unknown as TermsBlockData}
             onChange={(data) => handleUpdateBlock(block.id, data as unknown as Record<string, unknown>)}
             isEditing={isEditing}
           />

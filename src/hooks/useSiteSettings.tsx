@@ -17,6 +17,13 @@ export interface GeneralSettings {
    */
   siteUrl?: string;
   /**
+   * Slug of the page where published contract terms live (the page holding a
+   * `terms` block). Generated agreements build their {{terms_url}} from
+   * siteUrl + this slug. Defaults to 'villkor' for continuity with the
+   * original hardcoded route.
+   */
+  termsSlug?: string;
+  /**
    * ISO 3166-1 alpha-2 country code for the operating business. Used as the
    * suggestion input to the accounting locale pack installer (Sweden →
    * se-bas2024; other countries → ifrs-generic). Does NOT override an

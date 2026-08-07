@@ -1112,6 +1112,17 @@ export const BLOCK_REFERENCE: BlockInfo[] = [
     ],
   },
   {
+    type: 'terms',
+    name: 'Contract Terms',
+    description: 'Published contract terms (Allmänna villkor, Tjänstevillkor) as an expandable list with per-document PDF copies. Sourced from contract templates marked public — place on any page to give agreements a stable terms URL. Set Terms page slug in Site Settings to the page holding this block.',
+    category: 'content',
+    fields: [
+      { name: 'title', type: 'string', required: false, description: 'Section title' },
+      { name: 'subtitle', type: 'string', required: false, description: 'Section subtitle' },
+      { name: 'showPrint', type: 'boolean', required: false, description: 'Offer a print/PDF copy per document', default: true },
+    ],
+  },
+  {
     type: 'kb-accordion',
     name: 'KB Accordion',
     description: 'KB articles rendered as a filterable accordion. Great for inline FAQs on product/service pages, sourced from the KB module.',
@@ -1282,6 +1293,7 @@ export function getBlockTypeIcons(): Record<string, string> {
     'kb-hub': 'FileText',
     'kb-search': 'FileText',
     'kb-accordion': 'FileText',
+    'terms': 'ScrollText',
     'smart-booking': 'FileText',
   };
   return iconMap;

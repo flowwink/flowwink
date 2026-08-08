@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808380000",
-      "migrations_count": 336,
+      "migration_head": "20260808390000",
+      "migrations_count": 344,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1251,6 +1251,34 @@
           "name": "contract-render-org-number"
         },
         {
+          "version": "20260808153845",
+          "name": "cd79aae2-7fd3-4eef-9cee-1d855fc80e83"
+        },
+        {
+          "version": "20260808153943",
+          "name": "a3a635b4-0903-4828-94de-4fd7713bab0e"
+        },
+        {
+          "version": "20260808154107",
+          "name": "365918dd-6ea5-40d8-8691-c8084ae1dcb4"
+        },
+        {
+          "version": "20260808154204",
+          "name": "49eea2da-8561-44f6-b9d4-584929d2cdec"
+        },
+        {
+          "version": "20260808154319",
+          "name": "1f7c9ca1-83af-4c27-a06c-6e424c59e76b"
+        },
+        {
+          "version": "20260808154435",
+          "name": "9ac09673-401b-49d4-a5be-410e621af8dd"
+        },
+        {
+          "version": "20260808154535",
+          "name": "0cdc7e1f-4436-47b7-a785-b2c69842dab9"
+        },
+        {
           "version": "20260808160000",
           "name": "documents-visibility"
         },
@@ -1349,6 +1377,10 @@
         {
           "version": "20260808380000",
           "name": "quote-line-recurrence"
+        },
+        {
+          "version": "20260808390000",
+          "name": "seed-pipeline-stages-platform-config"
         }
       ]
     },

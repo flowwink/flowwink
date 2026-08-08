@@ -175,6 +175,25 @@ export default function ContractTemplatesPage() {
     },
   });
 
+  // Usage: a template nobody drafts from is either wrong or dead. Showing the
+  // count makes retirement (is_active=false) an informed decision.
+  const { data: usage = {} } = useQuery({
+    queryKey: ['contract-template-usage'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('template_id')
+        .not('template_id', 'is', null);
+      if (error) throw error;
+      return (data as { template_id: string }[]).reduce<Record<string, number>>((acc, r) => {
+        acc[r.template_id] = (acc[r.template_id] ?? 0) + 1;
+        return acc;
+      }, {});
+    },
+  });
+
+
+
   const saveMut = useMutation({
     mutationFn: async (tpl: Partial<ContractTemplate>) => {
       const payload = {

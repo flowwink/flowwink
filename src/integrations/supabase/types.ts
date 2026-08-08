@@ -4550,6 +4550,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          is_public: boolean
           language: string
           name: string
           updated_at: string
@@ -4567,6 +4568,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          is_public?: boolean
           language?: string
           name: string
           updated_at?: string
@@ -4584,6 +4586,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          is_public?: boolean
           language?: string
           name?: string
           updated_at?: string
@@ -11893,6 +11896,36 @@ export type Database = {
           probability?: number | null
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_dispatch_failures: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event_name: string | null
+          id: string
+          reason: string
+          signal_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_name?: string | null
+          id?: string
+          reason: string
+          signal_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event_name?: string | null
+          id?: string
+          reason?: string
+          signal_name?: string | null
         }
         Relationships: []
       }
@@ -19529,6 +19562,7 @@ export type Database = {
           url: string
         }[]
       }
+      _platform_base_url: { Args: never; Returns: string }
       _resolve_flowtable_base: { Args: { p_base: string }; Returns: string }
       _resolve_flowtable_table: {
         Args: { p_base?: string; p_table: string }
@@ -20445,6 +20479,10 @@ export type Database = {
         }
         Returns: Json
       }
+      ensure_platform_secret: {
+        Args: { p_name: string; p_value: string }
+        Returns: Json
+      }
       estimate_delivery_date: {
         Args: { p_carrier_id: string; p_ship_date?: string }
         Returns: Json
@@ -20765,6 +20803,35 @@ export type Database = {
         Returns: Json
       }
       get_project_schedule: { Args: { p_project_id: string }; Returns: Json }
+      get_public_contract: {
+        Args: { p_token: string }
+        Returns: {
+          body_markdown: string
+          counterparty_email: string
+          counterparty_name: string
+          currency: string
+          end_date: string
+          id: string
+          signed_at: string
+          start_date: string
+          status: Database["public"]["Enums"]["contract_status"]
+          title: string
+          value_cents: number
+          version: number
+        }[]
+      }
+      get_public_terms: {
+        Args: never
+        Returns: {
+          body_markdown: string
+          contract_type: Database["public"]["Enums"]["contract_type"]
+          description: string
+          id: string
+          language: string
+          name: string
+          updated_at: string
+        }[]
+      }
       get_quote_by_token: {
         Args: { p_token: string }
         Returns: {

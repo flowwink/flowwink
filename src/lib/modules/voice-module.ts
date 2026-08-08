@@ -115,7 +115,7 @@ export const voiceModule = defineModule<Input, Output>({
   processes: ['support-to-resolution', 'lead-to-customer'],
   maturity: 'L1',
   description:
-    'Inbound + outbound voice calls via pluggable providers (46elks, Twilio, ...). WebRTC browser-klient i admin, voicemail, missed-call-kö, callback-flöde och booking-IVR. Provider-agnostisk — välj adapter per marknad.',
+    'Inbound + outbound voice calls via pluggable providers (46elks, Twilio, ...). WebRTC browser softphone in admin, voicemail, missed-call queue, callback flow and booking IVR. Provider-agnostic — pick an adapter per market.',
   capabilities: ['data:read', 'data:write'],
   tier: 'standard',
   inputSchema,

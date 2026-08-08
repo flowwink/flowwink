@@ -91,7 +91,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
   // Probe each module's tables when the dialog opens so admins can see
   // leftover data — including from disabled modules.
   useEffect(() => {
-    if (!open || step !== 'warning') return;
+    if (!open || step !== 'warning' || options.database) return;
     let cancelled = false;
     setCountsLoading(true);
     (async () => {

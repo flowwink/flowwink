@@ -1,6 +1,6 @@
 ---
 title: Recurring value across the sales chain — one dimensioned line, derived rollups
-status: steps 1–4 shipped (product cadence · quote recurrence/term/rollup · deal basis display · quote→contract→subscription inheritance)
+status: COMPLETE — steps 1–5 shipped (product cadence · quote recurrence/term/rollup · deal basis display · quote→contract→subscription inheritance · dimension-consistent pipeline sums + agent instructions)
 audience: FlowWink core
 ---
 
@@ -166,7 +166,7 @@ isn't deferred to the contract — it rides in from the product).
 - ✅ **Step 2 — shipped.** `quotes.default_term_months`; per-line `recurrence`/`term_months` in the JSONB line shape; "Add from product" inheritance; MRR/one-time/term/TCV summary; `src/lib/recurring-value.ts` derivations.
 - ✅ **Step 3 — shipped.** `sales_pipeline.deal_value_basis` site setting (`per_period`/`arr`/`tcv`, default ARR; select under Deals → Teams & templates); kanban card + table render via `dealHeadline` — a recurring deal shows e.g. "120 000 ARR · 10 000/mo", a one-time deal renders exactly as before. TCV falls back to ARR when no term is known.
 - ✅ **Step 4 — shipped + live-proven.** The quote→contract prefill carries `deriveContractBilling(lines)` (single cadence kept; mixed normalises to monthly; one-time lines excluded), the binding term derives start/end dates visibly in the dialog, TCV becomes the agreement value, and both create paths write `billing_amount_cents`/`billing_interval` (billing_enabled stays the operator's dial). Verified live on optic: a 10 000/month contract with 36-month dates births a subscription `unit=10 000 · interval=month · commitment=36mo · provisioning · provider=contract`.
-- ⏳ Step 5 — pipeline stats (`totalPipeline`) still sum raw `value_cents` across mixed dimensions; align to the configured basis. Agent/MCP path: manage_contract skill instructions should mention seeding billing + term from the quote.
+- ✅ **Step 5 — shipped.** One dimension per sum: `useDealStats` and `PipelineSummary` normalise every deal through `dealHeadline` (basis-keyed query cache, product facts joined) before anything is summed; one-time deals pass through unchanged. `manage_contract` instructions teach the MCP operator the same inheritance the UI got (per-period billing in its own cadence, term-derived dates, TCV as value, one-time items on the first invoice, billing_enabled = operator's dial) — synced to `agent_skills` on optic/liteit/www/demo and read back.
 
 Original ordering, for reference:
 

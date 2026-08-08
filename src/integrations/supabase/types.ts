@@ -7242,7 +7242,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          owner_id: string
+          owner_id: string | null
           slug: string
           updated_at: string
           workspace_shared: boolean
@@ -7254,7 +7254,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
-          owner_id: string
+          owner_id?: string | null
           slug: string
           updated_at?: string
           workspace_shared?: boolean
@@ -7266,7 +7266,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
-          owner_id?: string
+          owner_id?: string | null
           slug?: string
           updated_at?: string
           workspace_shared?: boolean
@@ -12853,6 +12853,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          preferences: Json
           show_as_author: boolean | null
           title: string | null
           updated_at: string
@@ -12864,6 +12865,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          preferences?: Json
           show_as_author?: boolean | null
           title?: string | null
           updated_at?: string
@@ -12875,6 +12877,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          preferences?: Json
           show_as_author?: boolean | null
           title?: string | null
           updated_at?: string
@@ -20233,6 +20236,7 @@ export type Database = {
       current_employee_id: { Args: never; Returns: string }
       current_user_company_ids: { Args: never; Returns: string[] }
       delete_email_template: { Args: { p_name: string }; Returns: boolean }
+      detach_user_references: { Args: { p_user_id: string }; Returns: Json }
       dispatch_automation_event: {
         Args: {
           entity_id?: string

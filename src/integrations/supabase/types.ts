@@ -4647,6 +4647,7 @@ export type Database = {
           body_markdown: string | null
           body_updated_at: string | null
           company_id: string | null
+          contract_number: string | null
           contract_type: Database["public"]["Enums"]["contract_type"]
           counterparty_email: string | null
           counterparty_name: string
@@ -4657,6 +4658,7 @@ export type Database = {
           file_url: string | null
           id: string
           notes: string | null
+          quote_id: string | null
           renewal_notice_days: number | null
           renewal_type: Database["public"]["Enums"]["renewal_type"]
           sent_at: string | null
@@ -4689,6 +4691,7 @@ export type Database = {
           body_markdown?: string | null
           body_updated_at?: string | null
           company_id?: string | null
+          contract_number?: string | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
           counterparty_email?: string | null
           counterparty_name: string
@@ -4699,6 +4702,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           notes?: string | null
+          quote_id?: string | null
           renewal_notice_days?: number | null
           renewal_type?: Database["public"]["Enums"]["renewal_type"]
           sent_at?: string | null
@@ -4731,6 +4735,7 @@ export type Database = {
           body_markdown?: string | null
           body_updated_at?: string | null
           company_id?: string | null
+          contract_number?: string | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
           counterparty_email?: string | null
           counterparty_name?: string
@@ -4741,6 +4746,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           notes?: string | null
+          quote_id?: string | null
           renewal_notice_days?: number | null
           renewal_type?: Database["public"]["Enums"]["renewal_type"]
           sent_at?: string | null
@@ -4764,6 +4770,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -5792,6 +5805,8 @@ export type Database = {
           title: string
           updated_at: string
           uploaded_by: string | null
+          visibility: string
+          visible_to_role: Database["public"]["Enums"]["app_role"] | null
         }
         Insert: {
           category?: string
@@ -5816,6 +5831,8 @@ export type Database = {
           title: string
           updated_at?: string
           uploaded_by?: string | null
+          visibility?: string
+          visible_to_role?: Database["public"]["Enums"]["app_role"] | null
         }
         Update: {
           category?: string
@@ -5840,6 +5857,8 @@ export type Database = {
           title?: string
           updated_at?: string
           uploaded_by?: string | null
+          visibility?: string
+          visible_to_role?: Database["public"]["Enums"]["app_role"] | null
         }
         Relationships: []
       }
@@ -10614,6 +10633,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ownership_delegations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_on: string
+          from_user: string
+          id: string
+          note: string | null
+          starts_on: string
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_on: string
+          from_user: string
+          id?: string
+          note?: string | null
+          starts_on: string
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string
+          from_user?: string
+          id?: string
+          note?: string | null
+          starts_on?: string
+          to_user?: string
+        }
+        Relationships: []
+      }
       page_experiment_events: {
         Row: {
           created_at: string
@@ -13838,6 +13890,7 @@ export type Database = {
           lead_id: string | null
           line_items: Json
           notes: string | null
+          owner_id: string | null
           paid_at: string | null
           prepayment_pct: number | null
           quote_number: string
@@ -13881,6 +13934,7 @@ export type Database = {
           lead_id?: string | null
           line_items?: Json
           notes?: string | null
+          owner_id?: string | null
           paid_at?: string | null
           prepayment_pct?: number | null
           quote_number: string
@@ -13924,6 +13978,7 @@ export type Database = {
           lead_id?: string | null
           line_items?: Json
           notes?: string | null
+          owner_id?: string | null
           paid_at?: string | null
           prepayment_pct?: number | null
           quote_number?: string
@@ -16834,6 +16889,7 @@ export type Database = {
           commitment_end: string | null
           commitment_months: number | null
           commitment_start: string | null
+          contract_id: string | null
           created_at: string
           currency: string
           current_period_end: string | null
@@ -16877,6 +16933,7 @@ export type Database = {
           commitment_end?: string | null
           commitment_months?: number | null
           commitment_start?: string | null
+          contract_id?: string | null
           created_at?: string
           currency?: string
           current_period_end?: string | null
@@ -16920,6 +16977,7 @@ export type Database = {
           commitment_end?: string | null
           commitment_months?: number | null
           commitment_start?: string | null
+          contract_id?: string | null
           created_at?: string
           currency?: string
           current_period_end?: string | null
@@ -16951,6 +17009,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "subscriptions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subscriptions_last_invoice_id_fkey"
             columns: ["last_invoice_id"]
@@ -17765,9 +17830,11 @@ export type Database = {
           stage_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
+          subscription_id: string | null
           suggested_kb_article_ids: string[]
           tags: string[]
           team_id: string | null
+          ticket_number: string | null
           updated_at: string
         }
         Insert: {
@@ -17792,9 +17859,11 @@ export type Database = {
           stage_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
+          subscription_id?: string | null
           suggested_kb_article_ids?: string[]
           tags?: string[]
           team_id?: string | null
+          ticket_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -17819,9 +17888,11 @@ export type Database = {
           stage_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
+          subscription_id?: string | null
           suggested_kb_article_ids?: string[]
           tags?: string[]
           team_id?: string | null
+          ticket_number?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -17844,6 +17915,13 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
           {
@@ -19545,12 +19623,18 @@ export type Database = {
       }
     }
     Functions: {
+      _contract_template_unrendered_tokens: {
+        Args: { p_body: string }
+        Returns: Json
+      }
       _demo_register_row: {
         Args: { p_row_id: string; p_run_id: string; p_table_name: string }
         Returns: undefined
       }
       _ensure_manual_journal: { Args: never; Returns: string }
       _flatten_skill_schema: { Args: { td: Json }; Returns: Json }
+      _fmt_amount_sv: { Args: { p_cents: number }; Returns: string }
+      _fmt_qty_sv: { Args: { p_qty: number }; Returns: string }
       _global_search_internal: {
         Args: { result_limit?: number; search_query: string }
         Returns: {
@@ -20423,6 +20507,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_subscription_from_contract: {
+        Args: { p_contract_id: string }
+        Returns: string
+      }
+      create_ticket_from_portal: {
+        Args: {
+          p_description: string
+          p_priority?: Database["public"]["Enums"]["ticket_priority"]
+          p_subject: string
+          p_subscription_id?: string
+        }
+        Returns: {
+          ticket_id: string
+          ticket_no: string
+        }[]
+      }
       create_webmeet_room: {
         Args: {
           p_expires_in_minutes?: number
@@ -20465,6 +20565,14 @@ export type Database = {
         Returns: string
       }
       end_webmeet_room: { Args: { p_room_id: string }; Returns: Json }
+      enqueue_contract_billing_tasks: {
+        Args: { p_horizon_days?: number }
+        Returns: Json
+      }
+      enqueue_subscription_billing_tasks: {
+        Args: { p_horizon_days?: number }
+        Returns: Json
+      }
       enqueue_task: {
         Args: {
           p_created_by?: string
@@ -20644,6 +20752,7 @@ export type Database = {
           body_markdown: string | null
           body_updated_at: string | null
           company_id: string | null
+          contract_number: string | null
           contract_type: Database["public"]["Enums"]["contract_type"]
           counterparty_email: string | null
           counterparty_name: string
@@ -20654,6 +20763,7 @@ export type Database = {
           file_url: string | null
           id: string
           notes: string | null
+          quote_id: string | null
           renewal_notice_days: number | null
           renewal_type: Database["public"]["Enums"]["renewal_type"]
           sent_at: string | null
@@ -20859,6 +20969,7 @@ export type Database = {
           lead_id: string | null
           line_items: Json
           notes: string | null
+          owner_id: string | null
           paid_at: string | null
           prepayment_pct: number | null
           quote_number: string
@@ -22109,6 +22220,10 @@ export type Database = {
       mark_payroll_paid: {
         Args: { p_payment_date?: string; p_run_id: string }
         Returns: Json
+      }
+      mark_service_delivered: {
+        Args: { p_subscription_id: string }
+        Returns: undefined
       }
       mark_social_post_posted: {
         Args: {
@@ -23970,6 +24085,7 @@ export type Database = {
       skill_trust_level: "auto" | "notify" | "approve"
       subscription_status:
         | "trialing"
+        | "provisioning"
         | "active"
         | "past_due"
         | "canceled"
@@ -24334,6 +24450,7 @@ export const Constants = {
       skill_trust_level: ["auto", "notify", "approve"],
       subscription_status: [
         "trialing",
+        "provisioning",
         "active",
         "past_due",
         "canceled",

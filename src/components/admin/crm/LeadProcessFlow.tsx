@@ -37,8 +37,11 @@ export function LeadProcessFlow({ leadId, email }: Props) {
     },
     {
       key: 'deal',
-      label: 'Opportunity',
-      help: 'A concrete sales opportunity with value and stage. Everything downstream hangs off the deal.',
+      // "Deal" — the module's own word. The contact-funnel STATUS 'opportunity'
+      // is the consequence (auto-set when the first deal is created); labelling
+      // this step with the status word made two funnels read as one.
+      label: 'Deal',
+      help: 'A concrete sales opportunity with value and stage. Everything downstream hangs off the deal. Creating the first deal moves the contact to status Opportunity.',
       done: !!data?.deal.done,
       meta: data?.deal.count ? `${data.deal.count} · ${formatCurrency(data.deal.amountCents, undefined, { minimumFractionDigits: 0 })}` : null,
     },
@@ -71,7 +74,16 @@ export function LeadProcessFlow({ leadId, email }: Props) {
     if (!nextStep) return null;
     switch (nextStep.key) {
       case 'deal':
-        return { label: 'Create opportunity', onClick: () => scrollTo('lead-deals'), to: null };
+        // Create must CREATE: scroll to the section AND open its dialog — a
+        // bare scroll reads as a dead button when the section is already in view.
+        return {
+          label: 'Create deal',
+          onClick: () => {
+            scrollTo('lead-deals');
+            window.dispatchEvent(new CustomEvent('flowwink:open-create-deal'));
+          },
+          to: null,
+        };
       case 'quote':
         return { label: 'Open the deal to quote', onClick: () => scrollTo('lead-deals'), to: null };
       case 'contract':

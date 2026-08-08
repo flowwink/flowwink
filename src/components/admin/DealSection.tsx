@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,16 @@ export function DealSection({ leadId }: DealSectionProps) {
   const isDealsEnabled = useIsModuleEnabled('deals');
   const { data: deals = [], isLoading } = useDeals(leadId);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // The process flow's "Create deal" button lives in a sibling component; it
+  // used to only scroll here, which reads as "nothing happened" when the
+  // section is already in view. A create button must create — it dispatches
+  // this event and we open the dialog.
+  useEffect(() => {
+    const open = () => setDialogOpen(true);
+    window.addEventListener('flowwink:open-create-deal', open);
+    return () => window.removeEventListener('flowwink:open-create-deal', open);
+  }, []);
 
   if (!isDealsEnabled) return null;
 

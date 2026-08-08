@@ -211,7 +211,7 @@ function WikiPageInner() {
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                <h1 className="font-serif text-2xl font-bold text-foreground">Wiki</h1>
+                <h1 className="font-serif text-lg font-bold text-foreground">Wiki</h1>
               </div>
               <Badge variant="secondary" className="text-[10px]">
                 {pages.length} pages

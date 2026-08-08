@@ -524,7 +524,7 @@ export default function RiverPage() {
                   <Waves className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h1 className="font-serif text-2xl font-bold text-foreground">River</h1>
+                  <h1 className="font-serif text-lg font-bold text-foreground">River</h1>
                   <p className="text-sm text-muted-foreground">
                     The team's social stream — short messages, images, threads.
                   </p>

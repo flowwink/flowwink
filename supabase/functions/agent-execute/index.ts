@@ -1617,9 +1617,35 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
   if (!templateId || typeof templateId !== 'string') {
     return { error: 'template_id is required', available_templates: Object.keys(TEMPLATE_MAP) };
   }
-  const template = TEMPLATE_MAP[templateId];
+  let template = TEMPLATE_MAP[templateId];
+  let storedTemplateSource: string | null = null;
   if (!template) {
-    return { error: `Unknown template "${templateId}"`, available_templates: Object.keys(TEMPLATE_MAP) };
+    // Not in the bundled catalog — try a template STORED on this instance
+    // (site_templates). This is what closes the authoring loop: an agent
+    // composes a template with manage_site_template, and the same installer
+    // that seeds the shipped catalog can put it on the site. The stored
+    // template_json IS a StarterTemplate body, so it takes the identical path.
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId);
+    const q = supabase.from('site_templates').select('id, name, template_json').eq('is_active', true);
+    const { data: stored } = isUuid
+      ? await q.eq('id', templateId).maybeSingle()
+      : await q.ilike('name', templateId).maybeSingle();
+    if (stored?.template_json) {
+      // The installer reads template.id/.name for the manifest — give the
+      // stored row the same shape the catalog entries have.
+      template = { ...(stored.template_json as Record<string, unknown>), id: stored.id, name: stored.name } as never;
+      storedTemplateSource = 'site_templates';
+    }
+  }
+  if (!template) {
+    const { data: storedList } = await supabase
+      .from('site_templates').select('name').eq('is_active', true).limit(25);
+    return {
+      error: `Unknown template "${templateId}"`,
+      available_templates: Object.keys(TEMPLATE_MAP),
+      stored_templates: (storedList ?? []).map((t: { name: string }) => t.name),
+      hint: 'Catalog ids come from list_templates; templates authored on this instance come from manage_site_template action=list.',
+    };
   }
 
   const publish = a.publish !== false;
@@ -1957,6 +1983,10 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
     success: errors.length === 0,
     template_id: template.id,
     template_name: template.name,
+    // 'catalog' = shipped with the product; 'site_templates' = authored on this
+    // instance. Worth reporting: it is the difference between a demo and the
+    // customer's own template, and the manifest keeps that provenance.
+    template_source: storedTemplateSource ?? 'catalog',
     accounting_locale_activated: localeActivated,
     uninstalled_previous: uninstalledPrevious,
     created: {

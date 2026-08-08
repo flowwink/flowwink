@@ -324,6 +324,7 @@
     "manage_shipment_customs",
     "manage_shipping_rate",
     "manage_site_settings",
+    "manage_site_template",
     "manage_sla_clock",
     "manage_sla_escalation",
     "manage_sla_policy",

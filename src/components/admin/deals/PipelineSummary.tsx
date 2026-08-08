@@ -1,6 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, Hash, Calculator, Calendar } from 'lucide-react';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { useSalesPipelineSettings } from '@/hooks/useSiteSettings';
+import { dealHeadline } from '@/lib/recurring-value';
 import type { Deal } from '@/hooks/useDeals';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { differenceInDays, parseISO } from 'date-fns';
@@ -19,8 +21,14 @@ export function PipelineSummary({ deals }: PipelineSummaryProps) {
   const { data: stages = [] } = usePipelineStages('deal');
   const closedKeys = new Set(stages.filter(s => s.is_won || s.is_lost).map(s => s.key));
 
+  const { data: pipelineSettings } = useSalesPipelineSettings();
+  const basis = pipelineSettings?.deal_value_basis ?? 'arr';
+
   const open = deals.filter(d => !closedKeys.has(d.stage as string));
-  const totalValue = open.reduce((sum, d) => sum + (d.value_cents || 0), 0);
+  // One dimension per sum: recurring deals are normalised to the configured
+  // basis (ARR default); one-time deals pass through unchanged.
+  const totalValue = open.reduce(
+    (sum, d) => sum + dealHeadline(d.product, d.value_cents || 0, basis).cents, 0);
   const count = open.length;
   const avg = count > 0 ? Math.round(totalValue / count) : 0;
 

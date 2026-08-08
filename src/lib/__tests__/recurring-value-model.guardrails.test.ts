@@ -104,3 +104,43 @@ describe('step 3: the deal headlines a derived basis, configured as data', () =>
     expect(dealsPage).toMatch(/dealHeadline\(deal\.product, deal\.value_cents/);
   });
 });
+
+describe('step 5: one dimension per sum, and the agent learns the inheritance', () => {
+  const dealsHook = readFileSync(
+    resolve(__dirname, '../../../src/hooks/useDeals.ts'), 'utf-8');
+  const pipelineSummary = readFileSync(
+    resolve(__dirname, '../../../src/components/admin/deals/PipelineSummary.tsx'), 'utf-8');
+  const contractsModule = readFileSync(
+    resolve(__dirname, '../../../src/lib/modules/contracts-module.ts'), 'utf-8');
+
+  it('pipeline stats normalise every deal through dealHeadline before summing', () => {
+    // A recurring deal's value_cents is a per-period price; the sums must not
+    // mix it with one-time totals. The join brings the product facts the
+    // normalisation needs; the basis keys the query cache.
+    expect(dealsHook).toMatch(/product:products\(type, billing_interval, default_term_months\)/);
+    expect(dealsHook).toMatch(/queryKey:\s*\['deal-stats', basis\]/);
+    const statsFn = dealsHook.slice(dealsHook.indexOf('export function useDealStats'));
+    expect(statsFn).toMatch(/dealHeadline\(/);
+    // No raw value_cents may reach a += after normalisation exists.
+    expect(statsFn).not.toMatch(/\+=\s*deal\.value_cents/);
+  });
+
+  it('the pipeline summary bar sums the same dimension', () => {
+    expect(pipelineSummary).toMatch(/dealHeadline\(d\.product, d\.value_cents/);
+    expect(pipelineSummary).not.toMatch(/sum \+ \(d\.value_cents \|\| 0\)/);
+  });
+
+  it('manage_contract instructions teach the quote inheritance to agents', () => {
+    // The MCP operator must get the same seam the UI got: per-period billing,
+    // term-derived dates, TCV as value, one-time items excluded.
+    const skill = contractsModule.slice(contractsModule.indexOf("name: 'manage_contract'"));
+    // The instructions string is single-line; bound the slice to its own line.
+    const instrStart = skill.indexOf('instructions:');
+    const instructions = skill.slice(instrStart, skill.indexOf('\n', instrStart));
+    expect(instructions).toMatch(/billing_amount_cents = the quote\\'s recurring per-period sum/);
+    expect(instructions).toMatch(/end = start \+ term months/);
+    expect(instructions).toMatch(/commitment_months/);
+    expect(instructions).toMatch(/TOTAL contract value/);
+    expect(instructions).toMatch(/One-time items belong on the first invoice/);
+  });
+});

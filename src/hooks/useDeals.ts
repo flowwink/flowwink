@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { updateLeadStatus, addLeadActivity } from '@/lib/lead-utils';
 import { notifyDealWon } from '@/lib/slack-notify';
+import { useSalesPipelineSettings } from '@/hooks/useSiteSettings';
+import { dealHeadline, type DealProductFacts } from '@/lib/recurring-value';
 import type { Product } from './useProducts';
 
 export type DealStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
@@ -275,12 +277,18 @@ export function useDeleteDeal() {
 }
 
 export function useDealStats() {
+  // The pipeline totals must sum ONE dimension. A recurring deal's value_cents
+  // is a per-period price; summing it raw against one-time totals mixes
+  // dimensions. Every deal is normalised through dealHeadline to the configured
+  // basis (ARR by default) before it enters a sum.
+  const { data: pipelineSettings } = useSalesPipelineSettings();
+  const basis = pipelineSettings?.deal_value_basis ?? 'arr';
   return useQuery({
-    queryKey: ['deal-stats'],
+    queryKey: ['deal-stats', basis],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('deals')
-        .select('stage, value_cents, closed_at');
+        .select('stage, value_cents, closed_at, product:products(type, billing_interval, default_term_months)');
 
       if (error) throw error;
 
@@ -303,16 +311,20 @@ export function useDealStats() {
       data.forEach((deal) => {
         const stage = deal.stage as DealStage;
         if (!stats[stage]) return;
+        // One-time deals pass through unchanged (headline = value_cents).
+        const value = dealHeadline(
+          deal.product as DealProductFacts | null, deal.value_cents, basis,
+        ).cents;
         stats[stage].count++;
-        stats[stage].value += deal.value_cents;
+        stats[stage].value += value;
 
         if (ACTIVE_STAGES.includes(stage)) {
-          stats.totalPipeline += deal.value_cents;
-          stats.weightedForecast += deal.value_cents * STAGE_PROBABILITY[stage];
+          stats.totalPipeline += value;
+          stats.weightedForecast += value * STAGE_PROBABILITY[stage];
         }
 
         if (stage === 'closed_won' && deal.closed_at && new Date(deal.closed_at) >= startOfMonth) {
-          stats.wonThisMonth += deal.value_cents;
+          stats.wonThisMonth += value;
         }
       });
 

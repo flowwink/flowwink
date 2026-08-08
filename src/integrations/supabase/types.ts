@@ -19466,6 +19466,13 @@ export type Database = {
           url: string
         }[]
       }
+      _resolve_profile: {
+        Args: { p_who: string }
+        Returns: {
+          user_email: string
+          user_id: string
+        }[]
+      }
       _upsert_quant: {
         Args: {
           _delta: number
@@ -19649,6 +19656,14 @@ export type Database = {
         Returns: Json
       }
       ar_aging_report: { Args: { p_as_of?: string }; Returns: Json }
+      assign_company: {
+        Args: { p_company: string; p_owner: string }
+        Returns: Json
+      }
+      assign_lead: {
+        Args: { p_assignee: string; p_lead: string }
+        Returns: Json
+      }
       attach_return_label: {
         Args: {
           p_carrier_code?: string
@@ -20274,6 +20289,7 @@ export type Database = {
         }
         Returns: Json
       }
+      crm_followup_report: { Args: { p_stale_days?: number }; Returns: Json }
       cron_health_report: { Args: never; Returns: Json }
       current_employee_id: { Args: never; Returns: string }
       current_user_company_ids: { Args: never; Returns: string[] }
@@ -20745,6 +20761,20 @@ export type Database = {
       }
       increment_template_usage: {
         Args: { p_template_id: string }
+        Returns: undefined
+      }
+      ingest_form_lead: {
+        Args: {
+          p_company?: string
+          p_email: string
+          p_form_data?: Json
+          p_form_name?: string
+          p_name?: string
+          p_page_id?: string
+          p_phone?: string
+          p_source_id?: string
+          p_visitor_id?: string
+        }
         Returns: undefined
       }
       inspect_return: {

@@ -168,6 +168,14 @@ export default function DealsPage() {
                 {teams.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {/* Config lives where the work happens: the stages the kanban
+                renders are edited one click away, on the Deals tab directly. */}
+            <Button variant="outline" asChild>
+              <Link to="/admin/pipelines/stages?entity=deal">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Stages
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => setShowSetup((s) => !s)}>
               <Settings2 className="h-4 w-4 mr-2" />
               {showSetup ? 'Hide setup' : 'Teams & templates'}

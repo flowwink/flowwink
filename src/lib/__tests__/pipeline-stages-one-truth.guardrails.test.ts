@@ -79,3 +79,21 @@ describe('the edit dropdown shows the same stages as the kanban', () => {
     expect(countFn).toMatch(/queryKey: \['deals-active-count', activeKeys\.join/);
   });
 });
+
+describe('the admin can FIND the config from where the work happens', () => {
+  const stagesPage = readFileSync(
+    resolve(__dirname, '../../../src/pages/admin/PipelineStagesPage.tsx'), 'utf-8');
+  const ticketsKanban = readFileSync(
+    resolve(__dirname, '../../../src/components/admin/tickets/TicketsKanban.tsx'), 'utf-8');
+
+  it('DealsPage links to the stages config for its own entity', () => {
+    expect(dealsPage).toMatch(/\/admin\/pipelines\/stages\?entity=deal/);
+  });
+
+  it('the stages page honours ?entity= so contextual links land on the right tab', () => {
+    // TicketsKanban linked ?entity=ticket long before the page read the param —
+    // every contextual entry silently landed on the Leads tab.
+    expect(stagesPage).toMatch(/get\('entity'\)/);
+    expect(ticketsKanban).toMatch(/\?entity=ticket/);
+  });
+});

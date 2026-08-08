@@ -36,7 +36,11 @@ const TYPES: { value: EntityType; label: string }[] = [
 ];
 
 export default function PipelineStagesPage() {
-  const [active, setActive] = useState<EntityType>('lead');
+  // Contextual entries (the kanbans' "Configure stages" links) pass which
+  // pipeline they came from — land on that tab, not always Leads.
+  const entityParam = new URLSearchParams(window.location.search).get('entity');
+  const initial: EntityType = entityParam === 'deal' || entityParam === 'ticket' ? entityParam : 'lead';
+  const [active, setActive] = useState<EntityType>(initial);
 
   return (
     <AdminLayout>

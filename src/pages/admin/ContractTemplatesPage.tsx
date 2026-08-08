@@ -304,30 +304,96 @@ export default function ContractTemplatesPage() {
           </CardHeader>
         </Card>
 
+        {/* Library toolbar — the same shape as Modules and Integrations:
+            search first, filters as narrow selects, a live result count. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, description or clause text…"
+              className="pl-9"
+            />
+          </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {(Object.keys(TYPE_LABELS) as ContractType[]).map((k) => (
+                <SelectItem key={k} value={k}>{TYPE_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={langFilter} onValueChange={setLangFilter}>
+            <SelectTrigger className="w-full sm:w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All languages</SelectItem>
+              {languages.map((l) => (
+                <SelectItem key={l} value={l}>{l.toUpperCase()}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2 shrink-0">
+            <Switch id="active-only" checked={activeOnly} onCheckedChange={setActiveOnly} />
+            <Label htmlFor="active-only" className="text-sm text-muted-foreground">Active only</Label>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {filtered.length} of {templates.length} template{templates.length === 1 ? '' : 's'}
+            {' · '}{activeCount} active
+          </span>
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => { setSearch(''); setTypeFilter('all'); setLangFilter('all'); setActiveOnly(false); }}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+
         {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
 
         {Object.entries(grouped).map(([type, items]) => (
           <div key={type} className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{type}</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {TYPE_LABELS[type as ContractType] ?? type}
+              <span className="ml-2 font-normal normal-case tracking-normal">({items.length})</span>
+            </h2>
             <div className="grid gap-3 md:grid-cols-2">
               {items.map((t) => (
-                <Card key={t.id} className={!t.is_active ? 'opacity-60' : ''}>
+                <Card
+                  key={t.id}
+                  className={`transition-colors hover:border-primary/40 ${!t.is_active ? 'opacity-60' : ''}`}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
+                      <div className="space-y-1 min-w-0">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          <button type="button" onClick={() => setReading(t)} className="hover:underline text-left">
+                          <FileText className="h-4 w-4 shrink-0" />
+                          <button type="button" onClick={() => setReading(t)} className="hover:underline text-left truncate">
                             {t.name}
                           </button>
                         </CardTitle>
-                        <div className="flex gap-1.5">
+                        <div className="flex flex-wrap gap-1.5">
                           <Badge variant="outline" className="text-xs">{t.language.toUpperCase()}</Badge>
                           {t.is_default && <Badge className="text-xs">Default</Badge>}
                           {!t.is_active && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
+                          {(usage[t.id!] ?? 0) > 0 ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {usage[t.id!]} contract{usage[t.id!] === 1 ? '' : 's'}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">Unused</Badge>
+                          )}
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 shrink-0">
                         <Button size="icon" variant="ghost" onClick={() => setEditing(t)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -353,13 +419,16 @@ export default function ContractTemplatesPage() {
           </div>
         ))}
 
-        {templates.length === 0 && !isLoading && (
+        {filtered.length === 0 && !isLoading && (
           <Card>
             <CardContent className="py-12 text-center text-sm text-muted-foreground">
-              No templates yet. Create one to give agents a starting point.
+              {templates.length === 0
+                ? 'No templates yet. Create one to give agents a starting point.'
+                : 'No templates match these filters.'}
             </CardContent>
           </Card>
         )}
+
       </div>
 
       {editing && (

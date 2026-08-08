@@ -56,11 +56,28 @@ const EMPTY: Partial<ContractTemplate> = {
   is_active: true,
 };
 
+const TYPE_LABELS: Record<ContractType, string> = {
+  service: 'Service',
+  nda: 'NDA',
+  employment: 'Employment',
+  lease: 'Lease',
+  other: 'Other',
+};
+
 export default function ContractTemplatesPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<ContractTemplate> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importPlan, setImportPlan] = useState<ImportPlanItem[] | null>(null);
+
+  // Library controls — a growing agreement library is only "one system" if it
+  // stays findable. Search covers the body too: operators look for a clause,
+  // not just a filename.
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [langFilter, setLangFilter] = useState<string>('all');
+  const [activeOnly, setActiveOnly] = useState(false);
+
 
   // Export: the operator's templates as a portable, readable file. Data
   // sovereignty is a promise, not a feature — a self-hosting customer can

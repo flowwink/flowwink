@@ -21126,6 +21126,24 @@ export type Database = {
         }
         Returns: Json
       }
+      manage_contract_template: {
+        Args: {
+          p_action: string
+          p_body_markdown?: string
+          p_contract_type?: string
+          p_currency?: string
+          p_description?: string
+          p_is_active?: boolean
+          p_is_default?: boolean
+          p_language?: string
+          p_name?: string
+          p_renewal_notice_days?: number
+          p_renewal_type?: string
+          p_template?: string
+          p_value_cents?: number
+        }
+        Returns: Json
+      }
       manage_disciplinary: {
         Args: {
           p_action: string

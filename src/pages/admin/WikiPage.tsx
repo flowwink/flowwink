@@ -24,6 +24,8 @@ import {
 import { WikiMarkdown } from '@/components/admin/wiki/WikiMarkdown';
 import { WikiTree } from '@/components/admin/wiki/WikiTree';
 import { WikiTOC } from '@/components/admin/wiki/WikiTOC';
+import { WikiHistorySheet } from '@/components/admin/wiki/WikiHistorySheet';
+
 import {
   BookOpen,
   ChevronRight,
@@ -339,9 +341,11 @@ function WikiPageInner() {
                   </>
                 ) : (
                   <>
+                    {page && <WikiHistorySheet slug={slug!} />}
                     <Button variant="ghost" size="sm" onClick={copyMarkdown} title="Copy markdown">
                       <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy MD
                     </Button>
+
                     <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
                       <Edit3 className="h-3.5 w-3.5 mr-1.5" /> Edit
                     </Button>

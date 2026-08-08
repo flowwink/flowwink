@@ -10633,6 +10633,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ownership_delegations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_on: string
+          from_user: string
+          id: string
+          note: string | null
+          starts_on: string
+          to_user: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_on: string
+          from_user: string
+          id?: string
+          note?: string | null
+          starts_on: string
+          to_user: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string
+          from_user?: string
+          id?: string
+          note?: string | null
+          starts_on?: string
+          to_user?: string
+        }
+        Relationships: []
+      }
       page_experiment_events: {
         Row: {
           created_at: string
@@ -13857,6 +13890,7 @@ export type Database = {
           lead_id: string | null
           line_items: Json
           notes: string | null
+          owner_id: string | null
           paid_at: string | null
           prepayment_pct: number | null
           quote_number: string
@@ -13900,6 +13934,7 @@ export type Database = {
           lead_id?: string | null
           line_items?: Json
           notes?: string | null
+          owner_id?: string | null
           paid_at?: string | null
           prepayment_pct?: number | null
           quote_number: string
@@ -13943,6 +13978,7 @@ export type Database = {
           lead_id?: string | null
           line_items?: Json
           notes?: string | null
+          owner_id?: string | null
           paid_at?: string | null
           prepayment_pct?: number | null
           quote_number?: string
@@ -20894,6 +20930,7 @@ export type Database = {
           lead_id: string | null
           line_items: Json
           notes: string | null
+          owner_id: string | null
           paid_at: string | null
           prepayment_pct: number | null
           quote_number: string

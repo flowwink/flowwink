@@ -29,6 +29,7 @@ import {
   ShieldAlert,
   Sparkles,
   Package,
+  Database,
 } from 'lucide-react';
 import { getAllModuleOwnership, wipeModulesData, countModuleRows } from '@/lib/module-data-ownership';
 import type { ModulesSettings } from '@/hooks/useModules';
@@ -47,12 +48,14 @@ type ResetStep = 'warning' | 'confirm' | 'password' | 'progress' | 'complete';
  * exclusively via the manifest-driven module list below.
  */
 interface ResetOptions {
+  database: boolean;    // full server-side wipe of every business table
   media: boolean;       // storage bucket (cms-images)
   settings: boolean;    // site_settings keys → defaults
   engineRoom: boolean;  // FlowPilot brain: objectives, memory, activity, audit
 }
 
 const defaultOptions: ResetOptions = {
+  database: true,
   media: true,
   settings: true,
   engineRoom: true,
@@ -88,7 +91,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
   // Probe each module's tables when the dialog opens so admins can see
   // leftover data — including from disabled modules.
   useEffect(() => {
-    if (!open || step !== 'warning') return;
+    if (!open || step !== 'warning' || options.database) return;
     let cancelled = false;
     setCountsLoading(true);
     (async () => {
@@ -112,7 +115,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, step]);
+  }, [open, step, options.database]);
 
 
   const resetState = () => {
@@ -174,33 +177,50 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
 
     const tasks: { label: string; fn: () => Promise<void> }[] = [];
 
-    // -------------------- Module-owned data (manifest-driven) --------------------
-    // All business data — pages, blog, leads, finance, hr, orders, etc. — is
-    // owned by a module and wiped through the module's manifest. This is the
-    // single source of truth: no legacy hardcoded clears coexist.
-    const selectedIds = moduleOwnership
-      .filter(m => selectedModules.has(m.moduleId))
-      .map(m => m.moduleId as keyof ModulesSettings);
-    if (selectedIds.length > 0) {
-      const tableCount = selectedIds.reduce(
-        (n, id) => n + (moduleOwnership.find(m => m.moduleId === id)?.tables.length ?? 0),
-        0
-      );
+    // -------------------- Full database wipe (server-side) --------------------
+    // The manifest-driven, per-table client wipe drifted from the schema: any
+    // table not declared by a module (and anything RLS blocked) survived a
+    // "reset". The authoritative wipe is one atomic SECURITY DEFINER routine
+    // that truncates every public table except identity, instance config and
+    // the seeded platform layers (skills, chart of accounts, locale packs).
+    if (options.database) {
       tasks.push({
-        label: `Modules: ${selectedIds.length} selected (${tableCount} tables)`,
+        label: 'Wiping all business data (server-side, atomic)',
         fn: async () => {
-          const results = await wipeModulesData(selectedIds);
-          const failed = results.filter(r => !r.ok);
-          if (failed.length > 0) {
-            throw new Error(
-              `${failed.length} tables failed: ${failed
-                .map(f => `${f.module}.${f.table}`)
-                .slice(0, 5)
-                .join(', ')}${failed.length > 5 ? '…' : ''}`
-            );
-          }
+          const { data, error } = await supabase.rpc('reset_site_data', {
+            p_confirm: 'RESET-SITE',
+          });
+          if (error) throw error;
+          const wiped = (data as { tables_wiped?: number } | null)?.tables_wiped;
+          if (!wiped) throw new Error('Reset routine reported no tables wiped');
         },
       });
+    } else {
+      // Legacy per-module wipe, kept for selective clean-ups.
+      const selectedIds = moduleOwnership
+        .filter(m => selectedModules.has(m.moduleId))
+        .map(m => m.moduleId as keyof ModulesSettings);
+      if (selectedIds.length > 0) {
+        const tableCount = selectedIds.reduce(
+          (n, id) => n + (moduleOwnership.find(m => m.moduleId === id)?.tables.length ?? 0),
+          0
+        );
+        tasks.push({
+          label: `Modules: ${selectedIds.length} selected (${tableCount} tables)`,
+          fn: async () => {
+            const results = await wipeModulesData(selectedIds);
+            const failed = results.filter(r => !r.ok);
+            if (failed.length > 0) {
+              throw new Error(
+                `${failed.length} tables failed: ${failed
+                  .map(f => `${f.module}.${f.table}`)
+                  .slice(0, 5)
+                  .join(', ')}${failed.length > 5 ? '…' : ''}`
+              );
+            }
+          },
+        });
+      }
     }
 
     // -------------------- Cross-cutting: Media library --------------------
@@ -228,7 +248,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
     }
 
     // -------------------- Cross-cutting: FlowPilot brain --------------------
-    if (options.engineRoom) {
+    if (options.engineRoom && !options.database) {
       tasks.push({
         label: 'Resetting FlowPilot brain (objectives, memory, activity)',
         fn: async () => {
@@ -370,8 +390,29 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
             </Alert>
 
             <div className="mt-4 space-y-4">
-              {/* Cross-cutting platform toggles */}
+              {/* Everything */}
               <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</p>
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={options.database}
+                    onCheckedChange={(c) => setOptions(p => ({ ...p, database: !!c }))}
+                  />
+                  <Database className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <span>
+                    All business data (recommended)
+                    <span className="block text-[11px] text-muted-foreground">
+                      One atomic server-side wipe of every table. Keeps your users and roles,
+                      site settings, API keys and the seeded platform layers (skills, chart of
+                      accounts, locale packs).
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Cross-cutting platform toggles */}
+              <div className="space-y-2 pt-3 border-t">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Platform</p>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
@@ -381,14 +422,16 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
                   <Settings className="h-4 w-4 text-muted-foreground" />
                   Site Settings (reset to defaults)
                 </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={options.engineRoom}
-                    onCheckedChange={(c) => setOptions(p => ({ ...p, engineRoom: !!c }))}
-                  />
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  FlowPilot brain (objectives, memory, activity)
-                </label>
+                {!options.database && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={options.engineRoom}
+                      onCheckedChange={(c) => setOptions(p => ({ ...p, engineRoom: !!c }))}
+                    />
+                    <Sparkles className="h-4 w-4 text-muted-foreground" />
+                    FlowPilot brain (objectives, memory, activity)
+                  </label>
+                )}
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={options.media}
@@ -399,8 +442,9 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
                 </label>
               </div>
 
-              {/* Module-owned data */}
-              {moduleOwnership.length > 0 && (
+              {/* Module-owned data — only for selective clean-ups */}
+              {!options.database && moduleOwnership.length > 0 && (
+
                 <div className="pt-3 border-t">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">

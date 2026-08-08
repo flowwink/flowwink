@@ -1,3 +1,9 @@
+---
+title: "Acquire-to-Retire"
+description: Impairment/revaluation, IFRS 16 leases, component tracking, schedule report — see docs/parity/capabilities/fixed-assets.json.
+category: processes
+---
+
 # Acquire-to-Retire
 
 > Fixed-asset lifecycle: capitalize → depreciate monthly → (impair/adjust) → dispose

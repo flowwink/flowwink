@@ -1,3 +1,9 @@
+---
+title: "The OpenClaw Laws — FlowWink's Inviolable Architecture"
+description: Every skill MUST contain enough metadata (description, Use when:, NOT for:, tooldefinition.parameters) for the general scoring algorithm to select it correctly. 
+category: concepts
+---
+
 # The OpenClaw Laws — FlowWink's Inviolable Architecture
 
 > Four architectural laws inherited from the [OpenClaw](https://github.com/openclaw/openclaw) reference model.

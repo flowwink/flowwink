@@ -4,6 +4,8 @@ epic: EPIC-NN
 capability: "capabilities/<module>.json#<id>"
 estimate: <S|M|L>
 status: todo            # todo | in-progress | review | done
+description: <Why this exists. Link to the audit finding / capability. Enough that a fresh agent needs no other reading.>
+category: parity
 ---
 
 # NN.x — <Issue title>

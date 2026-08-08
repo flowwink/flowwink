@@ -1,3 +1,9 @@
+---
+title: "Ownership & coverage"
+description: Shipped 2026-08-07 in four steps (#166–#169). 
+category: architecture
+---
+
 # Ownership & coverage
 
 > Who owns a record, how that answer travels down the chain, and how a colleague

@@ -1,3 +1,9 @@
+---
+title: "FlowWink Documentation"
+description: Structure inspired by OpenClaw.
+category: general
+---
+
 # FlowWink Documentation
 
 > A modular, self-hosted **Business Operating System**. Modules, skills, automations and MCP work standalone — the autonomous operator (**FlowPilot**, OpenClaw, Claude Desktop, or any MCP client) is opt-in.

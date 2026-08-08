@@ -1,3 +1,9 @@
+---
+title: "Slash Commands — FlowPilot"
+description: Slash commands are shortcuts that pre-fill a user message to FlowPilot. 
+category: reference
+---
+
 # Slash Commands — FlowPilot
 
 Slash commands are shortcuts that pre-fill a user message to FlowPilot. They are **not** server-side endpoints — each command is sent as a regular chat message (e.g., `/help`) and processed by the AI reasoning engine via `chat-completion`.

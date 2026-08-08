@@ -3,6 +3,8 @@ title: "EPIC-04 — Multi-step approval chains"
 status: planned
 sprint: 1
 owner: unassigned
+category: parity
+description: Lift approvals from single-role thresholds to sequential chains, any-of-N groups, delegation and expiry — back-filling purchasing, quotes, expenses and payroll.
 ---
 
 # EPIC-04 — Multi-step approval chains

@@ -1,3 +1,9 @@
+---
+title: "FlowChat vs FlowPilot"
+description: A guiding principle for FlowWink. FlowChat is the chat surface. FlowPilot is the autonomous agent layer that runs on top of it. They are not two competing brains — they are one…
+category: concepts
+---
+
 # FlowChat vs FlowPilot
 
 A guiding principle for FlowWink. **FlowChat is the chat surface. FlowPilot is the autonomous agent layer that runs on top of it.** They are not two competing brains — they are one stack with the operator layer being opt-in.

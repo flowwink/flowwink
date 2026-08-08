@@ -2,6 +2,8 @@
 title: "Retrieval Engine — Phase 1 spec"
 status: "approved spec, ready to build (2026-07-13)"
 last_updated: "2026-07-13"
+description: Implements Phase 1 of Conversation & Retrieval: a platform primitive in supabase/functions/shared/retrieval/ that grounds every conversation surface in relevant knowledge — repl…
+category: architecture
 ---
 
 # Retrieval Engine — Phase 1 spec

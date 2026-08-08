@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-07-13"
+generated_at: "2026-08-08"
 ---
 
 # Documents
@@ -61,6 +61,8 @@ This module participates in the following end-to-end business processes:
 | Module definition | `src/lib/modules/documents-module.ts` |
 | Hook | `src/hooks/useDocuments.ts` |
 | Admin page | `src/pages/admin/DocumentsPage.tsx` |
+| Migration | `supabase/migrations/20260808100000_documents-bucket-in-repo.sql` |
+| Migration | `supabase/migrations/20260808160000_documents-visibility.sql` |
 
 ## Contributing
 

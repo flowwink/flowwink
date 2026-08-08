@@ -2,6 +2,8 @@
 title: "Sales Department — External Claw Playbook"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-04"
+description: This playbook lets an external claw act as FlowWink's sales department — running prospecting, qualification, deal management, and quote-to-contract
+category: agents
 ---
 
 # Sales Department Playbook

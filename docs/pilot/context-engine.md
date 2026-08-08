@@ -2,6 +2,8 @@
 title: Context Engine
 summary: How Pilot compiles prompts, manages token budgets, and tiers skill definitions
 read_when: Working on prompt compilation, token management, or skill loading
+category: pilot
+description: OpenClaw pattern: 9-layer prompt architecture assembled from workspace files
 ---
 
 # Context Engine

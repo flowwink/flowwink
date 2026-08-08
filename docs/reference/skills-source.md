@@ -1,3 +1,9 @@
+---
+title: "Skills — Source of Truth"
+description: Skills are the callable surface that any operator (FlowPilot, OpenClaw, Claude Desktop, custom MCP client) uses to act on FlowWink.
+category: reference
+---
+
 # Skills — Source of Truth
 
 Skills are the callable surface that any operator (FlowPilot, OpenClaw, Claude Desktop, custom MCP client) uses to act on FlowWink.

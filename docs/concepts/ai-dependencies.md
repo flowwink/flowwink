@@ -1,3 +1,9 @@
+---
+title: "AI Dependencies in FlowWink"
+description: This document lists all AI-dependent features in FlowWink and their configuration requirements.
+category: concepts
+---
+
 # AI Dependencies in FlowWink
 
 This document lists all AI-dependent features in FlowWink and their configuration requirements.

@@ -2,6 +2,8 @@
 title: "Program 80 — every module ≥ 80% parity, SMB-weighted"
 status: active
 owner: unassigned
+category: parity
+description: FlowWink is an agent-driven BOS for small businesses — not an enterprise ERP. 
 ---
 
 # Program 80 — every module ≥ 80% parity, SMB-weighted

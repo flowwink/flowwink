@@ -1,3 +1,9 @@
+---
+title: "Return-to-Refund"
+category: processes
+description: A customer wants to send something back. Support creates an RMA against the order with a reason code (defective, wrong item, changed mind, …) — the RMA number is generated autom…
+---
+
 # Return-to-Refund
 
 > The reverse-logistics mirror of Order-to-Delivery: request → approve → receive →

@@ -1,3 +1,9 @@
+---
+title: "Concepts"
+description: Architecture, vision, and the laws that govern FlowWink. 
+category: concepts
+---
+
 # Concepts
 
 Architecture, vision, and the laws that govern FlowWink. **Read these before building anything.**

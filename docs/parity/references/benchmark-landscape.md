@@ -1,3 +1,9 @@
+---
+title: "Benchmark landscape — who we measure against, beyond Odoo (2026-07)"
+category: parity
+description: An autonomous operator (FlowPilot) + an outward MCP skill surface. 
+---
+
 # Benchmark landscape — who we measure against, beyond Odoo (2026-07)
 
 > **Why this doc:** "mean parity 86%" measures our capability lists against

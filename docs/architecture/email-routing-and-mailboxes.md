@@ -1,3 +1,9 @@
+---
+title: "Email routing: transports, mailboxes, and what a conversation binds to"
+category: architecture
+description: Nothing here contradicts the channel boundary those documents drew. 
+---
+
 # Email routing: transports, mailboxes, and what a conversation binds to
 
 **Status:** decided 2026-07-26. Extends [channels-vs-modules.md](channels-vs-modules.md)

@@ -3,6 +3,8 @@ title: "EPIC-06 — Content & website cluster to publishable"
 status: planned
 sprint: R1
 owner: unassigned
+description: The website/content cluster (templates, global-blocks, media, surveys, chat widget) carries the numerically cheapest gains in the entire matrix: templates#install alone is +20pp…
+category: parity
 ---
 
 # EPIC-06 — Content & website cluster to publishable

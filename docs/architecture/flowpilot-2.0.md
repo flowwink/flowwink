@@ -1,3 +1,9 @@
+---
+title: "FlowPilot 2.0 — Design & Build Plan"
+description: Tonight's campaign hardened 13 SMB processes and the money core (idempotency, abort guards, rounding seams, currency splitting) — all verified through the MCP gateway path (/res…
+category: architecture
+---
+
 # FlowPilot 2.0 — Design & Build Plan
 
 **Status:** draft for review (Magnus) · **Date:** 2026-07-10

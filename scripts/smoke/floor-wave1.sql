@@ -1,4 +1,4 @@
--- Floor-wave-1 smoke (docs/parity/sprint-floor-wave1.md) — repeatable Stage-3
+-- Floor-wave-1 smoke (see docs/parity/roadmap.md) — repeatable Stage-3
 -- verification. Run against any instance:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/smoke/floor-wave1.sql
 -- Read/write but self-cleaning: every object it creates is deleted at the end.

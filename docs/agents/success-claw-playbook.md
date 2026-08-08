@@ -2,6 +2,8 @@
 title: "Customer Success — External Claw Playbook"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-04"
+description: This playbook lets an external claw act as FlowWink's customer success department — driving retention, expansion, NPS follow-ups, and churn prevention across the subscription ba…
+category: agents
 ---
 
 # Customer Success Playbook

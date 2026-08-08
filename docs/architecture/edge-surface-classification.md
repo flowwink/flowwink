@@ -2,6 +2,8 @@
 title: "Edge surface classification: a small stable kernel, modularity in data"
 status: analysis (read-only — no changes prescribed until approved)
 date: 2026-07-19
+description: This is the generalization of a pattern the codebase already proved: agent-execute is ONE deploy artifact carrying 500+ skills, toggled entirely dynamically through DB metadata. 
+category: architecture
 ---
 
 # Edge surface classification

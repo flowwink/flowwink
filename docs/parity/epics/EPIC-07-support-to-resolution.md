@@ -3,6 +3,8 @@ title: "EPIC-07 — Support-to-resolution completion"
 status: planned
 sprint: R1
 owner: unassigned
+description: Support is the process where FlowWink's 'the agent does the work, the human verifies' story is furthest along — and where the scorecards are most misleadingly low. 
+category: parity
 ---
 
 # EPIC-07 — Support-to-resolution completion

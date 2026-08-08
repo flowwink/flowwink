@@ -1,9 +1,15 @@
 /**
  * Doc-drift guardrail
  *
- * Verifies that every registered module has a corresponding docs/modules/<id>.md
- * file. Run via `bun run scripts/check-doc-drift.ts`. CI uses --warn to keep
- * this advisory until the backlog is cleared, then we flip to hard-fail.
+ * Two checks:
+ *   1. every registered module has a docs/modules/<id>.md
+ *   2. every relative markdown link inside docs/ resolves to a real file
+ *
+ * (2) exists because deleting a stale doc silently breaks the links pointing at
+ * it, and a docs tree full of dead links is worse than a smaller honest one.
+ *
+ * Run via `bun run scripts/check-doc-drift.ts`. CI uses --warn to keep this
+ * advisory until the backlog is cleared, then we flip to hard-fail.
  *
  * Exit codes:
  *   0  — no drift (or --warn and only warnings)
@@ -11,8 +17,8 @@
  */
 // @ts-nocheck
 
-import { existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { resolve, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 (globalThis as any).localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
@@ -36,7 +42,8 @@ const docAliases: Record<string, string[]> = {
   bookings: ['bookings.md', 'booking.md'],
   workspaceChat: ['workspace-chat.md'],
   fieldService: ['field-service.md'],
-  globalBlocks: ['global-blocks.md'],
+  globalBlocks: ['global-elements.md', 'global-blocks.md'],
+  globalElements: ['global-elements.md'],
   companyInsights: ['company-insights.md'],
   liveSupport: ['live-support.md'],
   fixedAssets: ['fixed-assets.md'],
@@ -58,17 +65,51 @@ for (const mod of getAllUnifiedModules()) {
 
 console.log(`✓ ${present.length} modules have docs`);
 
-if (missing.length === 0) {
+// --- 2. dead relative links -------------------------------------------------
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    if (entry.startsWith('.')) continue;
+    const p = join(dir, entry);
+    if (statSync(p).isDirectory()) walk(p, out);
+    else if (entry.endsWith('.md')) out.push(p);
+  }
+  return out;
+}
+
+const deadLinks: string[] = [];
+const docsRoot = resolve(repoRoot, 'docs');
+for (const file of walk(docsRoot)) {
+  const text = readFileSync(file, 'utf8');
+  for (const m of text.matchAll(/\]\((\.[^)\s#]+\.md)(?:#[^)]*)?\)/g)) {
+    const target = resolve(dirname(file), m[1]);
+    if (!existsSync(target)) {
+      deadLinks.push(`${relative(repoRoot, file)} → ${m[1]}`);
+    }
+  }
+}
+
+if (deadLinks.length === 0) {
+  console.log('✓ No dead relative links in docs/');
+} else {
+  console.log(`${warnOnly ? '⚠ ' : '✗ '}${deadLinks.length} dead link(s) in docs/:`);
+  for (const l of deadLinks) console.log(`   - ${l}`);
+}
+
+if (missing.length === 0 && deadLinks.length === 0) {
   console.log('✓ No doc drift detected');
   process.exit(0);
 }
 
-const tag = warnOnly ? '⚠ ' : '✗ ';
-console.log(`${tag}${missing.length} module(s) missing docs/modules/<id>.md:`);
-for (const m of missing) console.log(`   - ${m}`);
+if (missing.length > 0) {
+  const tag = warnOnly ? '⚠ ' : '✗ ';
+  console.log(`${tag}${missing.length} module(s) missing docs/modules/<id>.md:`);
+  for (const m of missing) console.log(`   - ${m}`);
+}
 
 if (warnOnly) {
   console.log('\n(running with --warn — exiting 0)');
   process.exit(0);
 }
 process.exit(1);
+

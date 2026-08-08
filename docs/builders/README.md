@@ -1,6 +1,7 @@
 ---
 title: For Builders — Extending FlowWink
 description: Add modules, blocks, skills, templates, and AI handlers. Contribute back upstream.
+category: builders
 ---
 
 # Building on FlowWink

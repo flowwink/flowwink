@@ -5,6 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "agent-capable"
 manual: true
+description: Ships with 5 agent skills.
 ---
 
 # Payroll (SE-locale MVP)

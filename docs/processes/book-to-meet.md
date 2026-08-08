@@ -1,3 +1,9 @@
+---
+title: "Book-to-Meet"
+category: processes
+description: A visitor opens the booking block (or calls in — the voice IVR runs the same skills) and picks a service. 
+---
+
 # Book-to-Meet
 
 > From "I'd like an appointment" to a completed meeting: check availability,

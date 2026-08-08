@@ -1,3 +1,9 @@
+---
+title: "Maintenance Guide for Self-Hosted FlowWink"
+description: This guide covers essential maintenance tasks for self-hosted FlowWink installations. 
+category: guides
+---
+
 # Maintenance Guide for Self-Hosted FlowWink
 
 This guide covers essential maintenance tasks for self-hosted FlowWink installations. Regular maintenance ensures security, performance, and reliability of your CMS.

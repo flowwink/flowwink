@@ -2,6 +2,8 @@
 title: "Operations Department — External Claw Playbook"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-04"
+description: This playbook lets an external claw act as FlowWink's operations department — running inventory, purchasing, order fulfillment, manufacturing, and field service — without FlowPi…
+category: agents
 ---
 
 # Operations Department Playbook

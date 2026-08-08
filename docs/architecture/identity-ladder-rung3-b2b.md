@@ -1,3 +1,9 @@
+---
+title: "Identity Ladder — Rung 3 (B2B) design sketch"
+description: The identity ladder is one engine; each rung turns two dials — context (what grounds the answer) and skills+trust (what it may do). 
+category: architecture
+---
+
 # Identity Ladder — Rung 3 (B2B) design sketch
 
 **Status:** sketch for review (Magnus) · **Date:** 2026-07-14

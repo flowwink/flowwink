@@ -1,3 +1,9 @@
+---
+title: "Social share cards (OG/Twitter) on a self-hosted instance"
+description: When someone pastes an instance URL into WhatsApp, LinkedIn, Slack or Facebook, the crawler fetches the page without executing JavaScript. 
+category: guides
+---
+
 # Social share cards (OG/Twitter) on a self-hosted instance
 
 When someone pastes an instance URL into WhatsApp, LinkedIn, Slack or Facebook,

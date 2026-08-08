@@ -2,6 +2,7 @@
 title: FlowWink vs Odoo / HubSpot / NetSuite
 description: How FlowWink compares to traditional business suites for operators evaluating a BOS.
 last_updated: 2026-05-23
+category: operators
 ---
 
 # FlowWink vs traditional business suites

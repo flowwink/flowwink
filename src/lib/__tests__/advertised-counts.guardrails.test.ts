@@ -51,8 +51,6 @@ function artifactCounts(): { skills: number; modules: number } {
 
 /** Dated write-ups — history, not claims. */
 const EXEMPT = [
-  'docs/operators/openclaw-mcp-qa-status.md',
-  'PROCESS-VALIDATION-REPORT.md',
   // This guardrail necessarily quotes the numbers it polices.
   'src/lib/__tests__/advertised-counts.guardrails.test.ts',
 ];

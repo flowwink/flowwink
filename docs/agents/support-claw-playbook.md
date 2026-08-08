@@ -2,6 +2,8 @@
 title: "Support Department — External Claw Playbook"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-04"
+description: This playbook lets an external claw act as FlowWink's support department — triaging tickets, answering from the knowledge base, monitoring SLA compliance, and escalating intelli…
+category: agents
 ---
 
 # Support Department Playbook

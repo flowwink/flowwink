@@ -1,3 +1,9 @@
+---
+title: "Plan-to-Produce"
+category: processes
+description: Light-assembly SMBs: craft producers, electronics kitting, food/beverage batch makers — anyone whose 'manufacturing' is a BOM and a bench, not a factory line.
+---
+
 # Plan-to-Produce
 
 > From "we need to make more" to finished goods on the shelf: BOM → availability

@@ -1,3 +1,9 @@
+---
+title: "Upgrading FlowWink"
+description: This guide explains how to safely upgrade your self-hosted FlowWink installation.
+category: guides
+---
+
 # Upgrading FlowWink
 
 This guide explains how to safely upgrade your self-hosted FlowWink installation.

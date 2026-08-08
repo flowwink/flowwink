@@ -1,3 +1,9 @@
+---
+title: "Platform Event Bus"
+description: The event bus is the platform's nervous system. 
+category: architecture
+---
+
 # Platform Event Bus
 
 The event bus is the platform's nervous system. Modules emit canonical events

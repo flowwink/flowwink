@@ -1,3 +1,9 @@
+---
+title: "Sensors vs. Reasoning — The Shadow Brain Boundary"
+description: FlowPilot follows a strict separation between Sensors (data transformation) and Reasoning (strategic intelligence). 
+category: pilot
+---
+
 # Sensors vs. Reasoning — The Shadow Brain Boundary
 
 > When is a standalone AI pipeline acceptable, and when must intelligence flow through FlowPilot?

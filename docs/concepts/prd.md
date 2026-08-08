@@ -1,3 +1,9 @@
+---
+title: "FlowWink — Product & System Reference"
+description: FlowWink is a Business Operating System (BOS) — a self-hosted platform where an autonomous AI agent (FlowPilot) operates your entire business. 
+category: concepts
+---
+
 # FlowWink — Product & System Reference
 
 > **The Business Operating System — modular SaaS with an opt-in autonomous operator.**

@@ -1,4 +1,4 @@
--- P1 Subscribe-to-Renew smoke (docs/parity/sprint-p1-subscribe-to-renew.md).
+-- P1 Subscribe-to-Renew smoke (see docs/parity/roadmap.md).
 -- Run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/smoke/p1-subscribe.sql
 -- Self-cleaning: runs in a rolled-back transaction. Expect: all PASS.
 

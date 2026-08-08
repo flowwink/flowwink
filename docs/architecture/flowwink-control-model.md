@@ -2,6 +2,8 @@
 title: "FlowWink Control Model — With and Without FlowPilot"
 status: "core architecture"
 last_updated: "2026-05-29"
+category: architecture
+description: These are genuinely FlowPilot-only — they make no sense for external agents:
 ---
 
 # FlowWink Control Model

@@ -2,6 +2,8 @@
 title: Memory Architecture
 summary: How Pilot stores, retrieves, and evolves agent memory using PostgreSQL + pgvector
 read_when: Working on agent memory, embeddings, or knowledge persistence
+description: Pilot implements a tiered memory system that mirrors how human memory works — fast short-term recall at the top, deep semantic search at the bottom.
+category: pilot
 ---
 
 # Memory Architecture

@@ -1,3 +1,9 @@
+---
+title: "Pilot Handler Reference"
+description: Upserts to agentmemory. Auto-generates vector embedding (OpenAI or Gemini fallback). Categories: preference, context, fact.
+category: pilot
+---
+
 # Pilot Handler Reference
 
 > Quick reference for all 40+ built-in tool handlers. Each entry: **what it does**, **when the agent uses it**, and **key behavior**.

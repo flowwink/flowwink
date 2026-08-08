@@ -1,3 +1,9 @@
+---
+title: "Edge-function tiers — mandatory vs optional"
+description: The fleet keeps a deliberately partial edge-function set per instance: not every module is enabled everywhere, and each Supabase project stays under ~100 edge functions (now wit…
+category: operators
+---
+
 # Edge-function tiers — mandatory vs optional
 
 > **Updated 2026-07-21 after the edge-surface consolidation.** The deployable

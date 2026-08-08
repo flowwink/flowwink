@@ -1,3 +1,9 @@
+---
+title: "Lead-to-Customer"
+category: processes
+description: Inbound leads land in an inbox, get answered days later, and nobody remembers who was promised what — this process captures, enriches, scores and follows up every lead within mi…
+---
+
 # Lead-to-Customer
 
 > From first touch to closed-won. The full top-of-funnel + CRM pipeline.

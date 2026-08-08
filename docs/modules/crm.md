@@ -3,6 +3,8 @@ id: crm
 name: CRM
 manual: true
 description: Unified Sales Intelligence + Lead Loop. Lead → Opportunity → Customer with autonomous scoring, Firecrawl enrichment, and full agent operability.
+title: "CRM"
+category: modules
 ---
 
 # CRM

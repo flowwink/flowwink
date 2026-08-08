@@ -1,3 +1,9 @@
+---
+title: "Order-to-Delivery"
+category: processes
+description: Orders arrive faster than the back office can track them — paid-but-never-picked slips through and stock counts drift — this process keeps every order's status honest from check…
+---
+
 # Order-to-Delivery
 
 > From customer order to delivered product. The core e-commerce flow.

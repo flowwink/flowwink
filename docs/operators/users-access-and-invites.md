@@ -1,3 +1,9 @@
+---
+title: "Users, access and invitations"
+description: Supabase Auth's built-in mailer means a shared sender, no branding, likely spam placement and a silent couple-per-hour cap. 
+category: operators
+---
+
 # Users, access and invitations
 
 > How a colleague or a customer gets into a FlowWink instance, what they can

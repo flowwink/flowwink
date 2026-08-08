@@ -2,6 +2,8 @@
 title: Model Failover & Provider Routing
 summary: How Pilot resolves AI providers with automatic fallback chains
 read_when: Configuring AI providers, debugging model resolution, or adding new providers
+category: pilot
+description: OpenClaw pattern: Model aliases with provider-agnostic routing
 ---
 
 # Model Failover & Provider Routing

@@ -1,3 +1,9 @@
+---
+title: "Procure-to-Pay"
+category: processes
+description: An employee pays for something out of pocket and photographs the receipt in FlowWink. 
+---
+
 # Procure-to-Pay
 
 > From need identification to paid vendor invoice.

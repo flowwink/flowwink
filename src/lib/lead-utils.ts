@@ -129,7 +129,11 @@ export async function createLeadFromForm(options: {
   // The legacy path stays as fallback for instances that have not run the
   // migration yet (the fleet runs several schema versions at once by design).
   try {
-    const { error: rpcError } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => ReturnType<typeof supabase.rpc>)('ingest_form_lead', {
+    const rpcCall = supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>;
+    const { error: rpcError } = await rpcCall('ingest_form_lead', {
       p_email: email,
       p_name: name ?? null,
       p_company: company ?? null,

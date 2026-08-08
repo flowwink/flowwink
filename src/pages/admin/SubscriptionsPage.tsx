@@ -14,7 +14,7 @@ import {
   useSubscriptions, useSubscriptionMetrics, useSubscriptionAction,
   openCustomerPortal, type SubscriptionStatus, type Subscription,
 } from '@/hooks/useSubscriptions';
-import { ExternalLink, MoreHorizontal, RefreshCw, XCircle, ArrowUpDown, PlayCircle, FileText } from 'lucide-react';
+import { ExternalLink, MoreHorizontal, RefreshCw, XCircle, ArrowUpDown, PlayCircle, FileText, Truck } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -28,6 +28,7 @@ import { differenceInDays, differenceInCalendarMonths } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 const STATUS_LABEL: Record<SubscriptionStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  provisioning: { label: 'Being set up', variant: 'secondary' },
   active: { label: 'Active', variant: 'default' },
   trialing: { label: 'Trialing', variant: 'secondary' },
   past_due: { label: 'Past due', variant: 'destructive' },
@@ -153,6 +154,17 @@ export default function SubscriptionsPage() {
                         }}
                         onResume={() => action.mutate({ action: 'resume', subscriptionId: s.id })}
                         onPortal={() => openCustomerPortal(s.id)}
+                        onDeliver={async () => {
+                          const { error } = await supabase.rpc('mark_service_delivered' as never, {
+                            p_subscription_id: s.id,
+                          } as never);
+                          if (error) { toast.error(error.message); return; }
+                          toast.success('Service marked as delivered');
+                          await Promise.all([
+                            qc.invalidateQueries({ queryKey: ['subscriptions'] }),
+                            qc.invalidateQueries({ queryKey: ['subscription-metrics'] }),
+                          ]);
+                        }}
                       />
                     ))}
                   </TableBody>
@@ -188,12 +200,13 @@ function MetricCard({ label, value, hint }: { label: string; value: string; hint
 }
 
 function SubscriptionRow({
-  sub, onCancel, onResume, onPortal,
+  sub, onCancel, onResume, onPortal, onDeliver,
 }: {
   sub: Subscription;
   onCancel: () => void;
   onResume: () => void;
   onPortal: () => void;
+  onDeliver: () => void;
 }) {
   const { formatCurrency, formatDate } = usePlatformFormat();
   const status = STATUS_LABEL[sub.status];
@@ -269,6 +282,14 @@ function SubscriptionRow({
             <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {/* Delivery is a status, not an order. A contract-born service
+                starts 'provisioning' (signed, not yet delivered); staff flip it
+                to active when the fibre is pulled / the server installed. */}
+            {sub.status === 'provisioning' && (
+              <DropdownMenuItem onClick={() => onDeliver()}>
+                <Truck className="h-4 w-4 mr-2" />Mark as delivered
+              </DropdownMenuItem>
+            )}
             {/* "Customer portal" is Stripe's hosted billing portal — it needs
                 a Stripe customer. A contract-billed service has none, so the
                 button silently did nothing (Magnus clicked it and nothing

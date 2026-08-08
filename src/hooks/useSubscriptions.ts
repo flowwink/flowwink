@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export type SubscriptionStatus =
+  // 'provisioning' — a contract-born service that's signed but not yet delivered
+  // (delivery is a status, not an order). Staff flip it to 'active'.
+  | 'provisioning'
   | 'trialing' | 'active' | 'past_due' | 'canceled'
   | 'paused' | 'incomplete' | 'incomplete_expired' | 'unpaid';
 
@@ -43,7 +46,8 @@ export function useSubscriptions(status?: SubscriptionStatus) {
     queryKey: ['subscriptions', status ?? 'all'],
     queryFn: async () => {
       let q = supabase.from('subscriptions').select('*').order('created_at', { ascending: false });
-      if (status) q = q.eq('status', status);
+      // 'provisioning' is newer than the last generated types snapshot.
+      if (status) q = q.eq('status', status as never);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as Subscription[];

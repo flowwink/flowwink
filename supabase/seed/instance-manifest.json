@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808330000",
-      "migrations_count": 328,
+      "migration_head": "20260808350000",
+      "migrations_count": 330,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1317,6 +1317,14 @@
         {
           "version": "20260808330000",
           "name": "ownership-delegations"
+        },
+        {
+          "version": "20260808340000",
+          "name": "subscription-provisioning-status"
+        },
+        {
+          "version": "20260808350000",
+          "name": "portal-ticket-and-delivery"
         }
       ]
     },

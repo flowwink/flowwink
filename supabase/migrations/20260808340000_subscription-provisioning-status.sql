@@ -1,0 +1,14 @@
+-- Delivery is a STATUS, not a number.
+--
+-- The AliExpress rule (Magnus 2026-08-07): one number per thing the customer
+-- refers to, never one per internal process. A signed contract IS the order —
+-- the agreement number is the order number. What a separate order number would
+-- have tracked is really a STATE: signed, but not yet delivered (fibre not
+-- pulled, AI server not installed). So delivery lives as a status on the
+-- service the contract already minted, not as a new object with its own series.
+--
+-- 'provisioning' — signed, delivery in progress. A contract-born service starts
+-- here and becomes 'active' when staff marks it delivered. Must be its own
+-- migration: Postgres cannot use a new enum value in the same transaction that
+-- adds it.
+ALTER TYPE public.subscription_status ADD VALUE IF NOT EXISTS 'provisioning' BEFORE 'active';

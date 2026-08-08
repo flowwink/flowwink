@@ -7,8 +7,8 @@
  * how the row was born — a contract-signed telco service and a Stripe SaaS
  * subscription render the same. No branch on business type.
  */
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LifeBuoy, Package, CalendarClock } from 'lucide-react';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { ServiceTicketSheet } from '@/components/account/ServiceTicketSheet';
 
 interface Service {
   id: string;
@@ -32,13 +33,25 @@ interface Service {
 
 const STATUS_STYLE: Record<string, string> = {
   active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  provisioning: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   trialing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   past_due: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
   canceled: 'bg-muted text-muted-foreground',
 };
 
+// Customer-facing status words — 'provisioning' reads as "being set up", the
+// signed-but-not-yet-delivered state (delivery is a status, not an order).
+const STATUS_LABEL: Record<string, string> = {
+  active: 'Active',
+  provisioning: 'Being set up',
+  trialing: 'Trial',
+  past_due: 'Payment due',
+  canceled: 'Ended',
+};
+
 export default function MyServicesPage() {
   const { formatCurrency, formatDate } = usePlatformFormat();
+  const [helpFor, setHelpFor] = useState<{ id: string; name: string } | null>(null);
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['my-services'],
@@ -86,7 +99,7 @@ export default function MyServicesPage() {
                   {s.product_name || 'Service'}
                 </CardTitle>
                 <Badge className={STATUS_STYLE[s.status] ?? 'bg-muted text-muted-foreground'}>
-                  {s.status}
+                  {STATUS_LABEL[s.status] ?? s.status}
                 </Badge>
               </div>
             </CardHeader>
@@ -116,19 +129,36 @@ export default function MyServicesPage() {
                   <span>{formatDate(s.next_invoice_date || s.current_period_end)}</span>
                 </div>
               )}
+              {s.status === 'provisioning' && (
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+                  We're setting up your service. You'll see it go active once it's ready.
+                </p>
+              )}
               <div className="pt-2 border-t">
-                {/* Raise a ticket ABOUT this service — the subscription id rides
-                    along so support sees which service, contract and SLA. */}
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link to={`/account/support?service=${s.id}`}>
-                    <LifeBuoy className="h-4 w-4 mr-2" /> Get help with this service
-                  </Link>
+                {/* Raise a ticket ABOUT this service — the subscription id is
+                    bound server-side so support sees which service, contract
+                    and SLA. A sheet, not a route: the context stays with the
+                    card the customer is looking at. */}
+                <Button
+                  variant="outline" size="sm" className="w-full"
+                  onClick={() => setHelpFor({ id: s.id, name: s.product_name || 'Service' })}
+                >
+                  <LifeBuoy className="h-4 w-4 mr-2" /> Get help with this service
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {helpFor && (
+        <ServiceTicketSheet
+          open={!!helpFor}
+          onOpenChange={(o) => !o && setHelpFor(null)}
+          subscriptionId={helpFor.id}
+          serviceName={helpFor.name}
+        />
+      )}
     </div>
   );
 }

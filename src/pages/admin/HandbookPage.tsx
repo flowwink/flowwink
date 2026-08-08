@@ -55,7 +55,7 @@ export default function HandbookPage() {
           <div className="flex items-center gap-3">
             <BookMarked className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Handbook</h1>
+              <h1 className="font-serif text-2xl font-bold text-foreground">Handbook</h1>
               <p className="text-sm text-muted-foreground">
                 Documentation synced from GitHub — {chapters.length} chapters
               </p>

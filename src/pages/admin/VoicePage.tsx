@@ -633,7 +633,7 @@ export default function VoicePage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2"><Phone className="h-6 w-6" />Voice</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2"><Phone className="h-6 w-6" />Voice</h1>
             <p className="text-sm text-muted-foreground">
               Inbound and outbound calls. Provider-agnostic — same UI regardless of 46elks / Twilio / etc.
             </p>

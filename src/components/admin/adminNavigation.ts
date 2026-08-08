@@ -129,6 +129,7 @@ export const navigationGroups: NavGroup[] = [
       { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone, moduleId: "developer" },
       { name: "Newsletter", href: "/admin/newsletter", icon: Mail, moduleId: "newsletter" },
       { name: "Growth", href: "/admin/growth", icon: Target, moduleId: "paidGrowth" },
+      { name: "Social posts", href: "/admin/growth/social", icon: Megaphone, moduleId: "paidGrowth" },
       { name: "Webinars", href: "/admin/webinars", icon: Video, moduleId: "webinars" },
       { name: "WebMeet", href: "/admin/webmeet", icon: Video, moduleId: "webmeet" },
       { name: "Forms", href: "/admin/forms", icon: Inbox, moduleId: "forms" },
@@ -160,6 +161,7 @@ export const navigationGroups: NavGroup[] = [
       { name: "Calendar", href: "/admin/calendar", icon: CalendarDays, moduleId: "calendar" },
       { name: "Customer 360", href: "/admin/customer", icon: UserSearch, moduleId: "customer360" },
       { name: "Sales Intelligence", href: "/admin/sales-intelligence", icon: Target, moduleId: "salesIntelligence" },
+      { name: "Visitor Intelligence", href: "/admin/visitor-intelligence", icon: UserSearch, moduleId: "visitorIntelligence" },
       { name: "Consultants", href: "/admin/consultants", icon: FileUser, moduleId: "consultants" },
       { name: "Surveys & NPS", href: "/admin/surveys", icon: Sparkles, moduleId: "surveys" },
       { name: "Field Service", href: "/admin/field-service", icon: Truck, moduleId: "fieldService" },
@@ -170,6 +172,7 @@ export const navigationGroups: NavGroup[] = [
     allowedRoles: ["accounting"],
     items: [
       { name: "Quotes", href: "/admin/quotes", icon: FileQuote, moduleId: "invoicing" },
+      { name: "Quote templates", href: "/admin/quotes/templates", icon: FileText, moduleId: "invoicing" },
       { name: "Invoices", href: "/admin/invoices", icon: Receipt, moduleId: "invoicing" },
       { name: "Subscriptions", href: "/admin/subscriptions", icon: RefreshCw, moduleId: "subscriptions" },
       {
@@ -185,6 +188,9 @@ export const navigationGroups: NavGroup[] = [
       { name: "Timesheets", href: "/admin/timesheets", icon: Timer, moduleId: "timesheets" },
       { name: "Approvals", href: "/admin/approvals", icon: ShieldCheck, moduleId: "approvals" },
       { name: "Reconciliation", href: "/admin/reconciliation", icon: RefreshCw, moduleId: "reconciliation" },
+      { name: "Payroll", href: "/admin/payroll", icon: Wallet, moduleId: "payroll" },
+      { name: "Fixed Assets", href: "/admin/fixed-assets", icon: Package, moduleId: "fixedAssets" },
+      { name: "Currencies", href: "/admin/currencies", icon: Receipt, moduleId: "multiCurrency" },
     ],
   },
   {
@@ -197,6 +203,9 @@ export const navigationGroups: NavGroup[] = [
       { name: "Customers", href: "/admin/customers", icon: UserRound, moduleId: "ecommerce" },
       { name: "Inventory", href: "/admin/inventory", icon: Package, moduleId: "inventory" },
       { name: "Units of Measure", href: "/admin/products/units", icon: Package, moduleId: "ecommerce" },
+      { name: "Pricelists", href: "/admin/pricelists", icon: FileText, moduleId: "pricelists" },
+      { name: "Shipping", href: "/admin/shipping", icon: Truck, moduleId: "shipping" },
+      { name: "Returns / RMA", href: "/admin/returns", icon: RefreshCw, moduleId: "returns" },
       {
         name: "Vendors",
         href: "/admin/vendors",
@@ -279,6 +288,7 @@ export const navigationGroups: NavGroup[] = [
       { name: "Developer", href: "/admin/developer", icon: Code2, moduleId: "developer" },
       { name: "AI Usage", href: "/admin/ai-usage", icon: BarChart3 },
       { name: "System", href: "/admin/system", icon: Database },
+      { name: "POS Audit", href: "/admin/pos/audit", icon: ShieldCheck, moduleId: "pos" },
     ],
   },
 ];

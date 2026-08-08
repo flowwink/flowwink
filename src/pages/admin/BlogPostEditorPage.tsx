@@ -256,7 +256,7 @@ export default function BlogPostEditorPage() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold">
+                <h1 className="font-serif text-2xl font-bold text-foreground">
                   {isNew ? "New Post" : "Edit Post"}
                 </h1>
                 {!isNew && post && (

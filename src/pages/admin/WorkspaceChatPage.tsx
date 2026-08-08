@@ -462,7 +462,7 @@ export default function WorkspaceChatPage() {
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
                     <Workflow className="h-7 w-7 text-primary" strokeWidth={1.75} />
                   </div>
-                  <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+                  <h1 className="font-serif text-2xl font-bold text-foreground md:text-4xl">
                     What do you want to work on?
                   </h1>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">

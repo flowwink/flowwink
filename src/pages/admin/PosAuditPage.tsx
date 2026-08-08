@@ -1,3 +1,6 @@
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,14 +83,13 @@ export default function PosAuditPage() {
   const oldestAge = status.data ? daysBetween(status.data.oldest_row_at, new Date()) : null;
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">POS Stock Audit & Retention</h1>
-        <p className="text-muted-foreground">
-          Verifies that every POS sale writes a row to <code className="text-xs bg-muted px-1 rounded">audit_logs</code> and
-          that records older than <strong>2 years (730 days)</strong> are purged daily by the retention cron.
-        </p>
-      </div>
+    <AdminLayout>
+      <AdminPageContainer>
+        <AdminPageHeader
+          title="POS Stock Audit & Retention"
+          icon={ShieldCheck}
+          description="Verifies that every POS sale writes a row to audit_logs, and that records older than 2 years (730 days) are purged daily by the retention cron."
+        />
 
       {/* Retention status cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -258,6 +260,7 @@ export default function PosAuditPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </AdminPageContainer>
+    </AdminLayout>
   );
 }

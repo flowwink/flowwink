@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { SaveButton } from '@/components/admin/SaveButton';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -174,7 +175,10 @@ export default function ProfilePage() {
         <AdminPageHeader
           title="Profile"
           description="Manage your personal information and avatar"
-        />
+        >
+          <SaveButton onClick={handleSave} isPending={loading} />
+        </AdminPageHeader>
+
           {/* Avatar Section */}
           <Card>
             <CardHeader>

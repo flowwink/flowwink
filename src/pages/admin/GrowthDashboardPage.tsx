@@ -32,7 +32,7 @@ export default function GrowthDashboardPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Growth Dashboard</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground">Growth Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Read-only overview of paid growth performance across all campaigns.
           </p>

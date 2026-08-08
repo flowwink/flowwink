@@ -89,7 +89,7 @@ export default function CalendarPage() {
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Calendar</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">Calendar</h1>
             <p className="text-sm text-muted-foreground">
               Unified view of bookings, tasks, leave and contract renewals.
             </p>

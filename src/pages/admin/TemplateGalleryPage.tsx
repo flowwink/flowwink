@@ -61,7 +61,7 @@ export default function TemplateGalleryPage() {
             </Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">Templates</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">Templates</h1>
             <p className="text-muted-foreground">
               Browse, install, export and import site templates
             </p>

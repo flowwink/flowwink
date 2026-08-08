@@ -225,7 +225,7 @@ export default function POSPage() {
       <div className="container mx-auto py-8 space-y-6">
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Point of Sale</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">Point of Sale</h1>
             <p className="text-muted-foreground mt-1">
               Counter sales — cash drawer, receipts, end-of-day reconciliation.
             </p>

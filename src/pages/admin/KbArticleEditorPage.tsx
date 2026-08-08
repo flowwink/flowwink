@@ -193,7 +193,7 @@ export default function KbArticleEditorPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{isNew ? "New Article" : "Edit Article"}</h1>
+              <h1 className="font-serif text-2xl font-bold text-foreground">{isNew ? "New Article" : "Edit Article"}</h1>
               <p className="text-sm text-muted-foreground">
                 {isNew ? "Create a new knowledge base article" : formData.title}
               </p>

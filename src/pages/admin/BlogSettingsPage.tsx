@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { SaveButton } from '@/components/admin/SaveButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,8 @@ export default function BlogSettingsPage() {
       setLocalSettings(settings);
     }
   }, [settings]);
+
+  const navigate = useNavigate();
 
   const handleSave = async () => {
     if (!localSettings) return;
@@ -50,28 +53,17 @@ export default function BlogSettingsPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <AdminPageHeader
-            title="Blog Settings"
-            description="Configure blog display and features"
+        <AdminPageHeader
+          title="Blog Settings"
+          description="Configure blog display and features"
+          backAction={{ label: 'Back to Posts', onClick: () => navigate('/admin/blog') }}
+        >
+          <SaveButton
+            onClick={handleSave}
+            isPending={updateSettings.isPending}
           />
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/admin/blog">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Posts
-              </Link>
-            </Button>
-            <Button onClick={handleSave} disabled={updateSettings.isPending}>
-              {updateSettings.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
-          </div>
-        </div>
+        </AdminPageHeader>
+
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* General Settings */}

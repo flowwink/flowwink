@@ -68,7 +68,7 @@ export default function AiUsagePage() {
       <AdminPageContainer>
         <div className="flex items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">AI Usage</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">AI Usage</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Token consumption across all AI calls — chat, FlowPilot, workspace chat and more.
             </p>

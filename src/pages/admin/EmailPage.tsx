@@ -27,9 +27,9 @@ import {
 export default function EmailPage() {
   return (
     <AdminLayout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2"><Mail className="h-7 w-7" /> Email</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2"><Mail className="h-7 w-7" /> Email</h1>
           <p className="text-muted-foreground mt-1">Templates, threads, signatures and deliverability controls.</p>
         </div>
         <Tabs defaultValue="templates" className="space-y-4">

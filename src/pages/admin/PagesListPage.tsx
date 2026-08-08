@@ -248,7 +248,7 @@ export default function PagesListPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* Compact header row */}
           <div className="flex items-center justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Pages</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">Pages</h1>
             <div className="flex items-center gap-3">
               <TabsList>
                 <TabsTrigger value="pages" className="gap-1.5">

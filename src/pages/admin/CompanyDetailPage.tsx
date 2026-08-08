@@ -190,7 +190,7 @@ export default function CompanyDetailPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{company.name}</h1>
+              <h1 className="font-serif text-2xl font-bold text-foreground">{company.name}</h1>
               {company.domain && (
                 <p className="text-muted-foreground">{company.domain}</p>
               )}

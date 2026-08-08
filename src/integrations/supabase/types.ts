@@ -22480,6 +22480,7 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: undefined
       }
+      reset_site_data: { Args: { p_confirm: string }; Returns: Json }
       resolve_agent_trust: {
         Args: {
           p_agent_type: string

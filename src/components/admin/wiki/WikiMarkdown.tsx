@@ -54,7 +54,17 @@ function preprocess(md: string): string {
 export function WikiMarkdown({ content, knownSlugs }: Props) {
   const processed = preprocess(content || '_This page is empty — double-click to start writing._');
 
+  const headingId = (children: React.ReactNode) =>
+    String(children)
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
+
   const components: Components = {
+    h2: ({ children }) => <h2 id={headingId(children)}>{children}</h2>,
+    h3: ({ children }) => <h3 id={headingId(children)}>{children}</h3>,
+
     a: ({ href, children, ...rest }) => {
       if (href?.startsWith('wiki:')) {
         const slug = href.slice(5);

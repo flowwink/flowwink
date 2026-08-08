@@ -5504,6 +5504,24 @@ export type Database = {
         }
         Relationships: []
       }
+      document_counters: {
+        Row: {
+          kind: string
+          last_value: number
+          updated_at: string
+        }
+        Insert: {
+          kind: string
+          last_value?: number
+          updated_at?: string
+        }
+        Update: {
+          kind?: string
+          last_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_number_counters: {
         Row: {
           kind: string
@@ -19726,6 +19744,23 @@ export type Database = {
         }
         Returns: Json
       }
+      book_invoice_issued: {
+        Args: {
+          p_ar_account?: string
+          p_invoice_id: string
+          p_revenue_account?: string
+          p_vat_account?: string
+        }
+        Returns: Json
+      }
+      book_invoice_paid: {
+        Args: {
+          p_ar_account?: string
+          p_bank_account?: string
+          p_invoice_id: string
+        }
+        Returns: Json
+      }
       booked_counterparty_counts: {
         Args: never
         Returns: {
@@ -22225,16 +22260,26 @@ export type Database = {
         Args: { p_slug: string; p_visitor_id: string }
         Returns: Json
       }
-      record_invoice_payment: {
-        Args: {
-          p_amount_cents: number
-          p_invoice_id: string
-          p_method?: string
-          p_paid_at?: string
-          p_reference?: string
-        }
-        Returns: Json
-      }
+      record_invoice_payment:
+        | {
+            Args: {
+              p_amount_cents: number
+              p_invoice_id: string
+              p_method?: string
+              p_paid_at?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount_cents: number
+              p_invoice_id: string
+              p_method?: string
+              p_paid_at?: string
+              p_reference?: string
+            }
+            Returns: Json
+          }
       record_petty_cash_count: {
         Args: {
           p_cash_account_code: string
@@ -22628,6 +22673,7 @@ export type Database = {
         }
         Returns: Json
       }
+      run_contract_billing: { Args: never; Returns: Json }
       run_gmail_reconcile: { Args: never; Returns: Json }
       run_monthly_depreciation: {
         Args: { p_period_date?: string }
@@ -22652,6 +22698,7 @@ export type Database = {
       }
       run_recurring_quotes: { Args: never; Returns: Json }
       run_sla_sweep: { Args: { p_entity_type?: string }; Returns: Json }
+      run_subscription_billing: { Args: never; Returns: Json }
       run_ticket_escalations: { Args: never; Returns: Json }
       run_trial_conversions: { Args: never; Returns: Json }
       run_year_end: {

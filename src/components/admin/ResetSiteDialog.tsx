@@ -247,7 +247,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
     }
 
     // -------------------- Cross-cutting: FlowPilot brain --------------------
-    if (options.engineRoom) {
+    if (options.engineRoom && !options.database) {
       tasks.push({
         label: 'Resetting FlowPilot brain (objectives, memory, activity)',
         fn: async () => {

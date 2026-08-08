@@ -4647,6 +4647,7 @@ export type Database = {
           body_markdown: string | null
           body_updated_at: string | null
           company_id: string | null
+          contract_number: string | null
           contract_type: Database["public"]["Enums"]["contract_type"]
           counterparty_email: string | null
           counterparty_name: string
@@ -4657,6 +4658,7 @@ export type Database = {
           file_url: string | null
           id: string
           notes: string | null
+          quote_id: string | null
           renewal_notice_days: number | null
           renewal_type: Database["public"]["Enums"]["renewal_type"]
           sent_at: string | null
@@ -4689,6 +4691,7 @@ export type Database = {
           body_markdown?: string | null
           body_updated_at?: string | null
           company_id?: string | null
+          contract_number?: string | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
           counterparty_email?: string | null
           counterparty_name: string
@@ -4699,6 +4702,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           notes?: string | null
+          quote_id?: string | null
           renewal_notice_days?: number | null
           renewal_type?: Database["public"]["Enums"]["renewal_type"]
           sent_at?: string | null
@@ -4731,6 +4735,7 @@ export type Database = {
           body_markdown?: string | null
           body_updated_at?: string | null
           company_id?: string | null
+          contract_number?: string | null
           contract_type?: Database["public"]["Enums"]["contract_type"]
           counterparty_email?: string | null
           counterparty_name?: string
@@ -4741,6 +4746,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           notes?: string | null
+          quote_id?: string | null
           renewal_notice_days?: number | null
           renewal_type?: Database["public"]["Enums"]["renewal_type"]
           sent_at?: string | null
@@ -4764,6 +4770,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -20652,6 +20665,7 @@ export type Database = {
           body_markdown: string | null
           body_updated_at: string | null
           company_id: string | null
+          contract_number: string | null
           contract_type: Database["public"]["Enums"]["contract_type"]
           counterparty_email: string | null
           counterparty_name: string
@@ -20662,6 +20676,7 @@ export type Database = {
           file_url: string | null
           id: string
           notes: string | null
+          quote_id: string | null
           renewal_notice_days: number | null
           renewal_type: Database["public"]["Enums"]["renewal_type"]
           sent_at: string | null

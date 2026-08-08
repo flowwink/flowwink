@@ -81,7 +81,7 @@ export default function DunningPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dunning</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground">Dunning</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl">
             Automated recovery for failed subscription payments. Optional feature within the
             Subscriptions module — also configurable from the module's right-panel.

@@ -70,7 +70,7 @@ function RolePermissionsContent() {
           <Shield className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Role permissions</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground">Role permissions</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             Control which modules each functional role can see in the admin sidebar.
             Admins always see everything. MCP agents are unaffected — skill exposure

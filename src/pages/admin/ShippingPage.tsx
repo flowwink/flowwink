@@ -48,7 +48,7 @@ export default function ShippingPage() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2">
             <Truck className="h-7 w-7" /> Shipping
           </h1>
           <p className="text-muted-foreground mt-1">Carriers and outbound parcels.</p>

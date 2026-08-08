@@ -189,7 +189,7 @@ export default function PageEditorPage() {
     return (
       <AdminLayout>
         <div className="text-center">
-          <h1 className="text-2xl font-serif font-bold mb-4">Page not found</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground mb-4">Page not found</h1>
           <Button onClick={() => navigate('/admin/pages')}>Back to pages</Button>
         </div>
       </AdminLayout>

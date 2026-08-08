@@ -82,7 +82,7 @@ export default function PosAuditPage() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">POS Stock Audit & Retention</h1>
+        <h1 className="font-serif text-2xl font-bold text-foreground">POS Stock Audit & Retention</h1>
         <p className="text-muted-foreground">
           Verifies that every POS sale writes a row to <code className="text-xs bg-muted px-1 rounded">audit_logs</code> and
           that records older than <strong>2 years (730 days)</strong> are purged daily by the retention cron.

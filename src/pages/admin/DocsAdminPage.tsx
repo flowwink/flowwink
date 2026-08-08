@@ -26,7 +26,7 @@ export default function DocsAdminPage() {
           <div className="flex items-center gap-3">
             <BookOpen className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Docs</h1>
+              <h1 className="font-serif text-2xl font-bold text-foreground">Docs</h1>
               <p className="text-sm text-muted-foreground">
                 Public documentation portal at <code className="text-xs">/docs</code> — synced from{' '}
                 <code className="text-xs">magnusfroste/flowwink/docs</code>

@@ -79,7 +79,7 @@ export default function FieldServicePage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="font-serif text-2xl font-bold text-foreground flex items-center gap-2">
             <Truck className="h-7 w-7" />
             Field Service
           </h1>

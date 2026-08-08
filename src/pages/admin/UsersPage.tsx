@@ -147,7 +147,7 @@ export default function UsersPage() {
       <AdminLayout>
         <div className="text-center">
           <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h1 className="font-serif text-2xl font-bold mb-2">No Access</h1>
+          <h1 className="font-serif text-2xl font-bold text-foreground mb-2">No Access</h1>
           <p className="text-muted-foreground">Only administrators can manage users.</p>
         </div>
       </AdminLayout>

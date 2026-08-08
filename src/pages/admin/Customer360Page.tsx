@@ -120,7 +120,7 @@ export default function Customer360Page() {
         <div className="flex items-center gap-3">
           <UserSearch className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Customer 360</h1>
+            <h1 className="font-serif text-2xl font-bold text-foreground">Customer 360</h1>
             <p className="text-sm text-muted-foreground">
               Every signal, deal, order, invoice, ticket, booking and conversation in one place.
             </p>

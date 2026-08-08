@@ -424,7 +424,7 @@ export default function SlaMonitorPage() {
           <div className="flex items-center gap-3">
             <Shield className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">SLA Monitor</h1>
+              <h1 className="font-serif text-2xl font-bold text-foreground">SLA Monitor</h1>
               <p className="text-sm text-muted-foreground">
                 Service level targets — {fpEnabled ? 'FlowPilot monitors compliance automatically' : 'enable FlowPilot to auto-monitor compliance'}
               </p>

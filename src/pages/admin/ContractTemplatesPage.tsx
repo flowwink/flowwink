@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Pencil, Plus, Trash2, FileText, Languages, Copy, Loader2, Download, FileDown, FileUp, AlertTriangle } from 'lucide-react';
+import { Pencil, Plus, Trash2, FileText, Languages, Copy, Loader2, Download, FileDown, FileUp, AlertTriangle, Search } from 'lucide-react';
 import {
   buildBundle, toTransferable, parseBundle, planImport, type ImportPlanItem,
 } from '@/lib/contract-template-transfer';

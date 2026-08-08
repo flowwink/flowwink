@@ -23211,6 +23211,12 @@ export type Database = {
         Args: { p_limit?: number; p_query: string; p_status?: string }
         Returns: Json
       }
+      seed_default_pipeline_stages: {
+        Args: never
+        Returns: {
+          inserted: number
+        }[]
+      }
       seed_demo_accounting: {
         Args: { p_run_id: string; p_scenario?: string }
         Returns: Json

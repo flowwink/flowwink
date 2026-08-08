@@ -74,6 +74,17 @@ Deno.serve(async (req: Request) => {
       req.headers.get('x-real-ip') ||
       null;
 
+    // The appendices are PART of what is being signed — the body says "enligt
+    // Bilaga 1" and the signing page renders them in full. So the signature must
+    // cover them too: if Bilaga 1 is edited afterwards, the hash below no longer
+    // matches and the version snapshot still holds what the customer actually saw.
+    const { data: signedAppendices } = await supabase
+      .from('contract_documents')
+      .select('id, label, title, kind, body_markdown, file_name, file_url, sort_order')
+      .eq('contract_id', contract.id)
+      .order('sort_order', { ascending: true });
+    const appendices = signedAppendices ?? [];
+
     // Content hash: SHA-256 of the canonical agreement content at signing time —
     // durable tamper-evidence stored on the signature row and shown on the certificate.
     const contentHash = await sha256Hex(JSON.stringify({
@@ -83,6 +94,14 @@ Deno.serve(async (req: Request) => {
       value_cents: contract.value_cents ?? 0,
       currency: contract.currency,
       version: contract.version ?? 1,
+      // Only the content-defining fields, in the order the customer read them.
+      appendices: appendices.map((a) => ({
+        label: a.label ?? null,
+        title: a.title ?? null,
+        kind: a.kind,
+        body_markdown: a.body_markdown ?? null,
+        file_url: a.file_url ?? null,
+      })),
     }));
 
     // Record signature
@@ -163,7 +182,10 @@ Deno.serve(async (req: Request) => {
     await supabase.from('contract_versions').insert({
       contract_id: contract.id,
       version_number: nextNum,
-      snapshot: { ...contract, ...updates } as never,
+      // The snapshot must be the whole agreement as signed — body AND appendices.
+      // Storing only the contracts row left "enligt Bilaga 1" pointing at a live,
+      // editable record instead of the frozen one.
+      snapshot: { ...contract, ...updates, appendices } as never,
       reason: body.action === 'accept' ? 'signed_by_counterparty' : 'rejected_by_counterparty',
     });
 

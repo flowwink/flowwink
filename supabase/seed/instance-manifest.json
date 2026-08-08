@@ -1425,8 +1425,8 @@
       ]
     },
     "skills": {
-      "seed_hash": "sha256:dbf8a2257a1910b1079da4938fb082d3e8900819f507a4a3ac73c3a98d6cfc36",
-      "skill_count": 524,
+      "seed_hash": "sha256:fbcafed46f9f9b97440d4e0e0eac4e6cbcd6d550396a08d0f840aebd50229054",
+      "skill_count": 525,
       "module_count": 68
     },
     "edge_functions": {
@@ -1450,7 +1450,7 @@
         "consultant-match": "sha256:1419717affb3711a2d7f13d44c9a228e1557a3d927e3aa05ee5e179584131e1b",
         "content-api": "sha256:64c03bcaa94f7e17575c9e36611830c049cdcf372747ed2af264eb03c70bce42",
         "contract-billing-cron": "sha256:bd4af2f1f3c05253ae5635af48686f9f662f40a55b1b3097001c1828b35f898a",
-        "contract-sign": "sha256:c61d92fe6a0aaff3e80eab857d40f2581844c61079569bc01510d770920e80a4",
+        "contract-sign": "sha256:d4e4fb98e51109c626110dfeff57199cd006a62ed39501e0b171f32aec579bd7",
         "create-checkout": "sha256:c0321cfa6df8cf1df5ccfa2401e67b78265fedb4adb0a0c6b4f870236a50e915",
         "create-invoice-payment": "sha256:917c78b89d0131f426ed5c6109eea67d8020604def81f1179eba2e5bb0c8bea6",
         "create-user": "sha256:bed454b8a235c1a99baead4133a74618ac2761b221592c346f4fb8f1c6bffc34",
@@ -1490,7 +1490,7 @@
         "quote-pay": "sha256:f42a8accc1489304c32b0e3a2c5f30188faa898e48e9323698ed624ca9aea296",
         "quote-sign": "sha256:d29c2a9ce0c09d1d4e074ae002b78efe337bb293c51045e4846252144c3ac5b9",
         "run-autonomy-tests": "sha256:d326b88ef0d263ed7604ba1eb75a770126d785e26211888b2093fcb325cc8c22",
-        "run-platform-tests": "sha256:b9998251c2fb9ea2208753aa721093c60f9add395ff5cf163efdf3ed473f2801",
+        "run-platform-tests": "sha256:2de1cdb06994762bead5aa2a8cab3e27f8f02118b07d151c4be04dd89897cc8d",
         "score-visitor-intent": "sha256:c45442de0d34a5f9660a75a15c269aa5988ca7dbc2631e476418c66e58e6f79e",
         "send-webhook": "sha256:a8748b5e344f2dee419bb739707e938d093a3cc5ed0a43f3b69cb9de7dc76741",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

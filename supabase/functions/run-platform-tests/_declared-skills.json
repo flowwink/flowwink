@@ -250,6 +250,7 @@
     "manage_consultant_profile",
     "manage_consultant_rates",
     "manage_contract",
+    "manage_contract_appendix",
     "manage_contract_obligation",
     "manage_contract_template",
     "manage_deal",

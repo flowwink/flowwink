@@ -98,3 +98,63 @@ describe('appendices are not the same thing as documents', () => {
     expect(panel).toMatch(/signs a reference to something that isn/);
   });
 });
+
+describe('the signature covers the appendices, not just the body', () => {
+  const sign = readFileSync(
+    resolve(__dirname, '../../../supabase/functions/contract-sign/index.ts'), 'utf-8');
+  const module_ = readFileSync(
+    resolve(__dirname, '../../../src/lib/modules/contracts-module.ts'), 'utf-8');
+
+  it('loads the appendices in the order the customer read them', () => {
+    expect(sign).toMatch(/from\('contract_documents'\)[\s\S]{0,220}order\('sort_order', \{ ascending: true \}\)/);
+  });
+
+  it('folds their content into the tamper-evidence hash', () => {
+    // Without this the hash proves the body only — Bilaga 1 could be swapped
+    // after signing and the certificate would still verify.
+    const hash = sign.slice(sign.indexOf('const contentHash = await sha256Hex'), sign.indexOf('// Record signature'));
+    expect(hash).toMatch(/appendices: appendices\.map/);
+    expect(hash).toMatch(/body_markdown: a\.body_markdown \?\? null/);
+    expect(hash).toMatch(/file_url: a\.file_url \?\? null/);
+  });
+
+  it('freezes them in the version snapshot', () => {
+    expect(sign).toMatch(/snapshot: \{ \.\.\.contract, \.\.\.updates, appendices \}/);
+  });
+});
+
+describe('agents can attach an appendix, and know not to confuse it with an archive document', () => {
+  const module_ = readFileSync(
+    resolve(__dirname, '../../../src/lib/modules/contracts-module.ts'), 'utf-8');
+  const seed = module_.slice(
+    module_.indexOf("name: 'manage_contract_appendix'"),
+    module_.indexOf("name: 'list_contract_documents'"));
+
+  it('is an rpc skill whose params match the function (self-correcting errors)', () => {
+    expect(seed).toMatch(/handler: 'rpc:manage_contract_appendix'/);
+    for (const p of ['action', 'contract_id', 'appendix_id', 'template', 'body_markdown', 'file_url', 'label', 'title', 'sort_order']) {
+      expect(seed).toContain(`${p}: {`);
+    }
+  });
+
+  it('teaches the label is the join with the body text', () => {
+    expect(seed).toMatch(/THE LABEL IS THE JOIN/);
+    expect(seed).toMatch(/never edit the reference away/);
+  });
+
+  it('warns that a signed agreement’s appendices must not be edited', () => {
+    expect(seed).toMatch(/AFTER SIGNING: do not edit or delete an appendix/);
+    expect(seed).toMatch(/Add an amendment as a new appendix instead/);
+  });
+
+  it('list_contract_documents now says it is the ARCHIVE, not the appendices', () => {
+    const docs = module_.slice(module_.indexOf("name: 'list_contract_documents'"));
+    expect(docs.slice(0, 900)).toMatch(/FILED AGAINST a contract/);
+    expect(docs.slice(0, 900)).toMatch(/NOT for: the agreement\\'s own appendices/);
+  });
+
+  it('the authoring guide tells the agent to ATTACH what the body references', () => {
+    expect(module_).toMatch(/WHEN A BODY REFERENCES A BILAGA, ATTACH IT/);
+    expect(module_).toMatch(/manage_contract_appendix \(action=create/);
+  });
+});

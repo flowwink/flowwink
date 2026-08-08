@@ -191,7 +191,6 @@ const UnitsOfMeasurePage = lazy(() => import("./pages/admin/UnitsOfMeasurePage")
 
 const TemplateGalleryPage = lazy(() => import("./pages/admin/TemplateGalleryPage"));
 
-console.info("[boot] App.tsx evaluated", new Date().toISOString());
 const queryClient = new QueryClient();
 
 const withPageFallback = (element: JSX.Element) => (

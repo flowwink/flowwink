@@ -19529,6 +19529,11 @@ export type Database = {
           url: string
         }[]
       }
+      _resolve_flowtable_base: { Args: { p_base: string }; Returns: string }
+      _resolve_flowtable_table: {
+        Args: { p_base?: string; p_table: string }
+        Returns: string
+      }
       _resolve_profile: {
         Args: { p_who: string }
         Returns: {
@@ -19881,6 +19886,15 @@ export type Database = {
           line_count: number
           total_cents: number
         }[]
+      }
+      bulk_upsert_flowtable_records: {
+        Args: {
+          p_base?: string
+          p_key_field?: string
+          p_records: Json
+          p_table: string
+        }
+        Returns: Json
       }
       bump_kb_article_feedback: {
         Args: { p_rating: string; p_slugs: string[] }
@@ -20873,6 +20887,16 @@ export type Database = {
         }
         Returns: Json
       }
+      import_csv_to_flowtable: {
+        Args: {
+          p_base?: string
+          p_csv: string
+          p_delimiter?: string
+          p_key_field?: string
+          p_table: string
+        }
+        Returns: Json
+      }
       import_exchange_rates: {
         Args: { p_rates: Json; p_source?: string }
         Returns: Json
@@ -21430,6 +21454,18 @@ export type Database = {
           p_policy_id?: string
           p_requires_approval_over_cents?: number
           p_requires_receipt?: boolean
+        }
+        Returns: Json
+      }
+      manage_flowtable_base: {
+        Args: {
+          p_action: string
+          p_base?: string
+          p_color?: string
+          p_description?: string
+          p_icon?: string
+          p_name?: string
+          p_slug?: string
         }
         Returns: Json
       }

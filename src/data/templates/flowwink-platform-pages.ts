@@ -104,8 +104,8 @@ function processPage(p: ProcessPageInput): TemplatePage {
         data: {
           eyebrow: 'WHO DOES WHAT',
           title: 'Autonomy is a dial, not a switch',
-          content: p.agentCoverage,
-          secondaryContent: p.humanCoverage,
+          content: doc(...p.agentCoverage.split('\n\n')),
+          secondaryContent: doc(...p.humanCoverage.split('\n\n')),
           layout: 'text-text',
         },
       },
@@ -213,7 +213,7 @@ const platformPage: TemplatePage = {
       data: {
         eyebrow: 'CMS · CRM · ERP',
         title: 'Three products that were never meant to be three products',
-        content: 'A visitor reads a page, fills in a form, becomes a lead, gets qualified, receives a quote, signs it, gets an invoice, pays it, and the payment lands in the general ledger.\n\nIn a normal stack that story crosses three vendors and two integrations, and breaks at every seam. In FlowWink it never leaves the database. The page, the lead, the quote, the invoice and the journal entry are rows in one system with one identity model.\n\nThat is what makes autonomy possible: an operator can only run a process end to end if the process is actually end to end.',
+        content: doc(...('A visitor reads a page, fills in a form, becomes a lead, gets qualified, receives a quote, signs it, gets an invoice, pays it, and the payment lands in the general ledger.\n\nIn a normal stack that story crosses three vendors and two integrations, and breaks at every seam. In FlowWink it never leaves the database. The page, the lead, the quote, the invoice and the journal entry are rows in one system with one identity model.\n\nThat is what makes autonomy possible: an operator can only run a process end to end if the process is actually end to end.').split('\n\n')),
         secondaryContent: '**CMS** — pages, blocks, blog, knowledge base, docs, wiki, media, forms, newsletter, SEO/AEO\n\n**CRM** — leads, companies, deals, quotes, customer 360, sales intelligence, tickets, SLA, bookings, live support\n\n**ERP** — orders, inventory, shipping, purchasing, invoicing, accounting, reconciliation, expenses, payroll, HR, projects, timesheets, manufacturing',
         layout: 'text-text',
       },
@@ -242,7 +242,7 @@ const platformPage: TemplatePage = {
       data: {
         eyebrow: 'HOW IT RUNS',
         title: 'Self-hosted, single-tenant, yours',
-        content: 'Every FlowWink deployment belongs to one business. Your database, your storage, your model keys, your domain. Open source under MIT — clone it, read it, fork it, run it forever without asking anyone.\n\nA site is four layers that deploy together: the schema, the skill registry, the edge functions and the frontend. Bring your own AI provider — OpenAI, Google Gemini or a local model behind an OpenAI-compatible endpoint. Nothing about the platform assumes a specific vendor.',
+        content: doc(...('Every FlowWink deployment belongs to one business. Your database, your storage, your model keys, your domain. Open source under MIT — clone it, read it, fork it, run it forever without asking anyone.\n\nA site is four layers that deploy together: the schema, the skill registry, the edge functions and the frontend. Bring your own AI provider — OpenAI, Google Gemini or a local model behind an OpenAI-compatible endpoint. Nothing about the platform assumes a specific vendor.').split('\n\n')),
         secondaryContent: '**Single-tenant** — no shared database, no noisy neighbours\n\n**Open source** — MIT, auditable line by line\n\n**Bring your own model** — OpenAI · Gemini · local\n\n**Bring your own agent** — FlowPilot, or anything that speaks MCP',
         layout: 'text-text',
       },
@@ -363,7 +363,7 @@ const processesPage: TemplatePage = {
       data: {
         eyebrow: 'HOW WE DOCUMENT THEM',
         title: 'Every step says who can do it',
-        content: 'Each process document lists the modules involved, the step-by-step flow, the state machines behind the records, and a coverage table marking every step as manual, FlowPilot-operable or reachable by an external agent over MCP.\n\nIt also lists the known gaps. We would rather tell you what is not automated yet than let you discover it in month three.',
+        content: doc(...('Each process document lists the modules involved, the step-by-step flow, the state machines behind the records, and a coverage table marking every step as manual, FlowPilot-operable or reachable by an external agent over MCP.\n\nIt also lists the known gaps. We would rather tell you what is not automated yet than let you discover it in month three.').split('\n\n')),
         secondaryContent: '**Per process you get**\n\n• Modules involved and their role\n• Step-by-step flow\n• State machines and what each transition writes\n• Coverage: human / FlowPilot / external agent\n• Known gaps\n• Webhook events emitted\n• Best for — and explicitly not for',
         layout: 'text-text',
       },
@@ -490,7 +490,7 @@ const mcpPage: TemplatePage = {
       data: {
         eyebrow: 'TRUST MODEL',
         title: 'An agent is a colleague, not a superuser',
-        content: 'Every skill carries a trust level. Some run silently, some notify, some stage for human approval before they execute. You move the dial per skill as confidence grows — and the dial is a runtime setting, so tightening it never requires a deploy.\n\nUnderneath, permissions are enforced by row-level security in the database. An agent acting for a customer sees that customer\'s data and nothing else, no matter what its prompt claims.',
+        content: doc(...('Every skill carries a trust level. Some run silently, some notify, some stage for human approval before they execute. You move the dial per skill as confidence grows — and the dial is a runtime setting, so tightening it never requires a deploy.\n\nUnderneath, permissions are enforced by row-level security in the database. An agent acting for a customer sees that customer\'s data and nothing else, no matter what its prompt claims.').split('\n\n')),
         secondaryContent: '**Silent** — read-only lookups and reports\n\n**Notify** — acts, then tells you what it did\n\n**Approve** — proposes, waits for a human, then executes\n\n**Audited** — always. Actor, arguments, outcome, timestamp.',
         layout: 'text-text',
       },
@@ -599,7 +599,7 @@ const useCasesPage: TemplatePage = {
       data: {
         eyebrow: 'WHAT NEVER CHANGES',
         title: 'The industry decides the modules, not the architecture',
-        content: 'Whichever page you open, the foundation is identical: one kernel, three shells, row-level security, a documented process catalogue and an agent surface over every capability.\n\nThat is why moving between shapes is a configuration change rather than a migration. An agency that starts selling a product does not switch systems — it enables commerce.',
+        content: doc(...('Whichever page you open, the foundation is identical: one kernel, three shells, row-level security, a documented process catalogue and an agent surface over every capability.\n\nThat is why moving between shapes is a configuration change rather than a migration. An agency that starts selling a product does not switch systems — it enables commerce.').split('\n\n')),
         secondaryContent: '**Always included**\n\n• CMS with blocks, blog and knowledge base\n• CRM with leads, companies and deals\n• The ERP core you switch on as you grow\n• FlowPilot, or your own agent over MCP\n• Self-hosted, single-tenant, open source',
         layout: 'text-text',
       },

@@ -389,8 +389,29 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
             </Alert>
 
             <div className="mt-4 space-y-4">
-              {/* Cross-cutting platform toggles */}
+              {/* Everything */}
               <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Data</p>
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={options.database}
+                    onCheckedChange={(c) => setOptions(p => ({ ...p, database: !!c }))}
+                  />
+                  <Database className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <span>
+                    All business data (recommended)
+                    <span className="block text-[11px] text-muted-foreground">
+                      One atomic server-side wipe of every table. Keeps your users and roles,
+                      site settings, API keys and the seeded platform layers (skills, chart of
+                      accounts, locale packs).
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Cross-cutting platform toggles */}
+              <div className="space-y-2 pt-3 border-t">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Platform</p>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
@@ -400,14 +421,16 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
                   <Settings className="h-4 w-4 text-muted-foreground" />
                   Site Settings (reset to defaults)
                 </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={options.engineRoom}
-                    onCheckedChange={(c) => setOptions(p => ({ ...p, engineRoom: !!c }))}
-                  />
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  FlowPilot brain (objectives, memory, activity)
-                </label>
+                {!options.database && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={options.engineRoom}
+                      onCheckedChange={(c) => setOptions(p => ({ ...p, engineRoom: !!c }))}
+                    />
+                    <Sparkles className="h-4 w-4 text-muted-foreground" />
+                    FlowPilot brain (objectives, memory, activity)
+                  </label>
+                )}
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={options.media}
@@ -418,8 +441,9 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
                 </label>
               </div>
 
-              {/* Module-owned data */}
-              {moduleOwnership.length > 0 && (
+              {/* Module-owned data — only for selective clean-ups */}
+              {!options.database && moduleOwnership.length > 0 && (
+
                 <div className="pt-3 border-t">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">

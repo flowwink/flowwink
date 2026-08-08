@@ -115,7 +115,7 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, step]);
+  }, [open, step, options.database]);
 
 
   const resetState = () => {

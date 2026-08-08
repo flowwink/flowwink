@@ -20465,6 +20465,14 @@ export type Database = {
         Returns: string
       }
       end_webmeet_room: { Args: { p_room_id: string }; Returns: Json }
+      enqueue_contract_billing_tasks: {
+        Args: { p_horizon_days?: number }
+        Returns: Json
+      }
+      enqueue_subscription_billing_tasks: {
+        Args: { p_horizon_days?: number }
+        Returns: Json
+      }
       enqueue_task: {
         Args: {
           p_created_by?: string

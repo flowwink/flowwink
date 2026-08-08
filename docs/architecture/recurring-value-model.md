@@ -1,6 +1,6 @@
 ---
 title: Recurring value across the sales chain — one dimensioned line, derived rollups
-status: design sketch (not yet built)
+status: steps 1–2 shipped (product cadence + quote recurrence/term/rollup); steps 3–5 remain
 audience: FlowWink core
 ---
 
@@ -160,7 +160,15 @@ isn't deferred to the contract — it rides in from the product).
 3. The engine branches on `product.type` / `line.recurrence` only — never on a
    tenant-level "subscription business" flag. One pipeline, product-configured.
 
-## Build order (when we go)
+## Build order
+
+- ✅ **Step 1 — shipped.** `products.billing_interval` + `default_term_months`, product-form cadence picker.
+- ✅ **Step 2 — shipped.** `quotes.default_term_months`; per-line `recurrence`/`term_months` in the JSONB line shape; "Add from product" inheritance; MRR/one-time/term/TCV summary; `src/lib/recurring-value.ts` derivations.
+- ⏳ Step 3 — deal `value_basis` + site setting for pipeline default; deal card shows the dimension.
+- ⏳ Step 4 — verify `create_subscription_from_contract` maps the recurring line's cadence + term into the subscription.
+- ⏳ Step 5 — extend guardrails as steps 3–4 land.
+
+Original ordering, for reference:
 
 1. `products.billing_interval` (+ default_term) + product-form cadence picker.
    Backfill: existing `recurring` products → `'month'` (safe, matches the telco

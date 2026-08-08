@@ -6,11 +6,17 @@ export interface WikiPage {
   slug: string;
   title: string;
   content_md: string;
+  parent_slug: string | null;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export type WikiPageListItem = Pick<
+  WikiPage,
+  'slug' | 'title' | 'parent_slug' | 'updated_at' | 'updated_by' | 'created_at'
+>;
 
 export const HOME_SLUG = 'HomePage';
 
@@ -33,15 +39,36 @@ export function useWikiPages() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('wiki_pages')
-        .select('slug, title, updated_at, updated_by, created_at')
+        .select('slug, title, parent_slug, updated_at, updated_by, created_at')
         .order('updated_at', { ascending: false })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as Pick<WikiPage, 'slug' | 'title' | 'updated_at' | 'updated_by' | 'created_at'>[];
+      return (data ?? []) as WikiPageListItem[];
     },
     staleTime: 1000 * 30,
   });
 }
+
+/** Full-text-ish search across title AND markdown body (Notion-style search). */
+export function useWikiSearch(query: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: ['wiki-search', q],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wiki_pages')
+        .select('slug, title, content_md, updated_at')
+        .or(`title.ilike.%${q}%,slug.ilike.%${q}%,content_md.ilike.%${q}%`)
+        .order('updated_at', { ascending: false })
+        .limit(40);
+      if (error) throw error;
+      return (data ?? []) as Pick<WikiPage, 'slug' | 'title' | 'content_md' | 'updated_at'>[];
+    },
+    enabled: q.length >= 2,
+    staleTime: 1000 * 15,
+  });
+}
+
 
 export function useWikiPage(slug: string | undefined) {
   return useQuery({

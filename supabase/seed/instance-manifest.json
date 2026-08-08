@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260808380000",
-      "migrations_count": 334,
+      "migrations_count": 336,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1235,8 +1235,16 @@
           "name": "schedule-event-dispatcher"
         },
         {
+          "version": "20260808135735",
+          "name": "a78aa65c-0856-4488-b931-f1535fda8f3b"
+        },
+        {
           "version": "20260808140000",
           "name": "contract-billing-into-work-queue"
+        },
+        {
+          "version": "20260808140649",
+          "name": "111b394c-3264-44ab-8402-0d0df7e79c5b"
         },
         {
           "version": "20260808150000",

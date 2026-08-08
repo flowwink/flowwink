@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Briefcase, TrendingUp, Trophy, ArrowRight } from 'lucide-react';
 import { useDeals, ACTIVE_STAGES, STAGE_PROBABILITY, type DealStage } from '@/hooks/useDeals';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { formatPrice } from '@/hooks/useProducts';
 import { CreateDealDialog } from './CreateDealDialog';
 import { useIsModuleEnabled } from '@/hooks/useModules';
@@ -22,6 +23,18 @@ export function DealSection({ leadId }: DealSectionProps) {
   const isDealsEnabled = useIsModuleEnabled('deals');
   const { data: deals = [], isLoading } = useDeals(leadId);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // Open/probability come from the configured pipeline (same rows as the
+  // kanban columns); the hardcoded lists are only the pre-load fallback.
+  const { data: stageConfig = [] } = usePipelineStages('deal');
+  const isOpenStage = (stage: string) =>
+    stageConfig.length
+      ? stageConfig.some((s) => s.key === stage && !s.is_won && !s.is_lost)
+      : ACTIVE_STAGES.includes(stage as DealStage);
+  const probabilityOf = (stage: string) => {
+    const cfg = stageConfig.find((s) => s.key === stage);
+    if (cfg?.probability != null) return cfg.probability / 100;
+    return STAGE_PROBABILITY[stage as DealStage] ?? 0;
+  };
 
   // The process flow's "Create deal" button lives in a sibling component; it
   // used to only scroll here, which reads as "nothing happened" when the
@@ -35,12 +48,12 @@ export function DealSection({ leadId }: DealSectionProps) {
 
   if (!isDealsEnabled) return null;
 
-  const activeDeals = deals.filter((d) => ACTIVE_STAGES.includes(d.stage as DealStage));
+  const activeDeals = deals.filter((d) => isOpenStage(d.stage));
   const wonDeals = deals.filter((d) => d.stage === 'closed_won');
 
   const pipelineValue = activeDeals.reduce((sum, d) => sum + d.value_cents, 0);
   const weightedValue = activeDeals.reduce(
-    (sum, d) => sum + d.value_cents * (STAGE_PROBABILITY[d.stage as DealStage] ?? 0),
+    (sum, d) => sum + d.value_cents * probabilityOf(d.stage),
     0
   );
   const wonValue = wonDeals.reduce((sum, d) => sum + d.value_cents, 0);

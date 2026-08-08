@@ -118,7 +118,7 @@ describe('step 5: one dimension per sum, and the agent learns the inheritance', 
     // mix it with one-time totals. The join brings the product facts the
     // normalisation needs; the basis keys the query cache.
     expect(dealsHook).toMatch(/product:products\(type, billing_interval, default_term_months\)/);
-    expect(dealsHook).toMatch(/queryKey:\s*\['deal-stats', basis\]/);
+    expect(dealsHook).toMatch(/queryKey:\s*\['deal-stats', basis, configSignature\]/);
     const statsFn = dealsHook.slice(dealsHook.indexOf('export function useDealStats'));
     expect(statsFn).toMatch(/dealHeadline\(/);
     // No raw value_cents may reach a += after normalisation exists.

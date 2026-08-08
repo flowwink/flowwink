@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { LensToggle } from '@/components/admin/LensToggle';
 import { useOwnershipLens } from '@/hooks/useOwnershipLens';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { applyLens } from '@/lib/ownership';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { StatCard } from '@/components/admin/StatCard';
@@ -73,6 +74,17 @@ export default function DealsPage() {
   const { data: pipelineSettings } = useSalesPipelineSettings();
   const updatePipelineSettings = useUpdateSalesPipelineSettings();
   const valueBasis = pipelineSettings?.deal_value_basis ?? 'arr';
+  // The stage dropdown renders the configured pipeline — the same rows the
+  // kanban shows as columns. Fallback mirrors the seed until config loads.
+  const { data: pipelineStages = [] } = usePipelineStages('deal');
+  const stageOptions = pipelineStages.length
+    ? pipelineStages
+    : [
+        { key: 'lead', name: 'Lead' }, { key: 'prospecting', name: 'Prospecting' },
+        { key: 'qualified', name: 'Qualified' }, { key: 'proposal', name: 'Proposal' },
+        { key: 'negotiation', name: 'Negotiation' }, { key: 'closed_won', name: 'Won' },
+        { key: 'closed_lost', name: 'Lost' },
+      ];
   // A recurring deal's value renders with its dimension (10 000/mo → 120 000 ARR
   // by default); a one-time deal renders exactly as before.
   const renderDealValue = (deal: Deal) => {
@@ -347,12 +359,14 @@ export default function DealsPage() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="lead">Lead</SelectItem>
-                                <SelectItem value="qualified">Qualified</SelectItem>
-                                <SelectItem value="proposal">Proposal</SelectItem>
-                                <SelectItem value="negotiation">Negotiation</SelectItem>
-                                <SelectItem value="closed_won">Won</SelectItem>
-                                <SelectItem value="closed_lost">Lost</SelectItem>
+                                {/* Options come from the configured pipeline —
+                                    the same rows the kanban renders as columns.
+                                    A stage the admin adds or deactivates shows
+                                    up (or disappears) here too, so the two
+                                    surfaces can never disagree again. */}
+                                {stageOptions.map((s) => (
+                                  <SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>

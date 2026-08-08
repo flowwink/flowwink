@@ -5,22 +5,32 @@ import { toast } from 'sonner';
 import { updateLeadStatus, addLeadActivity } from '@/lib/lead-utils';
 import { notifyDealWon } from '@/lib/slack-notify';
 import { useSalesPipelineSettings } from '@/hooks/useSiteSettings';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { dealHeadline, type DealProductFacts } from '@/lib/recurring-value';
 import type { Product } from './useProducts';
 
-export type DealStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
+// The full DB enum. 'prospecting' was missing here for months — the kanban
+// (which reads pipeline_stages) showed the column while every hardcoded list
+// couldn't select it and the stats silently dropped deals sitting in it.
+export type DealStage = 'lead' | 'prospecting' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
 
-/** Win probability per stage — used for weighted forecast */
+/** FALLBACK win probability per stage. The pipeline_stages table (admin-
+ *  configured, /admin/pipelines/stages) is the source of truth — these values
+ *  mirror its seed and are used only until the config has loaded or for a
+ *  stage the config doesn't know. */
 export const STAGE_PROBABILITY: Record<DealStage, number> = {
   lead: 0.10,
-  qualified: 0.25,
-  proposal: 0.50,
-  negotiation: 0.75,
+  prospecting: 0.20,
+  qualified: 0.40,
+  proposal: 0.60,
+  negotiation: 0.80,
   closed_won: 1.0,
   closed_lost: 0,
 };
 
-export const ACTIVE_STAGES: DealStage[] = ['lead', 'qualified', 'proposal', 'negotiation'];
+/** FALLBACK open-stage list — same caveat as STAGE_PROBABILITY: the truth is
+ *  pipeline_stages rows where neither is_won nor is_lost. */
+export const ACTIVE_STAGES: DealStage[] = ['lead', 'prospecting', 'qualified', 'proposal', 'negotiation'];
 
 export interface Deal {
   id: string;
@@ -76,13 +86,19 @@ export function useDeals(leadId?: string) {
 }
 
 export function useActiveDealCount() {
+  // "Active" is defined by the configured pipeline (neither won nor lost),
+  // falling back to the hardcoded list until the config loads.
+  const { data: stageConfig = [] } = usePipelineStages('deal');
+  const activeKeys = stageConfig.length
+    ? stageConfig.filter((s) => !s.is_won && !s.is_lost).map((s) => s.key)
+    : ACTIVE_STAGES;
   return useQuery({
-    queryKey: ['deals-active-count'],
+    queryKey: ['deals-active-count', activeKeys.join(',')],
     queryFn: async () => {
       const { count, error } = await supabase
         .from('deals')
         .select('*', { count: 'exact', head: true })
-        .in('stage', ACTIVE_STAGES);
+        .in('stage', activeKeys as DealStage[]);
       if (error) throw error;
       return count ?? 0;
     },
@@ -276,6 +292,27 @@ export function useDeleteDeal() {
   });
 }
 
+export interface DealStageStats { count: number; value: number }
+
+export interface DealStats {
+  totalPipeline: number;
+  weightedForecast: number;
+  wonThisMonth: number;
+  // Every enum stage is always present so consumers can read
+  // stats.negotiation.value without guards, whatever the admin configures.
+  lead: DealStageStats;
+  prospecting: DealStageStats;
+  qualified: DealStageStats;
+  proposal: DealStageStats;
+  negotiation: DealStageStats;
+  closed_won: DealStageStats;
+  closed_lost: DealStageStats;
+  // …and any extra admin-configured stage lands here instead of vanishing.
+  [stageKey: string]: DealStageStats | number;
+}
+
+const ENUM_STAGES: DealStage[] = ['lead', 'prospecting', 'qualified', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
+
 export function useDealStats() {
   // The pipeline totals must sum ONE dimension. A recurring deal's value_cents
   // is a per-period price; summing it raw against one-time totals mixes
@@ -283,8 +320,14 @@ export function useDealStats() {
   // basis (ARR by default) before it enters a sum.
   const { data: pipelineSettings } = useSalesPipelineSettings();
   const basis = pipelineSettings?.deal_value_basis ?? 'arr';
+  // pipeline_stages is the ONE truth for which stages exist, which are open,
+  // and each stage's win probability. The hardcoded lists are fallbacks for
+  // the moment before this loads (or an instance with no config rows).
+  const { data: stageConfig = [] } = usePipelineStages('deal');
+  const configSignature = stageConfig.map((s) => `${s.key}:${s.probability ?? ''}:${s.is_won}:${s.is_lost}`).join('|');
+
   return useQuery({
-    queryKey: ['deal-stats', basis],
+    queryKey: ['deal-stats', basis, configSignature],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('deals')
@@ -292,38 +335,55 @@ export function useDealStats() {
 
       if (error) throw error;
 
+      const openStages = new Set<string>(
+        stageConfig.length
+          ? stageConfig.filter((s) => !s.is_won && !s.is_lost).map((s) => s.key)
+          : ACTIVE_STAGES,
+      );
+      const wonStages = new Set<string>(
+        stageConfig.length ? stageConfig.filter((s) => s.is_won).map((s) => s.key) : ['closed_won'],
+      );
+      const probabilityOf = (stage: string): number => {
+        const cfg = stageConfig.find((s) => s.key === stage);
+        if (cfg?.probability != null) return cfg.probability / 100;
+        return STAGE_PROBABILITY[stage as DealStage] ?? 0;
+      };
+
       const stats = {
-        lead: { count: 0, value: 0 },
-        qualified: { count: 0, value: 0 },
-        proposal: { count: 0, value: 0 },
-        negotiation: { count: 0, value: 0 },
-        closed_won: { count: 0, value: 0 },
-        closed_lost: { count: 0, value: 0 },
         totalPipeline: 0,
         weightedForecast: 0,
         wonThisMonth: 0,
-      };
+      } as DealStats;
+      // Seed every enum stage AND every configured stage — a bucket always
+      // exists before counting, so nothing can be silently dropped.
+      for (const key of [...ENUM_STAGES, ...stageConfig.map((s) => s.key)]) {
+        if (!(key in stats)) stats[key] = { count: 0, value: 0 };
+      }
 
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
       data.forEach((deal) => {
-        const stage = deal.stage as DealStage;
-        if (!stats[stage]) return;
+        const stage = deal.stage as string;
+        // A stage unknown to both the enum list and the config still gets
+        // counted — a deal must never vanish from the totals. (The old code
+        // returned early here; a deal in 'prospecting' was silently dropped.)
+        if (!(stage in stats)) stats[stage] = { count: 0, value: 0 };
+        const bucket = stats[stage] as DealStageStats;
         // One-time deals pass through unchanged (headline = value_cents).
         const value = dealHeadline(
           deal.product as DealProductFacts | null, deal.value_cents, basis,
         ).cents;
-        stats[stage].count++;
-        stats[stage].value += value;
+        bucket.count++;
+        bucket.value += value;
 
-        if (ACTIVE_STAGES.includes(stage)) {
+        if (openStages.has(stage)) {
           stats.totalPipeline += value;
-          stats.weightedForecast += value * STAGE_PROBABILITY[stage];
+          stats.weightedForecast += value * probabilityOf(stage);
         }
 
-        if (stage === 'closed_won' && deal.closed_at && new Date(deal.closed_at) >= startOfMonth) {
+        if (wonStages.has(stage) && deal.closed_at && new Date(deal.closed_at) >= startOfMonth) {
           stats.wonThisMonth += value;
         }
       });
@@ -336,6 +396,7 @@ export function useDealStats() {
 export function getDealStageInfo(stage: DealStage): { label: string; color: string } {
   const stages: Record<DealStage, { label: string; color: string }> = {
     lead: { label: 'Lead', color: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300' },
+    prospecting: { label: 'Prospecting', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' },
     qualified: { label: 'Qualified', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' },
     proposal: { label: 'Proposal', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
     negotiation: { label: 'Negotiation', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' },

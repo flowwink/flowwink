@@ -24,6 +24,8 @@ import {
 import { WikiMarkdown } from '@/components/admin/wiki/WikiMarkdown';
 import { WikiTree } from '@/components/admin/wiki/WikiTree';
 import { WikiTOC } from '@/components/admin/wiki/WikiTOC';
+import { WikiHistorySheet } from '@/components/admin/wiki/WikiHistorySheet';
+
 import {
   BookOpen,
   ChevronRight,

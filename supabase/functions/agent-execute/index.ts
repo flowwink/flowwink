@@ -563,10 +563,15 @@ serve(async (req) => {
           operation_id: approvedOpId,
         }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      // Mark executed (best-effort; result is updated post-execution if needed)
-      await supabase.from('pending_operations')
-        .update({ status: 'executed', executed_at: new Date().toISOString() })
-        .eq('id', approvedOpId);
+      // NOT marked executed here. A DOUBLE-GATED skill (requires_staging AND
+      // trust_level='approve' — install_template, the accounting closers) still
+      // has the trust gate below to clear. Consuming the operation before that
+      // gate has decided burned the approval on a call that then did nothing:
+      // status flipped to 'executed' with execution_result NULL, no work done,
+      // and the retry got 403 'not approved' because the row was no longer
+      // 'approved'. The status lied about the outcome and the operator had to
+      // re-stage. The consumption now happens once the call is actually going
+      // to run (below the trust gate).
     }
 
     // 3. Check trust level (auto → execute, notify → execute + notify, approve → block)
@@ -637,6 +642,15 @@ serve(async (req) => {
       }), {
         status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Every gate is cleared — the call IS going to run, so the staged operation
+    // is consumed now. Doing it here (rather than before the trust gate) means
+    // a blocked double-gated call leaves the approval intact and retryable.
+    if (approvedOpId) {
+      await supabase.from('pending_operations')
+        .update({ status: 'executed', executed_at: new Date().toISOString() })
+        .eq('id', approvedOpId);
     }
 
     // 4. Route to handler — wrapped in try/catch for normalized error handling
@@ -958,6 +972,19 @@ serve(async (req) => {
       error_message: handlerFailed ? String((result as any).error).slice(0, 500) : undefined,
       trace_id: trace_id || undefined,
     });
+
+    // 5a. Close the staged operation's loop. The row carried status='executed'
+    // with execution_result NULL forever, so the approval trail could not say
+    // whether the approved action actually did anything — and a handler that
+    // returned { error } still read as a clean 'executed'. Record both.
+    if (approvedOpId) {
+      await supabase.from('pending_operations')
+        .update({
+          status: handlerFailed ? 'failed' : 'executed',
+          execution_result: (result ?? {}) as never,
+        })
+        .eq('id', approvedOpId);
+    }
 
     // 5b. Outcome tracking: leave outcome_status as NULL
     // The heartbeat's evaluate_outcomes tool picks up activities with NULL outcome_status.

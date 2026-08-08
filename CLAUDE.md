@@ -184,7 +184,7 @@ component map, ownership ruling, and the Trace/resumption build plan:
 The system has 500+ skills. Exposing all of them as individual MCP tools floods a client's context. Three connection profiles control what a client sees (all via query params; default = unfiltered, kept for backward compat):
 
 - `?groups=crm,commerce` — specialist: only that category's tools (~8). See `_shared/mcp/groups.ts` and `/rest/groups`.
-- `?mode=dispatch` — generalist operator: a **2-tool surface** — `search_skills({query, groups?})` ranks skills by intent, `execute_skill({name, arguments})` runs one. Broad reach, ~2 schemas in context.
+- `?mode=dispatch` — generalist operator: a **3-tool surface** — `search_skills({query, groups?})` ranks skills by intent (each entry carries `has_instructions`), `read_skill({name})` loads a skill's full instructions/playbook before running it (the same lazy tier FlowPilot has via its built-in `skill_read`), `execute_skill({name, arguments})` runs one. Broad reach, ~3 schemas in context.
 - (no param) — all tools exposed.
 
 **Skill relevance is a platform primitive, not a FlowPilot-internal one.** The component is the **Skill Relevance Engine** (`scoreSkillsByIntent` / `loadRecentUsageCounts` in `_shared/skills/intent-scorer.ts`). Name it for what it does (ranks skills by intent), NOT for a transport — it is neither "MCP" nor "FlowPilot" specific. It has **two consumers**:
@@ -201,8 +201,9 @@ It lives in `_shared/skills/` (NOT under `pilot/`) precisely because the gateway
 The `/rest/execute` endpoint mirrors the MCP tool surface but over plain HTTP POST. It respects `?mode=dispatch` and `?groups=` query params just like the native MCP transport:
 
 - `POST /rest/execute` — call any skill by name: `{ "tool": "browse_blog", "arguments": {} }`
-- `POST /rest/execute?mode=dispatch` — exposes `search_skills` and `execute_skill` as tools:
+- `POST /rest/execute?mode=dispatch` — exposes `search_skills`, `read_skill` and `execute_skill` as tools:
   - `{ "tool": "search_skills", "arguments": { "query": "create knowledge base article" } }`
+  - `{ "tool": "read_skill", "arguments": { "name": "manage_contract_template" } }` — the skill's full instructions (authoring guides, workflow playbooks) before executing
   - `{ "tool": "execute_skill", "arguments": { "name": "browse_blog", "arguments": {} } }`
 - `GET /rest/resources/:key` — read resources (requires `Accept: text/event-stream` for `/rest/skills`; use `/rest/resources/briefing` etc. for JSON)
 - `GET /rest/groups` — list skill categories and their modules

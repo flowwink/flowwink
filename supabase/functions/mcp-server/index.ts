@@ -837,6 +837,27 @@ async function fetchResource(resourceKey: string): Promise<unknown> {
  *   execute_skill(name, arguments) → runs the chosen skill
  * `filterGroups` (if the client also passed ?groups=) scopes the catalog.
  */
+/**
+ * Stamp `has_instructions` on catalog entries so a dispatch agent knows which
+ * skills carry a playbook worth loading via read_skill BEFORE executing. The
+ * choice tier must reveal that the lazy tier exists — otherwise instructions
+ * are only found by accident. One bounded query on the ≤40 ranked names.
+ */
+async function annotateHasInstructions(skills: Array<{ name: string; has_instructions?: boolean }>): Promise<void> {
+  if (!skills.length) return;
+  try {
+    const { data } = await serviceClient()
+      .from("agent_skills")
+      .select("name")
+      .in("name", skills.map((s) => s.name))
+      .not("instructions", "is", null);
+    const withInstr = new Set((data ?? []).map((r: { name: string }) => r.name));
+    for (const s of skills) s.has_instructions = withInstr.has(s.name);
+  } catch {
+    // Annotation is best-effort; the catalog is still valid without it.
+  }
+}
+
 function registerDispatcherTools(server: McpServer, filterGroups?: string[]): void {
   server.tool("search_skills", {
     description:
@@ -871,6 +892,7 @@ function registerDispatcherTools(server: McpServer, filterGroups?: string[]): vo
       // Same catalog builder FlowPilot uses in-process (one dispatch surface,
       // two transports). Ranks by intent and returns FULL contracts.
       const catalog = buildSkillCatalog(defs, query, usageBoost, limit);
+      await annotateHasInstructions(catalog.skills);
 
       return {
         content: [{ type: "text" as const, text: JSON.stringify(catalog, null, 2) }],
@@ -878,9 +900,61 @@ function registerDispatcherTools(server: McpServer, filterGroups?: string[]): vo
     },
   });
 
+  // The lazy tier, for external agents. FlowPilot loads a skill's full
+  // instructions via its built-in skill_read BEFORE executing; until this tool
+  // existed, external MCP agents had NO path to instructions at all — they saw
+  // only description + schema, which is why agent-authored artifacts came out
+  // technically valid but process-blind (the contract-template finding,
+  // 2026-08-08). One skill contract, two consumer types, same two tiers.
+  server.tool("read_skill", {
+    description:
+      "Load a skill's full instructions (its execution playbook) before running it. Use when: a skill involves authoring content, multi-step workflows, or domain conventions — read first, then execute_skill. Especially important for create/manage skills. NOT for: discovery (search_skills) or execution (execute_skill).",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Exact skill name as returned by search_skills" },
+      },
+      required: ["name"],
+    },
+    handler: async (args: Record<string, unknown>) => {
+      const name = typeof args.name === "string" ? args.name : "";
+      if (!name) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify({ error: "Missing 'name'. Call search_skills first to find a skill." }) }],
+        };
+      }
+      // Same exposure gate as execute_skill: module toggles + group filter.
+      const exposed = await loadExposedSkills(filterGroups);
+      const match = exposed.find((s) => s.tool_definition?.function?.name === name);
+      if (!match) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify({ error: `Unknown skill: ${name}. Use search_skills to discover valid names.` }) }],
+        };
+      }
+      const { data } = await serviceClient()
+        .from("agent_skills")
+        .select("name, description, instructions, tool_definition")
+        .eq("name", match.name)
+        .maybeSingle();
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            name: data?.name ?? match.name,
+            description: data?.description ?? match.description,
+            // ~27% of skills carry no instructions — a good description is the
+            // whole contract then; that is valid, not an error.
+            instructions: data?.instructions ?? null,
+            input_schema: data?.tool_definition?.function?.parameters ?? match.tool_definition?.function?.parameters ?? null,
+          }, null, 2),
+        }],
+      };
+    },
+  });
+
   server.tool("execute_skill", {
     description:
-      "Run a FlowWink skill by name. Use when: you have chosen a skill (typically via search_skills) and want to execute it. NOT for: discovery — call search_skills first to find the right name.",
+      "Run a FlowWink skill by name. Use when: you have chosen a skill (typically via search_skills) and want to execute it. For authoring/workflow skills, call read_skill first to load the playbook. NOT for: discovery — call search_skills first to find the right name.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -1363,7 +1437,8 @@ app.post("/rest/execute", async (c) => {
   // requestContext, so resolve it explicitly here and apply to discovery + execute.
   const peerGroups = await resolvePeerGroups(callerApiKeyId);
 
-  // ?mode=dispatch → expose search_skills + execute_skill via REST (mirrors the MCP 2-tool surface)
+  // ?mode=dispatch → expose search_skills + read_skill + execute_skill via REST
+  // (mirrors the MCP 3-tool dispatch surface)
   const url = new URL(c.req.url);
   const dispatchMode = url.searchParams.get("mode") === "dispatch";
   const groupsParam = url.searchParams.get("groups");
@@ -1388,7 +1463,36 @@ app.post("/rest/execute", async (c) => {
       description: d.function.description,
       input_schema: d.function.parameters || { type: "object", properties: {} },
     }));
+    await annotateHasInstructions(catalog);
     return c.json({ ok: true, tool, result: { count: catalog.length, skills: catalog } }, 200, corsHeaders);
+  }
+
+  // The lazy tier over REST — mirrors the MCP read_skill tool exactly. The
+  // 2026-06-07 lesson: a dispatch tool that exists on only one transport is a
+  // latent "Unknown tool" bug on the other.
+  if (dispatchMode && tool === "read_skill") {
+    const name = typeof args?.name === "string" ? args.name : "";
+    if (!name) {
+      return c.json({ ok: false, error: "Missing 'name'. Call search_skills first to find a skill." }, 400, corsHeaders);
+    }
+    const exposed = await loadExposedSkills(effectiveGroups(filterGroups, peerGroups));
+    const match = exposed.find((s) => s.tool_definition?.function?.name === name);
+    if (!match) {
+      return c.json({ ok: false, error: `Unknown skill: ${name}. Use search_skills to discover valid names.` }, 404, corsHeaders);
+    }
+    const { data } = await serviceClient()
+      .from("agent_skills")
+      .select("name, description, instructions, tool_definition")
+      .eq("name", match.name)
+      .maybeSingle();
+    return c.json({
+      ok: true, tool, result: {
+        name: data?.name ?? match.name,
+        description: data?.description ?? match.description,
+        instructions: data?.instructions ?? null,
+        input_schema: data?.tool_definition?.function?.parameters ?? match.tool_definition?.function?.parameters ?? null,
+      },
+    }, 200, corsHeaders);
   }
 
   if (dispatchMode && tool === "execute_skill") {
@@ -1469,8 +1573,9 @@ app.all("/*", async (c) => {
     : undefined;
   // ?openai_safe=true → flatten allOf/oneOf/anyOf/if-then schemas (gpt-4.1 / litellm compatibility)
   const openaiSafe = url.searchParams.get("openai_safe") === "true";
-  // ?mode=dispatch → expose a 2-tool surface (search_skills + execute_skill) so
-  // generalist operators get broad reach without 200+ schemas in their context.
+  // ?mode=dispatch → expose a 3-tool surface (search_skills + read_skill +
+  // execute_skill) so generalist operators get broad reach without 200+
+  // schemas in their context, and can load a skill's playbook before running it.
   const dispatchMode = url.searchParams.get("mode") === "dispatch";
 
   const handler = await getMcpHandler(filterGroups, openaiSafe, dispatchMode);

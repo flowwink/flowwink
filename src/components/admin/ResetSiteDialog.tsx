@@ -47,12 +47,14 @@ type ResetStep = 'warning' | 'confirm' | 'password' | 'progress' | 'complete';
  * exclusively via the manifest-driven module list below.
  */
 interface ResetOptions {
+  database: boolean;    // full server-side wipe of every business table
   media: boolean;       // storage bucket (cms-images)
   settings: boolean;    // site_settings keys → defaults
   engineRoom: boolean;  // FlowPilot brain: objectives, memory, activity, audit
 }
 
 const defaultOptions: ResetOptions = {
+  database: true,
   media: true,
   settings: true,
   engineRoom: true,

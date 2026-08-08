@@ -1068,6 +1068,69 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_tasks: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          due_at: string
+          id: string
+          last_error: string | null
+          leased_until: string | null
+          max_attempts: number
+          outcome: string | null
+          priority: number
+          reason: string
+          session_id: string | null
+          skill_arguments: Json
+          skill_name: string
+          status: string
+          subject_id: string | null
+          subject_type: string | null
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          due_at?: string
+          id?: string
+          last_error?: string | null
+          leased_until?: string | null
+          max_attempts?: number
+          outcome?: string | null
+          priority?: number
+          reason: string
+          session_id?: string | null
+          skill_arguments?: Json
+          skill_name: string
+          status?: string
+          subject_id?: string | null
+          subject_type?: string | null
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          due_at?: string
+          id?: string
+          last_error?: string | null
+          leased_until?: string | null
+          max_attempts?: number
+          outcome?: string | null
+          priority?: number
+          reason?: string
+          session_id?: string | null
+          skill_arguments?: Json
+          skill_name?: string
+          status?: string
+          subject_id?: string | null
+          subject_type?: string | null
+        }
+        Relationships: []
+      }
       agent_trust_policies: {
         Row: {
           actor: string
@@ -19924,6 +19987,35 @@ export type Database = {
         Args: { p_locked_by?: string; p_objective_id: string }
         Returns: boolean
       }
+      claim_due_tasks: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          due_at: string
+          id: string
+          last_error: string | null
+          leased_until: string | null
+          max_attempts: number
+          outcome: string | null
+          priority: number
+          reason: string
+          session_id: string | null
+          skill_arguments: Json
+          skill_name: string
+          status: string
+          subject_id: string | null
+          subject_type: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       clock_in: {
         Args: { p_employee_id?: string }
         Returns: {
@@ -20072,6 +20164,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      complete_task: {
+        Args: { p_outcome?: string; p_task_id: string }
+        Returns: Json
       }
       complete_webinar: {
         Args: { p_recording_url?: string; p_webinar_id: string }
@@ -20321,6 +20417,20 @@ export type Database = {
         Returns: string
       }
       end_webmeet_room: { Args: { p_room_id: string }; Returns: Json }
+      enqueue_task: {
+        Args: {
+          p_created_by?: string
+          p_due_at?: string
+          p_max_attempts?: number
+          p_priority?: number
+          p_reason: string
+          p_skill_arguments?: Json
+          p_skill_name: string
+          p_subject_id?: string
+          p_subject_type?: string
+        }
+        Returns: Json
+      }
       estimate_delivery_date: {
         Args: { p_carrier_id: string; p_ship_date?: string }
         Returns: Json
@@ -20358,6 +20468,14 @@ export type Database = {
         Returns: Json
       }
       extract_email_address: { Args: { raw: string }; Returns: string }
+      fail_task: {
+        Args: {
+          p_error: string
+          p_retry_in_seconds?: number
+          p_task_id: string
+        }
+        Returns: Json
+      }
       fefo_suggest_lot: {
         Args: { p_location_id?: string; p_product_id: string }
         Returns: {
@@ -22173,6 +22291,7 @@ export type Database = {
         Args: { items: Json }
         Returns: boolean
       }
+      reap_stale_task_leases: { Args: never; Returns: Json }
       receive_purchase_order: {
         Args: {
           p_lines: Json

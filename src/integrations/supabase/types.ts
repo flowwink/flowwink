@@ -12744,10 +12744,12 @@ export type Database = {
           allow_backorder: boolean
           available_in_pos: boolean
           barcode: string | null
+          billing_interval: string | null
           category_id: string | null
           cost_cents: number | null
           created_at: string
           currency: string
+          default_term_months: number | null
           description: string | null
           id: string
           image_url: string | null
@@ -12769,10 +12771,12 @@ export type Database = {
           allow_backorder?: boolean
           available_in_pos?: boolean
           barcode?: string | null
+          billing_interval?: string | null
           category_id?: string | null
           cost_cents?: number | null
           created_at?: string
           currency?: string
+          default_term_months?: number | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -12794,10 +12798,12 @@ export type Database = {
           allow_backorder?: boolean
           available_in_pos?: boolean
           barcode?: string | null
+          billing_interval?: string | null
           category_id?: string | null
           cost_cents?: number | null
           created_at?: string
           currency?: string
+          default_term_months?: number | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -13702,6 +13708,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           deal_id: string | null
+          default_term_months: number | null
           discount_cents: number
           exchange_rate: number
           expiry_reminder_sent_at: string | null
@@ -13744,6 +13751,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           deal_id?: string | null
+          default_term_months?: number | null
           discount_cents?: number
           exchange_rate?: number
           expiry_reminder_sent_at?: string | null
@@ -13786,6 +13794,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           deal_id?: string | null
+          default_term_months?: number | null
           discount_cents?: number
           exchange_rate?: number
           expiry_reminder_sent_at?: string | null
@@ -20579,6 +20588,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           deal_id: string | null
+          default_term_months: number | null
           discount_cents: number
           exchange_rate: number
           expiry_reminder_sent_at: string | null

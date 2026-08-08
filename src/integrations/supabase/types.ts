@@ -8856,6 +8856,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           views_count: number | null
+          visibility: string
         }
         Insert: {
           answer_json?: Json | null
@@ -8880,6 +8881,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           views_count?: number | null
+          visibility?: string
         }
         Update: {
           answer_json?: Json | null
@@ -8904,6 +8906,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           views_count?: number | null
+          visibility?: string
         }
         Relationships: [
           {
@@ -20757,6 +20760,7 @@ export type Database = {
         Returns: boolean
       }
       is_period_closed: { Args: { p_date: string }; Returns: boolean }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
       kb_article_history: {
         Args: {
           p_action: string
@@ -21882,6 +21886,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mark_voice_callback_done: {
+        Args: { p_call_id: string; p_outcome?: string }
+        Returns: Json
+      }
       mark_webinar_attendance: {
         Args: { p_attended?: boolean; p_registration_id: string }
         Returns: Json
@@ -22770,6 +22778,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      schedule_voice_callback: {
+        Args: { p_agent_id?: string; p_call_id: string; p_scheduled_at: string }
+        Returns: Json
+      }
       search_knowledge_chunks: {
         Args: {
           match_count?: number
@@ -23207,6 +23219,14 @@ export type Database = {
       }
       summarize_candidate_pipeline: {
         Args: { p_job_id?: string; p_stuck_threshold_days?: number }
+        Returns: Json
+      }
+      support_assign_conversation: {
+        Args: {
+          p_agent_id?: string
+          p_conversation_id: string
+          p_status?: string
+        }
         Returns: Json
       }
       sweep_stale_voice_calls: { Args: never; Returns: number }

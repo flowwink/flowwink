@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { computeInvoiceTotals, type InvoiceLineItem } from '@/hooks/useInvoices';
 import { useProducts } from '@/hooks/useProducts';
-import { computeRecurringRollup } from '@/lib/recurring-value';
+import { computeRecurringRollup, deriveContractBilling } from '@/lib/recurring-value';
 import {
   useQuote, useUpdateQuote, useDeleteQuote, useConvertQuoteToInvoice,
   getQuoteCustomerName, getQuoteCustomerEmail, getQuoteCompanyName,
@@ -554,11 +554,19 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
         prefill={{
           counterparty_name: quote.leads?.name || '',
           counterparty_email: quote.leads?.email || '',
-          value_cents: quote.total_cents,
+          // A recurring quote's agreement is worth its TCV, not one period's
+          // total — the dimension travels instead of being re-invented. Falls
+          // back to the plain total when nothing recurs or no term is set.
+          value_cents: rollup.hasRecurring && !rollup.termMissing ? rollup.tcvCents : quote.total_cents,
           title: `Avtal — ${quote.quote_number}`,
           // The link, not just the label. The title has always mentioned the
           // quote; nothing could query on it.
           quote_id: quote.id,
+          // What the agreement bills, inherited from the recurring lines —
+          // null for a pure one-time quote (nothing to bill recurringly).
+          billing: deriveContractBilling(lineItems),
+          term_months: rollup.hasRecurring && termMonths && Number.isFinite(termMonths)
+            ? Math.round(termMonths) : null,
         }}
       />
     </Sheet>

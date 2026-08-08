@@ -94,3 +94,90 @@ export function computeRecurringRollup(
     termMissing,
   };
 }
+
+// ── the deal's headline ─────────────────────────────────────────────────────
+
+/** Which derived figure headlines a recurring deal. Site-configurable
+ *  (sales_pipeline.deal_value_basis) — data, not a code branch. */
+export type DealValueBasis = 'per_period' | 'arr' | 'tcv';
+
+export interface DealHeadline {
+  /** The amount to display. */
+  cents: number;
+  /** Short dimension label to render after the amount: '/mo', '/yr', 'ARR',
+   *  'TCV' — empty for a one-time deal (today's rendering, unchanged). */
+  suffix: string;
+  /** The per-period price as secondary context when the headline is a rollup
+   *  (e.g. headline "120 000 ARR", secondary "10 000/mo"). Null when redundant. */
+  secondaryCents: number | null;
+  secondarySuffix: string;
+}
+
+/** The minimal product facts the headline needs (joined onto the deal). */
+export interface DealProductFacts {
+  type?: 'one_time' | 'recurring' | null;
+  billing_interval?: 'month' | 'year' | null;
+  default_term_months?: number | null;
+}
+
+const PERIOD_SUFFIX: Record<'month' | 'year', string> = { month: '/mo', year: '/yr' };
+
+/**
+ * Derive what a deal's value display should say. `valueCents` is the deal's
+ * stored amount — for a product-seeded deal that's the product's per-period
+ * price. A one-time deal (or no product) returns the plain amount, exactly as
+ * today: the degenerate case stays silent.
+ */
+export function dealHeadline(
+  product: DealProductFacts | null | undefined,
+  valueCents: number,
+  basis: DealValueBasis,
+): DealHeadline {
+  if (product?.type !== 'recurring') {
+    return { cents: valueCents, suffix: '', secondaryCents: null, secondarySuffix: '' };
+  }
+  const interval = product.billing_interval ?? 'month';
+  const perPeriod = { cents: valueCents, suffix: PERIOD_SUFFIX[interval] };
+  const monthly = interval === 'year' ? Math.round(valueCents / 12) : valueCents;
+
+  if (basis === 'arr') {
+    return { cents: monthly * 12, suffix: 'ARR', secondaryCents: perPeriod.cents, secondarySuffix: perPeriod.suffix };
+  }
+  if (basis === 'tcv') {
+    const term = product.default_term_months ?? null;
+    // Without a term TCV is unknowable — fall back to ARR rather than lie.
+    if (term == null) {
+      return { cents: monthly * 12, suffix: 'ARR', secondaryCents: perPeriod.cents, secondarySuffix: perPeriod.suffix };
+    }
+    return { cents: monthly * term, suffix: 'TCV', secondaryCents: perPeriod.cents, secondarySuffix: perPeriod.suffix };
+  }
+  // per_period — today's number, now carrying its dimension.
+  return { cents: perPeriod.cents, suffix: perPeriod.suffix, secondaryCents: null, secondarySuffix: '' };
+}
+
+// ── quote → contract inheritance ────────────────────────────────────────────
+
+export interface ContractBillingSeed {
+  billing_amount_cents: number;
+  billing_interval: 'month' | 'year';
+}
+
+/**
+ * What the agreement should bill, derived from the quote's recurring lines.
+ * If every recurring line shares one cadence, bill the per-period sum in that
+ * cadence (10 000/mo stays 10 000/mo). Mixed cadences normalise to monthly —
+ * the only honest common denominator. One-time lines are NOT part of the
+ * recurring billing (they belong on the first invoice). Null when nothing recurs.
+ */
+export function deriveContractBilling(lines: RecurringLineInput[]): ContractBillingSeed | null {
+  const recurring = lines.filter((l) => l.recurrence === 'month' || l.recurrence === 'year');
+  if (recurring.length === 0) return null;
+  const cadences = new Set(recurring.map((l) => l.recurrence));
+  if (cadences.size === 1) {
+    const interval = recurring[0].recurrence as 'month' | 'year';
+    const amount = recurring.reduce((sum, l) => sum + effectiveCents(l), 0);
+    return { billing_amount_cents: amount, billing_interval: interval };
+  }
+  const monthly = recurring.reduce((sum, l) => sum + monthlyCents(l), 0);
+  return { billing_amount_cents: monthly, billing_interval: 'month' };
+}

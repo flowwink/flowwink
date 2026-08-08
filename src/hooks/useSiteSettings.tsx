@@ -577,6 +577,30 @@ export function useUpdateQuoteProcessSettings() {
   return useUpdateSiteSettings<QuoteProcessSettings>('quotes', 'Quote process updated.');
 }
 
+export interface SalesPipelineSettings {
+  /** Which derived figure headlines a recurring deal (recurring-value model).
+   *  'per_period' — the product's period price with its dimension (10 000/mo)
+   *  'arr'        — annualised, so a 10 000/mo deal isn't shown 12× smaller
+   *                 than a 120 000 one-time deal (the default)
+   *  'tcv'        — per-period × the product's suggested term; falls back to
+   *                 ARR when no term is known.
+   *  One-time deals always show the plain amount — the basis only matters when
+   *  a cadence exists. */
+  deal_value_basis: 'per_period' | 'arr' | 'tcv';
+}
+
+const defaultSalesPipelineSettings: SalesPipelineSettings = {
+  deal_value_basis: 'arr',
+};
+
+export function useSalesPipelineSettings() {
+  return useSiteSettings<SalesPipelineSettings>('sales_pipeline', defaultSalesPipelineSettings);
+}
+
+export function useUpdateSalesPipelineSettings() {
+  return useUpdateSiteSettings<SalesPipelineSettings>('sales_pipeline', 'Pipeline settings updated.');
+}
+
 export function usePlatformLocaleSettings() {
   return useSiteSettings<PlatformLocaleSettings>('platform_locale', defaultPlatformLocaleSettings);
 }

@@ -24,6 +24,11 @@ export interface Contract {
   updated_at: string;
   /** AGR-YYYY-NNNNN, assigned on insert. Null only on rows predating the series. */
   contract_number: string | null;
+  /** Recurring-value model: what the agreement bills per period, inherited from
+   *  the quote's recurring lines. create_subscription_from_contract reads these
+   *  to give the born service its amount and interval. */
+  billing_amount_cents?: number | null;
+  billing_interval?: string | null;
   /** The quote this was drafted from, when there was one. */
   quote_id: string | null;
   /** Joined, not stored — the quote's own number, for showing the origin. */
@@ -85,6 +90,11 @@ export function useCreateContract() {
           value_cents: input.value_cents || 0,
           currency: input.currency || 'SEK',
           notes: input.notes || null,
+          // Recurring-value model: billing terms inherited from a quote's
+          // recurring lines travel into the agreement (nullable — one-time
+          // contracts leave them unset).
+          billing_amount_cents: input.billing_amount_cents ?? null,
+          billing_interval: input.billing_interval ?? null,
           created_by: user.id,
         }])
         .select()

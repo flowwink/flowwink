@@ -29,6 +29,12 @@ interface Props {
     value_cents?: number;
     title?: string;
     quote_id?: string;
+    /** Recurring-value model: what the agreement bills, inherited from the
+     *  quote's recurring lines. Null/undefined for a pure one-time quote. */
+    billing?: { billing_amount_cents: number; billing_interval: 'month' | 'year' } | null;
+    /** Binding term (months) from the quote — derives the end date so
+     *  create_subscription_from_contract can compute the commitment. */
+    term_months?: number | null;
   };
 }
 
@@ -111,11 +117,24 @@ export function NewContractDialog({ open, onOpenChange, contract, prefill }: Pro
         notes: contract.notes || '',
       });
     } else {
+      // A binding term derives the dates up front: the form SHOWS what the
+      // commitment will be, and create_subscription_from_contract later reads
+      // exactly these dates to compute commitment_months. Nothing hidden.
+      const start = new Date();
+      const startStr = start.toISOString().slice(0, 10);
+      let endStr = '';
+      if (prefill?.term_months) {
+        const end = new Date(start);
+        end.setMonth(end.getMonth() + prefill.term_months);
+        endStr = end.toISOString().slice(0, 10);
+      }
       reset({
         title: prefill?.title ?? '', contract_type: 'service', status: 'draft',
         counterparty_name: prefill?.counterparty_name ?? '',
         counterparty_email: prefill?.counterparty_email ?? '',
-        start_date: '', end_date: '', renewal_type: 'none',
+        start_date: prefill?.term_months ? startStr : '',
+        end_date: endStr,
+        renewal_type: 'none',
         renewal_notice_days: 30,
         value_cents: (prefill?.value_cents ?? 0) / 100,
         currency: 'SEK', notes: '',
@@ -150,7 +169,7 @@ export function NewContractDialog({ open, onOpenChange, contract, prefill }: Pro
       }
       setCreatingFromTemplate(true);
       try {
-        const { error } = await supabase.rpc('create_contract_from_template', {
+        const { data: created, error } = await supabase.rpc('create_contract_from_template', {
           p_template_id: templateId,
           p_counterparty_name: data.counterparty_name.trim(),
           p_counterparty_email: data.counterparty_email || null,
@@ -165,6 +184,21 @@ export function NewContractDialog({ open, onOpenChange, contract, prefill }: Pro
           },
         });
         if (error) throw error;
+        // The quote's recurring cadence becomes the agreement's billing terms —
+        // the same fields create_subscription_from_contract reads to give the
+        // born service its interval and amount. billing_enabled stays the
+        // operator's dial: we seed WHAT to bill, they decide WHEN to start.
+        const newId = (created as Array<{ contract_id: string }> | null)?.[0]?.contract_id;
+        if (newId && prefill?.billing) {
+          const { error: billErr } = await supabase
+            .from('contracts')
+            .update({
+              billing_amount_cents: prefill.billing.billing_amount_cents,
+              billing_interval: prefill.billing.billing_interval,
+            } as never)
+            .eq('id', newId);
+          if (billErr) toast.error(`Contract created, but billing terms not set: ${billErr.message}`);
+        }
         await qc.invalidateQueries({ queryKey: ['contracts'] });
         toast.success('Contract drafted from template');
         onOpenChange(false);
@@ -183,6 +217,11 @@ export function NewContractDialog({ open, onOpenChange, contract, prefill }: Pro
       end_date: data.end_date || null,
       counterparty_email: data.counterparty_email || null,
       notes: data.notes || null,
+      // Blank-contract path inherits the quote's recurring billing too.
+      ...(prefill?.billing && !isEdit ? {
+        billing_amount_cents: prefill.billing.billing_amount_cents,
+        billing_interval: prefill.billing.billing_interval,
+      } : {}),
     } as Partial<Contract>;
 
     if (isEdit) {

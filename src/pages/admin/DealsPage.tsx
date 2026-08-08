@@ -54,6 +54,9 @@ import { DealTemplatesPanel } from '@/components/admin/deals/DealTemplatesPanel'
 import { useDealTeams, useLatestExchangeRates, useBaseCurrency, convertAmount } from '@/hooks/useDealsParity';
 import { useForm } from 'react-hook-form';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { useSalesPipelineSettings, useUpdateSalesPipelineSettings, type SalesPipelineSettings } from '@/hooks/useSiteSettings';
+import { dealHeadline } from '@/lib/recurring-value';
+import type { Deal } from '@/hooks/useDeals';
 import { useOpenOnQueryParam } from '@/hooks/useOpenOnQueryParam';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadDemoDataButton } from '@/components/admin/LoadDemoDataButton';
@@ -67,6 +70,20 @@ export default function DealsPage() {
   const { data: teams = [] } = useDealTeams();
   const { data: rates = [] } = useLatestExchangeRates();
   const { data: baseCurrency = 'SEK' } = useBaseCurrency();
+  const { data: pipelineSettings } = useSalesPipelineSettings();
+  const updatePipelineSettings = useUpdateSalesPipelineSettings();
+  const valueBasis = pipelineSettings?.deal_value_basis ?? 'arr';
+  // A recurring deal's value renders with its dimension (10 000/mo → 120 000 ARR
+  // by default); a one-time deal renders exactly as before.
+  const renderDealValue = (deal: Deal) => {
+    const h = dealHeadline(deal.product, deal.value_cents, valueBasis);
+    return (
+      <>
+        {formatPrice(h.cents, deal.currency)}
+        {h.suffix && <span className="text-xs text-muted-foreground font-normal ml-1">{h.suffix}</span>}
+      </>
+    );
+  };
   const updateDeal = useUpdateDeal();
   const [dialogOpen, setDialogOpen] = useState(false);
   useOpenOnQueryParam('new', '1', () => setDialogOpen(true));
@@ -188,6 +205,34 @@ export default function DealsPage() {
 
         {showSetup && (
           <>
+            {/* How a recurring deal's value is headlined — configuration, not a
+                code branch (recurring-value model). One-time deals are
+                unaffected by the choice. */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Deal value display</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center gap-3">
+                <Label className="text-sm text-muted-foreground shrink-0">
+                  Recurring deals show
+                </Label>
+                <Select
+                  value={valueBasis}
+                  onValueChange={(v) =>
+                    updatePipelineSettings.mutate({ deal_value_basis: v as SalesPipelineSettings['deal_value_basis'] })
+                  }
+                >
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="arr">Annual value (ARR) — recommended</SelectItem>
+                    <SelectItem value="per_period">Period price (e.g. 10 000/mo)</SelectItem>
+                    <SelectItem value="tcv">Total contract value (needs a term)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
             <DealTeamsPanel />
             <DealTemplatesPanel />
           </>
@@ -279,12 +324,16 @@ export default function DealsPage() {
                             </Link>
                           </TableCell>
                           <TableCell className="font-semibold">
-                            {formatPrice(deal.value_cents, deal.currency)}
+                            {renderDealValue(deal)}
                             {deal.currency && deal.currency.toUpperCase() !== baseCurrency.toUpperCase() && (() => {
-                              const converted = convertAmount(deal.value_cents, deal.currency, baseCurrency, rates);
+                              // Convert the HEADLINE figure, not the raw per-period
+                              // amount — otherwise an ARR headline pairs with a
+                              // per-month conversion and the two disagree.
+                              const h = dealHeadline(deal.product, deal.value_cents, valueBasis);
+                              const converted = convertAmount(h.cents, deal.currency, baseCurrency, rates);
                               return converted != null ? (
                                 <div className="text-xs text-muted-foreground font-normal">
-                                  ≈ {formatPrice(converted, baseCurrency)}
+                                  ≈ {formatPrice(converted, baseCurrency)}{h.suffix ? ` ${h.suffix}` : ''}
                                 </div>
                               ) : null;
                             })()}
@@ -357,7 +406,7 @@ export default function DealsPage() {
                               </Link>
                             </TableCell>
                             <TableCell className="font-semibold">
-                              {formatPrice(deal.value_cents, deal.currency)}
+                              {renderDealValue(deal)}
                             </TableCell>
                             <TableCell>
                               <Badge className={stageInfo.color}>

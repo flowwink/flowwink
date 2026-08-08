@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, GripVertical, Building2, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
+import { useSalesPipelineSettings } from '@/hooks/useSiteSettings';
+import { dealHeadline } from '@/lib/recurring-value';
 import type { Deal } from '@/hooks/useDeals';
 import { cn } from '@/lib/utils';
 import { NextStepChip } from './crm/NextStepChip';
@@ -16,6 +18,8 @@ interface DealKanbanCardProps {
 
 export function DealKanbanCard({ deal }: DealKanbanCardProps) {
   const { formatDate, formatCurrency } = usePlatformFormat();
+  const { data: pipelineSettings } = useSalesPipelineSettings();
+  const headline = dealHeadline(deal.product, deal.value_cents, pipelineSettings?.deal_value_basis ?? 'arr');
   const {
     attributes,
     listeners,
@@ -60,9 +64,21 @@ export function DealKanbanCard({ deal }: DealKanbanCardProps) {
                 {companyName}
               </p>
             )}
+            {/* A price is (amount, cadence, term) — a recurring deal headlines
+                the configured basis (ARR by default) with the period price as
+                context; a one-time deal renders exactly as before. */}
             <p className="text-lg font-bold mt-1">
-              {formatCurrency(deal.value_cents, deal.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              {formatCurrency(headline.cents, deal.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              {headline.suffix && (
+                <span className="text-xs font-medium text-muted-foreground ml-1">{headline.suffix}</span>
+              )}
             </p>
+            {headline.secondaryCents != null && (
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(headline.secondaryCents, deal.currency, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                {headline.secondarySuffix}
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <button

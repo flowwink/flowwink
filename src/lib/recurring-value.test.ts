@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { computeRecurringRollup, monthlyCents, effectiveCents } from './recurring-value';
+import {
+  computeRecurringRollup, monthlyCents, effectiveCents,
+  dealHeadline, deriveContractBilling,
+} from './recurring-value';
 
 // Amounts in minor units (cents/öre). 10 000 kr = 1_000_000.
 const AI_MONTH = { qty: 1, unit_price_cents: 1_000_000, recurrence: 'month' as const };
@@ -49,6 +52,77 @@ describe('cadence normalisation', () => {
 
   it('applies quantity and discount to the effective amount', () => {
     expect(effectiveCents({ qty: 3, unit_price_cents: 100_000, discount_pct: 10 })).toBe(270_000);
+  });
+});
+
+describe('the deal headline carries the dimension (step 3)', () => {
+  const AI = { type: 'recurring' as const, billing_interval: 'month' as const, default_term_months: 36 };
+
+  it('a one-time or product-less deal renders exactly as today', () => {
+    expect(dealHeadline(null, 120_000_00, 'arr')).toEqual(
+      { cents: 120_000_00, suffix: '', secondaryCents: null, secondarySuffix: '' });
+    expect(dealHeadline({ type: 'one_time' }, 500_000, 'tcv').suffix).toBe('');
+  });
+
+  it("basis 'arr': 10 000/mån headlines as 120 000 ARR with the period as context", () => {
+    const h = dealHeadline(AI, 1_000_000, 'arr');
+    expect(h.cents).toBe(12_000_000);
+    expect(h.suffix).toBe('ARR');
+    expect(h.secondaryCents).toBe(1_000_000);
+    expect(h.secondarySuffix).toBe('/mo');
+  });
+
+  it("basis 'tcv' uses the product's suggested term (36 mo)", () => {
+    const h = dealHeadline(AI, 1_000_000, 'tcv');
+    expect(h.cents).toBe(36_000_000);
+    expect(h.suffix).toBe('TCV');
+  });
+
+  it("basis 'tcv' falls back to ARR when no term exists — never a guess", () => {
+    const h = dealHeadline({ ...AI, default_term_months: null }, 1_000_000, 'tcv');
+    expect(h.suffix).toBe('ARR');
+    expect(h.cents).toBe(12_000_000);
+  });
+
+  it("basis 'per_period' keeps today's number, now with its dimension", () => {
+    const h = dealHeadline(AI, 1_000_000, 'per_period');
+    expect(h.cents).toBe(1_000_000);
+    expect(h.suffix).toBe('/mo');
+  });
+
+  it('a yearly product normalises via months for ARR', () => {
+    const h = dealHeadline({ type: 'recurring', billing_interval: 'year' }, 1_200_000, 'arr');
+    expect(h.cents).toBe(1_200_000); // 100 000/mo × 12
+    expect(h.secondarySuffix).toBe('/yr');
+  });
+});
+
+describe('the contract inherits the quote billing (step 4)', () => {
+  it('a pure one-time quote seeds no recurring billing', () => {
+    expect(deriveContractBilling([INSTALL])).toBeNull();
+  });
+
+  it('single cadence: bills the per-period sum in that cadence', () => {
+    const seed = deriveContractBilling([AI_MONTH, INSTALL]);
+    expect(seed).toEqual({ billing_amount_cents: 1_000_000, billing_interval: 'month' });
+  });
+
+  it('a yearly-only quote bills yearly, untranslated', () => {
+    const seed = deriveContractBilling([{ qty: 1, unit_price_cents: 1_200_000, recurrence: 'year' }]);
+    expect(seed).toEqual({ billing_amount_cents: 1_200_000, billing_interval: 'year' });
+  });
+
+  it('mixed cadences normalise to monthly — the honest common denominator', () => {
+    const seed = deriveContractBilling([
+      AI_MONTH,
+      { qty: 1, unit_price_cents: 1_200_000, recurrence: 'year' },
+    ]);
+    expect(seed).toEqual({ billing_amount_cents: 1_100_000, billing_interval: 'month' });
+  });
+
+  it('one-time lines never leak into the recurring billing amount', () => {
+    const seed = deriveContractBilling([AI_MONTH, { qty: 10, unit_price_cents: 999_999, recurrence: 'one_time' }]);
+    expect(seed!.billing_amount_cents).toBe(1_000_000);
   });
 });
 

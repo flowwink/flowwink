@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { SaveButton } from '@/components/admin/SaveButton';
@@ -22,6 +22,8 @@ export default function BlogSettingsPage() {
       setLocalSettings(settings);
     }
   }, [settings]);
+
+  const navigate = useNavigate();
 
   const handleSave = async () => {
     if (!localSettings) return;

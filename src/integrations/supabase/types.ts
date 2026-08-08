@@ -5805,6 +5805,8 @@ export type Database = {
           title: string
           updated_at: string
           uploaded_by: string | null
+          visibility: string
+          visible_to_role: Database["public"]["Enums"]["app_role"] | null
         }
         Insert: {
           category?: string
@@ -5829,6 +5831,8 @@ export type Database = {
           title: string
           updated_at?: string
           uploaded_by?: string | null
+          visibility?: string
+          visible_to_role?: Database["public"]["Enums"]["app_role"] | null
         }
         Update: {
           category?: string
@@ -5853,6 +5857,8 @@ export type Database = {
           title?: string
           updated_at?: string
           uploaded_by?: string | null
+          visibility?: string
+          visible_to_role?: Database["public"]["Enums"]["app_role"] | null
         }
         Relationships: []
       }

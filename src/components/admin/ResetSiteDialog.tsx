@@ -29,6 +29,7 @@ import {
   ShieldAlert,
   Sparkles,
   Package,
+  Database,
 } from 'lucide-react';
 import { getAllModuleOwnership, wipeModulesData, countModuleRows } from '@/lib/module-data-ownership';
 import type { ModulesSettings } from '@/hooks/useModules';

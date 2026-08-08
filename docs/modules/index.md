@@ -35,7 +35,7 @@ With FlowPilot off, a module is a normal admin UI. With FlowPilot on, the same m
 | [**Newsletter**](./newsletter.md) | config-required | 6 | Create newsletter drafts for sending |
 | [**River**](./river.md) | view-required | 2 | Internal social feed (X / Instagram / Slack-inspired) for the team. Authenticated staff post short messages with images, reply in threads,… |
 | [**Tickets**](./tickets.md) | agent-capable | 4 | Helpdesk ticket management with Kanban pipeline |
-| [**Voice**](./voice.md) | config-required | 3 | Inbound + outbound voice calls via pluggable providers (46elks, Twilio, ...). WebRTC browser-klient i admin, voicemail, missed-call-kö,… |
+| [**Voice**](./voice.md) | config-required | 3 | Inbound + outbound voice calls via pluggable providers (46elks, Twilio, ...). WebRTC browser softphone in admin, voicemail, missed-call… |
 | [**Webinars**](./webinars.md) | config-required | 9 | Plan, promote, run and follow up webinars — lifecycle, lead-loop, reminders and content-loop |
 | [**WebMeet**](./webmeet.md) | agent-capable | 3 | Quick 1-to-few video meetings with shareable URLs and screen sharing — peer-to-peer WebRTC, no SFU required. Use for internal huddles,… |
 

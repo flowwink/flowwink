@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808500000",
-      "migrations_count": 355,
+      "migration_head": "20260809100000",
+      "migrations_count": 356,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1425,21 +1425,25 @@
         {
           "version": "20260808500000",
           "name": "site-templates-authorable"
+        },
+        {
+          "version": "20260809100000",
+          "name": "revert-site-template-capture"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:6006ac8a6d0b82b77ee5061f65adc6d4991f22411df8685de083f235cb45740a",
+      "seed_hash": "sha256:6df222322c5b98274b5313015bfed9069c653f3442a3c56887929bbda039db97",
       "skill_count": 527,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:e4c1cb940d12c9e9716a14dc753f943aa7ca1dc3dda6f0e9076b99fd1043e567",
+      "shared_hash": "sha256:921bf7c67587bd38b18c5c040b2df7d146b70b17d7121374454e7ed2b9879244",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:002f11c8e5add5f2fc0d1962992a12ef914317db94fcbc2572f5a7eb1b68ae49",
+        "agent-execute": "sha256:46f1f441ed4f0bda515f9915d28db48690ec07be57598063da3b443622dd78a4",
         "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
         "ai-task": "sha256:6a0c6b21f9f0575650d9e478bc9184ce24541d3a18d00bb6c80c64a60f5e28aa",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",
@@ -1485,7 +1489,7 @@
         "llms-txt": "sha256:0a8a132d383590b810617ff9cdcd4893980208233d0c26b65d6c17a80af4f452",
         "mcp-server": "sha256:3cb3f630ad868ee15eb2c559e50af08449af876d3856ba0557f9c2ab9300d2b4",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
-        "migrate-page": "sha256:766be614771b490303abefc25efff5ade8417a833fc8c8ed0fc4e725f84fec81",
+        "migrate-page": "sha256:7542943c7e86e548039ed47ddcad6b1319ea9c5b83fcc581303267cf8ade7a76",
         "newsletter": "sha256:48b37b233cdfed2433269c8fc89518f77a5539d872b140f8db1dc5b5aaebfc31",
         "openclaw-responses": "sha256:70efb4b23cd1fb08427337148ccd47097d30a0e746bb27ad17120b39498dec3b",
         "process-image": "sha256:b7a65c7cf8f1b80ec4ae22aec5ab2ec7521ead15ee3f96e08921da90ed41b985",

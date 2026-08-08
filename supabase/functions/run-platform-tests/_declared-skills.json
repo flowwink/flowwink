@@ -104,6 +104,7 @@
     "crm_task_update",
     "cron_health_report",
     "deal_stale_check",
+    "describe_blocks",
     "dispatch_claw_mission",
     "dispose_fixed_asset",
     "docs_search",

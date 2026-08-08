@@ -44,6 +44,7 @@ import { handler as hFetchImage } from '../_shared/handlers/fetch-image.ts';
 import { handler as hTestAiConnection } from '../_shared/handlers/test-ai-connection.ts';
 import { handler as hUpdateAutonomyCron } from '../_shared/handlers/update-autonomy-cron.ts';
 import { executeCheckIntegrations } from '../_shared/handlers/check-integrations.ts';
+import { executeDescribeBlocks } from '../_shared/handlers/describe-blocks.ts';
 import { executeAgentTrace } from '../_shared/handlers/agent-trace.ts';
 
 // Former standalone functions whose serve() bodies moved verbatim. They still
@@ -727,6 +728,8 @@ serve(async (req) => {
       } else if (handler === 'internal:fetch_ecb_rates') {
         result = await executeFetchFxRates(supabase);
 
+      } else if (handler === 'internal:describe_blocks') {
+        result = executeDescribeBlocks(args as Record<string, unknown>);
       } else if (handler === 'internal:check_integrations') {
         result = await executeCheckIntegrations(supabase, args as Record<string, unknown>);
 

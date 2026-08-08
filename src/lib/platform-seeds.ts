@@ -89,6 +89,46 @@ The read-only Trace over agent_activity, grouped into RUNS by trace_id. A run is
 The harness records everything; this is the surface that makes it legible. It renders what already happened — it never changes a run. See docs/architecture/agent-harness.md.`,
   },
   {
+    name: 'describe_blocks',
+    description:
+      "Return the CMS block vocabulary: every block type the platform renders, and the exact field contract for one of them. Call with no argument for the catalogue (56 types with one-line descriptions), then with block_type=<type> for that block's full Data spec BEFORE writing its data. Use when: composing or editing a page (manage_page_blocks), authoring a site template, or unsure which fields a block supports — its own instructions say to ask rather than guess from examples. NOT for: reading a page's current blocks (manage_page_blocks action=get); NOT for site-wide settings.",
+    category: 'system',
+    handler: 'internal:describe_blocks',
+    scope: 'internal',
+    trust_level: 'auto',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'describe_blocks',
+        description:
+          'Block-type catalogue and per-block field contract. Read-only reference; costs nothing to call.',
+        parameters: {
+          type: 'object',
+          properties: {
+            block_type: {
+              type: 'string',
+              description:
+                "Exact block type, e.g. 'hero', 'two-column', 'features'. Omit to list every type first.",
+            },
+          },
+        },
+      },
+    },
+    instructions: `## describe_blocks
+### What
+The block vocabulary, served on demand. Two levels: no argument returns every block type with a one-line description (choose from this); block_type=<type> returns that block's full field contract verbatim.
+### Why it exists
+manage_page_blocks tells you to ask for a block's schema rather than guess — this is what you ask. Guessing field names is the single most common cause of a page that saves but renders empty: the block ignores keys it does not know, silently.
+### The rule that catches most agents
+Fields shown as a Tiptap JSON doc must be OBJECTS ({"type":"doc","content":[…]}), never strings. Sending markdown or plain text into a Tiptap field produces a block that stores your text and renders nothing.
+### Workflow
+1. describe_blocks() — pick the types the page needs
+2. describe_blocks({ block_type }) — for each one you will write
+3. manage_page_blocks / manage_site_template — write data using exactly those field names
+### Source of truth
+Generated from src/lib/block-reference.ts, so it is always what the renderer actually supports. If a field is not listed here, the renderer does not read it.`,
+  },
+  {
     name: 'check_integrations',
     description:
       "Probe every enabled integration (SearXNG, Firecrawl, Resend, OpenAI, Gemini, Unsplash, Composio, local LLM) with a cheap live call and report per-integration ok/fail with a diagnostic. Use when: an integration-backed feature behaves oddly (search falls back, mail not sending); after changing integration config or rotating a key; a scheduled health sweep. NOT for: testing AI chat quality (test_ai_connection); full platform test suites (run_platform_tests).",

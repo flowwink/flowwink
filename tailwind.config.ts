@@ -16,8 +16,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        serif: ['PT Serif', 'Georgia', 'serif'],
+        sans: ['var(--font-sans)'],
+        serif: ['var(--font-serif)'],
       },
       // Design System 2026: Display Typography Scale
       fontSize: {

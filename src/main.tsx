@@ -7,5 +7,10 @@ import { applyVisitorChatSessionHeader } from "./lib/visitor-chat-session";
 // only returns rows belonging to this browser.
 applyVisitorChatSessionHeader();
 
-console.info("[boot] main.tsx evaluated");
-createRoot(document.getElementById("root")!).render(<App />);
+const root = document.getElementById("root");
+
+if (!root) {
+  throw new Error("FlowWink root element was not found");
+}
+
+createRoot(root).render(<App />);

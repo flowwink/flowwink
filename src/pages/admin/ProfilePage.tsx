@@ -174,7 +174,10 @@ export default function ProfilePage() {
         <AdminPageHeader
           title="Profile"
           description="Manage your personal information and avatar"
-        />
+        >
+          <SaveButton onClick={handleSave} isPending={loading} />
+        </AdminPageHeader>
+
           {/* Avatar Section */}
           <Card>
             <CardHeader>

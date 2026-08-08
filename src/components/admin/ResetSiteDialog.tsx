@@ -176,33 +176,50 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
 
     const tasks: { label: string; fn: () => Promise<void> }[] = [];
 
-    // -------------------- Module-owned data (manifest-driven) --------------------
-    // All business data — pages, blog, leads, finance, hr, orders, etc. — is
-    // owned by a module and wiped through the module's manifest. This is the
-    // single source of truth: no legacy hardcoded clears coexist.
-    const selectedIds = moduleOwnership
-      .filter(m => selectedModules.has(m.moduleId))
-      .map(m => m.moduleId as keyof ModulesSettings);
-    if (selectedIds.length > 0) {
-      const tableCount = selectedIds.reduce(
-        (n, id) => n + (moduleOwnership.find(m => m.moduleId === id)?.tables.length ?? 0),
-        0
-      );
+    // -------------------- Full database wipe (server-side) --------------------
+    // The manifest-driven, per-table client wipe drifted from the schema: any
+    // table not declared by a module (and anything RLS blocked) survived a
+    // "reset". The authoritative wipe is one atomic SECURITY DEFINER routine
+    // that truncates every public table except identity, instance config and
+    // the seeded platform layers (skills, chart of accounts, locale packs).
+    if (options.database) {
       tasks.push({
-        label: `Modules: ${selectedIds.length} selected (${tableCount} tables)`,
+        label: 'Wiping all business data (server-side, atomic)',
         fn: async () => {
-          const results = await wipeModulesData(selectedIds);
-          const failed = results.filter(r => !r.ok);
-          if (failed.length > 0) {
-            throw new Error(
-              `${failed.length} tables failed: ${failed
-                .map(f => `${f.module}.${f.table}`)
-                .slice(0, 5)
-                .join(', ')}${failed.length > 5 ? '…' : ''}`
-            );
-          }
+          const { data, error } = await supabase.rpc('reset_site_data', {
+            p_confirm: 'RESET-SITE',
+          });
+          if (error) throw error;
+          const wiped = (data as { tables_wiped?: number } | null)?.tables_wiped;
+          if (!wiped) throw new Error('Reset routine reported no tables wiped');
         },
       });
+    } else {
+      // Legacy per-module wipe, kept for selective clean-ups.
+      const selectedIds = moduleOwnership
+        .filter(m => selectedModules.has(m.moduleId))
+        .map(m => m.moduleId as keyof ModulesSettings);
+      if (selectedIds.length > 0) {
+        const tableCount = selectedIds.reduce(
+          (n, id) => n + (moduleOwnership.find(m => m.moduleId === id)?.tables.length ?? 0),
+          0
+        );
+        tasks.push({
+          label: `Modules: ${selectedIds.length} selected (${tableCount} tables)`,
+          fn: async () => {
+            const results = await wipeModulesData(selectedIds);
+            const failed = results.filter(r => !r.ok);
+            if (failed.length > 0) {
+              throw new Error(
+                `${failed.length} tables failed: ${failed
+                  .map(f => `${f.module}.${f.table}`)
+                  .slice(0, 5)
+                  .join(', ')}${failed.length > 5 ? '…' : ''}`
+              );
+            }
+          },
+        });
+      }
     }
 
     // -------------------- Cross-cutting: Media library --------------------

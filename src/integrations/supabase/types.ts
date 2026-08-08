@@ -19568,6 +19568,10 @@ export type Database = {
         Args: { p_order_id: string; p_source_location_id?: string }
         Returns: Json
       }
+      apply_cron_http_timeouts: {
+        Args: { p_timeout_ms?: number }
+        Returns: Json
+      }
       apply_onboarding_template: {
         Args: { p_employee_id: string; p_template_id: string }
         Returns: {
@@ -22713,6 +22717,7 @@ export type Database = {
         Args: { p_confirm?: boolean; p_year: number }
         Returns: Json
       }
+      sandbox_reset_wipe: { Args: { p_confirm: string }; Returns: Json }
       schedule_cron_job: {
         Args: {
           p_body: string

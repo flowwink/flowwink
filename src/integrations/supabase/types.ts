@@ -16889,6 +16889,7 @@ export type Database = {
           commitment_end: string | null
           commitment_months: number | null
           commitment_start: string | null
+          contract_id: string | null
           created_at: string
           currency: string
           current_period_end: string | null
@@ -16932,6 +16933,7 @@ export type Database = {
           commitment_end?: string | null
           commitment_months?: number | null
           commitment_start?: string | null
+          contract_id?: string | null
           created_at?: string
           currency?: string
           current_period_end?: string | null
@@ -16975,6 +16977,7 @@ export type Database = {
           commitment_end?: string | null
           commitment_months?: number | null
           commitment_start?: string | null
+          contract_id?: string | null
           created_at?: string
           currency?: string
           current_period_end?: string | null
@@ -17006,6 +17009,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "subscriptions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subscriptions_last_invoice_id_fkey"
             columns: ["last_invoice_id"]
@@ -17820,9 +17830,11 @@ export type Database = {
           stage_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
+          subscription_id: string | null
           suggested_kb_article_ids: string[]
           tags: string[]
           team_id: string | null
+          ticket_number: string | null
           updated_at: string
         }
         Insert: {
@@ -17847,9 +17859,11 @@ export type Database = {
           stage_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
+          subscription_id?: string | null
           suggested_kb_article_ids?: string[]
           tags?: string[]
           team_id?: string | null
+          ticket_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -17874,9 +17888,11 @@ export type Database = {
           stage_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
+          subscription_id?: string | null
           suggested_kb_article_ids?: string[]
           tags?: string[]
           team_id?: string | null
+          ticket_number?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -17899,6 +17915,13 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
           {
@@ -20484,6 +20507,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_subscription_from_contract: {
+        Args: { p_contract_id: string }
+        Returns: string
+      }
+      create_ticket_from_portal: {
+        Args: {
+          p_description: string
+          p_priority?: Database["public"]["Enums"]["ticket_priority"]
+          p_subject: string
+          p_subscription_id?: string
+        }
+        Returns: {
+          ticket_id: string
+          ticket_no: string
+        }[]
+      }
       create_webmeet_room: {
         Args: {
           p_expires_in_minutes?: number
@@ -22181,6 +22220,10 @@ export type Database = {
       mark_payroll_paid: {
         Args: { p_payment_date?: string; p_run_id: string }
         Returns: Json
+      }
+      mark_service_delivered: {
+        Args: { p_subscription_id: string }
+        Returns: undefined
       }
       mark_social_post_posted: {
         Args: {

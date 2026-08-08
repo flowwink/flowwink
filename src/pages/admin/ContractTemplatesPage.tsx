@@ -240,10 +240,29 @@ export default function ContractTemplatesPage() {
     onError: (err) => toast.error(`Delete failed: ${(err as Error).message}`),
   });
 
-  const grouped = templates.reduce<Record<string, ContractTemplate[]>>((acc, t) => {
+  const languages = Array.from(new Set(templates.map((t) => t.language))).sort();
+
+  const q = search.trim().toLowerCase();
+  const filtered = templates.filter((t) => {
+    if (typeFilter !== 'all' && t.contract_type !== typeFilter) return false;
+    if (langFilter !== 'all' && t.language !== langFilter) return false;
+    if (activeOnly && !t.is_active) return false;
+    if (!q) return true;
+    return (
+      t.name.toLowerCase().includes(q) ||
+      (t.description ?? '').toLowerCase().includes(q) ||
+      t.body_markdown.toLowerCase().includes(q)
+    );
+  });
+
+  const grouped = filtered.reduce<Record<string, ContractTemplate[]>>((acc, t) => {
     (acc[t.contract_type] ||= []).push(t);
     return acc;
   }, {});
+
+  const hasFilters = !!q || typeFilter !== 'all' || langFilter !== 'all' || activeOnly;
+  const activeCount = templates.filter((t) => t.is_active).length;
+
 
   return (
     <AdminLayout>

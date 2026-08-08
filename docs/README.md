@@ -54,7 +54,7 @@ All three paths share the concepts below.
 | [`pilot/`](./pilot/) | FlowPilot internals — prompt compiler, memory, heartbeat, failover | builders |
 | [`architecture/`](./architecture/) | Platform layers — MCP, event bus, retrieval, locale packs, tiers | builders |
 | [`parity/`](./parity/README.md) | Odoo-parity programme — scorecard, epics, roadmap | builders |
-| [`reference/`](./reference/) | Module API, headless REST, skill registry, commands | both |
+| [`reference/`](./reference/README.md) | [Developer commands](./reference/developer-commands.md), module API, headless REST, skill registry, slash commands | both |
 | [`mcp/`](./mcp/) | MCP surface for external agents | builders |
 | [`agents/`](./agents/README.md) | Department-claw playbooks + the agent invite payload | operators |
 | [`contributing/`](./contributing/) | How to contribute, run tests, build a module | builders |

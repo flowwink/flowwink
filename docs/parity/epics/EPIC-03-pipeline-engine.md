@@ -3,6 +3,8 @@ title: "EPIC-03 — Configurable pipeline / stage engine"
 status: planned
 sprint: 1
 owner: unassigned
+category: parity
+description: One shared, user-configurable stage engine (kanban + per-stage probability) to replace the hardcoded status enums in crm, deals, tickets and projects.
 ---
 
 # EPIC-03 — Configurable pipeline / stage engine

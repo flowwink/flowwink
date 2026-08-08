@@ -1,6 +1,7 @@
 ---
 title: For Operators — Running FlowWink
 description: Install, configure, and operate FlowWink for a real business. Self-hosted, single-tenant.
+category: operators
 ---
 
 # Running FlowWink

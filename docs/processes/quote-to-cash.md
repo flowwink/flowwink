@@ -1,3 +1,9 @@
+---
+title: "Quote-to-Cash"
+category: processes
+description: An admin (or the agent) drafts a quote: line items, a validity date, optionally a prepayment percentage. 
+---
+
 # Quote-to-Cash
 
 > From won deal to paid invoice. The bread and butter of consultancies.

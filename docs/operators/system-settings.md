@@ -1,6 +1,7 @@
 ---
 title: System Settings (`/admin/settings`)
 description: Reference for every tab in the site-wide settings panel — what each field does, when to change it, and recommended values for production.
+category: operators
 ---
 
 # System Settings

@@ -5,6 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "agent-capable"
 manual: true
+description: Ships with 3 agent skills and 1 daily automation.
 ---
 
 # Multi-Currency

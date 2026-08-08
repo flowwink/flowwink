@@ -3,6 +3,8 @@ title: "EPIC-02 — Inventory valuation & COGS"
 status: planned
 sprint: 2
 owner: unassigned
+description: Without stock valuation, accounting can never reconcile to inventory: there is no cost basis, no COGS posting, and the balance sheet's inventory line is fiction. 
+category: parity
 ---
 
 # EPIC-02 — Inventory valuation & COGS

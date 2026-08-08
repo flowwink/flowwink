@@ -1,3 +1,9 @@
+---
+title: "MCP Token Authentication and RLS Architecture"
+description: Both my test execution and Hermes agent operations failed with the same error:
+category: architecture
+---
+
 # MCP Token Authentication and RLS Architecture
 
 ## Problem Identified

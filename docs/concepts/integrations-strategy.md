@@ -1,3 +1,9 @@
+---
+title: "FlowWink Integration & Go-To-Market Strategy"
+description: Small businesses don't rip and replace. They have:
+category: concepts
+---
+
 # FlowWink Integration & Go-To-Market Strategy
 
 > How FlowWink wedges into existing workflows and expands from there.

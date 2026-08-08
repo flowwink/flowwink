@@ -1,3 +1,9 @@
+---
+title: "Local development — a Supabase stack on your machine"
+description: This is the safety net for everything in provisioning-and-updates.md: the fleet drift, the lockstep traps, the risky prod migrations — all of it is validated here first. 
+category: operators
+---
+
 # Local development — a Supabase stack on your machine
 
 > Run the whole backend locally (Postgres + auth + storage + edge functions) so

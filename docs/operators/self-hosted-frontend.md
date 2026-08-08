@@ -1,3 +1,9 @@
+---
+title: "Self-hosted frontend (Docker / Easypanel / any VPS)"
+description: The frontend normally deploys to Vercel (auto-deploy on push, vercel.json). 
+category: operators
+---
+
 # Self-hosted frontend (Docker / Easypanel / any VPS)
 
 The frontend normally deploys to Vercel (auto-deploy on push, `vercel.json`).

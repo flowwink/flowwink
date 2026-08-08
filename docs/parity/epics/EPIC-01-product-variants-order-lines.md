@@ -3,6 +3,8 @@ title: "EPIC-01 — Product variants & normalized order lines"
 status: planned
 sprint: 1
 owner: unassigned
+description: This is the single highest-leverage structural gap. 
+category: parity
 ---
 
 # EPIC-01 — Product variants & normalized order lines

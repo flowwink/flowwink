@@ -2,6 +2,8 @@
 title: Context Compaction
 summary: How Pilot manages conversation history length through summarization and memory extraction
 read_when: Debugging context overflow, working on conversation history, or tuning token budgets
+description: The LLM context window is finite (80,000 tokens in Pilot). 
+category: pilot
 ---
 
 # Context Compaction

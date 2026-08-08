@@ -1,3 +1,9 @@
+---
+title: "Resumption (H11) — design"
+description: Agent Harness (H11), and the last Hermes-benchmark gap in flowpilot-2.0.md.
+category: architecture
+---
+
 # Resumption (H11) — design
 
 **Status:** design · **Date:** 2026-07-23

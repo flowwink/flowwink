@@ -1,3 +1,9 @@
+---
+title: "Content API Documentation"
+description: FlowWink provides a powerful Content API for multi-channel delivery. 
+category: reference
+---
+
 # Content API Documentation
 
 FlowWink provides a powerful Content API for multi-channel delivery. Access your content via REST or GraphQL endpoints — the same content FlowPilot creates and manages autonomously.

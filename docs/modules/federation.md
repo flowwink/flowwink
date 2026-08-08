@@ -3,6 +3,8 @@ id: federation
 name: Federation
 manual: true
 description: Multi-agent federation — connect FlowPilot to external Architects (Claude, OpenClaw peers) via MCP, A2A, and /v1/responses. Directional connections, channel-aware auth, automated callback injection.
+title: "Federation"
+category: modules
 ---
 
 # Federation

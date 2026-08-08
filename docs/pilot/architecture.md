@@ -1,3 +1,9 @@
+---
+title: "Pilot Architecture — Deep Dive"
+description: When more than 25 skill tools are loaded, reason() narrows them to the 25 most relevant using the shared Skill Relevance Engine (scoreSkillsByIntent in shared/skills/intent-scor…
+category: pilot
+---
+
 # Pilot Architecture — Deep Dive
 
 > Technical reference for the Pilot reasoning engine. Read the [pilot docs index](../pilot/) first for the overview.

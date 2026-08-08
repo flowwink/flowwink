@@ -3,6 +3,8 @@ title: "EPIC-05 — Stage-3 verification sweep"
 status: planned
 sprint: R1
 owner: unassigned
+description: Thirteen capabilities across seven modules are code-complete but capped at partial solely because the Stage-3 rule requires runtime verification on a live instance before a capa…
+category: parity
 ---
 
 # EPIC-05 — Stage-3 verification sweep

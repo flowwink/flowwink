@@ -2,6 +2,8 @@
 title: "Accounting reference — Accounted (accounted.se) gap map"
 source: competitor + Swedish accounting standards
 license_note: Accounted is AGPL-3.0-or-later — DO NOT copy its code. Borrow the FEATURE SET and the public Swedish standards only.
+category: parity
+description: Accounted (github.com/erp-mafia/accounted, formerly Gnubok) is AGPL-3.0-or-later. 
 ---
 
 # Accounting: FlowWink vs Accounted — parity gap map

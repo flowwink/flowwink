@@ -1,3 +1,9 @@
+---
+title: "Hire-to-Retire"
+category: processes
+description: A new hire means re-typing the same person into five places — contract, checklist, HR record, all by hand — this process turns an accepted offer into employee record, draft cont…
+---
+
 # Hire-to-Retire
 
 > The full employee lifecycle — from hire to offboarding.

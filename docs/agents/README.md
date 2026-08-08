@@ -2,6 +2,8 @@
 title: "Department Claws — Playbook Index"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-04"
+description: FlowWink exposes ~500+ MCP skills. A focused department claw picks up one composite group and runs that department end-to-end — without FlowPilot.
+category: agents
 ---
 
 # Department Claws

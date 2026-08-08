@@ -2,6 +2,8 @@
 title: "Conversation & Retrieval: one engine, two dials"
 status: "proposed architecture (approved direction 2026-07-10)"
 last_updated: "2026-07-10"
+description: FlowWink serves four human audiences — anonymous visitors, B2C customers, B2B customers, and internal employees (sales, purchasing, support, finance, product, …) — plus a fifth,…
+category: architecture
 ---
 
 # Conversation & Retrieval: one engine, two dials

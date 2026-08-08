@@ -1,3 +1,9 @@
+---
+title: "Site Migration with Firecrawl"
+description: This document describes FlowWink's site migration feature, which allows you to import content from existing websites using Firecrawl integration.
+category: guides
+---
+
 # Site Migration with Firecrawl
 
 > **Audience:** Users/Admins  

@@ -131,8 +131,7 @@ describe('no hand-rolled slug generators in src/', () => {
     // as meaningful characters rather than folding them.
     'src/components/public/blocks/ConsultantMatcherBlock.tsx',
     // src/lib/modules/* is local Claude's exclusive territory. generateSlug()
-    // there has the same non-ASCII bug; reported in session-memory.md, not
-    // touched here.
+    // there has the same non-ASCII bug; tracked separately, not touched here.
     'src/lib/modules/helpers.ts',
   ]);
 

@@ -1,3 +1,9 @@
+---
+title: "Deployment"
+description: FlowWink is a self-hosted SaaS. The recommended stack is Supabase Cloud for the backend (database, auth, edge functions, storage) and Vercel for the frontend (static React + Vit…
+category: guides
+---
+
 # Deployment
 
 FlowWink is a self-hosted SaaS. The recommended stack is **Supabase Cloud** for the backend (database, auth, edge functions, storage) and **Vercel** for the frontend (static React + Vite build). It works on free tiers for getting started.

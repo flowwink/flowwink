@@ -1,3 +1,9 @@
+---
+title: "Sign-to-Serve"
+category: processes
+description: A prospect asks for two fibre connections and a mobile plan. 
+---
+
 # Sign-to-Serve
 
 > From signed agreement to a service the customer can see, pay for and get help

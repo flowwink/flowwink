@@ -1,3 +1,9 @@
+---
+title: "Record-to-Report"
+category: processes
+description: A Swedish SMB's accounting year is a fixed sequence of statutory events on top of the operational loop above. 
+---
+
 # Record-to-Report
 
 > From transaction to financial report. Bookkeeping + period-end close.

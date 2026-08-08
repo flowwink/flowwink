@@ -1,3 +1,9 @@
+---
+title: "Provisioning & Updates — keeping every FlowWink site in sync"
+description: FlowWink is self-hosted, one Supabase project per customer. 
+category: operators
+---
+
 # Provisioning & Updates — keeping every FlowWink site in sync
 
 > How to stand up a new FlowWink site and how to ship changes to the sites

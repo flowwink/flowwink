@@ -3,6 +3,8 @@ title: "EPIC-NN — <Title>"
 status: planned        # planned | in-progress | done
 sprint: <N>
 owner: unassigned
+description: <1–2 paragraphs. What gap this closes, which modules it unblocks, the business reason it ranks where it does.>
+category: parity
 ---
 
 # EPIC-NN — <Title>

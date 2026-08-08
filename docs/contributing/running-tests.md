@@ -1,3 +1,9 @@
+---
+title: "Running the Test Suite"
+description: Quick reference for running FlowWink's tests locally and in CI, plus how to refresh snapshots when the database schema or skill contracts change.
+category: contributing
+---
+
 # Running the Test Suite
 
 Quick reference for running FlowWink's tests locally and in CI, plus how to refresh snapshots when the database schema or skill contracts change.

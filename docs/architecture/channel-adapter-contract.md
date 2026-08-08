@@ -1,3 +1,9 @@
+---
+title: "Channel Adapter Contract"
+description: Today our channels are implemented ad hoc:
+category: architecture
+---
+
 # Channel Adapter Contract
 
 > The target architecture for every communication channel in FlowWink. Inspired by [OpenClaw's `ChannelPlugin`](https://github.com/0xtresser/OpenClaw-Book/blob/main/EN/Ch11-Channel-Adapter-Abstraction/11.1-Channel-Adapter-Design-Pattern.md) (Ch. 11 — Channel Adapter Abstraction).

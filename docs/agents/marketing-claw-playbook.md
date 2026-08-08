@@ -2,6 +2,8 @@
 title: "Marketing Department — External Claw Playbook"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-01"
+description: This playbook lets an external claw act as FlowWink's marketing department — running paid growth, content, audience research, and reporting end-to-end
+category: agents
 ---
 
 # Marketing Department Playbook

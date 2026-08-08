@@ -1,3 +1,9 @@
+---
+title: "Subscribe-to-Renew"
+category: processes
+description: A B2B customer signs a monthly plan billed by invoice. 
+---
+
 # Subscribe-to-Renew
 
 > From signup to recurring revenue: bill on cycle, handle changes with proration,

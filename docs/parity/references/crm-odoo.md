@@ -9,6 +9,8 @@ sources:
   - github.com/odoo/odoo 18.0 — addons/crm/models/crm_lead.py, addons/mail/models/mail_activity.py
 date: 2026-07-04
 source: docs+community-source (Helpdesk is Enterprise — helpdesk claims docs-only)
+description: Odoo's core sales discipline is 'every open opportunity carries a scheduled next activity'; the pipeline kanban surfaces it and its urgency at a glance.
+category: parity
 ---
 
 # Odoo 18 CRM + Helpdesk — pipeline discipline reference

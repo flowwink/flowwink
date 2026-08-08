@@ -1,3 +1,9 @@
+---
+title: "A2A — Agent-to-Agent Communication Model"
+description: See [mem://federation/directional-connections-model] for the data model (federationconnections table).
+category: concepts
+---
+
 # A2A — Agent-to-Agent Communication Model
 
 > How FlowPilot federates with peer agents (OpenClaw, Claude Desktop, custom MCP clients) without a central broker.

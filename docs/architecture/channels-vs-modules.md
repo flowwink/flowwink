@@ -1,3 +1,9 @@
+---
+title: "Channels vs Modules"
+description: Examples:
+category: architecture
+---
+
 # Channels vs Modules
 
 > The single most important distinction for anyone adding a new communication surface to FlowWink.

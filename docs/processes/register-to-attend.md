@@ -1,3 +1,9 @@
+---
+title: "Register-to-Attend"
+category: processes
+description: Event signups sit in a form export that never reaches the CRM — this process turns every registration into a scored lead, reminds attendees automatically, and closes the loop fr…
+---
+
 # Register-to-Attend
 
 > The event/webinar loop: publish → register → remind → run → mark attendance →

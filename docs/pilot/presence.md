@@ -2,6 +2,8 @@
 title: Presence (Heartbeat Protocol)
 summary: How Pilot maintains autonomous presence through scheduled heartbeat loops
 read_when: Working on heartbeat, cron jobs, or autonomous agent behavior
+description: Presence is how the agent stays active without human interaction. 
+category: pilot
 ---
 
 # Presence — The Heartbeat Protocol

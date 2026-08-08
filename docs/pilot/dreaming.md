@@ -2,6 +2,8 @@
 title: Dreaming (Reflection & Learning)
 summary: How Pilot reflects on past actions, evaluates outcomes, and evolves its own behavior
 read_when: Working on agent self-improvement, outcome evaluation, or the reflect tool
+description: 'Dreaming' is the process where the agent steps back from execution and reflects on what happened. 
+category: pilot
 ---
 
 # Dreaming — Reflection & Learning

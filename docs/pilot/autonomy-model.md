@@ -1,3 +1,9 @@
+---
+title: "FlowPilot Autonomy Model"
+description: FlowPilot operates through three distinct execution modes. 
+category: pilot
+---
+
 # FlowPilot Autonomy Model
 
 > How objectives, workflows, automations, and skills interact to create autonomous behavior.

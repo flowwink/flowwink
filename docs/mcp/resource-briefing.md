@@ -2,6 +2,8 @@
 title: "resource://briefing — Aggregated Context Briefing"
 summary: One-call situational awareness for external orchestrators
 read_when: Building or debugging external agent integrations (Scenario B/C)
+description: An external orchestrator (e.g., ClawOne / OpenClaw) needs to understand the full system state before acting. 
+category: mcp
 ---
 
 # resource://briefing

@@ -1,3 +1,9 @@
+---
+title: "Module API Documentation"
+description: This document defines the formal API contracts for all FlowWink modules. 
+category: reference
+---
+
 # Module API Documentation
 
 > **Version:** 1.1.0  

@@ -1,3 +1,9 @@
+---
+title: "The FlowWink Agent Harness"
+category: architecture
+description: A harness is everything around the model that makes an agent reliable in production: the loop, skill selection, context assembly, memory, policy/guardrails, verification, self-c…
+---
+
 # The FlowWink Agent Harness
 
 **Status:** design ruling + build plan · **Date:** 2026-07-23

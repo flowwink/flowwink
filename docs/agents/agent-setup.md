@@ -2,6 +2,8 @@
 title: "Agent Setup — from invite to operator (Game Master pattern)"
 audience: "platform owners + game masters (Claude Code, human operators)"
 last_updated: "2026-05-26"
+description: How an external agent (OpenClaw, Hermes, ClawThree, Claude Desktop, custom MCP claw) goes from 'nothing' to 'running a department on this FlowWink site'.
+category: agents
 ---
 
 # Agent Setup

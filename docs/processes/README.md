@@ -1,3 +1,9 @@
+---
+title: "Business Processes — FlowWink Coverage Map"
+description: Fifteen processes, one platform. Each links to its own doc — one page per process, all following the same anatomy (explained in the next section).
+category: processes
+---
+
 # Business Processes — FlowWink Coverage Map
 
 > **What is this?** A business process usually spans multiple modules. This folder maps which **business processes** FlowWink supports, which modules participate, and at what **maturity level** each one currently sits.

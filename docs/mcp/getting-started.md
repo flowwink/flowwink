@@ -1,6 +1,7 @@
 ---
 title: MCP — Getting Started
 description: Connect Claude Desktop, OpenClaw, Cursor or any MCP client to FlowWink in 5 minutes.
+category: mcp
 ---
 
 # MCP — Getting Started

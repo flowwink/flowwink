@@ -1,3 +1,9 @@
+---
+title: "Contributing to FlowWink"
+description: Thank you for your interest in contributing to FlowWink! 
+category: contributing
+---
+
 # Contributing to FlowWink
 
 Thank you for your interest in contributing to FlowWink! This guide will help you get started.

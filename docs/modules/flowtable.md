@@ -5,14 +5,14 @@ version: "0.1.0"
 category: "data"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-07-13"
+generated_at: "2026-08-08"
 ---
 
 # Flowtable
 
 > Airtable-style flexible tables for lists, prospect sheets, content backlogs. CSV import/export + push-to-CRM bridge.
 
-Ships with **5 agent skills**, an **admin UI**.
+Ships with **10 agent skills**, an **admin UI**.
 
 ## Quick Facts
 
@@ -24,7 +24,7 @@ Ships with **5 agent skills**, an **admin UI**.
 | **Autonomy** | agent-capable |
 | **Core** | No |
 | **Capabilities** | — |
-| **MCP-exposed skills** | 5 |
+| **MCP-exposed skills** | 10 |
 | **Owns tables** | — |
 
 ## Skills
@@ -35,10 +35,15 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | Skill | Scope | Description |
 |-------|-------|-------------|
 | `list_flowtable_bases` | internal | List all Flowtable bases the current user can access. Use when: agent needs to discover existing ad-hoc tables (call lists, prospecting sheets, content backlogs). NOT for: structured CRM data (use … |
+| `manage_flowtable_base` | internal | Create or update a Flowtable BASE — the top-level container tables live in. Use when: starting a new data surface (e.g. "put product info in a table" on an instance with no suitable base); renaming… |
+| `bulk_upsert_flowtable_records` | internal | Write MANY Flowtable records in one call, upserting by a natural key field (sku, name, …) so re-runs update instead of duplicating. Returns per-row results (created/updated/failed with reasons). Us… |
+| `import_csv_to_flowtable` | internal | Import raw CSV text straight into a Flowtable table — headers are matched to field names/keys, the delimiter is auto-detected (comma or semicolon; Swedish Excel exports use semicolons), quoted cell… |
 | `list_flowtable_records` | internal | List records inside a Flowtable table. Use when: reading rows from a user-owned ad-hoc table (call lists, prospect sheets). Each record has a free-form `values` JSONB matching the table\ |
 | `list_flowtable_tables` | internal | Discover the tables + field schema inside a Flowtable base (Airtable-style). Use when: an agent found a base (list_flowtable_bases) and needs to know which tables it holds + their field keys before… |
 | `query_flowtable` | internal | Query a Flowtable table server-side: filter on field values (eq/neq/ilike pushed to the DB; gt/gte/lt/lte numeric, is_empty/not_empty), free-text search across all fields, sort by a field, and coun… |
 | `manage_flowtable_record` | internal | Create, update, delete or get a single Flowtable record. Update MERGES the given values into the existing row by default (merge=false replaces). Use when: correcting or enriching rows in an importe… |
+| `manage_flowtable_table` | internal | Create, rename or delete a TABLE inside a Flowtable base — schema management, so an agent can build up a base (e.g. "set up a table for supplier contacts"), not just fill one. Create accepts an inl… |
+| `manage_flowtable_field` | internal | Create, update or delete a FIELD (column) on a Flowtable table — including relation fields (link/lookup/rollup), user assignment fields, and select choices. Use when: a table needs a new column (e.… |
 
 ## Module API Contract
 
@@ -57,6 +62,9 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | Admin page | `src/pages/admin/FlowtablePage.tsx` |
 | Migration | `supabase/migrations/20260709010000_flowtable-list-tables.sql` |
 | Migration | `supabase/migrations/20260712140000_flowtable-view-config.sql` |
+| Migration | `supabase/migrations/20260806080000_flowtable-base-skill.sql` |
+| Migration | `supabase/migrations/20260806090000_flowtable-bulk-and-csv.sql` |
+| Migration | `supabase/migrations/20260808190000_flowtable-list-tables-expose-options.sql` |
 
 ## Contributing
 

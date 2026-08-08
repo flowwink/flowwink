@@ -1,3 +1,9 @@
+---
+title: "Content-to-Conversion"
+category: processes
+description: Content marketing dies of 'no time to write' — research, drafting, distribution and measurement each need hours nobody has — this process lets the agent run the whole pipeline w…
+---
+
 # Content-to-Conversion
 
 > From idea to published article to measurable outcome. FlowWink's "agent-shines" process.

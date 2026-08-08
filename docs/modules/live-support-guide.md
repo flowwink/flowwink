@@ -1,3 +1,9 @@
+---
+title: "Live Support — Deep Dive Guide"
+description: Live Support is the human-agent inbox for visitor and customer conversations across every channel FlowWink supports. 
+category: modules
+---
+
 # Live Support — Deep Dive Guide
 
 > Companion to the auto-generated [`live-support.md`](./live-support.md). This file is hand-maintained.

@@ -3,6 +3,8 @@ id: accounting
 name: Accounting
 manual: true
 description: Double-entry accounting with autonomous reconciliation, multi-locale chart of accounts, and pluggable export adapters (SIE/DATEV/FEC/SAF-T).
+title: "Accounting"
+category: modules
 ---
 
 # Accounting

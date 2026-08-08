@@ -3,6 +3,8 @@ title: "EPIC-08 — Ops backends get their UI"
 status: planned
 sprint: R1
 owner: unassigned
+description: The 2026-06-27 reconcile wave shipped a whole tier of operational backends — work centers/routing/work orders, cycle counts, reconciliation rules, shipping rate cards, budgets,…
+category: parity
 ---
 
 # EPIC-08 — Ops backends get their UI

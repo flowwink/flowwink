@@ -1,3 +1,9 @@
+---
+title: "FlowPilot Module Dependencies"
+description: FlowWink is designed as a Human-First platform where every module provides full manual functionality out of the box. 
+category: pilot
+---
+
 # FlowPilot Module Dependencies
 
 > How FlowPilot assists each module — and what happens without it.

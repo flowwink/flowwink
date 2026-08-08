@@ -1,3 +1,9 @@
+---
+title: "Live Support as Aggregator"
+description: Live Support projects voicemails and callbacks into its UI by reading voicecalls — but the source of truth and CRUD surface stay in the voice module.
+category: architecture
+---
+
 # Live Support as Aggregator
 
 > Live Support is a view, not a channel owner.

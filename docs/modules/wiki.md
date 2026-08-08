@@ -3,6 +3,8 @@ id: wiki
 name: Wiki
 manual: true
 description: Internal TEdit-style wiki / intranet for FlowWink.
+title: "Wiki"
+category: modules
 ---
 
 # Wiki

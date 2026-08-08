@@ -3,6 +3,8 @@ id: river
 name: River
 manual: true
 description: Internal team social feed — X / Instagram / Slack-inspired, with threads, reactions, and realtime.
+title: "River"
+category: modules
 ---
 
 # River

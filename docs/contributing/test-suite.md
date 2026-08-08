@@ -1,3 +1,9 @@
+---
+title: "Test Suite — Master Spec"
+description: Last updated: 2026-04-29
+category: contributing
+---
+
 # Test Suite — Master Spec
 
 > **Single source of truth for every test, guardrail, snapshot and regression script in FlowWink.**

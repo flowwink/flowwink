@@ -1,3 +1,9 @@
+---
+title: "Support-to-Resolution"
+category: processes
+description: Benchmarked against Odoo Helpdesk: ~90% parity — see ../parity/capabilities/tickets.json. 
+---
+
 # Support-to-Resolution
 
 > From customer question to resolved case. Self-service + human handoff.

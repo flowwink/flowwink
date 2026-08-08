@@ -1,3 +1,9 @@
+---
+title: "Accounting Locale Packs"
+description: Without packs, the platform was hard-locked to BAS 2024 / SEK / 25% VAT / PAXml / SIE. 
+category: architecture
+---
+
 # Accounting Locale Packs
 
 > FlowWink's bookkeeping core is **accounting-neutral**. Country/standard-specific

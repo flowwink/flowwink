@@ -1,3 +1,9 @@
+---
+title: "FlowWink Security Architecture"
+description: This document describes the authentication and authorization architecture used in FlowWink, intended for security review and developer reference.
+category: guides
+---
+
 # FlowWink Security Architecture
 
 > **Audience:** Security Review / Developers

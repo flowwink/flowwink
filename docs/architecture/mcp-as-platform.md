@@ -2,6 +2,8 @@
 title: "MCP as Platform (not a FlowPilot feature)"
 status: "core architecture"
 last_updated: "2026-04-22"
+description: FlowWink is a traditional SaaS first, an autonomous-agent platform second. 
+category: architecture
 ---
 
 # MCP as Platform

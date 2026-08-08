@@ -362,14 +362,21 @@ function extractTablesFromMigrations(migrationPaths: string[]): string[] {
   for (const rel of migrationPaths) {
     try {
       const sql = fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+      // Schema qualifier is optional and may be quoted ("public".foo) — strip it
+      // before capturing, otherwise the schema name gets reported as the table.
       const matches = sql.matchAll(
-        /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?["`]?(\w+)["`]?/gi,
+        /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:["`]?public["`]?\s*\.\s*)?["`]?(\w+)["`]?/gi,
       );
-      for (const m of matches) tables.add(m[1]);
+      for (const m of matches) {
+        const name = m[1].toLowerCase();
+        if (name === 'public') continue; // defensive: never report the schema
+        tables.add(m[1]);
+      }
     } catch { /* ignore */ }
   }
   return [...tables].sort();
 }
+
 
 // ---------------------------------------------------------------------------
 // 4c. Map module → end-to-end processes it participates in
@@ -666,7 +673,127 @@ function generateMarkdown(
 }
 
 // ---------------------------------------------------------------------------
-// 7. Main
+// 7. Catalog (docs/modules/index.md)
+// ---------------------------------------------------------------------------
+
+interface CatalogEntry {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  autonomy: string;
+  skillCount: number;
+  tableCount: number;
+  doc: string;
+}
+
+/**
+ * The catalog used to be hand-written (docs/modules/overview.md) and went stale
+ * within weeks — wrong module names, dead links, missing modules. It is derived
+ * from code now so it cannot drift.
+ */
+function cleanDescription(desc: string): string {
+  // Descriptions are regex-scraped from source, so a truncated escape (\\) or a
+  // pipe would break the table. Keep the first sentence — the catalog is a
+  // scannable list, the module doc carries the detail.
+  const flat = desc.replace(/\\+$/, '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim();
+  if (flat.length <= 140) return flat || '—';
+  const cut = flat.slice(0, 140);
+  return `${cut.slice(0, cut.lastIndexOf(' ') > 60 ? cut.lastIndexOf(' ') : 140)}…`;
+}
+
+function generateCatalog(entries: CatalogEntry[]): string {
+  const byCategory = new Map<string, CatalogEntry[]>();
+  for (const e of entries) {
+    const list = byCategory.get(e.category) ?? [];
+    list.push(e);
+    byCategory.set(e.category, list);
+  }
+
+  const totalSkills = entries.reduce((n, e) => n + e.skillCount, 0);
+  const lines: string[] = [];
+  lines.push('---');
+  lines.push('title: "Module catalog"');
+  lines.push(
+    'description: Every FlowWink module — category, autonomy level, skill count and owned tables. Generated from code.',
+  );
+  lines.push('category: modules');
+  lines.push('generated: true');
+  lines.push('---');
+  lines.push('');
+  lines.push('# Module catalog');
+  lines.push('');
+  lines.push(
+    `${entries.length} modules across ${byCategory.size} categories, ${totalSkills} module-owned skills.`,
+  );
+  lines.push(
+    'Platform skills (search_web, manage_site_settings, briefings…) are not owned by a module — see [`src/lib/platform-seeds.ts`](../reference/skills-source.md).',
+  );
+  lines.push('');
+  lines.push('**How a module behaves**');
+  lines.push('');
+  lines.push('```text');
+  lines.push('Enable  → seedData() → skills registered in agent_skills → automations armed');
+  lines.push('Disable → skills disabled → automations disarmed (data is preserved)');
+  lines.push('```');
+  lines.push('');
+  lines.push(
+    'With FlowPilot off, a module is a normal admin UI. With FlowPilot on, the same module is operable by the agent through its skills. Autonomy column:',
+  );
+  lines.push('');
+  lines.push('| Autonomy | Meaning |');
+  lines.push('|---|---|');
+  lines.push('| `agent-capable` | FlowPilot can operate the module through its skills |');
+  lines.push('| `view-required` | Data is agent-readable; changes happen in the admin UI |');
+  lines.push('| `config-required` | Needs an integration or setting before it does anything |');
+  lines.push('');
+
+  for (const category of [...byCategory.keys()].sort()) {
+    const list = byCategory.get(category)!.sort((a, b) => a.name.localeCompare(b.name));
+    lines.push(`## ${category.charAt(0).toUpperCase()}${category.slice(1)}`);
+    lines.push('');
+    lines.push('| Module | Autonomy | Skills | What it does |');
+    lines.push('|---|---|---:|---|');
+    for (const e of list) {
+      lines.push(
+        `| [**${e.name}**](./${e.doc}) | ${e.autonomy} | ${e.skillCount} | ${cleanDescription(e.description)} |`,
+      );
+    }
+    lines.push('');
+  }
+
+  // Hand-written companions (deep dives) live beside the generated pages. List
+  // them so they are reachable — an unlinked doc is an unread doc.
+  const generatedFiles = new Set([...entries.map((e) => e.doc), 'index.md']);
+  const companions = fs
+    .readdirSync(OUTPUT_DIR)
+    .filter((f) => f.endsWith('.md') && !generatedFiles.has(f))
+    .sort();
+  if (companions.length) {
+    lines.push('## Deep dives (hand-maintained)');
+    lines.push('');
+    lines.push('Longer companions to the generated pages above — design rationale, playbooks, operational detail.');
+    lines.push('');
+    for (const f of companions) {
+      const raw = fs.readFileSync(path.join(OUTPUT_DIR, f), 'utf-8');
+      const title = raw.match(/^title:\s*"?([^"\n]+)"?$/m)?.[1] ?? f.replace(/\.md$/, '');
+      lines.push(`- [${title.trim()}](./${f})`);
+    }
+    lines.push('');
+  }
+
+  lines.push('---');
+
+  lines.push('');
+  lines.push(
+    '*Auto-generated by `scripts/generate-module-docs.ts`. Do not edit — re-run the script after changing a module definition.*',
+  );
+  lines.push('');
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// 8. Main
 // ---------------------------------------------------------------------------
 
 function main() {
@@ -685,6 +812,7 @@ function main() {
 
   let generated = 0;
   const summary: Array<{ id: string; file: string }> = [];
+  const catalog: CatalogEntry[] = [];
 
   for (const file of moduleFiles) {
     const mod = parseModuleFile(path.join(MODULES_SRC, file));
@@ -692,8 +820,6 @@ function main() {
       console.warn(`⚠ Could not parse: ${file}`);
       continue;
     }
-
-    if (filterModule && mod.id !== filterModule) continue;
 
     const settingsKey = MODULE_ID_TO_SETTINGS_KEY[mod.id] ?? mod.id;
     const settings = allSettings[settingsKey];
@@ -704,9 +830,24 @@ function main() {
     const migrations = findMigrations(mod.id);
     const tables = extractTablesFromMigrations(migrations);
     const processes = MODULE_TO_PROCESSES[mod.id] ?? [];
+    const kebabId = mod.id.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+
+    // The catalog covers every module regardless of --module filtering, so a
+    // single-module run never truncates it.
+    catalog.push({
+      id: mod.id,
+      name: mod.name,
+      description: mod.description,
+      category: settings?.category ?? 'system',
+      autonomy: settings?.autonomy ?? 'config-required',
+      skillCount: mod.skills.length,
+      tableCount: tables.length,
+      doc: `${kebabId}.md`,
+    });
+
+    if (filterModule && mod.id !== filterModule) continue;
 
     const markdown = generateMarkdown(mod, settings, webhookEvents, hooks, adminPage, blocks, migrations, tables, processes);
-    const kebabId = mod.id.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
     const outFile = path.join(OUTPUT_DIR, `${kebabId}.md`);
 
     // Skip files marked as manually maintained (frontmatter: manual: true)
@@ -725,11 +866,14 @@ function main() {
     summary.push({ id: mod.id, file: `docs/modules/${kebabId}.md` });
   }
 
-  console.log(`\n✅ Generated ${generated} module docs:\n`);
+  fs.writeFileSync(path.join(OUTPUT_DIR, 'index.md'), generateCatalog(catalog), 'utf-8');
+
+  console.log(`\n✅ Generated ${generated} module docs + catalog (docs/modules/index.md):\n`);
   for (const s of summary) {
     console.log(`   ${s.id.padEnd(20)} → ${s.file}`);
   }
   console.log('');
 }
+
 
 main();

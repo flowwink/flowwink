@@ -1,3 +1,9 @@
+---
+title: "Module Tiers"
+description: Promoting to core is an architectural decision, not a refactor.
+category: architecture
+---
+
 # Module Tiers
 
 > **Why this exists:** OpenClaw shipped everything as "core" until the project

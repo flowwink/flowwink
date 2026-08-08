@@ -1,3 +1,9 @@
+---
+title: "Supabase Backend Setup"
+description: This guide covers setting up the Supabase backend for FlowWink self-hosting.
+category: guides
+---
+
 # Supabase Backend Setup
 
 > **Audience:** Developers

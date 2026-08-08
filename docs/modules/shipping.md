@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "config-required"
 generated: true
-generated_at: "2026-07-13"
+generated_at: "2026-08-08"
 ---
 
 # Shipping
@@ -56,8 +56,8 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 
 Tables created by this module (from migrations):
 
+- `public.canned_responses`
 - `public.postal_code_rules`
-- `public.public`
 - `public.shipping_pickups`
 
 All tables ship with Row-Level Security policies. See migration files for the exact rules.
@@ -75,7 +75,7 @@ All tables ship with Row-Level Security policies. See migration files for the ex
 | Module definition | `src/lib/modules/shipping-module.ts` |
 | Admin page | `src/pages/admin/ShippingPage.tsx` |
 | Public block | `src/components/public/blocks/ShippingInfoBlock.tsx` |
-| Migration | `supabase/migrations/20260707120000_parity-r3-shipping-tickets-subscriptions.sql` |
+| Migration | `supabase/migrations/20260707120001_parity-r3-shipping-tickets-subscriptions.sql` |
 | Migration | `supabase/migrations/20260708010000_shipping-parity-r6.sql` |
 
 ## Contributing

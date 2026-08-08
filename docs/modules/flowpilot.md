@@ -3,6 +3,8 @@ id: flowpilot
 name: FlowPilot
 manual: true
 description: The autonomous AI operator at the heart of FlowWink. Soul + objectives + skills + memory + heartbeat + reflection — modeled after OpenClaw.
+title: "FlowPilot"
+category: modules
 ---
 
 # FlowPilot

@@ -5,6 +5,8 @@ odoo_apps: "Website eCommerce (website_sale) + Sales (sale)"
 odoo_version: "18.0"
 source: docs+source
 date: 2026-07-04
+description: Grounding card for the FlowWink ecommerce module (P1 cluster). 
+category: parity
 ---
 
 # Odoo 18 eCommerce + Sales — order-flow reference card

@@ -5,7 +5,7 @@ version: "2.0.0"
 category: "data"
 autonomy: "view-required"
 generated: true
-generated_at: "2026-07-13"
+generated_at: "2026-08-08"
 ---
 
 # Point of Sale
@@ -77,6 +77,7 @@ All tables ship with Row-Level Security policies. See migration files for the ex
 | Migration | `supabase/migrations/20260707214000_pos-parity-r5.sql` |
 | Migration | `supabase/migrations/20260709100000_pos-sale-resolve-product-name.sql` |
 | Migration | `supabase/migrations/20260710080000_flowpilot-trust-posture.sql` |
+| Migration | `supabase/migrations/20260808190000_flowtable-list-tables-expose-options.sql` |
 
 ## Contributing
 

@@ -1,3 +1,9 @@
+---
+title: "Building a Module"
+description: A module is a self-contained business capability (e.g. 
+category: contributing
+---
+
 # Building a Module
 
 > Audience: contributors adding a new vertical to FlowWink.

@@ -1,3 +1,9 @@
+---
+title: "Operator Strategy — Why FlowPilot Is a Module, Not the Core"
+description: Earlier versions of FlowWink positioned FlowPilot as the heart and brain of the platform — a deeply embedded autonomous operator that the rest of the system depended on.
+category: concepts
+---
+
 # Operator Strategy — Why FlowPilot Is a Module, Not the Core
 
 > **Status:** Core architecture · **Updated:** April 2026

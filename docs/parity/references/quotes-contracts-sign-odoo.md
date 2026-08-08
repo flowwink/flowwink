@@ -12,6 +12,8 @@ sources:
   - name: Odoo community source, branch 18.0
     paths: [addons/sale/models/sale_order.py, addons/sale/controllers/portal.py]
 date: 2026-07-04
+description: Odoo has no separate 'contract' document for this flow; the signed quotation is the agreement (standalone contracts are handled by the Sign app on arbitrary PDFs, §3).
+category: parity
 ---
 
 # Odoo 18: Quote → Contract → e-Signature (offert → avtal → signering)

@@ -1,3 +1,9 @@
+---
+title: "Composio Gmail sync — how FlowWink talks to Gmail"
+description: FlowWink uses Composio as the OAuth + transport layer for Gmail. 
+category: guides
+---
+
 # Composio Gmail sync — how FlowWink talks to Gmail
 
 > Current state of the Gmail integration: what it does, what it does **not** do, and how to operate it.

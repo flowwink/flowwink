@@ -2,6 +2,8 @@
 title: "Finance Department — External Claw Playbook"
 audience: "external operators (OpenClaw, ClawThree, Claude Desktop, custom MCP claws)"
 last_updated: "2026-05-04"
+description: This playbook lets an external claw act as FlowWink's finance department — running invoicing, expense booking, bank reconciliation, and period close (record-to-report) — without…
+category: agents
 ---
 
 # Finance Department Playbook

@@ -37,6 +37,8 @@ interface FormData {
   name: string;
   description: string;
   type: ProductType;
+  billing_interval: 'month' | 'year';
+  default_term_months: string;
   price_cents: number;
   cost_cents: number;
   currency: string;
@@ -61,6 +63,8 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
       name: '',
       description: '',
       type: 'one_time',
+      billing_interval: 'month',
+      default_term_months: '',
       price_cents: 0,
       cost_cents: 0,
       currency: defaultCurrency,
@@ -87,6 +91,8 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
         name: product.name,
         description: product.description || '',
         type: product.type,
+        billing_interval: product.billing_interval ?? 'month',
+        default_term_months: product.default_term_months?.toString() ?? '',
         price_cents: product.price_cents,
         cost_cents: product.cost_cents ?? 0,
         currency: product.currency,
@@ -104,6 +110,8 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
         name: '',
         description: '',
         type: 'one_time',
+        billing_interval: 'month',
+        default_term_months: '',
         price_cents: 0,
         cost_cents: 0,
         currency: defaultCurrency,
@@ -124,6 +132,12 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
       name: data.name,
       description: data.description || null,
       type: data.type,
+      // Cadence + term only carry meaning for a recurring product; a one_time
+      // product stores NULL so every downstream rollup collapses to the scalar.
+      billing_interval: data.type === 'recurring' ? data.billing_interval : null,
+      default_term_months: data.type === 'recurring' && data.default_term_months.trim() !== ''
+        ? Math.max(1, parseInt(data.default_term_months, 10) || 0) || null
+        : null,
       price_cents: data.price_cents,
       cost_cents: data.cost_cents,
       currency: data.currency,
@@ -230,10 +244,45 @@ export function ProductDialog({ open, onOpenChange, product }: ProductDialogProp
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="one_time">One-time payment</SelectItem>
-                <SelectItem value="recurring">Recurring (monthly)</SelectItem>
+                <SelectItem value="recurring">Recurring service</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Cadence + suggested binding term — only a recurring product carries
+              these. They are the atomic facts the price needs so it can travel
+              the sales chain with its dimension (see recurring-value-model.md). */}
+          {productType === 'recurring' && (
+            <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
+              <div className="space-y-2">
+                <Label>Billed</Label>
+                <Select
+                  value={watch('billing_interval')}
+                  onValueChange={(value: 'month' | 'year') => setValue('billing_interval', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">Per month</SelectItem>
+                    <SelectItem value="year">Per year</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">The price above is per this period.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="default_term">Suggested binding term</Label>
+                <Input
+                  id="default_term"
+                  type="number"
+                  min={1}
+                  placeholder="e.g. 36"
+                  {...register('default_term_months')}
+                />
+                <p className="text-xs text-muted-foreground">Months. Optional — pre-fills the quote.</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">

@@ -12,6 +12,13 @@ export interface Product {
   description: string | null;
   type: ProductType;
   price_cents: number;
+  /** For a recurring product: the billing cadence its price is quoted in.
+   *  'month' | 'year'. NULL/undefined for one_time. The one atomic fact that
+   *  lets the price travel the sales chain with its dimension — see
+   *  docs/architecture/recurring-value-model.md. */
+  billing_interval?: 'month' | 'year' | null;
+  /** Optional suggested binding term (months) for a recurring product. */
+  default_term_months?: number | null;
   currency: string;
   is_active: boolean;
   sort_order: number;

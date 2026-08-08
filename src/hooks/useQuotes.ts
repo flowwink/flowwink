@@ -21,6 +21,10 @@ export interface Quote {
   total_cents: number;
   currency: string;
   valid_until: string | null;
+  /** Recurring-value model: default binding term (months) for recurring lines
+   *  that don't set their own — "this offer is for 3 years" in one place, from
+   *  which each recurring line's TCV is derived. */
+  default_term_months?: number | null;
   /** Prepayment percentage (1-100) for sign-and-pay: public Pay-now charges only this share. NULL = full amount. */
   prepayment_pct?: number | null;
   /** Stamped when the quote's invoice received its first online payment (sign-and-pay). */

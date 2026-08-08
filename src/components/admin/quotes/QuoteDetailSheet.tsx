@@ -5,8 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Trash2, Plus, Building2, FileCheck, FileSignature, Send, ShieldCheck, Link as LinkIcon } from 'lucide-react';
+import { Trash2, Plus, Building2, FileCheck, FileSignature, Send, ShieldCheck, Link as LinkIcon, Repeat } from 'lucide-react';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { computeInvoiceTotals, type InvoiceLineItem } from '@/hooks/useInvoices';
+import { useProducts } from '@/hooks/useProducts';
+import { computeRecurringRollup } from '@/lib/recurring-value';
 import {
   useQuote, useUpdateQuote, useDeleteQuote, useConvertQuoteToInvoice,
   getQuoteCustomerName, getQuoteCustomerEmail, getQuoteCompanyName,
@@ -59,6 +64,9 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
   const [notes, setNotes] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [prepaymentPct, setPrepaymentPct] = useState('');
+  const [defaultTerm, setDefaultTerm] = useState('');
+
+  const { data: products = [] } = useProducts();
 
   useEffect(() => {
     if (quote) {
@@ -67,10 +75,15 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
       setNotes(quote.notes || '');
       setValidUntil(quote.valid_until || '');
       setPrepaymentPct(quote.prepayment_pct != null ? String(quote.prepayment_pct) : '');
+      setDefaultTerm(quote.default_term_months != null ? String(quote.default_term_months) : '');
     }
   }, [quote]);
 
   const totals = computeInvoiceTotals(lineItems, taxRate);
+  // Derived recurring rollup — silent for a pure one-time quote (the degenerate
+  // case where every line is one_time). See recurring-value-model.md.
+  const termMonths = defaultTerm.trim() === '' ? null : Number(defaultTerm);
+  const rollup = computeRecurringRollup(lineItems, termMonths);
 
   const { formatCurrency } = usePlatformFormat();
 
@@ -90,9 +103,11 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
       notes: notes || null,
       valid_until: validUntil || null,
       prepayment_pct: pct,
+      default_term_months: termMonths != null && Number.isFinite(termMonths) && termMonths > 0
+        ? Math.round(termMonths) : null,
       ...totals,
     } as any);
-  }, [quote, lineItems, taxRate, notes, validUntil, prepaymentPct, totals, updateQuote]);
+  }, [quote, lineItems, taxRate, notes, validUntil, prepaymentPct, termMonths, totals, updateQuote]);
 
   const handleStatusChange = (next: QuoteStatus) => {
     if (!quote) return;
@@ -123,7 +138,28 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
   };
 
   const addLineItem = () => {
-    setLineItems(prev => [...prev, { description: '', qty: 1, unit_price_cents: 0 }]);
+    // A hand-typed line defaults to one-time — the degenerate case.
+    setLineItems(prev => [...prev, { description: '', qty: 1, unit_price_cents: 0, recurrence: 'one_time' }]);
+  };
+
+  // Product-driven: picking a product carries its dimension into the line —
+  // recurring products inherit their cadence, one-time products stay one-time.
+  const addFromProduct = (productId: string) => {
+    const p = products.find((x) => x.id === productId);
+    if (!p) return;
+    const recurrence = p.type === 'recurring' ? (p.billing_interval ?? 'month') : 'one_time';
+    setLineItems((prev) => [...prev, {
+      description: p.name,
+      qty: 1,
+      unit_price_cents: p.price_cents,
+      product_id: p.id,
+      recurrence,
+      ...(p.default_term_months ? { term_months: p.default_term_months } : {}),
+    }]);
+    // A recurring product with a suggested term pre-fills the quote's binding term.
+    if (p.type === 'recurring' && p.default_term_months && defaultTerm.trim() === '') {
+      setDefaultTerm(String(p.default_term_months));
+    }
   };
 
   const removeLineItem = (index: number) => {
@@ -225,14 +261,46 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
                   className="w-20"
                   title="Line discount %"
                 />
+                <Select
+                  value={item.recurrence ?? 'one_time'}
+                  onValueChange={(v) => updateLineItem(i, 'recurrence', v)}
+                >
+                  <SelectTrigger className="w-[92px]" title="Billing cadence">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="one_time">One-time</SelectItem>
+                    <SelectItem value="month">/ month</SelectItem>
+                    <SelectItem value="year">/ year</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="ghost" size="icon" onClick={() => removeLineItem(i)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={addLineItem}>
-              <Plus className="h-3 w-3 mr-1" /> Add Item
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={addLineItem}>
+                <Plus className="h-3 w-3 mr-1" /> Add item
+              </Button>
+              {products.length > 0 && (
+                <Select value="" onValueChange={addFromProduct}>
+                  <SelectTrigger className="w-[220px] h-8 text-sm">
+                    <SelectValue placeholder="Add from product…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.filter((p) => p.is_active).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                        {p.type === 'recurring'
+                          ? ` · ${formatCurrency(p.price_cents, p.currency)}/${p.billing_interval === 'year' ? 'yr' : 'mo'}`
+                          : ` · ${formatCurrency(p.price_cents, p.currency)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Tax */}
@@ -261,6 +329,57 @@ export function QuoteDetailSheet({ quoteId, open, onOpenChange }: Props) {
               <span className="font-mono">{formatAmount(totals.total_cents)}</span>
             </div>
           </div>
+
+          {/* Recurring value — shown only when the quote has a recurring line.
+              A pure one-time quote stays with the plain Total above. The number
+              the customer signs up to is the cadence AND the binding term; TCV
+              is the consequence. See recurring-value-model.md. */}
+          {rollup.hasRecurring && (
+            <div className="space-y-2 rounded-lg border p-3 bg-muted/30">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Repeat className="h-4 w-4 text-primary" /> Recurring service
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="binding-term" className="text-sm text-muted-foreground">
+                  Binding term (months)
+                </Label>
+                <Input
+                  id="binding-term"
+                  type="number"
+                  min={1}
+                  placeholder="e.g. 36"
+                  value={defaultTerm}
+                  onChange={(e) => setDefaultTerm(e.target.value)}
+                  className="w-24"
+                />
+              </div>
+              <div className="space-y-1 text-sm border-t pt-2">
+                {rollup.oneTimeCents > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">One-time</span>
+                    <span className="font-mono">{formatAmount(rollup.oneTimeCents)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Monthly (MRR)</span>
+                  <span className="font-mono">{formatAmount(rollup.mrrCents)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Annual (ARR)</span>
+                  <span className="font-mono">{formatAmount(rollup.arrCents)}</span>
+                </div>
+                <div className="flex justify-between font-medium border-t pt-1">
+                  <span>Total contract value{termMonths ? ` · ${termMonths} mo` : ''}</span>
+                  <span className="font-mono">{rollup.termMissing ? '—' : formatAmount(rollup.tcvCents)}</span>
+                </div>
+                {rollup.termMissing && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Set a binding term to see the total contract value.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Valid until */}
           <div className="space-y-2">

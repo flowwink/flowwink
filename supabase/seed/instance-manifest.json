@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808360000",
-      "migrations_count": 331,
+      "migration_head": "20260808380000",
+      "migrations_count": 333,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1329,6 +1329,14 @@
         {
           "version": "20260808360000",
           "name": "contract-number-token-in-guard"
+        },
+        {
+          "version": "20260808370000",
+          "name": "product-cadence"
+        },
+        {
+          "version": "20260808380000",
+          "name": "quote-line-recurrence"
         }
       ]
     },

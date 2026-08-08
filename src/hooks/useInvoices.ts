@@ -20,6 +20,13 @@ export interface InvoiceLineItem {
   price_source?: 'pricelist' | 'product_base' | 'manual' | null;
   /** Per-line discount percent (0-100), applied to this line before tax. Mirrors quote_items.discount_pct. */
   discount_pct?: number;
+  /** Recurring-value model: the cadence this line is billed in. undefined/null
+   *  or 'one_time' = a one-off charge (the default). 'month'|'year' = a
+   *  recurring service line. Inherited from the product when one is picked.
+   *  See docs/architecture/recurring-value-model.md. */
+  recurrence?: 'one_time' | 'month' | 'year' | null;
+  /** Optional per-line binding term (months); overrides the quote default. */
+  term_months?: number | null;
 }
 
 export interface InvoiceLead {

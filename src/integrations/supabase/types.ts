@@ -24005,6 +24005,7 @@ export type Database = {
       skill_trust_level: "auto" | "notify" | "approve"
       subscription_status:
         | "trialing"
+        | "provisioning"
         | "active"
         | "past_due"
         | "canceled"
@@ -24369,6 +24370,7 @@ export const Constants = {
       skill_trust_level: ["auto", "notify", "approve"],
       subscription_status: [
         "trialing",
+        "provisioning",
         "active",
         "past_due",
         "canceled",

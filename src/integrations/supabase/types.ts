@@ -19558,12 +19558,18 @@ export type Database = {
       }
     }
     Functions: {
+      _contract_template_unrendered_tokens: {
+        Args: { p_body: string }
+        Returns: Json
+      }
       _demo_register_row: {
         Args: { p_row_id: string; p_run_id: string; p_table_name: string }
         Returns: undefined
       }
       _ensure_manual_journal: { Args: never; Returns: string }
       _flatten_skill_schema: { Args: { td: Json }; Returns: Json }
+      _fmt_amount_sv: { Args: { p_cents: number }; Returns: string }
+      _fmt_qty_sv: { Args: { p_qty: number }; Returns: string }
       _global_search_internal: {
         Args: { result_limit?: number; search_query: string }
         Returns: {

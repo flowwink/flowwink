@@ -72,7 +72,7 @@ export default function FieldServicePage() {
 
   return (
     <AdminLayout>
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <Helmet>
         <title>Field Service · FlowWink</title>
       </Helmet>

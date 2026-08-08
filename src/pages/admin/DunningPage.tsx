@@ -78,7 +78,7 @@ export default function DunningPage() {
 
   return (
     <AdminLayout>
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="space-y-8">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dunning</h1>

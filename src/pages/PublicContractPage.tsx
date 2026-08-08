@@ -7,7 +7,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CheckCircle2, XCircle, FileSignature, ShieldCheck, Download } from 'lucide-react';
+import { CheckCircle2, XCircle, FileSignature, ShieldCheck, Download, Paperclip, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,17 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SignaturePad } from '@/components/public/SignaturePad';
 import { usePublicContract, useSignContract, markContractViewed } from '@/hooks/useContractWorkflow';
+
+/** An appendix as the signing customer receives it. */
+interface Appendix {
+  id: string;
+  label: string | null;
+  title: string | null;
+  kind: 'file' | 'document';
+  body_markdown: string | null;
+  file_name: string | null;
+  file_url: string | null;
+}
 
 export default function PublicContractPage() {
   const { token } = useParams<{ token: string }>();
@@ -56,7 +67,11 @@ export default function PublicContractPage() {
     version?: number | null;
     body_markdown: string | null;
     signed_at: string | null;
+    appendices?: Appendix[] | null;
   };
+  // The agreement's own body references these ("enligt Bilaga 1"), so they are
+  // part of what is being reviewed — not attachments beside it.
+  const appendices: Appendix[] = Array.isArray(c.appendices) ? c.appendices : [];
   const isDeclined = c.status === 'terminated';
   const isFinal = c.status === 'active' || c.signed_at != null || isDeclined;
 
@@ -109,6 +124,58 @@ export default function PublicContractPage() {
                 <p className="text-muted-foreground italic">No contract content provided.</p>
               )}
             </article>
+
+            {/* Appendices — the customer must see WHAT they are signing, in
+                full, before signing it. Documents render inline (so the
+                "Save as PDF" copy is complete); files are linked. Both appear
+                in one numbered list, because the customer should not have to
+                know which kind is which. */}
+            {appendices.length > 0 && (
+              <section className="border-t pt-6 space-y-6">
+                <div>
+                  <h2 className="text-base font-semibold">Bilagor</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Följande bilagor ingår i avtalet och omfattas av din signering.
+                  </p>
+                  <ul className="mt-3 space-y-1.5">
+                    {appendices.map((a) => (
+                      <li key={a.id} className="flex items-start gap-2 text-sm">
+                        {a.kind === 'file'
+                          ? <Paperclip className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                          : <FileText className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />}
+                        <span>
+                          <span className="font-medium">{a.label}</span>
+                          {a.title ? ` — ${a.title}` : ''}
+                          {a.kind === 'file' && a.file_url && (
+                            <a
+                              href={a.file_url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="ml-2 underline text-primary print:hidden"
+                            >
+                              Öppna{a.file_name ? ` (${a.file_name})` : ''}
+                            </a>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {appendices
+                  .filter((a) => a.kind === 'document' && a.body_markdown)
+                  .map((a) => (
+                    <div key={a.id} className="border-t pt-5 break-before-page">
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                        {a.label}{a.title ? ` — ${a.title}` : ''}
+                      </h3>
+                      <article className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{a.body_markdown as string}</ReactMarkdown>
+                      </article>
+                    </div>
+                  ))}
+              </section>
+            )}
 
             <div className="hidden print:block border-t pt-4 text-xs text-muted-foreground">
               <p>

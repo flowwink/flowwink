@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260808390000",
-      "migrations_count": 344,
+      "migration_head": "20260808400000",
+      "migrations_count": 354,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1283,6 +1283,42 @@
           "name": "documents-visibility"
         },
         {
+          "version": "20260808160742",
+          "name": "bd880b9b-5575-44a7-b009-4aa80c795f9e"
+        },
+        {
+          "version": "20260808160851",
+          "name": "0fa259d6-fa5e-4287-9fec-cb2ff69ebe25"
+        },
+        {
+          "version": "20260808161016",
+          "name": "0033addd-b9e6-4275-9ed6-7a236dc24739"
+        },
+        {
+          "version": "20260808161115",
+          "name": "36e218d0-8719-44dc-9f70-0c9efc2071a1"
+        },
+        {
+          "version": "20260808161136",
+          "name": "bb10c03b-1870-4ffb-9726-79460eaa70d1"
+        },
+        {
+          "version": "20260808161221",
+          "name": "475e764a-022e-470e-89ac-833f665c9ab7"
+        },
+        {
+          "version": "20260808161342",
+          "name": "7761705b-f47f-4e69-9e8f-35c2ae380fa4"
+        },
+        {
+          "version": "20260808161442",
+          "name": "994ff400-4169-4132-a47a-2f271b3684ef"
+        },
+        {
+          "version": "20260808161544",
+          "name": "f49d926e-b4ae-4e2d-8ebb-e8a6de613a46"
+        },
+        {
           "version": "20260808170000",
           "name": "document-files-follow-visibility"
         },
@@ -1381,6 +1417,10 @@
         {
           "version": "20260808390000",
           "name": "seed-pipeline-stages-platform-config"
+        },
+        {
+          "version": "20260808400000",
+          "name": "contract-appendices"
         }
       ]
     },
@@ -1395,7 +1435,7 @@
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:e179b1085950d930585c005f698e73c3ff3acc98c72fcb813cb888ddb2c9b822",
+        "agent-execute": "sha256:8c8235eabe74214f47e895bf406e4904bb32230d64311e5ea887102bf8a8864f",
         "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
         "ai-task": "sha256:6a0c6b21f9f0575650d9e478bc9184ce24541d3a18d00bb6c80c64a60f5e28aa",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

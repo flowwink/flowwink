@@ -16,6 +16,7 @@ import { ContractMarkdownEditor } from '@/components/admin/contracts/ContractMar
 import { ContractObligationsPanel } from '@/components/admin/contracts/ContractObligationsPanel';
 import { ContractBillingPanel } from '@/components/admin/contracts/ContractBillingPanel';
 import { DocumentsPanel } from '@/components/admin/documents/DocumentsPanel';
+import { ContractAppendicesPanel } from '@/components/admin/contracts/ContractAppendicesPanel';
 import {
   useContract, useSendContract, useContractSignatures, useContractVersions,
   publicContractUrl,
@@ -129,6 +130,7 @@ export default function ContractEditorPage() {
             <TabsTrigger value="billing">Billing &amp; reminders</TabsTrigger>
             <TabsTrigger value="activity">Activity ({signatures.length})</TabsTrigger>
             <TabsTrigger value="versions">Versions ({versions.length})</TabsTrigger>
+            <TabsTrigger value="appendices">Appendices</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
 
@@ -202,6 +204,10 @@ export default function ContractEditorPage() {
                 })}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="appendices">
+            <ContractAppendicesPanel contractId={contract.id} />
           </TabsContent>
 
           <TabsContent value="documents">

@@ -15957,6 +15957,48 @@ export type Database = {
         }
         Relationships: []
       }
+      site_templates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          tagline: string | null
+          template_json: Json
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          tagline?: string | null
+          template_json: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          tagline?: string | null
+          template_json?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       skills_catalog: {
         Row: {
           category: string | null
@@ -19683,6 +19725,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      _site_template_structure_report: {
+        Args: { p_template: Json }
+        Returns: Json
+      }
       _upsert_quant: {
         Args: {
           _delta: number
@@ -22088,6 +22134,20 @@ export type Database = {
           p_name?: string
           p_price_cents?: number
           p_rate_id?: string
+        }
+        Returns: Json
+      }
+      manage_site_template: {
+        Args: {
+          p_action: string
+          p_category?: string
+          p_description?: string
+          p_icon?: string
+          p_is_active?: boolean
+          p_name?: string
+          p_tagline?: string
+          p_template?: string
+          p_template_json?: Json
         }
         Returns: Json
       }

@@ -172,6 +172,30 @@ export type Database = {
         }
         Relationships: []
       }
+      account_tax_boxes: {
+        Row: {
+          account_code: string
+          box_code: string
+          created_at: string
+          locale: string
+          source: string
+        }
+        Insert: {
+          account_code: string
+          box_code: string
+          created_at?: string
+          locale: string
+          source?: string
+        }
+        Update: {
+          account_code?: string
+          box_code?: string
+          created_at?: string
+          locale?: string
+          source?: string
+        }
+        Relationships: []
+      }
       accounting_corrections: {
         Row: {
           agent_source: string | null
@@ -21336,6 +21360,15 @@ export type Database = {
         Returns: string
       }
       loyalty_tier_for: { Args: { p_lifetime: number }; Returns: string }
+      manage_account_tax_boxes: {
+        Args: {
+          p_account_code?: string
+          p_action?: string
+          p_box_code?: string
+          p_locale?: string
+        }
+        Returns: Json
+      }
       manage_approval_chain: {
         Args: {
           p_action: string
@@ -23907,6 +23940,10 @@ export type Database = {
       }
       validate_discount_code: {
         Args: { p_code: string; p_currency?: string; p_order_cents?: number }
+        Returns: Json
+      }
+      vat_box_coverage: {
+        Args: { p_from: string; p_locale?: string; p_to: string }
         Returns: Json
       }
       webinar_reminder_tick: { Args: never; Returns: Json }

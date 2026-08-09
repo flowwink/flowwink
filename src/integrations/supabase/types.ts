@@ -21372,6 +21372,17 @@ export type Database = {
         Returns: string
       }
       loyalty_tier_for: { Args: { p_lifetime: number }; Returns: string }
+      manage_account_roles: {
+        Args: {
+          p_account_code?: string
+          p_accounts?: Json
+          p_action?: string
+          p_locale?: string
+          p_reason?: string
+          p_role?: string
+        }
+        Returns: Json
+      }
       manage_account_tax_boxes: {
         Args: {
           p_account_code?: string

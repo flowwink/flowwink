@@ -21089,6 +21089,18 @@ export type Database = {
         }
         Returns: Json
       }
+      import_accounting_standard: {
+        Args: {
+          p_accounts?: Json
+          p_label?: string
+          p_locale?: string
+          p_replace?: boolean
+          p_roles?: Json
+          p_source_sha256?: string
+          p_source_url?: string
+        }
+        Returns: Json
+      }
       import_csv_to_flowtable: {
         Args: {
           p_base?: string
@@ -22535,6 +22547,10 @@ export type Database = {
       project_cost_forecast: { Args: { p_project_id: string }; Returns: Json }
       propose_accruals: { Args: { p_year: number }; Returns: Json }
       propose_annual_depreciation: { Args: { p_year: number }; Returns: Json }
+      propose_posting_templates: {
+        Args: { p_locale?: string; p_templates?: Json }
+        Returns: Json
+      }
       publish_scheduled_pages: { Args: never; Returns: Json }
       publish_webinar: { Args: { p_webinar_id: string }; Returns: Json }
       purge_audit_logs_past_retention: { Args: never; Returns: Json }

@@ -141,7 +141,7 @@ Routing rules in order: (1) vendor.default_account_code wins; (2) keyword-match 
   },
   {
     name: 'manage_accounting_template',
-    description: 'Create, list, or update reusable accounting templates for common transactions. Templates have keyword matching for AI auto-selection. Use when: admin wants to add a new template, or a new transaction pattern is identified that should be reusable. NOT for: actual bookkeeping (use manage_journal_entry).',
+    description: 'Create, list, or update ONE reusable accounting template at a time. Templates have keyword matching for AI auto-selection. Use when: admin wants to add or tweak a single template, or list what exists. NOT for: actual bookkeeping (use manage_journal_entry), authoring a SET of templates with structural verification against the chart (use propose_posting_templates — it balance-checks every template and corrects account names from the chart).',
     category: 'commerce',
     handler: 'db:accounting_templates',
     scope: 'internal',
@@ -184,6 +184,328 @@ Routing rules in order: (1) vendor.default_account_code wins; (2) keyword-match 
     },
     instructions:
       'template_lines are PERCENTAGES of the net transaction amount (base = 100), not fixed amounts — booking expands them via manage_journal_entry {template_id, amount_cents}. Each line uses debit_pct OR credit_pct (other = 0); Σ debit_pct must equal Σ credit_pct or the booked verifikat will not balance. The receivable/payable line is typically 100 + VAT (e.g. 125 for 25% moms), the revenue/cost line 100, the VAT line 25. Use only account_codes that exist in the chart of accounts.',
+  },
+  {
+    name: 'manage_account_tax_boxes',
+    description:
+      "See and change which VAT-return box each account reports into — the classification half of the role layer (account_roles decides where to POST, this decides how a posted amount is REPORTED). action=list shows the current map with account names; action=add points an account at a box; action=remove takes it out. Seeded verbatim from the locale pack, so a standard chart needs no work at all. Use when: a company migrated from another system and books VAT to its own accounts, when prepare_vat_return reports accounts under coverage.unmapped_but_reportable, or after adding a VAT account to the chart. NOT for: changing where postings land (manage_account_roles), adding accounts (manage_chart_of_accounts), preparing or filing the return (prepare_vat_return). An account that belongs to no box is not an error anywhere — its amount is simply absent from the filing, which is why this exists.",
+    category: 'commerce',
+    handler: 'rpc:manage_account_tax_boxes',
+    scope: 'internal',
+    trust_level: 'notify',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'manage_account_tax_boxes',
+        parameters: {
+          type: 'object',
+          properties: {
+            action: { type: 'string', enum: ['list', 'add', 'remove'] },
+            locale: { type: 'string', description: "Defaults to the instance's active accounting_locale." },
+            account_code: { type: 'string', description: 'add/remove only — must already exist in the chart of accounts.' },
+            box_code: { type: 'string', description: "add/remove only — the box on the return, e.g. '10' for output VAT 25%, '48' for input VAT. Run action=list to see which boxes this locale has." },
+          },
+          required: ['action'],
+          'x-action-required': { add: ['account_code', 'box_code'], remove: ['account_code', 'box_code'] },
+        },
+      },
+    },
+    instructions: `## The failure this prevents
+The return sums accounts. An account it has never been told about contributes
+nothing — and nothing is not an error. The filing comes out looking complete,
+the control account disagrees, and the difference is found by the tax authority
+or not at all.
+
+## How you will normally reach this
+Run prepare_vat_return first. Its \`coverage\` block lists every account that
+carried money in the period and belongs to no box. That list IS the work: each
+entry is one add. An empty list means there is nothing to do here.
+
+## Which box
+Match by MEANING, not by number. 2611 and 2614 are one digit apart and belong to
+different boxes (domestic output VAT vs reverse charge), which is exactly the
+kind of neighbourly-looking guess that produces a wrong but plausible filing.
+Read the account NAME from action=list, and when the meaning is not obvious from
+the name, ask rather than pick.
+
+## What it does not do
+It changes reporting, not history. Amounts already posted are included from the
+next time the return is prepared — the map is read at report time. And nothing
+here moves money or changes where future entries land; that is
+manage_account_roles.`,
+  },
+  {
+    name: 'manage_account_roles',
+    description:
+      "See and change which account each platform ROLE posts to — bank, accounts_receivable, sales_revenue, vat_output and ~20 others. The engine never names an account number: it resolves account_for(role), so this is the one place that decides where every future invoice, payment and VAT line lands. action=list shows the current mapping; action=propose takes the accounts a company ACTUALLY uses (from read_sie_file) and reports, per role, whether they post where we do — it never picks for you, because a prefix is not a meaning and an auto-picked account that sounds right is how input VAT ends up on an output VAT account; action=set changes one role, refusing any account the chart does not have. Use when: onboarding a company migrating from Bokio/Fortnox/Dooer, after import_accounting_standard for a new country, or when postings are landing on the wrong account. NOT for: adding accounts to the chart (manage_chart_of_accounts), loading a national standard (import_accounting_standard), booking anything (manage_journal_entry).",
+    category: 'commerce',
+    handler: 'rpc:manage_account_roles',
+    scope: 'internal',
+    trust_level: 'notify',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'manage_account_roles',
+        parameters: {
+          type: 'object',
+          properties: {
+            action: { type: 'string', enum: ['list', 'propose', 'set'] },
+            locale: { type: 'string', description: "Defaults to the instance's active accounting_locale." },
+            accounts: {
+              type: 'array',
+              description: "propose only — the company's own accounts as [{code, name, in_use, has_movement}]. Send only the ones IN USE: a Bokio export carries ~1200 accounts of which a real company touches about 30, and the unused ones are noise that hides the decisions. has_movement (posted to this year) outranks a mere balance as evidence.",
+              items: { type: 'object', properties: {
+                code: { type: 'string' }, name: { type: 'string' },
+                in_use: { type: 'boolean' }, has_movement: { type: 'boolean' },
+              }, required: ['code'] },
+            },
+            role: { type: 'string', description: 'set only — the platform role, e.g. sales_revenue. An unknown name errors with the full valid list.' },
+            account_code: { type: 'string', description: 'set only — the account this role should resolve to. Must already exist in the chart.' },
+            reason: { type: 'string', description: 'set only — why, stored on the role. e.g. "LiteIT has booked service revenue here since 2018".' },
+          },
+          required: ['action'],
+          'x-action-required': { propose: ['accounts'], set: ['role', 'account_code'] },
+        },
+      },
+    },
+    instructions: `## Why this is ~20 decisions and not 1200
+A company arriving from another system brings its whole chart — a real Bokio
+export had 1 243 accounts. Mapping those against ours would be a week nobody
+finishes. But FlowWink posts to ROLES, not account numbers, and there are ~23 of
+them. In that same file exactly 29 accounts had any balance or movement at all;
+the other 1 214 were the standard chart shipped whether you use it or not.
+
+So: run read_sie_file, keep the accounts with a balance or movement, send those.
+
+## Read the answer, do not skim it
+- **exact** — they already post where we do. Nothing to do.
+- **candidates** — they post somewhere else in that group, and the accounts are
+  listed. THIS is the migration. Their history decides what their books mean: a
+  company that has booked revenue to 3011 for five years must keep doing so, or
+  every FlowWink entry lands on a different account than their own past and any
+  parallel comparison diverges from the first invoice.
+  One candidate is usually the answer. Several, or none that fit, means the role
+  has no counterpart in their books — say so instead of forcing one.
+- **no_evidence** — nothing in that account group moved. Leave it. An untouched
+  role is not a problem to solve.
+
+## The list you will actually feel
+\`accounts_missing_from_chart\` is the accounts they post to that this instance
+has never heard of. Moving between systems is mostly this list — the same reason
+a Bokio→Dooer move forces re-mapping: the new system simply does not have the
+accounts the old one gave you. Add the ones that carry real activity with
+manage_chart_of_accounts BEFORE pointing a role at them; \`set\` refuses an
+account that does not exist, on purpose, because the alternative is a posting
+failure mid-invoice.
+
+## What set does, and the entry it hands back
+It changes where FUTURE postings land. Entries already booked keep the account
+code they were written with — bookkeeping is not retroactively rewritten.
+
+That alone is honest and leaves the customer with the same figure reported on two
+accounts. So when the old account still carries a balance, the response includes
+\`suggested_transfer\`: a balanced, dated, self-describing entry that moves it.
+BOOK IT with manage_journal_entry — it is deliberately not booked here, because a
+role change may not quietly write a verification and manage_journal_entry owns
+the staging and approval rail.
+
+This is what a real system does. When LiteIT moved from Bokio to Dooer, Dooer
+booked "Change to Dooer kontoplan" on the closing date, moving 4 000 kr from 3011
+to 3001 and 764,40 from 6230 to 6200. The migration became auditable instead of
+invisible — and that is the whole difference between a chart change and a hole in
+the accounts.`,
+  },
+  {
+    name: 'read_sie_file',
+    description:
+      "Read a SIE 4 file (the export every Swedish accounting system produces — Bokio, Fortnox, Visma) and report what is in it. READ THE FILE AS BYTES AND SEND content_base64 — never as text: SIE 4 is specified as IBM CP437, and a text read decodes it as UTF-8, destroying every å ä ö before the file reaches this skill, irrecoverably. Returns an OBSERVATION and writes nothing: the encoding it detected versus what the file declared, how many characters were already destroyed before it arrived, the company and fiscal years, and counts of accounts, opening balances and verifications. One SIE file carries three things that belong in three different places — a chart, balances, and a year of journal entries — so you pick, then call the skill named under each section. Use when: onboarding a company that is moving from another accounting system, reading last year's history to derive posting templates, taking over opening balances. NOT for: importing a published national standard (import_accounting_standard), treating an SIE file as a bank statement (import_bank_file does that narrowly, for 19xx lines only).",
+    category: 'commerce',
+    handler: 'internal:read_sie_file',
+    scope: 'internal',
+    trust_level: 'auto',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'read_sie_file',
+        parameters: {
+          type: 'object',
+          properties: {
+            content_base64: {
+              type: 'string',
+              description: 'The file as base64-encoded BYTES. Read it in binary mode. If your file tool returns a string, it has already decoded — and if the file was CP437 the Swedish characters are gone. A data: prefix is stripped automatically.',
+            },
+            file_name: { type: 'string', description: 'Original file name, for the report.' },
+            include: {
+              type: 'array',
+              items: { type: 'string', enum: ['accounts', 'balances', 'verifications'] },
+              description: 'Full lists instead of the first 5 rows. A real file has ~1200 accounts, so ask only for the section you are about to act on.',
+            },
+          },
+          required: ['content_base64'],
+        },
+      },
+    },
+    instructions: `## Read it as bytes
+This is the one rule that cannot be recovered from later. SIE 4 is IBM CP437;
+Bokio still writes it that way (a real 2023 export encodes ö as the single byte
+0x94). Every ordinary file-reading tool decodes UTF-8, 0x94 is not valid UTF-8,
+and the character becomes U+FFFD. No skill can undo that. Read binary,
+base64-encode, send.
+
+## What comes back, and why each part matters
+- **encoding**: what the file DECLARED (\`#FORMAT\`) versus what its bytes
+  actually are. They disagree when a file has been opened and re-saved. The
+  bytes win — decoding by the declaration would corrupt it a second time.
+- **integrity.replacement_chars**: characters already destroyed before the file
+  reached us. Non-zero means: go find the original export from the accounting
+  system. The import will still work, but every Swedish letter in names is lost,
+  and it was not FlowWink that lost it.
+- **contains**: counts per section, plus \`unbalanced_verifications\` — a
+  verification whose lines do not sum to zero is a defect in the source file.
+
+## The three destinations
+A SIE file is not one import. It is three, and the customer may want any subset:
+
+1. **accounts** — the customer's EXISTING chart (~1200 rows). This is NOT a
+   published standard: do not send it to import_accounting_standard. Matching it
+   against FlowWink's locale pack is a mapping job with a human in it.
+2. **opening_balances** — \`#IB\` rows, one fiscal year at a time, into
+   manage_opening_balances. \`#IB 0\` is the year in \`#RAR 0\`; -1 is the year
+   before.
+3. **verifications** — what the company ACTUALLY books. Group the recurring
+   patterns and send them to propose_posting_templates. This is the section
+   FlowWink can never guess on its own, and the reason to read the file at all.
+
+## Size
+Full lists are opt-in through \`include\` because a real chart is ~1200 rows and
+would flood a context for a caller who only wanted the balances.`,
+  },
+  {
+    name: 'import_accounting_standard',
+    description:
+      "Set up a country's chart of accounts from the OFFICIAL standard file — you read the file (xlsx/csv from the publisher: BAS, DATEV/SKR, PCG…), send structured rows, and the platform validates, stores, and wires the role layer so the engine can post. FAIL CLOSED on provenance: source_url + sha256 of the file are REQUIRED, because an unsourced chart cannot be verified later — a hand-written 'BAS 2024' shipped 166 wrong names before anyone could compare. Take account names VERBATIM from the file, never paraphrase or translate. Use when: activating a new country/standard on this instance, refreshing a chart from a new edition of the standard (replace=true). NOT for: authoring posting templates (propose_posting_templates), adding a single account (manage_chart_of_accounts), importing a customer's legacy chart from SIE — that is a mapping problem, not a standard.",
+    category: 'commerce',
+    handler: 'rpc:import_accounting_standard',
+    scope: 'internal',
+    trust_level: 'notify',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'import_accounting_standard',
+        parameters: {
+          type: 'object',
+          properties: {
+            locale: { type: 'string', description: "Stable id: ISO country + standard, e.g. 'de-skr03', 'fr-pcg'. Lowercase." },
+            label: { type: 'string', description: "Human label, e.g. 'Germany — SKR03 2024'." },
+            source_url: { type: 'string', description: "The PUBLISHER's own URL for the file you parsed (bas.se, datev.de…). Required — this is what lets anyone re-verify the import." },
+            source_sha256: { type: 'string', description: 'Lowercase hex sha256 of the downloaded file. You have the file — hash it. Required.' },
+            accounts: {
+              type: 'array',
+              description: 'Every account, VERBATIM from the file: {code: "8400", name: "Erlöse 19 % USt", type: asset|liability|equity|revenue|expense, category?, normal_balance?}. Minimum 40 — fewer is a parsing failure, not a chart.',
+              items: { type: 'object', properties: {
+                code: { type: 'string' }, name: { type: 'string' },
+                type: { type: 'string', enum: ['asset', 'liability', 'equity', 'revenue', 'expense'] },
+                category: { type: 'string' }, normal_balance: { type: 'string', enum: ['debit', 'credit'] },
+              }, required: ['code', 'name', 'type'] },
+            },
+            roles: {
+              type: 'object',
+              description: 'Platform role → account code, e.g. {"bank":"1200","accounts_receivable":"1400","sales_revenue":"8400","vat_output":"1776","vat_input":"1576","accounts_payable":"1600"}. The six named are REQUIRED — the engine posts through roles, never through hardcoded numbers, and without them the locale is inert.',
+            },
+            replace: { type: 'boolean', description: 'Required to touch a locale that already has a chart. Existing accounts are renamed to the delivered names, missing inserted, none deleted — posted-to accounts always survive.' },
+          },
+          required: ['locale', 'label', 'source_url', 'source_sha256', 'accounts', 'roles'],
+        },
+      },
+    },
+    instructions: `## The job
+You are loading a STANDARD, not designing one. Fetch the official file from the
+publisher (BAS for Sweden, DATEV for German SKR, the authority for the country),
+parse it yourself, and deliver rows verbatim.
+
+## The three rules, each learned the hard way on this platform
+1. **Names verbatim.** Never paraphrase, translate or "improve" an account name.
+   Our own chart once carried 2614's name on 2611 — ordinary VAT went down a
+   reverse-charge path in four templates, and the label misled the person who
+   tried to fix it.
+2. **Provenance or nothing.** source_url must be the publisher's own address and
+   source_sha256 the hash of the exact file you parsed. The call REFUSES without
+   them: an unsourced chart is unverifiable forever.
+3. **Roles make it live.** The engine resolves bank/accounts_receivable/
+   accounts_payable/sales_revenue/vat_output/vat_input through account_roles —
+   map them to the codes the standard prescribes for those functions. Wrong role
+   mapping = every invoice posts to the wrong account, with a perfectly valid
+   chart.
+
+## Refusals are complete
+A refused import returns EVERY error at once (bad codes, duplicates, missing
+roles, unknown types) — fix them all and resubmit once. Nothing is written on
+refusal.
+
+## After import
+The response tells you: the locale can now post. What it cannot know is what
+THIS company books — follow with propose_posting_templates.`,
+  },
+  {
+    name: 'propose_posting_templates',
+    description:
+      "Author a SET of posting templates for a locale and have every one structurally verified before it is stored: lines must balance (Σ debit_pct = Σ credit_pct), every account must exist in the locale's chart, and account names are corrected FROM the chart (the chart is the single truth for names). Posting templates are published nowhere — they describe what a specific company actually books, which the platform cannot foresee. If you hold the company's transaction history, derive the templates from it: the recurring patterns in last year's transactions ARE the template set this company needs. Rejected templates come back with reasons and are NOT stored; accepted ones are operator-owned (is_system=false). Use when: setting up a new locale after import_accounting_standard, onboarding a company whose transaction history you can read, codifying recurring booking patterns. NOT for: editing one existing template (manage_accounting_template), booking a transaction (manage_journal_entry), registering a one-off pattern mid-booking (suggest_accounting_template).",
+    category: 'commerce',
+    handler: 'rpc:propose_posting_templates',
+    scope: 'internal',
+    trust_level: 'notify',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'propose_posting_templates',
+        parameters: {
+          type: 'object',
+          properties: {
+            locale: { type: 'string', description: "The locale whose chart the templates are verified against, e.g. 'se-bas2024', 'de-skr03'. Must already have a chart." },
+            templates: {
+              type: 'array',
+              description: 'Each: {template_name, description?, category: revenue|expense|payment|payroll|tax|adjustment|asset, keywords: [..], template_lines: [{account_code, debit_pct, credit_pct}]}. Percentages of the NET amount (base=100): a 19% VAT sale is receivable 119 / revenue 100 / VAT 19. account_name may be omitted — it is taken from the chart.',
+              items: { type: 'object', properties: {
+                template_name: { type: 'string' }, description: { type: 'string' },
+                category: { type: 'string', enum: ['revenue', 'expense', 'payment', 'payroll', 'tax', 'asset', 'adjustment'] },
+                keywords: { type: 'array', items: { type: 'string' } },
+                template_lines: { type: 'array', items: { type: 'object', properties: {
+                  account_code: { type: 'string' }, debit_pct: { type: 'number' }, credit_pct: { type: 'number' },
+                }, required: ['account_code', 'debit_pct', 'credit_pct'] } },
+              }, required: ['template_name', 'category', 'keywords', 'template_lines'] },
+            },
+          },
+          required: ['locale', 'templates'],
+        },
+      },
+    },
+    instructions: `## Where templates come from
+The chart says which accounts EXIST. It says nothing about what this company
+DOES. If you have access to the company's transaction history (a ledger export,
+last year's bank feed, an SIE file), mine it: group the recurring transactions —
+rent, the SaaS subscriptions, fuel, the two kinds of sales, payroll — and write
+one template per recurring pattern. Aim for the patterns that cover ~90% of
+transaction volume; a company rarely needs more than 30–50 to start. Without
+history, author the standard set for the country instead (domestic sale per VAT
+rate, EU purchase, payroll run, VAT settlement, bank fees…).
+
+## The verification you are writing against
+- **Balance**: Σ debit_pct = Σ credit_pct, both > 0. Percentages of the NET
+  amount (base=100). Example DE 19%: 1400 debit 119 / 8400 credit 100 /
+  1776 credit 19.
+- **Accounts must exist** in the locale's chart — run import_accounting_standard
+  first, and never invent a code.
+- **Names are the chart's.** Any account_name you send is REPLACED by the
+  chart's name and reported under name_corrections. Templates carrying their own
+  wording is how four VAT templates kept a wrong account for months.
+- **Keywords matter**: they are what the matching engine uses to find the
+  template from a transaction description. Use the words that appear in this
+  company's actual bank descriptions, in the local language.
+
+## Partial success is the contract
+accepted / rejected / skipped come back per template. Rejected ones were NOT
+stored — fix the reasons and resubmit ONLY those. Do not report the batch as
+done while rejected is non-empty.`,
   },
   {
     name: 'manage_opening_balances',

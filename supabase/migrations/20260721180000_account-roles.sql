@@ -91,7 +91,9 @@ INSERT INTO public.account_roles (locale, role, account_code, description) VALUE
   ('se-bas2024', 'accounts_receivable',      '1510', 'Kundfordringar'),
   ('se-bas2024', 'accounts_payable',         '2440', 'Leverantörsskulder'),
   ('se-bas2024', 'sales_revenue',            '3001', 'Försäljning'),
-  ('se-bas2024', 'vat_output',               '2611', 'Utgående moms 25%'),
+  -- 2611 per BAS 2024: "Utgående moms på försäljning inom Sverige, 25 %".
+  -- Reverse charge is 2614 and has its own roles below.
+  ('se-bas2024', 'vat_output',               '2611', 'Utgående moms på försäljning inom Sverige, 25%'),
   ('se-bas2024', 'vat_input',                '2641', 'Debiterad ingående moms'),
   ('se-bas2024', 'employee_liability',       '2890', 'Övriga kortfristiga skulder (utlägg)'),
   ('se-bas2024', 'expense_default',          '5410', 'Förbrukningsinventarier'),

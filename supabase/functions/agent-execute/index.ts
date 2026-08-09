@@ -4,6 +4,8 @@ import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-
 import { normalizeBlockData, normalizeBlocks, validateBlockData } from '../_shared/normalize-blocks.ts';
 import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { applyIdentityPolicy } from '../_shared/site-identity.ts';
+import { filterRecipients, blockedResponse } from '../_shared/email-allowlist.ts';
+import { readSieFile } from '../_shared/sie-reader.ts';
 import { markdownToTiptap, inlineClean, parseInline } from '../_shared/markdown-to-tiptap.ts';
 import {
   type AuditContext,
@@ -742,6 +744,33 @@ serve(async (req) => {
 
       } else if (handler === 'internal:fetch_ecb_rates') {
         result = await executeFetchFxRates(supabase);
+
+      } else if (handler === 'internal:read_sie_file') {
+        // Bytes, never a string. SIE 4 is specified as IBM CP437 and Bokio still
+        // writes it that way; a text read decodes it as UTF-8 and destroys every
+        // å ä ö before the skill sees it, irrecoverably. See _shared/sie-reader.ts.
+        const b64 = typeof args.content_base64 === 'string'
+          ? (args.content_base64 as string).replace(/^data:[^,]+,/, '') : '';
+        if (!b64) {
+          result = {
+            error: 'content_base64 is required. Read the SIE file as BYTES and base64-encode it — do NOT read it as text. SIE 4 is specified as IBM CP437; a text read decodes it as UTF-8 and destroys every å ä ö before the file reaches this skill, and nothing here can undo that.',
+            status: 'failed',
+          };
+        } else {
+          let sieBytes: Uint8Array | null = null;
+          try {
+            const bin = atob(b64);
+            sieBytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) sieBytes[i] = bin.charCodeAt(i);
+          } catch (e) {
+            result = { error: `content_base64 is not valid base64: ${e instanceof Error ? e.message : String(e)}`, status: 'failed' };
+          }
+          if (sieBytes) {
+            const sieInclude = Array.isArray(args.include)
+              ? (args.include as unknown[]).map((x) => String(x).toLowerCase()) : [];
+            result = readSieFile(sieBytes, sieInclude);
+          }
+        }
 
       } else if (handler === 'internal:describe_blocks') {
         result = executeDescribeBlocks(args as Record<string, unknown>);
@@ -6648,7 +6677,7 @@ async function resolveResendFrom(supabase: any): Promise<string> {
 async function logOutboundEmail(
   supabase: any,
   row: {
-    status: 'sent' | 'failed' | 'simulated';
+    status: 'sent' | 'failed' | 'simulated' | 'blocked';
     recipient: string | string[];
     subject: string | null;
     body_html?: string | null;
@@ -7039,7 +7068,23 @@ async function executeSendInvoiceForOrder(
   // 6. Email customer
   const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
   let emailResult: any = { skipped: true, reason: 'RESEND_API_KEY not configured' };
-  if (RESEND_API_KEY) {
+  // This path calls Resend DIRECTLY rather than going through email-send, so
+  // the allowlist has to be applied here too. Guarding only email-send would
+  // have left precisely the invoice mail ungated — the one send a company in a
+  // pilot phase most needs held back.
+  const invoiceGate = RESEND_API_KEY
+    ? await filterRecipients(supabase, [order.customer_email])
+    : null;
+  if (invoiceGate && invoiceGate.allowed.length === 0) {
+    emailResult = blockedResponse(invoiceGate);
+    await logOutboundEmail(supabase, {
+      status: 'blocked',
+      recipient: order.customer_email,
+      subject: `Invoice ${invoice.invoice_number}`,
+      body_html: '',
+      error_message: String(emailResult.error ?? 'blocked by email allowlist'),
+    });
+  } else if (RESEND_API_KEY) {
     const fromEmail = await resolveResendFrom(supabase);
     // Link to the PUBLIC invoice page, which has a working "Download PDF" that
     // posts public_token. The old generate-invoice-pdf?invoice_id= link was a

@@ -9,6 +9,7 @@
 //
 // Body: { to, subject, html, text?, fromOverride?, tags? }
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { filterRecipients, blockedResponse } from '../_shared/email-allowlist.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
@@ -234,6 +235,36 @@ serve(async (req: Request) => {
     recipients = (Array.isArray(body.to) ? body.to : [body.to])
       .map(bareAddress)
       .filter((r) => r.length > 0);
+
+    // ── Allowlist gate — BEFORE suppressions, because it is the harder rule ──
+    // Suppressions are a deny list: everything sends unless named. The allowlist
+    // is the inverse, and while a live company runs FlowWink in development it
+    // is the only shape that is safe. See _shared/email-allowlist.ts.
+    const gate = await filterRecipients(supabase, recipients);
+    if (gate.blocked.length) {
+      console.warn(`[email-send] allowlist withheld ${gate.blocked.length} recipient(s)`);
+    }
+    if (gate.allowed.length === 0) {
+      await logComm({
+        status: "blocked", provider: null, simulated: false,
+        error_message: gate.error ?? `Blocked by email allowlist: ${gate.blocked.map((b) => b.address).join(", ")}`,
+      });
+      // 422, not 200. `supabase.functions.invoke` only populates `error` on a
+      // non-2xx response, so a blocked send returned as 200 reads as delivered
+      // to every caller that checks the transport error and not `data.success`
+      // — and three of them do exactly that: dunning-processor records a
+      // dunning action, document-sign-request stamps the request "sent", and
+      // contract-billing-cron counts the reminder as gone out. Withholding the
+      // mail and then letting the caller write "sent" is the same envelope lie
+      // this guard exists to prevent, one layer up.
+      //
+      // The body is unchanged, so `blocked_by_allowlist` and the reason remain
+      // readable via the FunctionsHttpError's response for callers that want to
+      // distinguish "withheld" from "provider down".
+      return new Response(JSON.stringify(blockedResponse(gate)),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    recipients = gate.allowed;
 
     // Suppression list check — skip suppressed recipients
     const lowered = recipients.map((r) => r.toLowerCase());
@@ -475,7 +506,14 @@ serve(async (req: Request) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, provider, simulated: false, result }),
+      // A partial block still succeeds — some recipients got it — but the
+      // caller has to be able to name the ones who did not. Without this, a
+      // send to [customer, internal] reports plain success and the customer's
+      // silence looks like theirs rather than ours.
+      JSON.stringify({
+        success: true, provider, simulated: false, result,
+        ...(gate.blocked.length ? { withheld_by_allowlist: gate.blocked } : {}),
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {

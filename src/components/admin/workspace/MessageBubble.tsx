@@ -1,4 +1,4 @@
-import { Children, isValidElement, useState, type ReactNode } from 'react';
+import { Children, useState, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, RotateCw, Wrench } from 'lucide-react';
@@ -100,10 +100,7 @@ export function MessageBubble({
         if (last < child.length) out.push(child.slice(last));
         return <>{out}</>;
       }
-      if (isValidElement(child) && (child.props as any)?.children) {
-        // Recurse into inline elements (em/strong/links) so markers survive.
-        return child;
-      }
+      // Inline elements (em/strong/links) pass through untouched.
       return child;
     });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -37,6 +37,9 @@ interface Props {
   sources: WorkspaceSource[];
   onSourcesChange: (next: WorkspaceSource[]) => void;
   onResetSources: () => void;
+  /** Ref of the citation currently hovered/clicked in the answer. */
+  activeCitation?: number | null;
+  onActiveCitationChange?: (ref: number | null) => void;
 }
 
 const TYPE_LABEL: Record<string, string> = {

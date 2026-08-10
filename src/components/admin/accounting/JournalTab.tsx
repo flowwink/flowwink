@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Check, AlertTriangle, Search } from 'lucide-react';
+import { Plus, FileText, Check, AlertTriangle, Search, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { useJournalEntries, useJournalEntryWithLines, useJournals } from '@/hooks/useAccounting';
 import { useAccountingRealtime } from '@/hooks/useAccountingRealtime';
 import { useAccountingPreferences, useBrandingSettings } from '@/hooks/useSiteSettings';

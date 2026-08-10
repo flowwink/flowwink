@@ -51,6 +51,8 @@ import {
   DndContext, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay,
   useDroppable, useDraggable, type DragStartEvent, type DragEndEvent,
 } from '@dnd-kit/core';
+import { FieldsMenu } from '@/components/admin/flowtable/FieldsMenu';
+
 
 // Row height ("fit to text") — a reading preference, not data. `auto` lets a
 // row grow to its tallest cell; the fixed steps clamp long text to N lines so

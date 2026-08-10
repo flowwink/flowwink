@@ -14,7 +14,7 @@ interface MessageBubbleProps {
   statusLabel?: string;
   /** Currently highlighted citation ref (mirrors the citations drawer). */
   activeCitation?: number | null;
-  /** Click a [N] marker — opens/【highlights the matching citation card. */
+  /** Click a [N] marker — opens / highlights the matching citation card. */
   onCitationClick?: (ref: number) => void;
   /** Hover a [N] marker (null on leave). */
   onCitationHover?: (ref: number | null) => void;

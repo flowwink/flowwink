@@ -847,6 +847,16 @@ export default function FlowtablePage() {
                       </DropdownMenu>
                     )}
 
+                    {activeTable.view_mode !== 'kanban' && (
+                      <FieldsMenu
+                        fields={fields}
+                        hidden={hiddenFieldIds}
+                        onToggleHidden={toggleHiddenField}
+                        onSetHidden={persistHidden}
+                        onReorder={reorderFields}
+                      />
+                    )}
+
                     <ViewToolbar
                       fields={fields}
                       config={activeTable.view_config ?? {}}
@@ -854,6 +864,7 @@ export default function FlowtablePage() {
                         updateTable.mutate({ id: activeTable.id, base_id: activeBase.id, patch: { view_config } })
                       }
                     />
+
                     <div className="flex-1" />
                     {selected.size > 0 && (
                       <>

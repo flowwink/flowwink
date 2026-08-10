@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { Children, isValidElement, useState, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, RotateCw, Loader2, Wrench } from 'lucide-react';
+import { Copy, Check, RotateCw, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MessageBubbleProps {
@@ -10,9 +10,24 @@ interface MessageBubbleProps {
   /** Live skills executed for this answer — shown so grounding is inspectable. */
   consulted?: Array<{ skill: string; ok: boolean; ms: number }>;
   isStreaming?: boolean;
+  /** Shimmer status line shown above an empty, still-working assistant bubble. */
+  statusLabel?: string;
+  /** Currently highlighted citation ref (mirrors the citations drawer). */
+  activeCitation?: number | null;
+  /** Click a [N] marker — opens/【highlights the matching citation card. */
+  onCitationClick?: (ref: number) => void;
+  /** Hover a [N] marker (null on leave). */
+  onCitationHover?: (ref: number | null) => void;
   /** Show regenerate button (assistant + last message + not streaming). */
   canRegenerate?: boolean;
   onRegenerate?: () => void;
+}
+
+const CITATION_RE = /\[(\d{1,2})\]/g;
+
+/** Prettify a skill name: `get_customer_360` → `get customer 360`. */
+function skillLabel(name: string) {
+  return name.replace(/_/g, ' ');
 }
 
 export function MessageBubble({
@@ -20,6 +35,10 @@ export function MessageBubble({
   content,
   consulted,
   isStreaming,
+  statusLabel,
+  activeCitation,
+  onCitationClick,
+  onCitationHover,
   canRegenerate,
   onRegenerate,
 }: MessageBubbleProps) {
@@ -45,34 +64,106 @@ export function MessageBubble({
     );
   }
 
+  /** Turn `[3]` inside markdown text nodes into interactive citation markers. */
+  const withCitations = (children: ReactNode): ReactNode =>
+    Children.map(children, (child) => {
+      if (typeof child === 'string') {
+        if (!CITATION_RE.test(child)) return child;
+        CITATION_RE.lastIndex = 0;
+        const out: ReactNode[] = [];
+        let last = 0;
+        let m: RegExpExecArray | null;
+        while ((m = CITATION_RE.exec(child)) !== null) {
+          if (m.index > last) out.push(child.slice(last, m.index));
+          const ref = Number(m[1]);
+          out.push(
+            <button
+              key={`${ref}-${m.index}`}
+              type="button"
+              onClick={() => onCitationClick?.(ref)}
+              onMouseEnter={() => onCitationHover?.(ref)}
+              onMouseLeave={() => onCitationHover?.(null)}
+              className={cn(
+                'mx-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded px-1',
+                'align-super text-[10px] font-mono leading-none transition-colors',
+                activeCitation === ref
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20',
+              )}
+              title={`Show source [${ref}]`}
+            >
+              {ref}
+            </button>,
+          );
+          last = m.index + m[0].length;
+        }
+        if (last < child.length) out.push(child.slice(last));
+        return <>{out}</>;
+      }
+      if (isValidElement(child) && (child.props as any)?.children) {
+        // Recurse into inline elements (em/strong/links) so markers survive.
+        return child;
+      }
+      return child;
+    });
+
+  const showStatus = !content && (isStreaming || !!statusLabel);
+
   return (
     <div className="group flex flex-col gap-1.5 items-start">
-      <div
-        className={cn(
-          'max-w-[90%] rounded-2xl rounded-tl-sm bg-muted px-4 py-3 prose prose-sm dark:prose-invert',
-          'prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2 prose-pre:my-2',
-        )}
-      >
-        {content ? (
-          <ReactMarkdown>{content}</ReactMarkdown>
-        ) : (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        )}
-      </div>
+      {showStatus && (
+        <div className="flex items-center gap-2 pl-1 text-xs text-muted-foreground">
+          <span className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 animate-pulse"
+                style={{ animationDelay: `${i * 160}ms` }}
+              />
+            ))}
+          </span>
+          <span className="animate-pulse">{statusLabel || 'Working…'}</span>
+        </div>
+      )}
+
+      {content && (
+        <div
+          className={cn(
+            'max-w-[90%] rounded-2xl rounded-tl-sm bg-muted px-4 py-3 prose prose-sm dark:prose-invert',
+            'prose-p:my-2 prose-headings:mt-4 prose-headings:mb-2 prose-pre:my-2',
+          )}
+        >
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p>{withCitations(children)}</p>,
+              li: ({ children }) => <li>{withCitations(children)}</li>,
+              td: ({ children }) => <td>{withCitations(children)}</td>,
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </div>
+      )}
+
       {consulted && consulted.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-1 text-[11px] text-muted-foreground">
-          <Wrench className="h-3 w-3 shrink-0" />
+        <div className="flex flex-wrap items-center gap-1.5 pl-1">
           {consulted.map((c, i) => (
             <span
               key={`${c.skill}-${i}`}
-              className={cn('font-mono', !c.ok && 'line-through opacity-60')}
-              title={c.ok ? `${c.ms} ms` : 'failed'}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40',
+                'px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted',
+                !c.ok && 'line-through opacity-60 border-destructive/40',
+              )}
+              title={c.ok ? `${c.skill} · ${c.ms} ms` : `${c.skill} · failed`}
             >
-              {c.skill}
+              <Wrench className="h-2.5 w-2.5 shrink-0" />
+              <span className="font-mono">{skillLabel(c.skill)}</span>
             </span>
           ))}
         </div>
       )}
+
       {content && !isStreaming && (
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pl-1">
           <Button

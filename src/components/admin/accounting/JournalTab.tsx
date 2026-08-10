@@ -259,26 +259,33 @@ export function JournalTab() {
       ) : (
         <div className="rounded-lg border bg-card">
           <div className="flex items-center justify-between px-4 py-2.5 border-b text-xs text-muted-foreground">
-            <span>{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
+            <span>
+              {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+              <span className="text-muted-foreground/60">
+                {' '}· sorted by {sort.key === 'amount' ? 'amount' : sort.key}{' '}
+                {sort.dir === 'asc' ? 'ascending' : 'descending'}
+              </span>
+            </span>
             <span className="font-mono tabular-nums">Total <span className="text-foreground font-medium">{fmt(grandTotal)}</span></span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="font-medium px-4 py-2 w-24">Voucher</th>
-                  <th className="font-medium px-4 py-2 w-24">Date</th>
-                  <th className="font-medium px-4 py-2">Description</th>
+              <thead className="sticky top-0 z-10 bg-card">
+                <tr className="group text-left text-xs uppercase tracking-wide text-muted-foreground border-b">
+                  <SortHeader label="Voucher" sortKey="voucher" className="w-24" />
+                  <SortHeader label="Date" sortKey="date" className="w-24" />
+                  <SortHeader label="Description" sortKey="description" />
                   <th className="font-medium px-4 py-2 w-20">Journal</th>
                   <th className="font-medium px-4 py-2 w-48">Accounts</th>
-                  <th className="font-medium px-4 py-2 w-32 text-right">Amount</th>
+                  <SortHeader label="Amount" sortKey="amount" className="w-32 text-right [&>button]:flex-row-reverse" />
                   <th className="font-medium px-4 py-2 w-24">Source</th>
                   <th className="font-medium px-4 py-2 w-20">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((e) => {
+                {sorted.map((e) => {
+
                   const journal = e.journal_id ? journalById.get(e.journal_id) : null;
                   const codes = e.account_codes || [];
                   const codesShown = codes.slice(0, 4);

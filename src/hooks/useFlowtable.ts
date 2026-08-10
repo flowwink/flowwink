@@ -216,9 +216,9 @@ export function useCreateTable() {
       // seed 3 default fields
       const tableId = (data as { id: string }).id;
       await supabase.from('flowtable_fields' as never).insert([
-        { table_id: tableId, name: 'Name', key: 'name', type: 'text', position: 0, width: 240 },
+        { table_id: tableId, name: 'Name', key: 'name', type: 'text', position: 0, width: 200 },
         { table_id: tableId, name: 'Notes', key: 'notes', type: 'longtext', position: 1, width: 320 },
-        { table_id: tableId, name: 'Status', key: 'status', type: 'select', position: 2, width: 140, options: { choices: ['New', 'In Progress', 'Done'] } },
+        { table_id: tableId, name: 'Status', key: 'status', type: 'select', position: 2, width: 130, options: { choices: ['New', 'In Progress', 'Done'] } },
       ] as never);
       return data as unknown as FlowtableTable;
     },
@@ -279,7 +279,7 @@ export function useCreateField() {
         key,
         type: input.type,
         position: input.position ?? 999,
-        width: input.type === 'longtext' ? 320 : 180,
+        width: input.type === 'longtext' ? 260 : 150,
         options: input.options ?? {},
       } as never);
       if (error) throw error;

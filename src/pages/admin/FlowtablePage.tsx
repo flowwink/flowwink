@@ -1099,11 +1099,11 @@ function GridView(props: {
   const startResize = (e: React.MouseEvent, f: FlowtableField) => {
     e.preventDefault();
     e.stopPropagation();
-    resizeRef.current = { id: f.id, startX: e.clientX, startWidth: f.width || 180 };
+    resizeRef.current = { id: f.id, startX: e.clientX, startWidth: f.width || 150 };
     const onMove = (ev: MouseEvent) => {
       const state = resizeRef.current;
       if (!state) return;
-      const next = Math.max(80, Math.round(state.startWidth + (ev.clientX - state.startX)));
+      const next = Math.max(64, Math.round(state.startWidth + (ev.clientX - state.startX)));
       const th = document.querySelector<HTMLElement>(`[data-field-col="${state.id}"]`);
       if (th) { th.style.width = `${next}px`; th.style.minWidth = `${next}px`; }
     };
@@ -1113,7 +1113,7 @@ function GridView(props: {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       if (!state) return;
-      const next = Math.max(80, Math.round(state.startWidth + (ev.clientX - state.startX)));
+      const next = Math.max(64, Math.round(state.startWidth + (ev.clientX - state.startX)));
       if (next !== state.startWidth) props.onConfigureField(state.id, { width: next });
     };
     window.addEventListener('mousemove', onMove);
@@ -1230,7 +1230,7 @@ function GridView(props: {
                   aria-orientation="vertical"
                   title="Drag to resize column"
                   onMouseDown={(e) => startResize(e, f)}
-                  onDoubleClick={() => props.onConfigureField(f.id, { width: 180 })}
+                  onDoubleClick={() => props.onConfigureField(f.id, { width: 150 })}
                   className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/60"
                 />
               </th>

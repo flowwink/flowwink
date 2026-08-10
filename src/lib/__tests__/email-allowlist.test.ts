@@ -176,16 +176,40 @@ describe('email-send applies it before it applies anything else', () => {
   });
 });
 
-describe('the invoice mail in agent-execute is gated', () => {
+describe('the invoice mail goes through the router, so the guard has one home', () => {
   const src = readFileSync(join(FUNCTIONS_DIR, 'agent-execute/index.ts'), 'utf-8');
 
-  it('filters the customer address before the direct Resend call', () => {
-    expect(src).toMatch(/const invoiceGate = RESEND_API_KEY/);
-    expect(src).toMatch(/await filterRecipients\(supabase, \[order\.customer_email\]\)/);
+  /**
+   * This block used to assert that agent-execute applied the allowlist itself
+   * before calling Resend directly — which was true, and was the emergency fix.
+   * Guarding the bypass was right on the day; leaving it there was not. A rule
+   * enforced in two files is two copies that drift, and the second copy is
+   * always the one nobody remembers when the rule changes (it took the
+   * source-aware scope about an hour to prove that).
+   *
+   * The invoice now goes through email-send like every other send, so it
+   * inherits the allowlist, provider fallback, the suppression list, the
+   * branded shell and one outbound log instead of a private half of each.
+   */
+  it('does not talk to the provider directly at all', () => {
+    expect(src).not.toMatch(/api\.resend\.com/);
   });
 
-  it('records the attempt as blocked instead of leaving no trace', () => {
-    expect(src).toMatch(/status: 'blocked',\n\s+recipient: order\.customer_email/);
+  it('sends it through email-send, tagged so the log can find it', () => {
+    expect(src).toMatch(/functions\.invoke\('email-send'/);
+    expect(src).toMatch(/source: 'send_invoice'/);
+    expect(src).toMatch(/related_entity_type: 'invoice'/);
+  });
+
+  it('and still tells blocked apart from broken', () => {
+    // The whole point of routing it: the reason must survive the extra hop.
+    expect(src).toMatch(/blocked\?\.blocked_by_allowlist/);
+    expect(src).toMatch(/Blocked and broken are different facts/);
+  });
+
+  it('never reports a simulated send as sent', () => {
+    expect(src).toMatch(/\(sendData as EmailSendReply \| null\)\?\.simulated/);
+    expect(src).toMatch(/leave a customer waiting for an invoice that never was/);
   });
 });
 
@@ -229,5 +253,50 @@ describe('nobody records state for a send that did not happen', () => {
     const before = src.slice(0, update);
     expect(before, 'the "sent" stamp must sit inside a success branch')
       .toMatch(/if \(!\w*[Ff]ailed\w*\)\s*\{/);
+  });
+});
+
+describe('the guard knows who is sending, because that is where the risk lives', () => {
+  // Optic blocked a colleague invitation to the company's OWN domain. The rule
+  // was right — no invoice may reach a customer — but the guard could not tell
+  // an invoice from an invitation, so it held both. A rail that fires on the
+  // harmless case is a rail people switch off.
+  const cfg = {
+    enabled: true, domains: ['liteit.se'], addresses: [],
+    scope: 'customer_facing', reason: 'pilot',
+  };
+
+  it('lets an internal sender through when scope is customer_facing', async () => {
+    const d = await filterRecipients(settingsClient(cfg),
+      ['peter@optictunnels.com'], 'invite-colleague');
+    expect(d.allowed).toEqual(['peter@optictunnels.com']);
+    expect(d.blocked).toEqual([]);
+    expect(d.active).toBe(false);
+    expect(d.note).toMatch(/sends to colleagues, not customers/);
+  });
+
+  it('still holds a customer-facing send from the same instance', async () => {
+    const d = await filterRecipients(settingsClient(cfg),
+      ['kund@example.com'], 'invoice');
+    expect(d.allowed).toEqual([]);
+    expect(d.blocked).toHaveLength(1);
+    expect(d.active).toBe(true);
+  });
+
+  it('an UNKNOWN sender is guarded, not exempt', async () => {
+    // The exempt list is short on purpose. A list of what to GUARD would fail
+    // open the day someone adds a mailer and forgets to register it.
+    const d = await filterRecipients(settingsClient(cfg),
+      ['kund@example.com'], 'some-new-mailer');
+    expect(d.allowed).toEqual([]);
+    expect(d.active).toBe(true);
+  });
+
+  it('and scope defaults to ALL, so an upgrade never widens the rail', async () => {
+    const { scope: _omitted, ...noScope } = cfg;
+    const d = await filterRecipients(settingsClient(noScope),
+      ['peter@optictunnels.com'], 'invite-colleague');
+    expect(d.allowed).toEqual([]);
+    expect(d.active).toBe(true);
   });
 });

@@ -941,7 +941,7 @@ export default function FlowtablePage() {
                       <CardView
                         columns={cardColumns}
 
-                        fields={fields}
+                        fields={visibleFields}
                         records={displayedRecords}
                         onExpand={setExpandedIndex}
                         onUpdate={(id, values) =>
@@ -950,7 +950,7 @@ export default function FlowtablePage() {
                       />
                     ) : activeTable.view_mode === 'list' ? (
                       <ListView
-                        fields={fields}
+                        fields={visibleFields}
                         records={displayedRecords}
                         selected={selected}
                         setSelected={setSelected}
@@ -961,7 +961,10 @@ export default function FlowtablePage() {
                       />
                     ) : (
                       <GridView
-                        fields={fields}
+                        fields={visibleFields}
+                        allFields={fields}
+                        onReorderFields={reorderFields}
+
                         records={displayedRecords}
                         tables={tables}
                         selected={selected}

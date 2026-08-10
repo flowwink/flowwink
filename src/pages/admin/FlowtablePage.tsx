@@ -464,6 +464,19 @@ export default function FlowtablePage() {
   const bulkInsert = useBulkInsertRecords();
   const pushToCrm = usePushToCrmLeads();
 
+  // Column order is schema, not preference: `position` is what agents and every
+  // other viewer read, so a reorder writes it for the whole ordered set.
+  const reorderFields = (orderedIds: string[]) => {
+    if (!activeTable?.id) return;
+    orderedIds.forEach((id, index) => {
+      const current = fields.find((f) => f.id === id);
+      if (!current || current.position === index) return;
+      updateField.mutate({ id, table_id: activeTable.id, patch: { position: index } });
+    });
+  };
+
+
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pushOpen, setPushOpen] = useState(false);
   const [basesMinimized, setBasesMinimized] = useState(() => {

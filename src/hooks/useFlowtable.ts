@@ -217,7 +217,7 @@ export function useCreateTable() {
       const tableId = (data as { id: string }).id;
       await supabase.from('flowtable_fields' as never).insert([
         { table_id: tableId, name: 'Name', key: 'name', type: 'text', position: 0, width: 200 },
-        { table_id: tableId, name: 'Notes', key: 'notes', type: 'longtext', position: 1, width: 320 },
+        { table_id: tableId, name: 'Notes', key: 'notes', type: 'longtext', position: 1, width: 260 },
         { table_id: tableId, name: 'Status', key: 'status', type: 'select', position: 2, width: 130, options: { choices: ['New', 'In Progress', 'Done'] } },
       ] as never);
       return data as unknown as FlowtableTable;

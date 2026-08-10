@@ -1318,7 +1318,8 @@ function GridView(props: {
                   field={f}
                   value={r.values?.[f.key]}
                   record={r}
-                  fields={fields}
+                  fields={allFields}
+
                   rowHeight={props.rowHeight}
                   onChange={(v) => props.onUpdateRecord(r.id, { ...r.values, [f.key]: v })}
                 />

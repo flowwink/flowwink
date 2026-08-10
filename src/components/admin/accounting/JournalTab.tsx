@@ -106,10 +106,75 @@ export function JournalTab() {
     });
   }, [entries, search, dateFrom, dateTo]);
 
+  const sorted = useMemo(() => {
+    const mul = sort.dir === 'asc' ? 1 : -1;
+    const cmp = (a: any, b: any) => {
+      switch (sort.key) {
+        case 'voucher': {
+          // Series first, then number as a number — so A9 sorts before A10.
+          const sa = a.voucher_series || '', sb = b.voucher_series || '';
+          if (sa !== sb) return sa.localeCompare(sb) * mul;
+          const na = a.voucher_number ?? -1, nb = b.voucher_number ?? -1;
+          if (na !== nb) return (na - nb) * mul;
+          return String(a.reference_number || '').localeCompare(String(b.reference_number || '')) * mul;
+        }
+        case 'amount':
+          return ((a.total_cents || 0) - (b.total_cents || 0)) * mul;
+        case 'description':
+          return String(a.description || '').localeCompare(String(b.description || ''), undefined, { sensitivity: 'base' }) * mul;
+        case 'date':
+        default: {
+          if (a.entry_date !== b.entry_date) return (a.entry_date < b.entry_date ? -1 : 1) * mul;
+          // Stable secondary key: within a day, voucher order is the real order.
+          return ((a.voucher_number ?? 0) - (b.voucher_number ?? 0)) * mul;
+        }
+      }
+    };
+    return [...filtered].sort(cmp);
+  }, [filtered, sort]);
 
   const grandTotal = filtered.reduce((s, e) => s + (e.total_cents || 0), 0);
 
+  const filtersActive =
+    !!search || statusFilter !== 'all' || journalFilter !== 'all' || dateFrom !== fromDate || dateTo !== toDate;
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setJournalFilter('all');
+    setDateFrom(fromDate);
+    setDateTo(toDate);
+  };
+
+  const SortHeader = ({
+    label,
+    sortKey,
+    className,
+  }: { label: string; sortKey: SortKey; className?: string }) => {
+    const active = sort.key === sortKey;
+    return (
+      <th className={cn('font-medium px-4 py-2', className)}>
+        <button
+          type="button"
+          onClick={() => toggleSort(sortKey)}
+          className={cn(
+            'inline-flex items-center gap-1 uppercase tracking-wide transition-colors hover:text-foreground',
+            active ? 'text-foreground' : 'text-muted-foreground',
+          )}
+          title={`Sort by ${label.toLowerCase()}`}
+        >
+          {label}
+          {active ? (
+            sort.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3 opacity-0 group-hover:opacity-40" />
+          )}
+        </button>
+      </th>
+    );
+  };
+
   const orgName = branding?.organizationName || 'Organization';
+
 
   return (
     <div className="space-y-4">

@@ -6,6 +6,12 @@ import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { applyIdentityPolicy } from '../_shared/site-identity.ts';
 import { filterRecipients, blockedResponse } from '../_shared/email-allowlist.ts';
 import { readSieFile } from '../_shared/sie-reader.ts';
+import {
+  buildIncomeStatement,
+  loadStatementClassification,
+  unclosedResultCents,
+  closedToEquityCents,
+} from '../_shared/accounting/income-statement.ts';
 import { markdownToTiptap, inlineClean, parseInline } from '../_shared/markdown-to-tiptap.ts';
 import {
   type AuditContext,
@@ -8296,6 +8302,13 @@ async function executeDbAction(
 
         const balances = Array.from(balanceMap.values()).sort((a, b) => a.account_code.localeCompare(b.account_code));
 
+        // Which account carries the year's result, and which form the tax line,
+        // are properties of THIS instance's chart — see
+        // supabase/functions/_shared/accounting/income-statement.ts. Loaded once
+        // here because the balance sheet needs the same answer as the P&L: the
+        // result may only appear in equity once.
+        const stmtClassification = await loadStatementClassification(supabase);
+
         if (report_type === 'ledger') {
           return { report_type: 'general_ledger', period, accounts: balances, total_accounts: balances.length };
         }
@@ -8329,12 +8342,16 @@ async function executeDbAction(
             b.balance !== 0);
           const totalAssets = assets.reduce((s, a) => s + a.balance, 0);
           const totalLiabilities = liabilities.reduce((s, a) => s + a.balance, 0);
-          // Current-period net result (revenue − expense) sits in equity as
-          // "current year earnings" until the period is closed to retained
-          // earnings — without it the balance sheet won't balance mid-year.
-          const currentYearResult = balances.reduce((s, b) =>
-            (b.account_type === 'revenue' || b.account_type === 'income') ? s + b.balance
-              : b.account_type === 'expense' ? s - b.balance : s, 0);
+          // Current-period net result sits in equity as "current year earnings"
+          // until the closing entry moves it onto an equity account — without it
+          // the balance sheet won't balance mid-year, and WITH it after closing
+          // the result would be counted in equity twice. So the plug is the part
+          // that has NOT yet been carried across, which is zero once the closing
+          // entry exists. The old sum reached the same figure by including the
+          // result carrier as an ordinary expense — right by accident, and only
+          // for as long as the income statement stayed wrong.
+          const currentYearResult = unclosedResultCents(balances, stmtClassification);
+          const closedToEquity = closedToEquityCents(balances, stmtClassification);
           const totalEquity = equity.reduce((s, a) => s + a.balance, 0) + currentYearResult;
           const unclassifiedCents = unclassified.reduce((s, a) => s + a.balance, 0);
           if (unclassified.length > 0) {
@@ -8349,6 +8366,8 @@ async function executeDbAction(
             unclassified,
             unclassified_cents: unclassifiedCents,
             current_year_result_cents: currentYearResult,
+            closed_to_equity_cents: closedToEquity,
+            result_carrier_source: stmtClassification.source,
             total_assets_cents: totalAssets,
             total_liabilities_cents: totalLiabilities,
             total_equity_cents: totalEquity,
@@ -8357,18 +8376,12 @@ async function executeDbAction(
         }
 
         if (report_type === 'profit_loss') {
-          const income = balances.filter(b => (b.account_type === 'revenue' || b.account_type === 'income') && b.balance !== 0);
-          const expenses = balances.filter(b => b.account_type === 'expense' && b.balance !== 0);
-          const totalIncome = income.reduce((s, a) => s + a.balance, 0);
-          const totalExpenses = expenses.reduce((s, a) => s + a.balance, 0);
-          return {
-            report_type: 'profit_loss', period,
-            income, expenses,
-            total_income_cents: totalIncome,
-            total_expenses_cents: totalExpenses,
-            net_result_cents: totalIncome - totalExpenses,
-            profitable: totalIncome > totalExpenses,
-          };
+          // total_expenses_cents now excludes tax and the result carrier, and
+          // result_before_tax_cents is a real line — the shape an årsredovisning
+          // reads in: … / Resultat före skatt / Skatt på årets resultat / Årets
+          // resultat.
+          const statement = buildIncomeStatement(balances, stmtClassification);
+          return { report_type: 'profit_loss', period, locale: stmtClassification.locale, ...statement };
         }
 
         return { error: `Unknown report type: ${rawType}` };

@@ -40,6 +40,7 @@ const DATA_FILES = [
  * seeding, which is the correct place. The engine is the runtime.
  */
 const ENGINE_DIRS = [
+  'supabase/functions/_shared/accounting',
   'supabase/functions/_shared/handlers',
   'supabase/functions/_shared/pilot',
   'src/hooks',

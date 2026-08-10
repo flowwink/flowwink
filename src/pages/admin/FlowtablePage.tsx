@@ -1257,7 +1257,8 @@ function GridView(props: {
                       options={newOptions}
                       onChange={setNewOptions}
                       tables={tables}
-                      fields={fields}
+                      fields={allFields}
+
                     />
                   )}
                   <Button

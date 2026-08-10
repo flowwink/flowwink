@@ -1056,6 +1056,8 @@ export default function FlowtablePage() {
 // ---------- Grid view ----------
 function GridView(props: {
   fields: FlowtableField[];
+  /** Every field, hidden ones included — link/lookup cells resolve against the schema, not the view. */
+  allFields?: FlowtableField[];
   records: FlowtableRecord[];
   tables: FlowtableTable[];
   selected: Set<string>;
@@ -1066,14 +1068,57 @@ function GridView(props: {
   onAddField: (name: string, type: FlowtableFieldType, options: Record<string, unknown>) => void;
   onConfigureField: (id: string, patch: Partial<FlowtableField>) => void;
   onDeleteField: (id: string) => void;
+  onReorderFields?: (orderedIds: string[]) => void;
   onAddRow: () => void;
 }) {
   const { fields, records, tables, selected, setSelected } = props;
+  const allFields = props.allFields ?? fields;
   const [addFieldOpen, setAddFieldOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState<FlowtableFieldType>('text');
   const [newOptions, setNewOptions] = useState<Record<string, unknown>>({});
   const [configField, setConfigField] = useState<FlowtableField | null>(null);
+  // Header drag = reorder. The handle only appears on hover so the header keeps
+  // reading as a label, not as a control surface.
+  const [dragFieldId, setDragFieldId] = useState<string | null>(null);
+  const [overFieldId, setOverFieldId] = useState<string | null>(null);
+  const resizeRef = useRef<{ id: string; startX: number; startWidth: number } | null>(null);
+
+  const moveField = (fromId: string, toId: string) => {
+    if (!props.onReorderFields || fromId === toId) return;
+    const ids = allFields.map((f) => f.id);
+    const fromIdx = ids.indexOf(fromId);
+    const toIdx = ids.indexOf(toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    ids.splice(toIdx, 0, ids.splice(fromIdx, 1)[0]);
+    props.onReorderFields(ids);
+  };
+
+  // Resize writes once on release: a mutation per mouse-move would turn a drag
+  // into dozens of writes and make the column jitter.
+  const startResize = (e: React.MouseEvent, f: FlowtableField) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizeRef.current = { id: f.id, startX: e.clientX, startWidth: f.width || 180 };
+    const onMove = (ev: MouseEvent) => {
+      const state = resizeRef.current;
+      if (!state) return;
+      const next = Math.max(80, Math.round(state.startWidth + (ev.clientX - state.startX)));
+      const th = document.querySelector<HTMLElement>(`[data-field-col="${state.id}"]`);
+      if (th) { th.style.width = `${next}px`; th.style.minWidth = `${next}px`; }
+    };
+    const onUp = (ev: MouseEvent) => {
+      const state = resizeRef.current;
+      resizeRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (!state) return;
+      const next = Math.max(80, Math.round(state.startWidth + (ev.clientX - state.startX)));
+      if (next !== state.startWidth) props.onConfigureField(state.id, { width: next });
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   const toggleAll = () => {
     if (selected.size === records.length) setSelected(new Set());
@@ -1084,6 +1129,7 @@ function GridView(props: {
     if (n.has(id)) n.delete(id); else n.add(id);
     setSelected(n);
   };
+
 
   return (
     <div className="min-w-fit">

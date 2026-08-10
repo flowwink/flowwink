@@ -420,6 +420,37 @@ export default function FlowtablePage() {
     } catch { /* storage unavailable — session-only */ }
   };
 
+  // Column visibility is a per-viewer reading preference (like row height), so it
+  // lives in localStorage per table — hiding a column must never look like the
+  // data or the schema changed for everyone.
+  const [hiddenFieldIds, setHiddenFieldIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!activeTable?.id) return;
+    try {
+      const raw = localStorage.getItem(`flowtable-hiddenfields-${activeTable.id}`);
+      const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+      setHiddenFieldIds(new Set(Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []));
+    } catch {
+      setHiddenFieldIds(new Set());
+    }
+  }, [activeTable?.id]);
+  const persistHidden = (ids: string[]) => {
+    setHiddenFieldIds(new Set(ids));
+    try {
+      if (activeTable?.id) localStorage.setItem(`flowtable-hiddenfields-${activeTable.id}`, JSON.stringify(ids));
+    } catch { /* storage unavailable — session-only */ }
+  };
+  const toggleHiddenField = (id: string) => {
+    const next = new Set(hiddenFieldIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    persistHidden(Array.from(next));
+  };
+  const visibleFields = useMemo(
+    () => fields.filter((f) => !hiddenFieldIds.has(f.id)),
+    [fields, hiddenFieldIds],
+  );
+
+
   const displayedRecords = useMemo(
     () => applyViewConfig(records, activeTable?.view_config),
     [records, activeTable?.view_config],

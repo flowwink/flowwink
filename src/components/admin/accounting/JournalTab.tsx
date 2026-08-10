@@ -229,6 +229,11 @@ export function JournalTab() {
             <SelectItem value="reversed">Reversed</SelectItem>
           </SelectContent>
         </Select>
+        {filtersActive && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+            <X className="h-3.5 w-3.5 mr-1" /> Clear
+          </Button>
+        )}
         <div className="flex items-center gap-1 ml-auto">
           <Button onClick={() => setShowCreate(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
@@ -237,6 +242,7 @@ export function JournalTab() {
           <JournalCsvActions statusFilter={statusFilter} journalFilter={journalFilter} />
         </div>
       </div>
+
 
       {isLoading ? (
         <div className="space-y-3">

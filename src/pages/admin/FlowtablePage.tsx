@@ -1767,16 +1767,31 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
   );
 }
 
+// URL/email/phone cells are addresses, not prose — render them as real links so
+// a row is actionable (open the site, start a mail draft, dial) without copy
+// -paste. Bare domains ("flowwink.com") get https:// so the browser does not
+// treat them as a relative path.
+function linkishHref(type: string, value: unknown): string | undefined {
+  const raw = value == null ? '' : String(value).trim();
+  if (!raw) return undefined;
+  if (type === 'email') return raw.includes('@') ? `mailto:${raw}` : undefined;
+  if (type === 'phone') return `tel:${raw.replace(/[^\d+]/g, '')}`;
+  if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+  if (/^[\w.-]+\.[a-z]{2,}(\/|$|\?)/i.test(raw)) return `https://${raw}`;
+  return undefined;
+}
+
 // Wrapping text cell — the reading half of the row-height control. Idle state
 // is plain wrapped text (clamped to spec.lines, or the full value in "Fit to
 // text"); clicking or pressing Enter swaps in an auto-growing textarea so the
 // cell you edit is exactly as tall as its content. Esc reverts, blur saves.
-function WrapTextCell({ value, onChange, cellStyle, spec, multiline }: {
+function WrapTextCell({ value, onChange, cellStyle, spec, multiline, href }: {
   value: unknown;
   onChange: (v: unknown) => void;
   cellStyle: { width: number; minWidth: number };
   spec: (typeof ROW_HEIGHTS)[number];
   multiline: boolean;
+  href?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -1840,7 +1855,21 @@ function WrapTextCell({ value, onChange, cellStyle, spec, multiline }: {
             : {}),
         }}
       >
-        {text || <span className="text-muted-foreground/40">—</span>}
+        {text
+          ? (href
+              ? (
+                <a
+                  href={href}
+                  target={href.startsWith('http') ? '_blank' : undefined}
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+                >
+                  {text}
+                </a>
+              )
+              : text)
+          : <span className="text-muted-foreground/40">—</span>}
       </div>
     </td>
   );

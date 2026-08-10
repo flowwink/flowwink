@@ -38,6 +38,25 @@ export function JournalTab() {
   }, [year]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  // Sorting is a viewer preference, not data — persisted per user so an
+  // accountant who works voucher-by-voucher keeps that order between visits.
+  type SortKey = 'voucher' | 'date' | 'amount' | 'description';
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>(() => {
+    try {
+      const raw = localStorage.getItem('accounting.journal.sort');
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return { key: 'date', dir: 'desc' };
+  });
+  useEffect(() => {
+    try { localStorage.setItem('accounting.journal.sort', JSON.stringify(sort)); } catch { /* ignore */ }
+  }, [sort]);
+  const toggleSort = (key: SortKey) =>
+    setSort((s) =>
+      s.key === key
+        ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'description' || key === 'voucher' ? 'asc' : 'desc' },
+    );
 
   const { data: entries, isLoading } = useJournalEntries(statusFilter, journalFilter);
   const { data: selectedEntry } = useJournalEntryWithLines(selectedId);

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, FileText, Check, AlertTriangle, Search } from 'lucide-react';
+import { Plus, FileText, Check, AlertTriangle, Search, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { useJournalEntries, useJournalEntryWithLines, useJournals } from '@/hooks/useAccounting';
 import { useAccountingRealtime } from '@/hooks/useAccountingRealtime';
 import { useAccountingPreferences, useBrandingSettings } from '@/hooks/useSiteSettings';
@@ -38,6 +38,25 @@ export function JournalTab() {
   }, [year]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  // Sorting is a viewer preference, not data — persisted per user so an
+  // accountant who works voucher-by-voucher keeps that order between visits.
+  type SortKey = 'voucher' | 'date' | 'amount' | 'description';
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>(() => {
+    try {
+      const raw = localStorage.getItem('accounting.journal.sort');
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return { key: 'date', dir: 'desc' };
+  });
+  useEffect(() => {
+    try { localStorage.setItem('accounting.journal.sort', JSON.stringify(sort)); } catch { /* ignore */ }
+  }, [sort]);
+  const toggleSort = (key: SortKey) =>
+    setSort((s) =>
+      s.key === key
+        ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: key === 'description' || key === 'voucher' ? 'asc' : 'desc' },
+    );
 
   const { data: entries, isLoading } = useJournalEntries(statusFilter, journalFilter);
   const { data: selectedEntry } = useJournalEntryWithLines(selectedId);
@@ -87,10 +106,75 @@ export function JournalTab() {
     });
   }, [entries, search, dateFrom, dateTo]);
 
+  const sorted = useMemo(() => {
+    const mul = sort.dir === 'asc' ? 1 : -1;
+    const cmp = (a: any, b: any) => {
+      switch (sort.key) {
+        case 'voucher': {
+          // Series first, then number as a number — so A9 sorts before A10.
+          const sa = a.voucher_series || '', sb = b.voucher_series || '';
+          if (sa !== sb) return sa.localeCompare(sb) * mul;
+          const na = a.voucher_number ?? -1, nb = b.voucher_number ?? -1;
+          if (na !== nb) return (na - nb) * mul;
+          return String(a.reference_number || '').localeCompare(String(b.reference_number || '')) * mul;
+        }
+        case 'amount':
+          return ((a.total_cents || 0) - (b.total_cents || 0)) * mul;
+        case 'description':
+          return String(a.description || '').localeCompare(String(b.description || ''), undefined, { sensitivity: 'base' }) * mul;
+        case 'date':
+        default: {
+          if (a.entry_date !== b.entry_date) return (a.entry_date < b.entry_date ? -1 : 1) * mul;
+          // Stable secondary key: within a day, voucher order is the real order.
+          return ((a.voucher_number ?? 0) - (b.voucher_number ?? 0)) * mul;
+        }
+      }
+    };
+    return [...filtered].sort(cmp);
+  }, [filtered, sort]);
 
   const grandTotal = filtered.reduce((s, e) => s + (e.total_cents || 0), 0);
 
+  const filtersActive =
+    !!search || statusFilter !== 'all' || journalFilter !== 'all' || dateFrom !== fromDate || dateTo !== toDate;
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setJournalFilter('all');
+    setDateFrom(fromDate);
+    setDateTo(toDate);
+  };
+
+  const SortHeader = ({
+    label,
+    sortKey,
+    className,
+  }: { label: string; sortKey: SortKey; className?: string }) => {
+    const active = sort.key === sortKey;
+    return (
+      <th className={cn('font-medium px-4 py-2', className)}>
+        <button
+          type="button"
+          onClick={() => toggleSort(sortKey)}
+          className={cn(
+            'inline-flex items-center gap-1 uppercase tracking-wide transition-colors hover:text-foreground',
+            active ? 'text-foreground' : 'text-muted-foreground',
+          )}
+          title={`Sort by ${label.toLowerCase()}`}
+        >
+          {label}
+          {active ? (
+            sort.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3 opacity-0 group-hover:opacity-40" />
+          )}
+        </button>
+      </th>
+    );
+  };
+
   const orgName = branding?.organizationName || 'Organization';
+
 
   return (
     <div className="space-y-4">
@@ -145,6 +229,11 @@ export function JournalTab() {
             <SelectItem value="reversed">Reversed</SelectItem>
           </SelectContent>
         </Select>
+        {filtersActive && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+            <X className="h-3.5 w-3.5 mr-1" /> Clear
+          </Button>
+        )}
         <div className="flex items-center gap-1 ml-auto">
           <Button onClick={() => setShowCreate(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
@@ -153,6 +242,7 @@ export function JournalTab() {
           <JournalCsvActions statusFilter={statusFilter} journalFilter={journalFilter} />
         </div>
       </div>
+
 
       {isLoading ? (
         <div className="space-y-3">
@@ -169,26 +259,33 @@ export function JournalTab() {
       ) : (
         <div className="rounded-lg border bg-card">
           <div className="flex items-center justify-between px-4 py-2.5 border-b text-xs text-muted-foreground">
-            <span>{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
+            <span>
+              {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+              <span className="text-muted-foreground/60">
+                {' '}· sorted by {sort.key === 'amount' ? 'amount' : sort.key}{' '}
+                {sort.dir === 'asc' ? 'ascending' : 'descending'}
+              </span>
+            </span>
             <span className="font-mono tabular-nums">Total <span className="text-foreground font-medium">{fmt(grandTotal)}</span></span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="font-medium px-4 py-2 w-24">Voucher</th>
-                  <th className="font-medium px-4 py-2 w-24">Date</th>
-                  <th className="font-medium px-4 py-2">Description</th>
+              <thead className="sticky top-0 z-10 bg-card">
+                <tr className="group text-left text-xs uppercase tracking-wide text-muted-foreground border-b">
+                  <SortHeader label="Voucher" sortKey="voucher" className="w-24" />
+                  <SortHeader label="Date" sortKey="date" className="w-24" />
+                  <SortHeader label="Description" sortKey="description" />
                   <th className="font-medium px-4 py-2 w-20">Journal</th>
                   <th className="font-medium px-4 py-2 w-48">Accounts</th>
-                  <th className="font-medium px-4 py-2 w-32 text-right">Amount</th>
+                  <SortHeader label="Amount" sortKey="amount" className="w-32 text-right [&>button]:flex-row-reverse" />
                   <th className="font-medium px-4 py-2 w-24">Source</th>
                   <th className="font-medium px-4 py-2 w-20">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((e) => {
+                {sorted.map((e) => {
+
                   const journal = e.journal_id ? journalById.get(e.journal_id) : null;
                   const codes = e.account_codes || [];
                   const codesShown = codes.slice(0, 4);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -37,6 +37,9 @@ interface Props {
   sources: WorkspaceSource[];
   onSourcesChange: (next: WorkspaceSource[]) => void;
   onResetSources: () => void;
+  /** Ref of the citation currently hovered/clicked in the answer. */
+  activeCitation?: number | null;
+  onActiveCitationChange?: (ref: number | null) => void;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -78,8 +81,20 @@ export function CitationsDrawer({
   sources,
   onSourcesChange,
   onResetSources,
+  activeCitation,
+  onActiveCitationChange,
 }: Props) {
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  // Bring the highlighted citation into view when the answer points at it.
+  useEffect(() => {
+    if (activeCitation == null) return;
+    cardRefs.current[activeCitation]?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth',
+    });
+  }, [activeCitation]);
 
   const toggle = (key: WorkspaceSource) => {
     if (sources.includes(key)) {
@@ -110,45 +125,58 @@ export function CitationsDrawer({
                 will appear here.
               </p>
             ) : (
-              citations.map((c) => (
-                <div
-                  key={`${c.type}-${c.id}-${c.ref}`}
-                  className="rounded-md border border-border/60 bg-card/50 p-3 hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-mono text-primary mt-0.5">
-                      [{c.ref}]
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] py-0 px-1.5 h-4"
+              citations.map((c) => {
+                const active = activeCitation === c.ref;
+                return (
+                  <div
+                    key={`${c.type}-${c.id}-${c.ref}`}
+                    ref={(el) => {
+                      cardRefs.current[c.ref] = el;
+                    }}
+                    onMouseEnter={() => onActiveCitationChange?.(c.ref)}
+                    onMouseLeave={() => onActiveCitationChange?.(null)}
+                    className={
+                      active
+                        ? 'rounded-md border border-primary/60 bg-primary/5 ring-1 ring-primary/30 p-3 transition-colors'
+                        : 'rounded-md border border-border/60 bg-card/50 p-3 hover:bg-accent/50 transition-colors'
+                    }
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-mono text-primary mt-0.5">
+                        [{c.ref}]
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] py-0 px-1.5 h-4"
+                          >
+                            {TYPE_LABEL[c.type] || c.type}
+                          </Badge>
+                        </div>
+                        <p
+                          className="text-sm font-medium truncate"
+                          title={c.title}
                         >
-                          {TYPE_LABEL[c.type] || c.type}
-                        </Badge>
+                          {c.title}
+                        </p>
+                        {c.url && (
+                          <Link
+                            to={c.url}
+                            className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                          >
+                            Open <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
                       </div>
-                      <p
-                        className="text-sm font-medium truncate"
-                        title={c.title}
-                      >
-                        {c.title}
-                      </p>
-                      {c.url && (
-                        <Link
-                          to={c.url}
-                          className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
-                        >
-                          Open <ExternalLink className="h-3 w-3" />
-                        </Link>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </ScrollArea>
+
 
         {/* Sources filter — collapsed by default */}
         <Separator />

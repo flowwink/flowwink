@@ -12,6 +12,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -42,6 +49,8 @@ import {
   Brain,
   Paperclip,
   PanelRight,
+  Layers,
+  RotateCcw,
 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
@@ -79,6 +88,10 @@ export default function WorkspaceChatPage() {
     try { localStorage.setItem(SOURCES_LS_KEY, JSON.stringify(next)); } catch { /* */ }
   };
   const [input, setInput] = useState('');
+  // Per-session mode override — the saved admin default is the starting point.
+  const [modeOverride, setModeOverride] = useState<'strict' | 'cowork' | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [activeCitation, setActiveCitation] = useState<number | null>(null);
   const [attachments, setAttachments] = useState<CoworkAttachment[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,9 +122,11 @@ export default function WorkspaceChatPage() {
     setSourcesState(settings.defaultSources);
   }, [settings?.defaultSources]);
 
+  const effectiveMode: 'strict' | 'cowork' = modeOverride ?? settings?.mode ?? 'cowork';
+
   const { messages, isStreaming, send, stop, reset, loadHistory, lastContextMeta, regenerate } = useWorkspaceChat({
     sources,
-    mode: settings?.mode,
+    mode: effectiveMode,
     onError: (msg) =>
       toast({ title: 'Flowwork', description: msg, variant: 'destructive' }),
     onFirstMessage: async (text) => {
@@ -377,7 +392,7 @@ export default function WorkspaceChatPage() {
     );
   }
 
-  const mode = settings?.mode ?? 'cowork';
+  const mode = effectiveMode;
   const worldOn = mode === 'cowork' && settings?.allowWorldKnowledge !== false;
   const webOn = mode === 'cowork' && settings?.allowWebSearch !== false;
 
@@ -438,7 +453,7 @@ export default function WorkspaceChatPage() {
               </Badge>
             )}
             <CoworkSettingsPanel />
-            <Sheet>
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <PanelRight className="h-4 w-4" />
@@ -458,6 +473,8 @@ export default function WorkspaceChatPage() {
                   onResetSources={() =>
                     setSources(settings?.defaultSources || ALL_WORKSPACE_SOURCES)
                   }
+                  activeCitation={activeCitation}
+                  onActiveCitationChange={setActiveCitation}
                 />
               </SheetContent>
             </Sheet>
@@ -508,6 +525,13 @@ export default function WorkspaceChatPage() {
                   fileInputRef={fileInputRef}
                   onFiles={handleFiles}
                   mode={mode}
+                  onModeChange={setModeOverride}
+                  sources={sources}
+                  onSourcesChange={setSources}
+                  onResetSources={() =>
+                    setSources(settings?.defaultSources || ALL_WORKSPACE_SOURCES)
+                  }
+                  webAvailable={settings?.allowWebSearch !== false}
                   large
                 />
 
@@ -550,6 +574,19 @@ export default function WorkspaceChatPage() {
                           !isStreaming
                         }
                         onRegenerate={regenerate}
+                        statusLabel={
+                          isStreaming && isLast && m.role === 'assistant'
+                            ? m.consulted?.length
+                              ? 'Consulting live data…'
+                              : 'Searching your workspace…'
+                            : undefined
+                        }
+                        activeCitation={activeCitation}
+                        onCitationHover={setActiveCitation}
+                        onCitationClick={(ref) => {
+                          setActiveCitation(ref);
+                          setSheetOpen(true);
+                        }}
                       />
                     );
                   })}
@@ -573,6 +610,13 @@ export default function WorkspaceChatPage() {
                     fileInputRef={fileInputRef}
                     onFiles={handleFiles}
                     mode={mode}
+                    onModeChange={setModeOverride}
+                    sources={sources}
+                    onSourcesChange={setSources}
+                    onResetSources={() =>
+                      setSources(settings?.defaultSources || ALL_WORKSPACE_SOURCES)
+                    }
+                    webAvailable={settings?.allowWebSearch !== false}
                   />
                   {sources.length === 0 && mode === 'strict' && (
                     <Alert className="mt-2">
@@ -620,8 +664,25 @@ interface ComposerProps {
   fileInputRef: React.RefObject<HTMLInputElement>;
   onFiles: (files: FileList | File[]) => void;
   mode: 'strict' | 'cowork';
+  onModeChange: (m: 'strict' | 'cowork') => void;
+  sources: WorkspaceSource[];
+  onSourcesChange: (next: WorkspaceSource[]) => void;
+  onResetSources: () => void;
+  webAvailable: boolean;
   large?: boolean;
 }
+
+const SOURCE_LABEL: Record<WorkspaceSource, string> = {
+  documents: 'Documents',
+  contracts: 'Contracts',
+  kb: 'Knowledge Base',
+  pages: 'Pages',
+  crm: 'CRM',
+  employees: 'Employees',
+  wiki: 'Wiki',
+  handbook: 'Handbook',
+  flowtable: 'Flowtable',
+};
 
 function CoworkComposer({
   input,
@@ -636,6 +697,11 @@ function CoworkComposer({
   fileInputRef,
   onFiles,
   mode,
+  onModeChange,
+  sources,
+  onSourcesChange,
+  onResetSources,
+  webAvailable,
   large,
 }: ComposerProps) {
   const ready = attachments.filter((a) => a.status === 'ready').length;
@@ -674,6 +740,121 @@ function CoworkComposer({
           }`}
           disabled={isStreaming}
         />
+
+        {/* Quiet quick-settings row — sources, mode, web */}
+        <div className="flex flex-wrap items-center gap-1.5 px-1 pt-1.5">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Layers className="h-3 w-3" />
+                {sources.length === ALL_WORKSPACE_SOURCES.length
+                  ? `${ALL_WORKSPACE_SOURCES.length} sources`
+                  : `${sources.length} of ${ALL_WORKSPACE_SOURCES.length} sources`}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-60 p-2">
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-xs font-medium">Sources</span>
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[11px]"
+                    onClick={() => onSourcesChange([...ALL_WORKSPACE_SOURCES])}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[11px]"
+                    onClick={() => onSourcesChange([])}
+                  >
+                    None
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1.5 text-[11px]"
+                    onClick={onResetSources}
+                    title="Reset to workspace default"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {ALL_WORKSPACE_SOURCES.map((key) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`composer-src-${key}`}
+                      checked={sources.includes(key)}
+                      onCheckedChange={() =>
+                        onSourcesChange(
+                          sources.includes(key)
+                            ? sources.filter((k) => k !== key)
+                            : [...sources, key],
+                        )
+                      }
+                    />
+                    <Label
+                      htmlFor={`composer-src-${key}`}
+                      className="flex-1 cursor-pointer text-xs font-normal"
+                    >
+                      {SOURCE_LABEL[key]}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Grounded (strict) ⇄ Cowork (blended) */}
+          <div className="inline-flex items-center rounded-full border border-border/60 bg-muted/30 p-0.5">
+            {([
+              { key: 'strict' as const, label: 'Grounded', hint: 'Workspace data only' },
+              { key: 'cowork' as const, label: 'Cowork', hint: 'Blend workspace, model & web' },
+            ]).map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                title={o.hint}
+                onClick={() => onModeChange(o.key)}
+                className={`rounded-full px-2 py-0.5 text-[11px] transition-colors ${
+                  mode === o.key
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+
+          {webAvailable && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                mode === 'cowork'
+                  ? 'border-border/60 bg-muted/30 text-muted-foreground'
+                  : 'border-dashed border-border/60 text-muted-foreground/60'
+              }`}
+              title={
+                mode === 'cowork'
+                  ? 'Web search available — the assistant uses it only when the workspace has no answer'
+                  : 'Web search is off in Grounded mode'
+              }
+            >
+              <Globe className="h-3 w-3" />
+              Web {mode === 'cowork' ? 'on' : 'off'}
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center justify-between pt-1.5 px-1">
           <Button

@@ -1144,13 +1144,41 @@ function GridView(props: {
                 />
               </div>
             </th>
-            {fields.map((f) => (
+            {fields.map((f, fi) => (
               <th
                 key={f.id}
-                className="border-r border-b text-left font-medium text-xs text-muted-foreground p-0"
+                data-field-col={f.id}
+                className={`relative border-r border-b text-left font-medium text-xs text-muted-foreground p-0 ${
+                  overFieldId === f.id && dragFieldId && dragFieldId !== f.id
+                    ? 'shadow-[inset_2px_0_0_0_hsl(var(--primary))]'
+                    : ''
+                } ${dragFieldId === f.id ? 'opacity-60' : ''}`}
                 style={{ width: f.width, minWidth: f.width }}
+                onDragOver={(e) => {
+                  if (!dragFieldId) return;
+                  e.preventDefault();
+                  setOverFieldId(f.id);
+                }}
+                onDrop={(e) => {
+                  if (!dragFieldId) return;
+                  e.preventDefault();
+                  moveField(dragFieldId, f.id);
+                  setDragFieldId(null);
+                  setOverFieldId(null);
+                }}
               >
                 <div className="h-9 px-2 flex items-center gap-1 group">
+                  {props.onReorderFields && (
+                    <span
+                      draggable
+                      onDragStart={() => setDragFieldId(f.id)}
+                      onDragEnd={() => { setDragFieldId(null); setOverFieldId(null); }}
+                      title="Drag to move column"
+                      className="cursor-grab text-muted-foreground/70 opacity-0 group-hover:opacity-100 -ml-1"
+                    >
+                      <GripVertical className="h-3 w-3" />
+                    </span>
+                  )}
                   <input
                     defaultValue={f.name}
                     onBlur={(e) => {
@@ -1169,6 +1197,23 @@ function GridView(props: {
                       <DropdownMenuItem onClick={() => setConfigField(f)}>
                         Configure field…
                       </DropdownMenuItem>
+                      {props.onReorderFields && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            disabled={fi === 0}
+                            onClick={() => moveField(f.id, fields[fi - 1].id)}
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5 mr-2" /> Move left
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={fi === fields.length - 1}
+                            onClick={() => moveField(f.id, fields[fi + 1].id)}
+                          >
+                            <ChevronRight className="h-3.5 w-3.5 mr-2" /> Move right
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive"
@@ -1179,8 +1224,18 @@ function GridView(props: {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+                {/* Resize grip: invisible until hovered, so width is adjustable without a visible control. */}
+                <span
+                  role="separator"
+                  aria-orientation="vertical"
+                  title="Drag to resize column"
+                  onMouseDown={(e) => startResize(e, f)}
+                  onDoubleClick={() => props.onConfigureField(f.id, { width: 180 })}
+                  className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/60"
+                />
               </th>
             ))}
+
             <th className="border-b p-0 w-12">
               <DropdownMenu open={addFieldOpen} onOpenChange={setAddFieldOpen}>
                 <DropdownMenuTrigger asChild>

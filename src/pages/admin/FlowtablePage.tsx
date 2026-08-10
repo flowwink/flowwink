@@ -1644,10 +1644,11 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
   // scroll. Single-line <input> columns (email/url/phone/plain text) silently
   // cut off long values, so they wrap too as soon as the row is taller than one
   // line.
+  const isLinkish = field.type === 'url' || field.type === 'email' || field.type === 'phone';
   const wrapsAsText =
     field.type === 'longtext' ||
-    (rowHeight !== 'short' &&
-      (field.type === 'text' || field.type === 'email' || field.type === 'url' || field.type === 'phone'));
+    isLinkish ||
+    (rowHeight !== 'short' && field.type === 'text');
   if (wrapsAsText) {
     return (
       <WrapTextCell
@@ -1656,6 +1657,7 @@ function CellEditor({ field, value, record, fields, onChange, rowHeight = 'short
         cellStyle={cellStyle}
         spec={spec}
         multiline={field.type === 'longtext'}
+        href={isLinkish ? linkishHref(field.type, value) : undefined}
       />
     );
   }

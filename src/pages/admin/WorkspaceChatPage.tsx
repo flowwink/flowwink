@@ -12,6 +12,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -42,6 +49,8 @@ import {
   Brain,
   Paperclip,
   PanelRight,
+  Layers,
+  RotateCcw,
 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
@@ -79,6 +88,10 @@ export default function WorkspaceChatPage() {
     try { localStorage.setItem(SOURCES_LS_KEY, JSON.stringify(next)); } catch { /* */ }
   };
   const [input, setInput] = useState('');
+  // Per-session mode override — the saved admin default is the starting point.
+  const [modeOverride, setModeOverride] = useState<'strict' | 'cowork' | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [activeCitation, setActiveCitation] = useState<number | null>(null);
   const [attachments, setAttachments] = useState<CoworkAttachment[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,9 +122,11 @@ export default function WorkspaceChatPage() {
     setSourcesState(settings.defaultSources);
   }, [settings?.defaultSources]);
 
+  const effectiveMode: 'strict' | 'cowork' = modeOverride ?? settings?.mode ?? 'cowork';
+
   const { messages, isStreaming, send, stop, reset, loadHistory, lastContextMeta, regenerate } = useWorkspaceChat({
     sources,
-    mode: settings?.mode,
+    mode: effectiveMode,
     onError: (msg) =>
       toast({ title: 'Flowwork', description: msg, variant: 'destructive' }),
     onFirstMessage: async (text) => {
@@ -377,7 +392,7 @@ export default function WorkspaceChatPage() {
     );
   }
 
-  const mode = settings?.mode ?? 'cowork';
+  const mode = effectiveMode;
   const worldOn = mode === 'cowork' && settings?.allowWorldKnowledge !== false;
   const webOn = mode === 'cowork' && settings?.allowWebSearch !== false;
 
@@ -438,7 +453,7 @@ export default function WorkspaceChatPage() {
               </Badge>
             )}
             <CoworkSettingsPanel />
-            <Sheet>
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <PanelRight className="h-4 w-4" />
@@ -458,6 +473,8 @@ export default function WorkspaceChatPage() {
                   onResetSources={() =>
                     setSources(settings?.defaultSources || ALL_WORKSPACE_SOURCES)
                   }
+                  activeCitation={activeCitation}
+                  onActiveCitationChange={setActiveCitation}
                 />
               </SheetContent>
             </Sheet>
@@ -508,6 +525,13 @@ export default function WorkspaceChatPage() {
                   fileInputRef={fileInputRef}
                   onFiles={handleFiles}
                   mode={mode}
+                  onModeChange={setModeOverride}
+                  sources={sources}
+                  onSourcesChange={setSources}
+                  onResetSources={() =>
+                    setSources(settings?.defaultSources || ALL_WORKSPACE_SOURCES)
+                  }
+                  webAvailable={settings?.allowWebSearch !== false}
                   large
                 />
 
@@ -550,6 +574,19 @@ export default function WorkspaceChatPage() {
                           !isStreaming
                         }
                         onRegenerate={regenerate}
+                        statusLabel={
+                          isStreaming && isLast && m.role === 'assistant'
+                            ? m.consulted?.length
+                              ? 'Consulting live data…'
+                              : 'Searching your workspace…'
+                            : undefined
+                        }
+                        activeCitation={activeCitation}
+                        onCitationHover={setActiveCitation}
+                        onCitationClick={(ref) => {
+                          setActiveCitation(ref);
+                          setSheetOpen(true);
+                        }}
                       />
                     );
                   })}
@@ -573,6 +610,13 @@ export default function WorkspaceChatPage() {
                     fileInputRef={fileInputRef}
                     onFiles={handleFiles}
                     mode={mode}
+                    onModeChange={setModeOverride}
+                    sources={sources}
+                    onSourcesChange={setSources}
+                    onResetSources={() =>
+                      setSources(settings?.defaultSources || ALL_WORKSPACE_SOURCES)
+                    }
+                    webAvailable={settings?.allowWebSearch !== false}
                   />
                   {sources.length === 0 && mode === 'strict' && (
                     <Alert className="mt-2">

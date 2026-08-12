@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260812170000",
-      "migrations_count": 389,
+      "migration_head": "20260812180000",
+      "migrations_count": 390,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1561,6 +1561,10 @@
         {
           "version": "20260812170000",
           "name": "extraction-can-be-in-flight"
+        },
+        {
+          "version": "20260812180000",
+          "name": "leads-score-on-its-own-instance"
         }
       ]
     },

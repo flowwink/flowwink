@@ -8,8 +8,9 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_url text;
-  v_anon text;
+  v_template text;
+  v_url      text;
+  v_headers  jsonb;
 BEGIN
   -- Only fire when a lead has identifiable contact info
   IF NEW.email IS NULL AND NEW.phone IS NULL THEN
@@ -24,16 +25,31 @@ BEGIN
     END IF;
   END IF;
 
-  v_url  := 'https://rzhjotxffjfsdlhrdkpj.supabase.co/functions/v1/score-visitor-intent';
-  v_anon := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6aGpvdHhmZmpmc2RsaHJka3BqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTk2MzAsImV4cCI6MjA4MTEzNTYzMH0.h_S8ZHuCWWz97-uzQge0sb3riHmElrKTTfs5jrwE72c';
+  -- SANITISED 2026-08-12. This file originally hardcoded the DEVELOPMENT
+  -- project's URL and anon key here, so every instance that replayed it POSTed
+  -- its customers' identified leads to our dev project — and scored none of
+  -- them, since the lead_id meant nothing there. Superseded on live instances by
+  -- 20260812180000; rewritten here so a fresh replay never creates the bad
+  -- version even briefly, and so the key stops shipping in a public repo.
+  --
+  -- SQL cannot know which instance it is running on. The identity is borrowed at
+  -- runtime from the knowledge-indexer cron job, which each instance registers
+  -- with its own host and key (the edge runtime is the one thing that knows).
+  -- No template yet → post nowhere. Sending nowhere beats sending to us.
+  SELECT command INTO v_template FROM cron.job WHERE jobname = 'knowledge-indexer';
+  IF v_template IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  v_url := substring(v_template from 'https://[^'']+/functions/v1/') || 'score-visitor-intent';
+  v_headers := substring(v_template from 'headers := ''(\{[^'']+\})''')::jsonb;
+  IF v_url IS NULL OR v_headers IS NULL THEN
+    RETURN NEW;
+  END IF;
 
   PERFORM net.http_post(
     url     := v_url,
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'apikey', v_anon,
-      'Authorization', 'Bearer ' || v_anon
-    ),
+    headers := v_headers,
     body    := jsonb_build_object('lead_id', NEW.id)
   );
 

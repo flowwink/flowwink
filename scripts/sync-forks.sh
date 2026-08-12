@@ -50,7 +50,7 @@ for NAME in $FORKS; do
   MSG=$(printf '%s' "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('message') or d.get('merge_type') or '?')")
   printf "%-11s %-28s → %s\n" "$NAME" "$REPO" "$MSG"
   case "$MSG" in
-    *"not behind"*|fast-forward|merge|none) ;;
+    *"not behind"*|*"Successfully fetched"*|fast-forward|merge|none) ;;
     *) fail=1 ;;
   esac
 done

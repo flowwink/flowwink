@@ -518,6 +518,7 @@
     "support_list_conversations",
     "sync_docs_from_github",
     "sync_handbook_from_github",
+    "sync_skills_from_code",
     "sync_stripe_payouts",
     "tag_entity",
     "tag_journal_entry_analytics",

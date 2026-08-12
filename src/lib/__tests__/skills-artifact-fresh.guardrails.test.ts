@@ -63,3 +63,21 @@ describe('skills artifact freshness', () => {
     expect((artifact as { skill_count: number }).skill_count).toBe(skillCount);
   });
 });
+
+describe('edge bundle carries the same skills', () => {
+  // sync_skills_from_code (agent-execute) reconciles instances against
+  // _module-skills.json — the copy DEPLOYED with the function. If it diverges
+  // from the seed artifact, a deploy would reconcile the fleet to stale seeds
+  // while every local tool reads fresh ones: two truths, silent drift.
+  it('agent-execute/_module-skills.json matches supabase/seed/module-skills.json', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const bundled = JSON.parse(
+      readFileSync(join(process.cwd(), 'supabase/functions/agent-execute/_module-skills.json'), 'utf8'),
+    );
+    expect(
+      bundled.modules,
+      'Stale edge bundle — run `npm run skills:json` (it writes both copies).',
+    ).toEqual((artifact as any).modules);
+  });
+});

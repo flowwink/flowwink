@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260812180000",
-      "migrations_count": 390,
+      "migration_head": "20260812190000",
+      "migrations_count": 391,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1565,6 +1565,10 @@
         {
           "version": "20260812180000",
           "name": "leads-score-on-its-own-instance"
+        },
+        {
+          "version": "20260812190000",
+          "name": "outbound-cron-follows-the-instance"
         }
       ]
     },

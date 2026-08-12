@@ -32,34 +32,14 @@ const MIGRATIONS = join(__dirname, '../../../supabase/migrations');
 
 /** `<20-char-ref>.supabase.co` — the shape of a Supabase project URL. */
 const PROJECT_URL = /\b[a-z0-9]{20}\.supabase\.co/g;
-/** A JWT literal: an anon/service key pasted into SQL. */
-const JWT_LITERAL = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g;
+/** A key literal: legacy JWT or new-format publishable/secret key pasted into SQL. */
+const JWT_LITERAL =
+  /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|\bsb_(publishable|secret)_[A-Za-z0-9_-]{10,}/g;
 
 /** Strip `--` comments: the fixes DESCRIBE the bad URLs to explain themselves. */
 const codeOnly = (sql: string) => sql.replace(/--[^\n]*/g, '');
 
-/**
- * The one file still carrying a project URL, and why it may.
- *
- * 20260707022750 SCHEDULES the newsletter cron. A cron command needs a URL at
- * the moment it is written, and SQL has no way to ask which instance it is on —
- * only the edge runtime knows that, which is why `knowledge-indexer` is the
- * thing every other job borrows its identity from. Rewriting this one to derive
- * its URL would mean not scheduling at all on a fresh install (no template job
- * exists yet at that point in the replay), i.e. trading a wrong URL for no
- * newsletter dispatch. It is already self-healed on the live fleet by
- * 20260718090000, verified 2026-08-12: no cron job on any instance points
- * anywhere but at itself.
- *
- * The real repair is to let the newsletter cron self-register from the edge
- * runtime the way knowledge-indexer does. Until then this stays listed — one
- * named exception with a reason, not a silenced rule.
- */
-const KNOWN_EXCEPTIONS = new Set(['20260707022750_5947e018-0987-476f-a8cb-d51ea4be3ed7.sql']);
-
-const files = readdirSync(MIGRATIONS)
-  .filter((f) => f.endsWith('.sql'))
-  .filter((f) => !KNOWN_EXCEPTIONS.has(f));
+const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql'));
 
 describe('no migration hardcodes a specific instance', () => {
   it('has migrations to check', () => {

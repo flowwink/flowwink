@@ -1,0 +1,16 @@
+{
+  "_comment": "TEMPLATE \u2014 copy to scripts/fleet.local.json and fill in YOUR instances \u2014 name \u2192 Supabase project ref. No secrets here; the DB password is passed via the PGPW env var at runtime. Add new sites as they are provisioned. poolerHost = the instance's Supavisor pooler (user postgres.<ref>, port 6543) \u2014 preferred over db.<ref>.supabase.co, which resolves IPv6-only and is unreachable from IPv4-only networks. Look it up via GET https://api.supabase.com/v1/projects/<ref>/config/database/pooler.",
+  "instances": [
+    {
+      "name": "production",
+      "ref": "aaaaaaaaaaaaaaaaaaaa",
+      "poolerHost": "aws-0-eu-north-1.pooler.supabase.com"
+    },
+    {
+      "name": "staging",
+      "ref": "bbbbbbbbbbbbbbbbbbbb",
+      "poolerHost": "aws-0-eu-north-1.pooler.supabase.com",
+      "fork": true
+    }
+  ]
+}

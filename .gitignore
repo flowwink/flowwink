@@ -34,3 +34,7 @@ supabase/.temp/
 # Supabase CLI local state
 supabase/.branches/
 supabase/.temp/
+
+# Operator-specific: which Supabase projects THIS operator runs.
+# Copy scripts/fleet.example.json and fill in your own.
+scripts/fleet.local.json

@@ -29,7 +29,12 @@
 #
 set -euo pipefail
 
-FLEET_JSON="$(dirname "$0")/fleet.json"
+FLEET_JSON="$(dirname "$0")/fleet.local.json"
+if [ ! -f "$FLEET_JSON" ]; then
+  echo "No scripts/fleet.local.json — it is gitignored because it lists YOUR" >&2
+  echo "Supabase projects. Start from: cp scripts/fleet.example.json scripts/fleet.local.json" >&2
+  exit 1
+fi
 
 # Edge functions changed in the current release. Override via EDGE_FNS=… .
 # All are agent/server/webhook/cron-invoked → must deploy with --no-verify-jwt
@@ -42,7 +47,7 @@ ref_for() {
 
 # db.<ref>.supabase.co resolves IPv6-only — unreachable from IPv4-only networks.
 # Use the instance's Supavisor pooler (user postgres.<ref>, port 6543) when
-# fleet.json declares one. PGPW is read from the environment, not interpolated.
+# the fleet file declares one. PGPW is read from the environment, not interpolated.
 db_url_for() {
   node -e "const f=require('$FLEET_JSON');const i=f.instances.find(x=>x.name==='$1');if(!i){console.error('unknown instance: $1');process.exit(1)}const pw=process.env.PGPW;process.stdout.write(i.poolerHost?('postgresql://postgres.'+i.ref+':'+pw+'@'+i.poolerHost+':6543/postgres'):('postgresql://postgres:'+pw+'@db.'+i.ref+'.supabase.co:5432/postgres'))"
 }

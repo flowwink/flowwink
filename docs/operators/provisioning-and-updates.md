@@ -37,27 +37,29 @@ directly by a migration, with no code seed) are never reached by bootstrap at
 all and freeze at whatever the migration wrote — bugs included. See
 [`mem://project/mcp-surface-drift`] and the skill-sync tool below.
 
-## Deployment topology (the live fleet)
+## Deployment topology (the three shapes)
 
-| Site | Supabase ref | Frontend deploy |
-|------|--------------|-----------------|
-| www.flowwink.com | `xfcuajdkyiwekmgdtuji` | **Vercel auto** from `magnusfroste/flowwink` `main` |
-| demo.flowwink.com | `ydcrzguzfipraofvpegu` | **Vercel auto** from `main` |
-| www.autoversio.ai | `trpejhoieysrwiuhskkm` | **Fork** of the repo → does **not** auto-deploy. Sync the fork + redeploy manually. **Notify the owner.** |
-| www.liteit.se | `cdwpqcevbcbqxhycsqhm` | Separate Supabase account — deploy with that account's token |
-| app.optictunnels.com | `dhitpytulqrvterkatiq` | Separate Supabase account — deploy with that account's token |
+Which sites *you* run belongs in `scripts/fleet.local.json` (gitignored — see
+"Fleet drift detector" below). What belongs here is the shape each one takes,
+because that determines how a change reaches it:
 
-> **Read a ref out of the instance, never out of a table.** www.flowwink.com
-> moved to a new project at the 2026-08-11 reinstall, and the retired one stays
-> fully alive: it answers psql, edge calls and ledger queries with confident,
-> internally consistent, completely irrelevant data. On 2026-08-12 that produced
-> a whole measurement round concluding "www has had no migrations since 8 August"
-> — the real instance was current to that morning. Nothing errored; the readings
-> were simply about a project no traffic reaches. Confirm before trusting any row
-> above:
+| Shape | Frontend | Backend (migrations + functions) |
+|-------|----------|----------------------------------|
+| **Same repo, same account** | Vercel auto from `main` | Supabase GitHub integration, or `supabase db push` / `functions deploy` |
+| **Same repo, separate Supabase account** | Vercel auto from `main` | That account's own token — your default CLI login returns 403 |
+| **Fork** | Does **not** auto-deploy from upstream | Only after the fork is synced. **Notify the owner.** |
+
+> **Read a ref out of the instance, never out of a list.** When a site is
+> reinstalled onto a new project, the retired one stays fully alive: it answers
+> psql, edge calls and ledger queries with confident, internally consistent,
+> completely irrelevant data. On 2026-08-12 a stale ref produced a whole
+> measurement round concluding "www has had no migrations since 8 August" — the
+> real instance was current to that morning. Nothing errored; the readings were
+> simply about a project no traffic reaches. A ref you did not just confirm is a
+> hypothesis:
 >
 > ```bash
-> curl -sL https://www.flowwink.com/ | grep -oE '[a-z]{20}\.supabase\.co'
+> curl -sL https://<site>/ | grep -oE '[a-z]{20}\.supabase\.co'
 > ```
 
 - **Pushing to `main`** auto-deploys the *frontend* to flowwink.com + demo only.
@@ -121,7 +123,8 @@ PGPW='<db password>' npm run fleet:status
 
 It reports, per site: skill counts, malformed `tool_definition`s, drift vs. the
 code artifact, and unresolvable `rpc:` / `edge:` handlers — and flags forks
-(which don't auto-deploy from `main`). Instances live in `scripts/fleet.json`
+(which don't auto-deploy from `main`). Instances live in `scripts/fleet.local.json` (gitignored — it lists the
+projects *you* run; start from `scripts/fleet.example.json`)
 (refs only, no secrets). Run it after a fleet-wide update, or on a schedule, to
 catch a site that has drifted.
 

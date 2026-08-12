@@ -41,10 +41,24 @@ all and freeze at whatever the migration wrote — bugs included. See
 
 | Site | Supabase ref | Frontend deploy |
 |------|--------------|-----------------|
-| www.flowwink.com | `hebytraibjmbqntsljph` | **Vercel auto** from `magnusfroste/flowwink` `main` |
+| www.flowwink.com | `xfcuajdkyiwekmgdtuji` | **Vercel auto** from `magnusfroste/flowwink` `main` |
 | demo.flowwink.com | `ydcrzguzfipraofvpegu` | **Vercel auto** from `main` |
 | www.autoversio.ai | `trpejhoieysrwiuhskkm` | **Fork** of the repo → does **not** auto-deploy. Sync the fork + redeploy manually. **Notify the owner.** |
 | www.liteit.se | `cdwpqcevbcbqxhycsqhm` | Separate Supabase account — deploy with that account's token |
+| app.optictunnels.com | `dhitpytulqrvterkatiq` | Separate Supabase account — deploy with that account's token |
+
+> **Read a ref out of the instance, never out of a table.** www.flowwink.com
+> moved to a new project at the 2026-08-11 reinstall, and the retired one stays
+> fully alive: it answers psql, edge calls and ledger queries with confident,
+> internally consistent, completely irrelevant data. On 2026-08-12 that produced
+> a whole measurement round concluding "www has had no migrations since 8 August"
+> — the real instance was current to that morning. Nothing errored; the readings
+> were simply about a project no traffic reaches. Confirm before trusting any row
+> above:
+>
+> ```bash
+> curl -sL https://www.flowwink.com/ | grep -oE '[a-z]{20}\.supabase\.co'
+> ```
 
 - **Pushing to `main`** auto-deploys the *frontend* to flowwink.com + demo only.
 - **Backend auto-deploy (dev instance):** `.github/workflows/supabase-deploy.yml`

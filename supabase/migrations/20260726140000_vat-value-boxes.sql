@@ -19,7 +19,11 @@
 -- ─── 1. Purchase accounts the value boxes read ──────────────────────────────
 INSERT INTO public.chart_of_accounts
   (account_code, account_name, account_type, account_category, normal_balance, is_active, locale)
-VALUES
+SELECT v.*
+-- REPLAY GUARD (2026-08-13): was ON CONFLICT (account_code) — names the unique
+-- constraint of this file's era; the locale work replaced it with
+-- UNIQUE (locale, account_code), so replay onto a newer schema was 42P10.
+FROM (VALUES
   -- Goods from another EU country (box 20)
   ('4515', 'Inköp av varor från annat EU-land, 25% moms',    'expense', 'kostnader', 'debit', true, 'se-bas2024'),
   ('4516', 'Inköp av varor från annat EU-land, 12% moms',    'expense', 'kostnader', 'debit', true, 'se-bas2024'),
@@ -39,7 +43,11 @@ VALUES
   ('4545', 'Import av varor, 25% moms',                        'expense', 'kostnader', 'debit', true, 'se-bas2024'),
   ('4546', 'Import av varor, 12% moms',                        'expense', 'kostnader', 'debit', true, 'se-bas2024'),
   ('4547', 'Import av varor, 6% moms',                         'expense', 'kostnader', 'debit', true, 'se-bas2024')
-ON CONFLICT (account_code) DO NOTHING;
+) AS v(account_code, account_name, account_type, account_category, normal_balance, is_active, locale)
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.chart_of_accounts c
+   WHERE c.account_code = v.account_code AND c.locale = v.locale
+);
 
 -- ─── 2. Respect each line's own account ─────────────────────────────────────
 -- The expense line already carries `account_code`; the booker threw it away.

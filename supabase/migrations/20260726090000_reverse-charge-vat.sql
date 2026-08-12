@@ -45,9 +45,16 @@ COMMENT ON COLUMN public.expenses.reverse_charge_rate IS
 -- ─── 2. The accounts the SE VAT boxes already point at ──────────────────────
 -- Only the ones boxes 30/31/32 reference. `is_active=false` would hide them
 -- from pickers; they are real postable accounts, so they are active.
+-- REPLAY GUARD (2026-08-13): was `ON CONFLICT (account_code)`, which names the
+-- unique constraint of THIS file's era. The locale work later replaced it with
+-- UNIQUE (locale, account_code), so replaying this file onto a newer schema is
+-- 42P10 (no matching constraint) — found when a lagging fork's deploy replayed
+-- its pending tail. WHERE NOT EXISTS expresses the same idempotency without
+-- naming any constraint, so it survives both schema generations.
 INSERT INTO public.chart_of_accounts
   (account_code, account_name, account_type, account_category, normal_balance, is_active, locale)
-VALUES
+SELECT v.*
+FROM (VALUES
   ('2614', 'Beräknad utgående moms på tjänsteförvärv från utlandet, 25%', 'liability', 'skulder', 'credit', true, 'se-bas2024'),
   ('2615', 'Beräknad utgående moms på varuförvärv från utlandet, 25%',    'liability', 'skulder', 'credit', true, 'se-bas2024'),
   ('2624', 'Beräknad utgående moms på tjänsteförvärv från utlandet, 12%', 'liability', 'skulder', 'credit', true, 'se-bas2024'),
@@ -55,7 +62,11 @@ VALUES
   ('2634', 'Beräknad utgående moms på tjänsteförvärv från utlandet, 6%',  'liability', 'skulder', 'credit', true, 'se-bas2024'),
   ('2635', 'Beräknad utgående moms på varuförvärv från utlandet, 6%',     'liability', 'skulder', 'credit', true, 'se-bas2024'),
   ('2645', 'Beräknad ingående moms på förvärv från utlandet',             'asset',     'tillgångar', 'debit',  true, 'se-bas2024')
-ON CONFLICT (account_code) DO NOTHING;
+) AS v(account_code, account_name, account_type, account_category, normal_balance, is_active, locale)
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.chart_of_accounts c
+   WHERE c.account_code = v.account_code AND c.locale = v.locale
+);
 
 -- ─── 3. Roles, not account numbers ──────────────────────────────────────────
 -- The engine must never branch on country. book_expense_report resolves these

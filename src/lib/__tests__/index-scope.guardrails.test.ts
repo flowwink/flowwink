@@ -75,6 +75,26 @@ describe('the indexer only spends on enabled modules', () => {
   });
 });
 
+describe('vendor documentation never enters the public tier', () => {
+  it('indexes docs_pages as internal, never public', () => {
+    // `knowledge_chunks` has an RLS policy "Anyone can read public chunks", and
+    // `search_knowledge_chunks` is EXECUTE-granted to anon. A publishable key
+    // (which ships in the JS bundle by design) plus `sources:["docs_pages"]`
+    // was therefore enough to read FlowWink's architecture documentation out of
+    // a customer's database — no login, no chat surface. Found live on four
+    // fleet instances (7,959 chunks) on 2026-08-12. The tier is the fix; the
+    // surface-level rule below is the second lock.
+    const src = codeOnly(INDEXER);
+    const branch = src.match(/case 'docs_pages': \{[\s\S]*?\n    \}/)?.[0] ?? '';
+    expect(branch, "the docs_pages branch must exist to be checked").not.toBe('');
+    expect(branch).toMatch(/visibility:\s*'internal'/);
+    expect(
+      branch,
+      "vendor docs classed 'public' are readable by anon via search_knowledge_chunks",
+    ).not.toMatch(/visibility:\s*'public'/);
+  });
+});
+
 describe('vendor documentation never reaches a customer-facing surface', () => {
   it('the visitor chat cannot request docs_pages', () => {
     const src = codeOnly(CHAT_COMPLETION);
@@ -82,6 +102,19 @@ describe('vendor documentation never reaches a customer-facing surface', () => {
     expect(sources, 'visitor chat must build its source list from pages/kb only').not.toContain('docs_pages');
     expect(src, "docs_pages must not appear anywhere in the visitor chat's retrieval path")
       .not.toMatch(/sources[\s\S]{0,200}docs_pages/);
+  });
+
+  it('the agent-facing search skill searches the customer\'s knowledge, not ours', () => {
+    // `search_knowledge` is what an external operator calls to look things up
+    // in the business it runs. FlowWink's own product documentation there is
+    // noise in the results and embeddings the customer paid for without
+    // asking — the /docs page has its own search (docs-chat) for the
+    // legitimate case. Not a secrecy rule: the docs are public on GitHub.
+    const src = codeOnly(join(ROOT, 'supabase/functions/agent-execute/index.ts'));
+    const list = src.match(/const SEARCHABLE_KNOWLEDGE_SOURCES = \[[^\]]*\]/)?.[0] ?? '';
+    expect(list, 'SEARCHABLE_KNOWLEDGE_SOURCES must exist').not.toBe('');
+    expect(list).not.toContain('docs_pages');
+    expect(list).toContain('kb_articles');
   });
 
   it('the workspace chat maps `handbook` to the customer handbook, not vendor docs', () => {

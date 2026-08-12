@@ -9,8 +9,12 @@
  * Read-only — never writes. Run:
  *   PGPW='<db password>' bun run scripts/fleet-status.ts
  *
- * Instances come from scripts/fleet.json (refs are not secret); the DB password
- * is the same across the fleet and passed via PGPW.
+ * Instances come from scripts/fleet.local.json — gitignored, because WHICH
+ * Supabase projects you run is yours, not the product's. Anyone forking
+ * FlowWink operates their own instances; ours travelling along in the repo was
+ * noise for them and a stale-ref trap for us (see the 2026-08-12 note below).
+ * Copy scripts/fleet.example.json to get started. The DB password is the same
+ * across a fleet and passed via PGPW.
  */
 import { Client } from 'pg';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -20,11 +24,24 @@ const pw = process.env.PGPW;
 if (!pw) { console.error('Set PGPW (DB password)'); process.exit(1); }
 
 const ROOT = resolve(import.meta.dir, '..');
-const fleet = JSON.parse(readFileSync(resolve(ROOT, 'scripts', 'fleet.json'), 'utf8')).instances as Array<{ name: string; ref: string; fork?: boolean; poolerHost?: string }>;
+const FLEET_FILE = resolve(ROOT, 'scripts', 'fleet.local.json');
+if (!existsSync(FLEET_FILE)) {
+  console.error(
+    'No scripts/fleet.local.json.\n' +
+    'It is gitignored on purpose — it lists YOUR Supabase projects.\n' +
+    'Start from the template:  cp scripts/fleet.example.json scripts/fleet.local.json',
+  );
+  process.exit(1);
+}
+// Refs go stale silently: a project a site has MOVED AWAY from keeps answering
+// psql, edge calls and ledger queries with confident, irrelevant data (www,
+// 2026-08-12). Confirm a ref against the live site before trusting a reading:
+//   curl -sL https://<site>/ | grep -oE '[a-z]{20}\.supabase\.co'
+const fleet = JSON.parse(readFileSync(FLEET_FILE, 'utf8')).instances as Array<{ name: string; ref: string; fork?: boolean; poolerHost?: string }>;
 
 // db.<ref>.supabase.co resolves IPv6-only; on IPv4-only networks those
 // connections are refused. Prefer the instance's Supavisor pooler when
-// fleet.json declares one (user postgres.<ref>, port 6543).
+// the fleet file declares one (user postgres.<ref>, port 6543).
 const dbUrl = (inst: { ref: string; poolerHost?: string }) => inst.poolerHost
   ? `postgresql://postgres.${inst.ref}:${pw}@${inst.poolerHost}:6543/postgres`
   : `postgresql://postgres:${pw}@db.${inst.ref}.supabase.co:5432/postgres`;

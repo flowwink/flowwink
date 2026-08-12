@@ -63,7 +63,7 @@ DATABASE_URL="$LOCAL" npm run lint:skill
 ```
 
 > `npm run fleet:status` is for the **cloud** fleet (it builds
-> `db.<ref>.supabase.co` URLs from `scripts/fleet.json`). For local, use
+> `db.<ref>.supabase.co` URLs from `scripts/fleet.local.json`). For local, use
 > `sync:skills` / `lint:skill` with the local `DATABASE_URL` directly.
 
 ## Run edge functions locally

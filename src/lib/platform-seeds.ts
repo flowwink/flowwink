@@ -201,6 +201,39 @@ Full rebuild: sandbox_reset_wipe() truncates every public table except the seede
 FlowPilot objectives re-seed via auto-bootstrap on the next heartbeat. demo-cycle re-seeds its module scenario on its next run.`,
   },
   {
+    name: 'sync_skills_from_code',
+    description:
+      "Reconcile this instance's skill registry against the deployed code's bundled seed artifact: inserts missing skills, refreshes definition fields (description, instructions, handler, tool_definition) on drifted ones for enabled modules + platform. Never touches trust_level, so runtime trust overrides survive. Short-circuits when the instance already carries the deploy's artifact hash. Use when: after a deploy, skills look stale or missing; a fresh install shows only a handful of skills; an operator wants the 4th deploy layer applied without database credentials. NOT for: enabling/disabling modules (manage_site_settings); changing one skill's trust (that is a runtime dial).",
+    category: 'system',
+    handler: 'internal:sync_skills_from_code',
+    scope: 'internal',
+    trust_level: 'auto',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'sync_skills_from_code',
+        description:
+          "Reconcile agent_skills against the deploy's bundled seed artifact — insert missing, refresh drifted definition fields, never touch trust_level. Idempotent; hash-gated (pass force to re-apply).",
+        parameters: {
+          type: 'object',
+          properties: {
+            force: { type: 'boolean', description: 'Re-apply even when the artifact hash matches site_settings.skills_artifact_sha.' },
+          },
+        },
+      },
+    },
+    instructions: `## sync_skills_from_code
+### What
+The 4th deploy layer. A GitHub push deploys schema, edge functions and frontend — this skill applies the fourth: agent_skills rows, reconciled from the seed artifact bundled into the deployed agent-execute function. Semantics mirror bootstrapModule/sync-skills.ts: only ENABLED modules (+ platform, always); INSERT missing skills complete (trust from seed, default notify); UPDATE existing rows' definition fields only — NEVER trust_level.
+### Hash gate
+The artifact's sha256 is stored in site_settings.skills_artifact_sha on success. A repeat call with the same deploy answers {"status":"unchanged"} in one settings read. Pass {"force": true} after manual DB surgery to re-assert the seeds.
+### When to use
+- After any deploy, as the standard 4th-layer step (cron or bootstrap calls it automatically)
+- A fresh install shows only migration-seeded skills (the 5-skills symptom)
+### Reading the result
+"inserted"/"updated" counts plus the first 40 names of each. modules_skipped_disabled counts modules whose skills were left alone because the module is off — enable the module and re-run to pick them up.`,
+  },
+  {
     name: 'search_web',
     description: 'Search the web for information. Supports Firecrawl and Jina providers. Use when: researching a topic; finding current information; answering questions requiring web data. NOT for: scraping a specific URL (scrape_url); fetching login-walled content (browser_fetch).',
     category: 'search',

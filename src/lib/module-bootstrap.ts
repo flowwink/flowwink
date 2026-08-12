@@ -145,6 +145,41 @@ export async function ensurePlatformCron(): Promise<{ registered: boolean; error
 }
 
 /**
+ * Ensure the instance's skill registry matches the deployed code — the 4th
+ * deploy layer, applied from the browser the same way ensurePlatformCron
+ * anchors the cron jobs.
+ *
+ * The edge deploy bundles the full skill-seed artifact into agent-execute;
+ * sync_skills_from_code reconciles agent_skills against it (insert missing,
+ * refresh drifted definition fields, never trust_level). The handler is
+ * hash-gated — when the instance already carries this deploy's artifact it
+ * answers "unchanged" in one settings read — so calling it on every admin
+ * load costs nothing and removes the last manual step ("Sync skills from
+ * code") from the deploy chain. Observed failure this closes: a fresh install
+ * sat at 5 skills with 18 modules enabled because nothing ever applied the
+ * seeds.
+ *
+ * Fire-and-forget: a failed sync must never block a module bootstrap.
+ */
+export async function ensureSkillRegistry(): Promise<{ status: string; error?: string }> {
+  try {
+    const { data, error } = await supabase.functions.invoke('agent-execute', {
+      body: { skill_name: 'sync_skills_from_code', agent_type: 'bootstrap', arguments: {} },
+    });
+    if (error) throw error;
+    const result = (data as any)?.result ?? data;
+    if (result?.status === 'synced') {
+      logger.log(`[module-bootstrap] skill registry synced: +${result.inserted} / ~${result.updated}`);
+    }
+    return { status: result?.status ?? 'unknown' };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error syncing skills';
+    logger.warn('[module-bootstrap] skill registry sync failed:', msg);
+    return { status: 'error', error: msg };
+  }
+}
+
+/**
  * Run bootstrap for a module being enabled.
  * Idempotent — safe to run multiple times.
  *
@@ -178,6 +213,10 @@ export async function bootstrapModule(
   // provisioning moment that reliably happens — so ensure them here. Idempotent,
   // and non-fatal: a cron failure must never block seeding the module itself.
   await ensurePlatformCron();
+  // Same anchor for the skill registry: the edge deploy carries the seed
+  // artifact, this applies it. Hash-gated server-side, so the steady-state
+  // cost is one settings read.
+  await ensureSkillRegistry();
 
   // 1. Always seed reference data (unified seedData takes precedence over legacy bootstrap.seedData)
   const seedFn = unified?.seedData ?? bootstrap?.seedData;

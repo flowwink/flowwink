@@ -87,6 +87,18 @@ const artifact = {
 writeFileSync(join(OUT_DIR, 'module-skills.json'), JSON.stringify(artifact, null, 2) + '\n');
 console.log(`✅ Wrote supabase/seed/module-skills.json — ${out.length} modules, ${total} skills`);
 
+// The same skills, bundled into agent-execute — so every edge deploy CARRIES
+// its skill payload and the sync_skills_from_code handler can reconcile the
+// instance without a browser or DATABASE_URL (the 4th deploy layer follows the
+// other three). Deliberately no generated_at: the file must be byte-identical
+// for identical content, so the handler's content hash is stable across
+// regenerations and "unchanged" short-circuits stay cheap.
+writeFileSync(
+  join(ROOT, 'supabase', 'functions', 'agent-execute', '_module-skills.json'),
+  JSON.stringify({ skill_count: total, modules: out }),
+);
+console.log(`✅ Wrote supabase/functions/agent-execute/_module-skills.json (edge bundle)`);
+
 // ── Automations ─────────────────────────────────────────────────────────────
 autos.sort((a, b) => a.moduleId.localeCompare(b.moduleId));
 writeFileSync(

@@ -32,7 +32,10 @@ export const demoCompanyTemplate: StarterTemplate = {
   icon: 'CirclePlay',
   tagline: 'A live business you can poke at — or download and run your own with 500+ MCP skills.',
   aiChatPosition: 'Demo concierge — explains what FlowPilot is doing in real time',
-  requiredModules: ['blog', 'chat', 'leads', 'deals', 'companies', 'quotes', 'invoicing', 'expenses', 'forms', 'ecommerce', 'inventory', 'approvals'],
+  // The demo IS the full surface — every module, so nobody has to discover
+  // /admin/modules to see what the platform does. '*' tracks the registry;
+  // the old explicit list silently capped the demo at a 12-module snapshot.
+  requiredModules: ['*'],
 
   pages: [
     {

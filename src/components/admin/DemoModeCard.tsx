@@ -61,9 +61,24 @@ export function DemoModeCard() {
 
   const mutation = useMutation({
     mutationFn: async (next: boolean) => {
+      // The toggle's value carries WHICH template the nightly rebuild restores
+      // ({enabled, template_id}) — copied from the installed_template marker at
+      // enable time, because the wipe truncates that table while site_settings
+      // survives it. The answer must live where the night cannot reach.
+      let templateId: string | undefined;
+      if (next) {
+        const { data: tpl } = await supabase
+          .from('installed_template')
+          .select('template_id')
+          .order('installed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        templateId = tpl?.template_id ?? undefined;
+      }
+      const value = next ? { enabled: true, ...(templateId ? { template_id: templateId } : {}) } : false;
       const { error } = await supabase
         .from('site_settings')
-        .upsert({ key: KEY, value: next as any }, { onConflict: 'key' });
+        .upsert({ key: KEY, value: value as any }, { onConflict: 'key' });
       if (error) throw error;
 
       if (next) {
@@ -105,9 +120,11 @@ export function DemoModeCard() {
           Demo Mode
         </CardTitle>
         <CardDescription>
-          Enable only on a dedicated demo instance. Pilot modules (CRM, Quotes, Invoices,
-          Expenses, Ecommerce) are wiped and re-seeded daily at 03:00 UTC by the{' '}
-          <code>demo-cycle</code> job.
+          Enable only on a dedicated, disposable demo instance. Every night at 03:00 UTC
+          the <code>demo-cycle</code> job rebuilds this instance from its template:{' '}
+          <strong>all content, settings changes and user accounts are destroyed</strong>{' '}
+          (except the shared demo admin), then fresh demo data is staged across the pilot
+          modules. If people you know by name use this instance, this switch is not for it.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -115,7 +132,7 @@ export function DemoModeCard() {
           <div className="space-y-0.5">
             <Label>Demo cycle active</Label>
             <p className="text-sm text-muted-foreground">
-              Off on customer sites. Templates and KB are never touched. Runs once per day.
+              Off on customer sites. Nightly: full rebuild to template + fresh demo data.
             </p>
           </div>
           <Switch

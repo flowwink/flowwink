@@ -309,7 +309,14 @@ export function useTemplateInstaller() {
         setProgress({ currentPage: 0, totalPages: 1, currentStep: 'Enabling modules...' });
         const baseModules = currentModules || defaultModulesSettings;
         const updatedModules = { ...baseModules } as ModulesSettings;
-        for (const moduleId of template.requiredModules) {
+        // '*' = every module the instance knows. The demo template's list used
+        // to name modules one by one, so the demo was silently capped at
+        // whatever subset existed when the list was last touched — a template
+        // whose point is the full surface must not carry a snapshot of it.
+        const wanted = template.requiredModules.includes('*' as never)
+          ? (Object.keys(updatedModules) as (keyof ModulesSettings)[])
+          : template.requiredModules;
+        for (const moduleId of wanted) {
           if (updatedModules[moduleId]) {
             updatedModules[moduleId] = { ...updatedModules[moduleId], enabled: true };
           }

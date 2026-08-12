@@ -122,7 +122,14 @@ export interface StarterTemplate {
   kbCategories?: TemplateKbCategory[];
   
   // Modules to enable on template install
-  requiredModules?: (keyof ModulesSettings)[];
+  /**
+   * Modules the installer switches ON. `['*']` enables every module the
+   * instance knows — the demo template's contract, where the whole point is
+   * showing the full surface (Magnus 2026-08-12: an explicit list silently
+   * capped the demo at whatever subset existed when the list was written).
+   * Same wildcard convention as chat-context page scoping.
+   */
+  requiredModules?: (keyof ModulesSettings | '*')[];
   
   // Products for e-commerce templates
   products?: TemplateProduct[];

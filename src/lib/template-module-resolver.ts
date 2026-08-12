@@ -50,7 +50,7 @@ export function deriveRequiredModules(
  * modules needed by its blocks. Returns missing modules if any.
  */
 export function validateTemplateModules(
-  declaredModules: (keyof ModulesSettings)[] | undefined,
+  declaredModules: (keyof ModulesSettings | '*')[] | undefined,
   allBlocks: ContentBlock[]
 ): {
   valid: boolean;
@@ -58,6 +58,10 @@ export function validateTemplateModules(
   derived: (keyof ModulesSettings)[];
 } {
   const derived = deriveRequiredModules(allBlocks);
+  // '*' enables everything at install, so nothing can be missing.
+  if (declaredModules?.includes('*')) {
+    return { valid: true, missing: [], derived };
+  }
   const declared = new Set(declaredModules || []);
   const missing = derived.filter(m => !declared.has(m));
 

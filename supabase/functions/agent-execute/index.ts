@@ -2088,15 +2088,18 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
 // The gate is checked here TOO (belt and braces with the SQL function): a
 // non-sandbox instance answers with a refusal, never a wipe.
 async function executeResetSandbox(supabase: any, args: Record<string, unknown>): Promise<unknown> {
-  const { data: flag } = await supabase
+  // ONE toggle owns the demo lifecycle (2026-08-12): demo_mode — the visible
+  // System-settings switch — is the gate. sandbox_mode is honored as a legacy
+  // alias until the old sandbox instance is retired; no UI writes it anymore.
+  const { data: flags } = await supabase
     .from('site_settings')
-    .select('value')
-    .eq('key', 'sandbox_mode')
-    .maybeSingle();
-  const isSandbox = flag?.value === true || (flag?.value as any)?.enabled === true;
-  if (!isSandbox) {
+    .select('key, value')
+    .in('key', ['demo_mode', 'sandbox_mode', 'sandbox_template']);
+  const byKey = new Map<string, unknown>((flags ?? []).map((r: any) => [r.key, r.value]));
+  const enabled = (v: unknown) => v === true || (v as any)?.enabled === true;
+  if (!enabled(byKey.get('demo_mode')) && !enabled(byKey.get('sandbox_mode'))) {
     return {
-      error: 'reset_sandbox refused: this instance is not a sandbox (site_settings.sandbox_mode is not true). This skill exists only for sandbox.flowwink.com.',
+      error: 'reset_sandbox refused: this instance is not a demo (site_settings.demo_mode is not enabled). Demo Mode in System settings is the one switch that makes an instance disposable.',
     };
   }
 
@@ -2105,13 +2108,14 @@ async function executeResetSandbox(supabase: any, args: Record<string, unknown>)
   });
   if (wipeErr) return { error: `Sandbox wipe failed (nothing changed — the wipe is atomic): ${wipeErr.message}` };
 
-  const { data: tplSetting } = await supabase
-    .from('site_settings')
-    .select('value')
-    .eq('key', 'sandbox_template')
-    .maybeSingle();
+  // Which template the rebuild restores lives in the toggle's own value
+  // ({enabled, template_id}) — the answer travels with the question. The
+  // legacy sandbox_template key and the platform default remain as fallbacks.
+  const demoVal = byKey.get('demo_mode') as any;
+  const legacyTpl = byKey.get('sandbox_template') as any;
   const templateId =
-    (typeof tplSetting?.value === 'string' ? tplSetting.value : (tplSetting?.value as any)?.id) ||
+    (typeof demoVal === 'object' && demoVal?.template_id) ||
+    (typeof legacyTpl === 'string' ? legacyTpl : legacyTpl?.id) ||
     'flowwink-platform';
 
   const install = await tplInstall(supabase, {

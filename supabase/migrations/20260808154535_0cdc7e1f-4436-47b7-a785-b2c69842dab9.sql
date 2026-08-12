@@ -122,6 +122,15 @@ BEGIN
 END;
 $$;
 
+-- REPLAY GUARD (2026-08-13): this is an EARLY definition of get_public_contract.
+-- Replaying it onto an instance that already carries a LATER one (different
+-- OUT columns, e.g. the appendices version) is 42P13 at best and a silent
+-- downgrade at worst — found when the GitHub-integration deploy replayed
+-- ledger holes on the fleet. Skip when the function exists; from zero the
+-- normal order creates here and upgrades later.
+DO $guard$ BEGIN
+  IF to_regprocedure('public.get_public_contract(text)') IS NULL THEN
+    EXECUTE $create$
 CREATE OR REPLACE FUNCTION public.get_public_contract(p_token text)
 RETURNS TABLE (
   id uuid,
@@ -149,7 +158,10 @@ AS $$
   WHERE length(coalesce(trim(p_token), '')) >= 16
     AND c.accept_token = trim(p_token)
   LIMIT 1;
-$$;
+$$
+    $create$;
+  END IF;
+END $guard$;
 GRANT EXECUTE ON FUNCTION public.get_public_contract(text) TO anon, authenticated, service_role;
 
 ALTER TABLE public.contract_templates

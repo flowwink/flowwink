@@ -1,8 +1,13 @@
-// demo-cycle — daily reset + reseed for the public FlowWink demo instance.
-// Wipes only data registered in `demo_run_items` (PROTECTED_TABLES are never
-// touched) then re-stages a fresh scenario across the pilot modules.
+// demo-cycle — the nightly rebuild for a demo/sandbox instance.
 //
-// Gated by site_settings.demo_mode = true so this is a no-op on customer sites.
+// Two stages, one toggle (site_settings.demo_mode — no-op on customer sites):
+//   1. FULL rebuild: reset_sandbox via the skill rail — wipe everything outside
+//      the seeded layers, reinstall the configured template, normalize auth to
+//      the shared demo admin. This is what makes "testers get full admin" safe:
+//      the rebuild is the permission system.
+//   2. Scenario data: reset + reseed the pilot modules' demo data, restock.
+//
+// Body {"skip_rebuild": true} runs stage 2 alone (the pre-2026-08-12 behavior).
 // Deploy with --no-verify-jwt and schedule via pg_cron.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -40,6 +45,43 @@ Deno.serve(async (req) => {
 
     const startedAt = new Date().toISOString();
     const results: Record<string, { reset?: unknown; seed?: unknown; error?: string }> = {};
+
+    // FULL rebuild first — the toggle's whole contract (2026-08-12: "allt bör
+    // hamna under den toggeln"). Before this, demo-cycle only re-staged module
+    // scenario data, so a tester with full admin could repaint pages, settings
+    // and users and the damage survived every night. Now the night starts from
+    // the template: reset_sandbox (via the skill rail, so it is one
+    // implementation and it lands in agent_activity) wipes everything outside
+    // the seeded layers and reinstalls the instance's configured template.
+    // Failure is reported but does not stop the data cycle below — a sandbox
+    // with yesterday's pages but fresh scenario data beats a silent no-op.
+    // Body {"skip_rebuild": true} runs the old data-only cycle.
+    let rebuild: unknown = { skipped: true };
+    const body = await req.json().catch(() => ({}));
+    if (body?.skip_rebuild !== true) {
+      try {
+        const resp = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/agent-execute`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              skill_name: "reset_sandbox",
+              agent_type: "cron",
+              arguments: { source: "demo-cycle" },
+            }),
+          },
+        );
+        rebuild = resp.ok
+          ? await resp.json()
+          : { error: `agent-execute answered ${resp.status}` };
+      } catch (e) {
+        rebuild = { error: e instanceof Error ? e.message : String(e) };
+      }
+    }
 
     for (const module of MODULES) {
       const r: { reset?: unknown; seed?: unknown; error?: string } = {};
@@ -80,6 +122,7 @@ Deno.serve(async (req) => {
         ok: true,
         started_at: startedAt,
         finished_at: new Date().toISOString(),
+        rebuild,
         modules: results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

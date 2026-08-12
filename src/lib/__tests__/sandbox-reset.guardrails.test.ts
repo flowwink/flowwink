@@ -14,13 +14,17 @@ import { PLATFORM_SKILLS } from '@/lib/platform-seeds';
  */
 
 const root = process.cwd();
-const mig = readFileSync(join(root, 'supabase/migrations/20260722200000_sandbox-reset.sql'), 'utf8');
+// The LATEST definition of the wipe — 20260812210000 re-gated it on demo_mode
+// (one toggle owns the demo lifecycle). A guardrail reading the superseded file
+// would certify a body no instance runs.
+const mig = readFileSync(join(root, 'supabase/migrations/20260812210000_one-toggle-owns-the-demo-lifecycle.sql'), 'utf8');
 const ae = readFileSync(join(root, 'supabase/functions/agent-execute/index.ts'), 'utf8');
 
 describe('sandbox reset safety', () => {
   it('the SQL wipe is triple-gated and atomic', () => {
     expect(mig).toContain("p_confirm IS DISTINCT FROM 'WIPE-SANDBOX'");
-    expect(mig).toMatch(/sandbox_mode/);
+    // Gate = the visible Demo Mode toggle (legacy sandbox_mode honored).
+    expect(mig).toMatch(/demo_mode/);
     expect(mig).toMatch(/auth\.role\(\) = 'service_role' OR has_role/);
     // Invariant check that rolls the whole transaction back on keep-table damage.
     expect(mig).toMatch(/rollback: a keep-table was emptied/);
@@ -60,10 +64,21 @@ describe('sandbox reset safety', () => {
     expect(body).toContain("p_confirm: 'WIPE-SANDBOX'");
   });
 
-  it('the skill seed is marked sandbox-only for the model that will see it fleet-wide', () => {
+  it('the skill seed is marked demo-only for the model that will see it fleet-wide', () => {
     const skill = PLATFORM_SKILLS.find((s) => s.name === 'reset_sandbox');
     expect(skill).toBeTruthy();
     expect(skill?.handler).toBe('internal:reset_sandbox');
-    expect(skill?.description).toMatch(/^SANDBOX ONLY/);
+    expect(skill?.description).toMatch(/^DEMO INSTANCE ONLY/);
+  });
+
+  it('demo-cycle runs the full rebuild through the skill rail, gated the same way', () => {
+    // One toggle, one implementation: the nightly job must not grow its own
+    // wipe path — it calls reset_sandbox via agent-execute so the gates and
+    // the agent_activity evidence live in exactly one place.
+    const dc = readFileSync(join(root, 'supabase/functions/demo-cycle/index.ts'), 'utf8');
+    expect(dc).toMatch(/skill_name: "reset_sandbox"/);
+    expect(dc).toMatch(/demo_mode/);
+    expect(dc, 'the rebuild must not bypass the rail with its own wipe call')
+      .not.toMatch(/rpc\("sandbox_reset_wipe"/);
   });
 });

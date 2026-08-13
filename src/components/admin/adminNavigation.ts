@@ -95,9 +95,9 @@ export const navigationGroups: NavGroup[] = [
       { name: "FlowChat", href: "/admin/flowchat", icon: MessageSquare, allowedRoles: ['admin'] },
       { name: "FlowPilot", href: "/admin/flowpilot", icon: Zap, moduleId: "flowpilot" },
       { name: "Analytics", href: "/admin/analytics", icon: BarChart3, moduleId: "analytics" },
-      // Everyone's workroom, not a support tool. It sat in the Support group,
-      // whose allowedRoles hid it from every other role — a second gate on top
-      // of the module matrix, so granting workspaceChat alone did nothing.
+      // Everyone's workroom, not a support tool — it sat in the Support group,
+      // which was wrong information architecture even though the matrix (not
+      // the group) was what actually gated it.
       { name: "Flowwork", href: "/admin/flowwork", icon: Sparkles, moduleId: "workspaceChat" },
       // Your own profile is not an administrative act. This lived in the
       // adminOnly "Admin" group, and the route guard's first line is
@@ -134,7 +134,6 @@ export const navigationGroups: NavGroup[] = [
     // All outbound / demand generation lives here — Campaigns + Growth moved
     // out of Content/Main so marketing has one home.
     label: "Marketing",
-    allowedRoles: ["marketing"],
     items: [
       { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone, moduleId: "developer" },
       { name: "Newsletter", href: "/admin/newsletter", icon: Mail, moduleId: "newsletter" },
@@ -143,12 +142,11 @@ export const navigationGroups: NavGroup[] = [
       { name: "Webinars", href: "/admin/webinars", icon: Video, moduleId: "webinars" },
       { name: "WebMeet", href: "/admin/webmeet", icon: Video, moduleId: "webmeet" },
       { name: "Forms", href: "/admin/forms", icon: Inbox, moduleId: "forms" },
-      { name: "Communications", href: "/admin/communications", icon: Mail },
+      { name: "Communications", href: "/admin/communications", icon: Mail, moduleId: "email" },
     ],
   },
   {
     label: "Support",
-    allowedRoles: ["support"],
     items: [
       { name: "Tickets", href: "/admin/tickets", icon: Inbox, moduleId: "tickets" },
       { name: "Live Support", href: "/admin/live-support", icon: Headphones, moduleId: "liveSupport" },
@@ -159,7 +157,6 @@ export const navigationGroups: NavGroup[] = [
     // Renamed CRM → Sales; reordered by day-to-day usage (Contacts/Deals top,
     // Business Identity moved to Admin where operator-level config belongs).
     label: "Sales",
-    allowedRoles: ["sales"],
     items: [
       { name: "Contacts", href: "/admin/contacts", icon: UserCheck, moduleId: "leads" },
       { name: "Companies", href: "/admin/companies", icon: Building2, moduleId: "companies" },
@@ -178,7 +175,6 @@ export const navigationGroups: NavGroup[] = [
   },
   {
     label: "Finance",
-    allowedRoles: ["accounting"],
     items: [
       { name: "Quotes", href: "/admin/quotes", icon: FileQuote, moduleId: "invoicing" },
       { name: "Quote templates", href: "/admin/quotes/templates", icon: FileText, moduleId: "invoicing" },
@@ -205,7 +201,6 @@ export const navigationGroups: NavGroup[] = [
   {
     // Renamed E-commerce → Commerce (covers B2B + POS + purchasing too).
     label: "Commerce",
-    allowedRoles: ["warehouse", "purchasing"],
     items: [
       { name: "Products", href: "/admin/products", icon: Package, moduleId: "ecommerce" },
       { name: "Orders", href: "/admin/orders", icon: ShoppingCart, moduleId: "ecommerce" },
@@ -220,42 +215,36 @@ export const navigationGroups: NavGroup[] = [
         href: "/admin/vendors",
         icon: Building2,
         moduleId: "purchasing",
-        allowedRoles: ["purchasing"],
       },
       {
         name: "Purchase Orders",
         href: "/admin/purchase-orders",
         icon: Truck,
         moduleId: "purchasing",
-        allowedRoles: ["purchasing"],
       },
       {
         name: "Manufacturing",
         href: "/admin/manufacturing",
         icon: Factory,
         moduleId: "manufacturing",
-        allowedRoles: ["warehouse"],
       },
     ],
   },
   {
     label: "Operations",
-    allowedRoles: ["hr", "projects"],
     items: [
       {
         name: "Projects",
         href: "/admin/projects",
         icon: FolderKanban,
         moduleId: "projects",
-        allowedRoles: ["projects"],
       },
-      { name: "HR & Employees", href: "/admin/hr", icon: Users, moduleId: "hr", allowedRoles: ["hr"] },
+      { name: "HR & Employees", href: "/admin/hr", icon: Users, moduleId: "hr" },
       {
         name: "Recruitment",
         href: "/admin/recruitment",
         icon: Briefcase,
         moduleId: "recruitment",
-        allowedRoles: ["hr"],
       },
       // allowedRoles: ["hr"] was left over from employment contracts. It hid the
       // whole customer-agreement half of the sales chain from the people who

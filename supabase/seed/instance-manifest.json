@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813120000",
-      "migrations_count": 397,
+      "migration_head": "20260813140000",
+      "migrations_count": 398,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1593,6 +1593,10 @@
         {
           "version": "20260813120000",
           "name": "shared-surfaces-belong-to-every-role"
+        },
+        {
+          "version": "20260813140000",
+          "name": "rls-reads-the-matrix"
         }
       ]
     },

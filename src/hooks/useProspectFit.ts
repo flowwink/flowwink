@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { callSkill } from '@/lib/call-skill';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
-import { useChatSettings } from './useSiteSettings';
+import { useChatSettings, usePlatformLocaleSettings } from './useSiteSettings';
 import type { FitAnalysisResult } from '@/components/admin/sales-intelligence/types';
 
 /**
@@ -23,7 +23,17 @@ export interface ProspectFitOutcome {
   aiScored: boolean;
 }
 
-function buildPrompt(payload: Record<string, unknown>): string {
+/** 'sv-SE' → 'Swedish' — the prompt wants a language name, not a locale tag. */
+function languageName(locale: string): string {
+  try {
+    const code = locale.split('-')[0];
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? 'English';
+  } catch {
+    return 'English';
+  }
+}
+
+function buildPrompt(payload: Record<string, unknown>, analysisLanguage: string): string {
   return [
     'You are scoring a sales prospect for fit against our own ideal customer profile.',
     '',
@@ -41,6 +51,10 @@ function buildPrompt(payload: Record<string, unknown>): string {
     '- `company.web_summary` is what we read on THEIR website. Use it to map their business against the problems we solve — problem_mapping entries must reference what they actually do, not generic pains.',
     '- Ground every claim in the data below. Never invent facts about the prospect.',
     '- Write the introduction letter in the sender profile\'s tone when one is provided. Reference something specific about their business so it could not have been sent to anyone else.',
+    // Two languages, deliberately different: the analysis is OUR working
+    // material (platform language); the letter belongs to the RECIPIENT and
+    // follows the language the prospect publishes in.
+    `- Language: write fit_advice and problem_mapping in ${analysisLanguage} (our team's working language). Write email_subject and introduction_letter in the language the prospect's own website content (company.web_summary) is written in — they read what they publish; fall back to ${analysisLanguage} if unclear.`,
     '',
     'DATA:',
     JSON.stringify(payload, null, 2),
@@ -138,6 +152,7 @@ export async function loadSavedFit(companyId: string): Promise<FitAnalysisResult
 export function useProspectFit() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { data: chatSettings } = useChatSettings();
+  const { data: localeSettings } = usePlatformLocaleSettings();
 
   const analyze = async (args: { company_id?: string; company_name?: string }): Promise<ProspectFitOutcome> => {
     setIsAnalyzing(true);
@@ -158,7 +173,7 @@ export function useProspectFit() {
               'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             },
             body: JSON.stringify({
-              messages: [{ role: 'user', content: buildPrompt(raw) }],
+              messages: [{ role: 'user', content: buildPrompt(raw, languageName(localeSettings?.default_locale ?? 'sv-SE')) }],
               settings: {
                 aiProvider: chatSettings?.aiProvider || 'openai',
                 toolCallingEnabled: false,

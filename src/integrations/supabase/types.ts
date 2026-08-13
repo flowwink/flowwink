@@ -22636,6 +22636,7 @@ export type Database = {
         }
         Returns: string
       }
+      opening_balances_for_year: { Args: { p_year: number }; Returns: Json }
       pay_vendor_invoice: {
         Args: {
           p_bank_account?: string
@@ -24211,6 +24212,8 @@ export type Database = {
         | "cron"
         | "automation"
         | "system"
+        | "admin_ui"
+        | "flowwork"
       app_role:
         | "writer"
         | "approver"
@@ -24563,7 +24566,16 @@ export const Constants = {
         "testing",
         "subscriptions",
       ],
-      agent_type: ["flowpilot", "chat", "mcp", "cron", "automation", "system"],
+      agent_type: [
+        "flowpilot",
+        "chat",
+        "mcp",
+        "cron",
+        "automation",
+        "system",
+        "admin_ui",
+        "flowwork",
+      ],
       app_role: [
         "writer",
         "approver",

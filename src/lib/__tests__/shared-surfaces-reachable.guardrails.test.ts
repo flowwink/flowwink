@@ -93,3 +93,38 @@ describe('shared and personal surfaces are reachable by every role', () => {
     }
   });
 });
+
+describe('roles live in data, not in the nav', () => {
+  // 2026-08-13: every group- and item-level allowedRoles was removed — access
+  // is the matrix's job, and hardcoded role lists in code were the source of
+  // every misplacement bug this file guards against. One deliberate exception:
+  // FlowChat is admin-gated because its backend (agent-operate) runs skills
+  // with the service role and enforces has_role(admin) itself — the nav states
+  // what the engine enforces.
+  it('no nav entry carries allowedRoles except FlowChat', () => {
+    const offenders: string[] = [];
+    for (const group of navigationGroups) {
+      if ((group as { allowedRoles?: unknown[] }).allowedRoles?.length) offenders.push(`group "${group.label}"`);
+      for (const item of group.items) {
+        if (item.allowedRoles?.length && item.name !== 'FlowChat') offenders.push(`${item.name} in "${group.label}"`);
+      }
+    }
+    expect(offenders, `hardcoded role lists found: ${offenders.join(', ')}`).toEqual([]);
+  });
+
+  it('every non-universal item is module-gated instead', () => {
+    // Items without moduleId must be the universal set — reachable by all.
+    // Automations is platform-level (agent_automations has no owning module),
+    // and was reachable by everyone before this cleanup; listing it here keeps
+    // that behavior a stated fact instead of an accident.
+    const universal = new Set(['Dashboard', 'FlowChat', 'Profile', 'Automations']);
+    const naked: string[] = [];
+    for (const group of navigationGroups) {
+      if (group.adminOnly) continue;
+      for (const item of group.items) {
+        if (!item.moduleId && !universal.has(item.name)) naked.push(`${item.name} in "${group.label}"`);
+      }
+    }
+    expect(naked, `items with neither moduleId nor universal status: ${naked.join(', ')}`).toEqual([]);
+  });
+});

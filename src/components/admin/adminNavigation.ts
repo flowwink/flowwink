@@ -95,6 +95,16 @@ export const navigationGroups: NavGroup[] = [
       { name: "FlowChat", href: "/admin/flowchat", icon: MessageSquare, allowedRoles: ['admin'] },
       { name: "FlowPilot", href: "/admin/flowpilot", icon: Zap, moduleId: "flowpilot" },
       { name: "Analytics", href: "/admin/analytics", icon: BarChart3, moduleId: "analytics" },
+      // Everyone's workroom, not a support tool. It sat in the Support group,
+      // whose allowedRoles hid it from every other role — a second gate on top
+      // of the module matrix, so granting workspaceChat alone did nothing.
+      { name: "Flowwork", href: "/admin/flowwork", icon: Sparkles, moduleId: "workspaceChat" },
+      // Your own profile is not an administrative act. This lived in the
+      // adminOnly "Admin" group, and the route guard's first line is
+      // `if (group.adminOnly) return false` — so every non-admin was denied
+      // their own profile page, on every instance, and the module matrix was
+      // never even consulted.
+      { name: "Profile", href: "/admin/profile", icon: UserCircle },
     ],
   },
   {
@@ -143,7 +153,6 @@ export const navigationGroups: NavGroup[] = [
       { name: "Tickets", href: "/admin/tickets", icon: Inbox, moduleId: "tickets" },
       { name: "Live Support", href: "/admin/live-support", icon: Headphones, moduleId: "liveSupport" },
       { name: "Voice", href: "/admin/voice", icon: Phone, moduleId: "voice" },
-      { name: "Flowwork", href: "/admin/flowwork", icon: Sparkles, moduleId: "workspaceChat" },
     ],
   },
   {
@@ -273,7 +282,6 @@ export const navigationGroups: NavGroup[] = [
       { name: "Branding", href: "/admin/branding", icon: Image },
       { name: "Users", href: "/admin/users", icon: Users },
       { name: "Role Permissions", href: "/admin/roles", icon: Shield },
-      { name: "Profile", href: "/admin/profile", icon: UserCircle },
     ],
   },
   {

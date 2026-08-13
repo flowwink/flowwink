@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813090000",
-      "migrations_count": 395,
+      "migration_head": "20260813100000",
+      "migrations_count": 396,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1585,6 +1585,10 @@
         {
           "version": "20260813090000",
           "name": "the-demo-cycle-asks-what-can-be-seeded"
+        },
+        {
+          "version": "20260813100000",
+          "name": "a-wipe-must-not-destroy-what-only-a-migration-provides"
         }
       ]
     },
@@ -1620,7 +1624,7 @@
         "create-user": "sha256:bed454b8a235c1a99baead4133a74618ac2761b221592c346f4fb8f1c6bffc34",
         "customer-signup": "sha256:8f29b9defed8bb8227767e2c0a748739d80d1e182f87e6b19f4b46e485be52d6",
         "delete-user": "sha256:30ab94347450ac8d1664234057b39861e825e27af98f1688b21dbcb1262d8edb",
-        "demo-cycle": "sha256:4b84007692f97684022580931f6ce906369888a84cd7bd66a62e6a9a75e34d08",
+        "demo-cycle": "sha256:62f8ba6666c9e28bd5efffbfcac1ce7ee368860822f7dcf21ff09ee2154bfaf7",
         "docs-chat": "sha256:8a78fddb7cba24df21044920daaea0ad9798ec970ecdb334d4845124ed7550eb",
         "document-share": "sha256:16c5281eb83fc8409d0b8c2906bb05ee74a7956786497e3eeaa7f2883067dd67",
         "document-sign-request": "sha256:1df2d2989368c711d2ad0dbac629c754804bde795f0e081ae9c7892f0a193be3",

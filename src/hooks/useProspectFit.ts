@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { callSkill } from '@/lib/call-skill';
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { useChatSettings } from './useSiteSettings';
 import type { FitAnalysisResult } from '@/components/admin/sales-intelligence/types';
 
@@ -83,6 +85,36 @@ function deriveDecisionMaker(raw: unknown): FitAnalysisResult['decision_maker'] 
   };
 }
 
+/**
+ * Persist the assessment on the company row so it survives the tab closing —
+ * "Kommer analysen sparas om jag stänger sidan?" — and reload it on return.
+ * One CURRENT assessment per company; run history stays in agent_activity.
+ * Fire-and-forget on write: a failed save must not eat a finished analysis.
+ */
+async function persistFit(companyId: string, fit: FitAnalysisResult, aiScored: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      fit_score: fit.fit_score,
+      fit_analysis: { ...fit, ai_scored: aiScored },
+      fit_analyzed_at: new Date().toISOString(),
+    } as never)
+    .eq('id', companyId);
+  if (error) logger.error('Failed to persist fit analysis', error);
+}
+
+export async function loadSavedFit(companyId: string): Promise<FitAnalysisResult | null> {
+  const { data } = await supabase
+    .from('companies')
+    .select('fit_analysis')
+    .eq('id', companyId)
+    .maybeSingle();
+  const saved = (data as { fit_analysis?: unknown } | null)?.fit_analysis;
+  if (!saved || typeof saved !== 'object') return null;
+  const fit = saved as FitAnalysisResult;
+  return typeof fit.fit_score === 'number' ? fit : null;
+}
+
 export function useProspectFit() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { data: chatSettings } = useChatSettings();
@@ -140,26 +172,29 @@ export function useProspectFit() {
         scored = null;
       }
 
+      const companyId = args.company_id
+        ?? ((raw as { company?: { id?: string } })?.company?.id ?? undefined);
+
       if (scored && typeof scored.fit_score === 'number') {
-        return {
-          raw,
-          aiScored: true,
-          fit: {
-            success: true,
-            fit_score: Math.max(0, Math.min(100, Math.round(scored.fit_score as number))),
-            fit_advice: (scored.fit_advice as string) ?? 'Fit analysis completed.',
-            problem_mapping: Array.isArray(scored.problem_mapping)
-              ? (scored.problem_mapping as FitAnalysisResult['problem_mapping'])
-              : [],
-            introduction_letter: (scored.introduction_letter as string) ?? '',
-            email_subject: (scored.email_subject as string) ?? '',
-            decision_maker: deriveDecisionMaker(raw),
-            leads_updated: 0,
-          },
+        const fit: FitAnalysisResult = {
+          success: true,
+          fit_score: Math.max(0, Math.min(100, Math.round(scored.fit_score as number))),
+          fit_advice: (scored.fit_advice as string) ?? 'Fit analysis completed.',
+          problem_mapping: Array.isArray(scored.problem_mapping)
+            ? (scored.problem_mapping as FitAnalysisResult['problem_mapping'])
+            : [],
+          introduction_letter: (scored.introduction_letter as string) ?? '',
+          email_subject: (scored.email_subject as string) ?? '',
+          decision_maker: deriveDecisionMaker(raw),
+          leads_updated: 0,
         };
+        if (companyId) void persistFit(companyId, fit, true);
+        return { raw, aiScored: true, fit };
       }
 
-      return { raw, aiScored: false, fit: dataOnlyFit(raw) };
+      const fallback = dataOnlyFit(raw);
+      if (companyId) void persistFit(companyId, fallback, false);
+      return { raw, aiScored: false, fit: fallback };
     } finally {
       setIsAnalyzing(false);
     }

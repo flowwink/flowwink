@@ -13,6 +13,7 @@
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { HandlerCtx } from './qualify-lead.ts';
+import { loadSalesContext } from '../sales-context.ts';
 
 export async function executeProspectFitAnalysis(
   supabase: SupabaseClient,
@@ -74,12 +75,13 @@ export async function executeProspectFitAnalysis(
     }
 
     // Load OUR side: ICP + positioning (Business Identity) and sender profile.
-    // Dynamic import keeps this module importable from Node-based unit tests
-    // (sales-context.ts resolves an https: Deno specifier at module load).
+    // Static import + injected client — the previous `await import(...)` (kept
+    // for Node-test compatibility) was rejected by the deployed edge runtime,
+    // so our_context was ALWAYS null in production and every fit was scored
+    // against an "undefined" ICP.
     let ourContext: Record<string, unknown> | null = null;
     try {
-      const { loadSalesContext } = await import('../sales-context.ts');
-      const ctxData = await loadSalesContext({
+      const ctxData = await loadSalesContext(supabase, {
         userId: ctx?.callerUserId ?? undefined,
         includePages: true,
       });

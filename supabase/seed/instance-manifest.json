@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813140000",
-      "migrations_count": 398,
+      "migration_head": "20260813160000",
+      "migrations_count": 399,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1597,6 +1597,10 @@
         {
           "version": "20260813140000",
           "name": "rls-reads-the-matrix"
+        },
+        {
+          "version": "20260813160000",
+          "name": "flowtable-and-river-are-company-wide"
         }
       ]
     },

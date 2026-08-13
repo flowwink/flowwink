@@ -14,7 +14,7 @@ import { FitAnalysisCard } from "@/components/admin/sales-intelligence/FitAnalys
 import { SalesProfileSetup } from "@/components/admin/sales-intelligence/SalesProfileSetup";
 import { ResearchHistory } from "@/components/admin/sales-intelligence/ResearchHistory";
 import { SalesIntelligenceReadiness } from "@/components/admin/sales-intelligence/SalesIntelligenceReadiness";
-import { useProspectFit } from "@/hooks/useProspectFit";
+import { useProspectFit, loadSavedFit } from "@/hooks/useProspectFit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ResearchResult, FitAnalysisResult } from "@/components/admin/sales-intelligence/types";
 
@@ -42,8 +42,16 @@ export default function SalesIntelligencePage() {
         ...(companyUrl.trim() ? { company_url: companyUrl.trim() } : {}),
       });
 
-      setResult(data as unknown as ResearchResult);
+      const research = data as unknown as ResearchResult;
+      setResult(research);
       toast.success(`Research complete — saved to CRM`);
+
+      // A previous assessment survives the tab: restore it from the company
+      // row so re-researching a known prospect doesn't start from amnesia.
+      if (research?.company?.id) {
+        const saved = await loadSavedFit(research.company.id);
+        if (saved) setFitResult(saved);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Research failed");
     } finally {
@@ -171,7 +179,25 @@ export default function SalesIntelligencePage() {
 
                 {/* Fit Analysis Results */}
                 {fitResult && fitResult.success && (
-                  <FitAnalysisCard result={fitResult} companyName={result.company?.name} />
+                  <>
+                    <FitAnalysisCard result={fitResult} companyName={result.company?.name} />
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleFitAnalysis}
+                        disabled={isAnalyzing}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        {isAnalyzing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                        {isAnalyzing ? "Analyzing..." : "Re-run Fit Analysis"}
+                      </Button>
+                    </div>
+                  </>
                 )}
               </>
             )}

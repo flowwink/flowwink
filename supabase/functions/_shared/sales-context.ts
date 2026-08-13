@@ -1,14 +1,18 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.87.1";
-
 /**
  * Sales Intelligence Context Loader
- * 
+ *
  * Assembles a unified context string from:
  * 1. CMS Pages (CAG) — published products/services
  * 2. Site Settings — company_profile (unified source), company_name, brand_tone
  * 3. Sales Intelligence Profiles — user pitch (sender context)
- * 
- * Used by prospect-research, prospect-fit-analysis, and sales-profile-setup.
+ *
+ * The Supabase client is INJECTED by the caller. This module used to create
+ * its own service-role client via an https: esm.sh import, which forced the
+ * fit-analysis handler into `await import(...)` for Node-test compatibility —
+ * and the deployed edge runtime rejected that dynamic import at runtime, so
+ * our_context silently became null in production: fit scores of 30 "because
+ * the ICP is undefined" on instances whose ICP was sitting right there in
+ * site_settings, and introduction letters written from zero context.
  */
 
 export interface SalesContext {
@@ -24,15 +28,11 @@ export interface SalesContext {
   pagesSummary: string;
 }
 
-export async function loadSalesContext(options?: {
+export async function loadSalesContext(supabase: any, options?: {
   userId?: string;
   includePages?: boolean;
   maxPageTokens?: number;
 }): Promise<SalesContext> {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
   const includePages = options?.includePages ?? true;
   const maxPageTokens = options?.maxPageTokens ?? 8000;
 

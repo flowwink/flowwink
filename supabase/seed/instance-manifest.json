@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813230000",
-      "migrations_count": 403,
+      "migration_head": "20260813250000",
+      "migrations_count": 404,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1617,6 +1617,10 @@
         {
           "version": "20260813230000",
           "name": "subscription-amount-is-per-period-not-tcv"
+        },
+        {
+          "version": "20260813250000",
+          "name": "fit-analysis-survives-the-tab"
         }
       ]
     },
@@ -1627,7 +1631,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:de29385f80fb2dcc0aae7b963dd6396fa084f80ab68ee5905a5f543dad6584b6",
+      "shared_hash": "sha256:4d4b0cfed9301f2fe458121ae49f5651f4cf8fd30a23871926f715a643ad8440",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

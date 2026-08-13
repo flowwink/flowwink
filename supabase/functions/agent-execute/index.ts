@@ -19,6 +19,7 @@ import { embedQuery } from '../_shared/retrieval/embedder.ts';
 // Edge-surface refactor B1a: former standalone edge functions re-homed as
 // internal skill handlers — see docs/architecture/edge-surface-classification.md
 import { executeContactFinder } from '../_shared/handlers/contact-finder.ts';
+import { executeVerifyEmail } from '../_shared/handlers/verify-email.ts';
 import { executeManageServiceOrder } from '../_shared/handlers/field-service.ts';
 import { executeContactCenter } from '../_shared/handlers/contact-center.ts';
 import { executeFetchFxRates } from '../_shared/handlers/fetch-fx-rates.ts';
@@ -745,6 +746,9 @@ serve(async (req) => {
       } else if (handler.startsWith('a2a:')) {
         const peerName = handler.replace('a2a:', '');
         result = await executeA2ARequest(supabase, peerName, args);
+
+      } else if (handler === 'internal:verify_email') {
+        result = await executeVerifyEmail(supabase, args as Record<string, unknown>);
 
       } else if (handler === 'internal:contact_finder') {
         result = await executeContactFinder(args);

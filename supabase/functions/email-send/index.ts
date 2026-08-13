@@ -67,6 +67,31 @@ interface EmailSettings {
   };
 }
 
+
+/**
+ * RFC 8058 one-click unsubscribe headers. Gmail/Yahoo require these on
+ * commercial mail, and the 2026 enforcement is permanent 5.7.x rejection, not
+ * deferral. The token is HMAC-SHA256(lower(email), service key) truncated —
+ * email-webhook's /unsubscribe route validates the same, so only links we
+ * minted can suppress an address. The click records an 'unsubscribed'
+ * email_event; the auto-suppress trigger makes it a permanent, global row in
+ * email_suppressions — the list this very function already skips.
+ */
+async function unsubscribeHeaders(recipient: string): Promise<Record<string, string>> {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(recipient.toLowerCase()));
+  const token = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  const base = Deno.env.get("SUPABASE_URL") ?? "";
+  const url = `${base}/functions/v1/email-webhook/unsubscribe?e=${encodeURIComponent(recipient)}&t=${token}`;
+  return {
+    "List-Unsubscribe": `<${url}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
+
 async function sendViaResend(args: {
   apiKey: string;
   from: string;
@@ -77,6 +102,7 @@ async function sendViaResend(args: {
   replyTo?: string;
   tags?: Record<string, string>;
 }) {
+  const unsubHeaders = args.to.length === 1 ? await unsubscribeHeaders(args.to[0]) : undefined;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -87,6 +113,7 @@ async function sendViaResend(args: {
       from: args.from,
       to: args.to,
       subject: args.subject,
+      headers: unsubHeaders,
       html: args.html,
       text: args.text,
       reply_to: args.replyTo,
@@ -129,6 +156,7 @@ async function sendViaSMTP(args: {
     },
   });
   try {
+    const unsubHeaders = args.to.length === 1 ? await unsubscribeHeaders(args.to[0]) : {};
     await client.send({
       from: args.from,
       to: args.to,
@@ -136,6 +164,7 @@ async function sendViaSMTP(args: {
       content: args.text ?? "Please view this email in an HTML-capable client.",
       html: args.html,
       replyTo: args.replyTo,
+      headers: unsubHeaders,
     });
     return { provider: "smtp", to: args.to };
   } finally {
@@ -442,6 +471,11 @@ serve(async (req: Request) => {
       });
     } else if (provider === "composio") {
       // Delegate to composio-proxy → Gmail OAuth send.
+      // NOTE: no List-Unsubscribe headers on this path — Composio's gmail_send
+      // action does not accept custom headers. Acceptable: this rail carries
+      // 1:1 conversational mail (expects_reply) from a real person's mailbox,
+      // not bulk, and the suppression check above still gates it. Body-level
+      // opt-out text is the composer's responsibility for cold outreach.
       // The proxy logs to outbound_communications itself with provider='composio',
       // so we skip our own logComm below to avoid duplicate rows. We MUST pass the
       // entity binding and source through, otherwise the outbound row is orphaned

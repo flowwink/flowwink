@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { callSkill } from '@/lib/call-skill';
+import { useLeadEmailStatus } from '@/hooks/useLeadEmailStatus';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +50,32 @@ export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientN
   const [body, setBody] = useState(initialBody ?? '');
   const [sending, setSending] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  // Deliverability gate (find → verify → gate, 2026 practice): the lead's
+  // email_status decides whether Send is safe. invalid/disposable block;
+  // accept_all (catch-all, ~30% bounce risk) and unknown warn; 'valid' is the
+  // green light. Verification is an explicit button because it costs a Hunter
+  // credit — never an automatic sweep.
+  const [verifiedStatus, setVerifiedStatus] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const { data: storedStatus } = useLeadEmailStatus(leadId, open);
+  const emailStatus = verifiedStatus ?? storedStatus ?? null;
+
+  const statusBlocksSend = emailStatus === 'invalid' || emailStatus === 'disposable';
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await callSkill<{ status?: string; success?: boolean; error?: string }>('verify_email', {
+        email: recipientEmail, lead_id: leadId,
+      });
+      if (res?.status) setVerifiedStatus(res.status);
+      else if (res?.error) toast.error(res.error);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Verification failed');
+    } finally {
+      setVerifying(false);
+    }
+  };
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -266,6 +294,29 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
           <div className="grid gap-2">
             <Label>To</Label>
             <Input value={recipientEmail} disabled className="bg-muted" />
+            {leadId && (
+              <div className="flex items-center justify-between text-xs">
+                <span className={
+                  statusBlocksSend ? 'text-destructive font-medium'
+                  : emailStatus === 'valid' ? 'text-success'
+                  : 'text-muted-foreground'
+                }>
+                  {statusBlocksSend
+                    ? `Address is ${emailStatus} — sending is blocked`
+                    : emailStatus === 'valid'
+                      ? 'Address verified deliverable'
+                      : emailStatus === 'accept_all'
+                        ? 'Catch-all domain — delivery uncertain (~30% bounce risk)'
+                        : 'Address not verified'}
+                </span>
+                {emailStatus !== 'valid' && (
+                  <Button type="button" variant="ghost" size="sm" onClick={handleVerify} disabled={verifying}>
+                    {verifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+                    {verifying ? 'Verifying…' : 'Verify (1 Hunter credit)'}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex justify-end">
             <Button
@@ -307,7 +358,7 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
           </Button>
           <Button
             onClick={handleSend}
-            disabled={sending || !subject.trim() || !body.trim()}
+            disabled={sending || !subject.trim() || !body.trim() || statusBlocksSend}
           >
             <Send className="h-4 w-4 mr-2" />
             {sending ? 'Sending...' : 'Send Email'}

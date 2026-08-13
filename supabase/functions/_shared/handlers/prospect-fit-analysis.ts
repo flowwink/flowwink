@@ -83,6 +83,7 @@ export async function executeProspectFitAnalysis(
     // so our_context was ALWAYS null in production and every fit was scored
     // against an "undefined" ICP.
     let ourContext: Record<string, unknown> | null = null;
+    let ourContextError: string | null = null;
     try {
       const ctxData = await loadSalesContext(supabase, {
         userId: ctx?.callerUserId ?? undefined,
@@ -96,6 +97,10 @@ export async function executeProspectFitAnalysis(
         sender_profile: ctxData.userProfile,
       };
     } catch (ctxError) {
+      // Self-reporting, not just logged: a swallowed error here cost us two
+      // debugging rounds (dynamic import, then Tiptap-object .replace) because
+      // the response only showed our_context: null with no why.
+      ourContextError = ctxError instanceof Error ? ctxError.message : String(ctxError);
       console.error('[prospect_fit_analysis] Failed to load sales context:', ctxError);
     }
 
@@ -116,6 +121,7 @@ export async function executeProspectFitAnalysis(
       related_leads: relatedLeads,
       related_deals: relatedDeals,
       our_context: ourContext,
+      ...(ourContextError ? { our_context_error: ourContextError } : {}),
       data_completeness: {
         has_industry: !!company?.industry,
         has_size: !!company?.size,

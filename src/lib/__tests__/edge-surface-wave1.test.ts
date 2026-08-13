@@ -10,6 +10,7 @@ import { executeEnrichCompany } from '../../../supabase/functions/_shared/handle
 import { executeProspectFitAnalysis } from '../../../supabase/functions/_shared/handlers/prospect-fit-analysis.ts';
 import { executeSalesProfileSetup } from '../../../supabase/functions/_shared/handlers/sales-profile-setup.ts';
 import { executeProspectResearch } from '../../../supabase/functions/_shared/handlers/prospect-research.ts';
+import { loadSalesContext } from '../../../supabase/functions/_shared/sales-context.ts';
 
 const ctx = { supabaseUrl: 'http://local', serviceKey: 'sk', callerUserId: null as string | null };
 
@@ -98,6 +99,37 @@ describe('enrich_company internal handler', () => {
     const res = await executeEnrichCompany(db, { companyId: 'c1' }, ctx);
     // Reaching the scrape (and failing on our stub) proves the skip-guard let it through.
     expect(res).toMatchObject({ error: 'Failed to scrape website' });
+  });
+});
+
+describe('loadSalesContext (the our_context loader)', () => {
+  it('survives Tiptap DOC OBJECTS in page blocks — the optic incident', async () => {
+    // Four Tiptap text blocks on optic threw TypeError in the old
+    // `(content as string).replace(...)`, which killed the whole context load:
+    // every fit analysis ran with our_context null ("ICP undefined") while the
+    // ICP sat in site_settings. Doc objects and strings must both survive.
+    const doc = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Fiber i tunnlar' }] }] };
+    const pages = [{ title: 'Home', slug: 'home', content_json: [
+      { type: 'text', data: { content: doc } },
+      { type: 'text', data: { content: '<p>HTML-sträng</p>' } },
+      { type: 'hero', data: { title: 'Optic Tunnels', subtitle: doc } },
+    ], meta_json: {} }];
+    const settings = [{ key: 'company_profile', value: { company_name: 'Optic Tunnels', icp: 'Vård, försvar, bank' } }];
+
+    const q = (result: unknown) => {
+      const chain: any = {};
+      for (const m of ['select', 'eq', 'in', 'order', 'limit']) chain[m] = () => chain;
+      chain.maybeSingle = () => Promise.resolve({ data: null });
+      chain.then = (res: any, rej: any) => Promise.resolve({ data: result }).then(res, rej);
+      return chain;
+    };
+    const db: any = { from: (table: string) => q(table === 'pages' ? pages : table === 'site_settings' ? settings : []) };
+
+    const ctx = await loadSalesContext(db, { includePages: true });
+    expect(ctx.companyProfile.icp).toBe('Vård, försvar, bank');
+    expect(ctx.pagesSummary).toContain('Fiber i tunnlar');
+    expect(ctx.pagesSummary).toContain('HTML-sträng');
+    expect(ctx.formatted).toContain('Ideal Customer Profile');
   });
 });
 

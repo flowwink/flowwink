@@ -8,12 +8,54 @@ interface HeroBlockProps {
   data: HeroBlockData;
 }
 
+// heightMode is AUTHORED data: templates, agents and imported sites write it,
+// so it arrives with values no picker offers. This map alone dropped those
+// silently — an unknown key yields undefined, no min-height class is applied,
+// and a hero meant to fill 70% of the viewport collapses to text height while
+// the alignment class still says "center". Two shipped platform pages
+// (/processes, /use-cases) carried '70vh' and rendered stunted for weeks;
+// nothing in the editor, the schema or the console said why.
+//
+// Named values keep a Tailwind class because JIT only generates classes it can
+// read literally in source. Anything else that is a plain <n>vh becomes an
+// inline min-height, which needs no build-time class at all — so the block now
+// honours any viewport height an author can express, and only genuinely
+// malformed input falls back.
 const heightClasses: Record<string, string> = {
   auto: 'py-24',
   viewport: 'min-h-screen',
   '80vh': 'min-h-[80vh]',
+  '70vh': 'min-h-[70vh]',
   '60vh': 'min-h-[60vh]',
+  '50vh': 'min-h-[50vh]',
+  // Semantic alias the demo template shipped with. Kept because that value is
+  // already installed on live instances; new authoring uses '50vh'.
+  compact: 'min-h-[50vh]',
 };
+
+/** `<n>vh` (1–100) → the same string, for use as an inline min-height. */
+const customViewportHeight = (mode: string): string | null => {
+  const m = /^(\d{1,3})vh$/.exec(mode);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= 1 && n <= 100 ? `${n}vh` : null;
+};
+
+/**
+ * Resolve an authored `heightMode` into what the section should actually use.
+ * Exported so the contract "no authored value renders height-less" can be
+ * tested directly — that is the defect this replaced.
+ */
+export function resolveHeroHeight(heightMode: string): {
+  className: string | undefined;
+  style: { minHeight: string } | undefined;
+} {
+  const className = heightClasses[heightMode];
+  if (className) return { className, style: undefined };
+  const inline = customViewportHeight(heightMode);
+  if (inline) return { className: undefined, style: { minHeight: inline } };
+  return { className: heightClasses.auto, style: undefined };
+}
 
 const alignmentClasses: Record<string, string> = {
   top: 'items-start pt-32',
@@ -385,15 +427,20 @@ export function HeroBlock({ data }: HeroBlockProps) {
   const overlayOpacity = data.overlayOpacity ?? 60;
   const titleAnimation = data.titleAnimation || 'none';
   
+  // Unrecognised, non-vh values land on `auto` rather than on nothing: a padded
+  // hero is a design choice, a height-less one is a defect.
+  const height = resolveHeroHeight(heightMode);
+
   return (
-    <section 
+    <section
       className={cn(
         "relative px-6 overflow-hidden flex",
         backgroundType === 'color' && "bg-primary text-primary-foreground",
         (hasVideoBackground || hasImageBackground) && getTextColorClasses(),
-        heightClasses[heightMode],
+        height.className,
         heightMode !== 'auto' && alignmentClasses[contentAlignment]
       )}
+      style={height.style}
     >
       {/* Video Background */}
       {hasVideoBackground && renderVideoBackground()}

@@ -364,12 +364,14 @@ export function HeroBlockEditor({ data, onChange, isEditing }: HeroBlockEditorPr
             {/* Height Mode */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Hero Height</Label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   { value: 'auto', label: 'Auto', icon: null },
                   { value: 'viewport', label: 'Full', icon: Maximize },
                   { value: '80vh', label: '80%', icon: null },
+                  { value: '70vh', label: '70%', icon: null },
                   { value: '60vh', label: '60%', icon: null },
+                  { value: '50vh', label: '50%', icon: null },
                 ].map(({ value, label, icon: Icon }) => (
                   <Button
                     key={value}

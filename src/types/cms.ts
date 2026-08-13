@@ -411,7 +411,13 @@ export interface HeroBlockData {
   videoMuted?: boolean;
   showVideoControls?: boolean;
   // Layout options (for centered layout)
-  heightMode?: 'auto' | 'viewport' | '80vh' | '60vh';
+  /**
+   * Section height. The renderer also honours any other `<n>vh` (via an inline
+   * min-height) because this field is authored by templates and agents, not
+   * only by the editor's picker — '70vh' reached two shipped pages while this
+   * union listed four values, and the block silently rendered them stunted.
+   */
+  heightMode?: 'auto' | 'viewport' | '80vh' | '70vh' | '60vh' | (string & {});
   contentAlignment?: 'top' | 'center' | 'bottom';
   textAlignment?: HeroTextAlignment;
   overlayOpacity?: number;

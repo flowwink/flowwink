@@ -127,7 +127,7 @@ export const demoCompanyTemplate: StarterTemplate = {
           data: {
             content: { type: 'doc', content: [
               { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'What the daily cron actually does' }] },
-              { type: 'paragraph', content: [{ type: 'text', text: 'Every night at 04:00 UTC the whole sandbox is destroyed and rebuilt: all content and transactions are wiped, extra accounts removed, the shared admin password restored, and this template reinstalled. At 04:30 the demo-cycle seeds a fresh business scenario — leads, quotes, orders, expenses — so the sandbox wakes up clean AND alive. Build anything, break anything: nothing you do survives the night, and that is the point.' }] },
+              { type: 'paragraph', content: [{ type: 'text', text: 'Every night at 03:00 UTC one job does both halves: the instance is destroyed and rebuilt — all content and transactions wiped, extra accounts removed, the shared admin password restored, this template reinstalled — and then a fresh business scenario is staged: leads, quotes, orders, expenses. The demo wakes up clean AND alive. Build anything, break anything: nothing you do survives the night, and that is the point.' }] },
               { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Built for agents — 500+ MCP skills' }] },
               { type: 'paragraph', content: [{ type: 'text', text: 'FlowWink exposes every module as MCP tools. Leads, quotes, invoices, expenses, stock, projects, timesheets — all callable by an external agent. Connect OpenClaw, Hermes, or any MCP-compatible operator and let it run your business autonomously.' }] },
               { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: 'Wiped & re-seeded every day' }] },
@@ -176,7 +176,7 @@ export const demoCompanyTemplate: StarterTemplate = {
             backgroundType: 'image',
             backgroundImage: '/templates/hero/digital-shop-hero.jpg',
             overlayOpacity: 60,
-            heightMode: 'compact',
+            heightMode: '50vh',
             contentAlignment: 'center',
           },
         },
@@ -226,7 +226,7 @@ export const demoCompanyTemplate: StarterTemplate = {
             backgroundType: 'image',
             backgroundImage: '/templates/hero/data-abstract.jpg',
             overlayOpacity: 65,
-            heightMode: 'compact',
+            heightMode: '50vh',
             contentAlignment: 'center',
           },
         },

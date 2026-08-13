@@ -51,6 +51,23 @@ async function modulesToSeed(supabase: any): Promise<{ seed: string[]; skipped: 
   return { seed, skipped };
 }
 
+/**
+ * Supabase returns errors as plain objects, not Error instances, so the usual
+ * `String(e)` renders them "[object Object]" — a failure report that reports
+ * nothing. Two modules failed that way in the first 30-module run and the
+ * output could not say why.
+ */
+function describeError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    const parts = [o.message, o.details, o.hint, o.code].filter(Boolean).map(String);
+    if (parts.length) return parts.join(" | ");
+    try { return JSON.stringify(e); } catch { /* fall through */ }
+  }
+  return String(e);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -112,7 +129,7 @@ Deno.serve(async (req) => {
           ? await resp.json()
           : { error: `agent-execute answered ${resp.status}` };
       } catch (e) {
-        rebuild = { error: e instanceof Error ? e.message : String(e) };
+        rebuild = { error: describeError(e) };
       }
     }
 
@@ -136,7 +153,7 @@ Deno.serve(async (req) => {
         if (seedErr) throw seedErr;
         r.seed = seedData;
       } catch (e) {
-        r.error = e instanceof Error ? e.message : String(e);
+        r.error = describeError(e);
       }
       results[module] = r;
     }
@@ -149,7 +166,7 @@ Deno.serve(async (req) => {
       if (restockErr) throw restockErr;
       (results as any).inventory = { restock };
     } catch (e) {
-      (results as any).inventory = { error: e instanceof Error ? e.message : String(e) };
+      (results as any).inventory = { error: describeError(e) };
     }
 
     return new Response(
@@ -166,7 +183,7 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     return new Response(
-      JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }),
+      JSON.stringify({ ok: false, error: describeError(e) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

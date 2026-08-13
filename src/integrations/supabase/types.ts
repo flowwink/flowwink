@@ -3902,6 +3902,9 @@ export type Database = {
           domain: string | null
           employee_count: number | null
           enriched_at: string | null
+          fit_analysis: Json | null
+          fit_analyzed_at: string | null
+          fit_score: number | null
           id: string
           industry: string | null
           lifecycle_stage: Database["public"]["Enums"]["company_lifecycle_stage"]
@@ -3914,6 +3917,8 @@ export type Database = {
           tags: string[] | null
           updated_at: string
           vat_number: string | null
+          web_raw: Json | null
+          web_summary: string | null
           website: string | null
         }
         Insert: {
@@ -3928,6 +3933,9 @@ export type Database = {
           domain?: string | null
           employee_count?: number | null
           enriched_at?: string | null
+          fit_analysis?: Json | null
+          fit_analyzed_at?: string | null
+          fit_score?: number | null
           id?: string
           industry?: string | null
           lifecycle_stage?: Database["public"]["Enums"]["company_lifecycle_stage"]
@@ -3940,6 +3948,8 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           vat_number?: string | null
+          web_raw?: Json | null
+          web_summary?: string | null
           website?: string | null
         }
         Update: {
@@ -3954,6 +3964,9 @@ export type Database = {
           domain?: string | null
           employee_count?: number | null
           enriched_at?: string | null
+          fit_analysis?: Json | null
+          fit_analyzed_at?: string | null
+          fit_score?: number | null
           id?: string
           industry?: string | null
           lifecycle_stage?: Database["public"]["Enums"]["company_lifecycle_stage"]
@@ -3966,6 +3979,8 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           vat_number?: string | null
+          web_raw?: Json | null
+          web_summary?: string | null
           website?: string | null
         }
         Relationships: []
@@ -8764,6 +8779,66 @@ export type Database = {
             columns: ["vendor_id"]
             isOneToOne: false
             referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entry_documents: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          journal_entry_id: string
+          kind: string
+          label: string | null
+          sort_order: number
+          source: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          journal_entry_id: string
+          kind?: string
+          label?: string | null
+          sort_order?: number
+          source?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          journal_entry_id?: string
+          kind?: string
+          label?: string | null
+          sort_order?: number
+          source?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_documents_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -19940,6 +20015,10 @@ export type Database = {
         Args: { p_assignee: string; p_lead: string }
         Returns: Json
       }
+      attach_expense_receipts_to_entry: {
+        Args: { p_entry_id: string; p_report_id: string }
+        Returns: number
+      }
       attach_return_label: {
         Args: {
           p_carrier_code?: string
@@ -21277,6 +21356,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_fiscal_years: { Args: never; Returns: Json }
       list_flowtable_tables: {
         Args: { p_base_id?: string; p_base_slug?: string }
         Returns: Json
@@ -21821,6 +21901,19 @@ export type Database = {
           p_start_date?: string
           p_status?: string
           p_template_id?: string
+        }
+        Returns: Json
+      }
+      manage_journal_entry_document: {
+        Args: {
+          p_action?: string
+          p_attachment_id?: string
+          p_document_id?: string
+          p_entry_id?: string
+          p_file_name?: string
+          p_file_url?: string
+          p_kind?: string
+          p_label?: string
         }
         Returns: Json
       }
@@ -22543,6 +22636,7 @@ export type Database = {
         }
         Returns: string
       }
+      opening_balances_for_year: { Args: { p_year: number }; Returns: Json }
       pay_vendor_invoice: {
         Args: {
           p_bank_account?: string
@@ -24118,6 +24212,8 @@ export type Database = {
         | "cron"
         | "automation"
         | "system"
+        | "admin_ui"
+        | "flowwork"
       app_role:
         | "writer"
         | "approver"
@@ -24470,7 +24566,16 @@ export const Constants = {
         "testing",
         "subscriptions",
       ],
-      agent_type: ["flowpilot", "chat", "mcp", "cron", "automation", "system"],
+      agent_type: [
+        "flowpilot",
+        "chat",
+        "mcp",
+        "cron",
+        "automation",
+        "system",
+        "admin_ui",
+        "flowwork",
+      ],
       app_role: [
         "writer",
         "approver",

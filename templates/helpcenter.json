@@ -29,7 +29,7 @@
             "message": "✅ All systems operational — Check our new AI-powered search",
             "linkText": "View Status",
             "linkUrl": "/home",
-            "variant": "default",
+            "variant": "solid",
             "dismissable": true,
             "sticky": false
           }

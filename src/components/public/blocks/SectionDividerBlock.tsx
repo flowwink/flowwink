@@ -43,7 +43,7 @@ function getSvgPath(shape: string, w: number, h: number): string {
 
 export function SectionDividerBlock({ data }: SectionDividerBlockProps) {
   const { shape = 'wave', color, bgColor, height = 'md', flip = false, invert = false } = data;
-  const h = HEIGHT_MAP[height];
+  const h = HEIGHT_MAP[height] ?? HEIGHT_MAP.md;
   const w = 1440;
 
   const fillColor = color || 'hsl(var(--background))';

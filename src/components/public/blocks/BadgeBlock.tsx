@@ -59,7 +59,7 @@ export function BadgeBlock({ data }: BadgeBlockProps) {
     grayscale = false,
   } = data;
 
-  const config = sizeConfig[size];
+  const config = sizeConfig[size] ?? sizeConfig.md;
 
   if (badges.length === 0) {
     return (

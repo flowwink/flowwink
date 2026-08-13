@@ -109,7 +109,7 @@
                 }
               ]
             },
-            "variant": "highlight"
+            "variant": "info"
           }
         },
         {
@@ -1030,7 +1030,7 @@
                 }
               ]
             },
-            "variant": "default"
+            "variant": "info"
           }
         }
       ]

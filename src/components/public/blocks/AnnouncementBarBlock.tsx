@@ -82,7 +82,11 @@ export function AnnouncementBarBlock({ data }: AnnouncementBarBlockProps) {
 
   if (dismissed || !data.message) return null;
 
-  const variantStyles = {
+  // A variant the map does not know used to yield undefined — the bar rendered
+  // with no background and no text colour at all (the helpcenter template ships
+  // 'default'). Authored data must never resolve to "no styling".
+  const variantStyles: Record<string, string> = {
+    default: 'bg-primary text-primary-foreground',
     solid: 'bg-primary text-primary-foreground',
     gradient: 'bg-gradient-to-r from-primary via-primary/90 to-primary text-primary-foreground',
     minimal: 'bg-muted text-muted-foreground border-b',
@@ -92,7 +96,7 @@ export function AnnouncementBarBlock({ data }: AnnouncementBarBlockProps) {
     <div
       className={cn(
         'relative z-50 py-2.5 px-4 text-center text-sm',
-        variantStyles[variant],
+        variantStyles[variant] ?? variantStyles.solid,
         sticky && 'sticky top-0'
       )}
       style={{

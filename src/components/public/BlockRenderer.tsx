@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { ContentBlock, BlockSpacing, SpacingSize, AnimationType, SectionBackground, PopupBlockData, BookingBlockData, PricingBlockData, TestimonialsBlockData, TeamBlockData, LogosBlockData, ComparisonBlockData, FeaturesBlockData } from '@/types/cms';
+import { BlockErrorBoundary } from './BlockErrorBoundary';
 import { AnimatedBlock } from './AnimatedBlock';
 import { cn } from '@/lib/utils';
 
@@ -388,18 +389,23 @@ export function BlockRenderer({ block, pageId, index = 0, resolvedBackground }: 
     </div>
   );
 
-  // Skip animation for hero/separator unless explicitly configured
+  // Skip animation for hero/separator unless explicitly configured. The
+  // boundary wraps this path too — hero is the block most likely to carry an
+  // exotic authored value, so the un-animated route must not be the unguarded
+  // one.
   if (skipAnimation || animationType === 'none') {
-    return sectionContent;
+    return <BlockErrorBoundary blockType={block.type}>{sectionContent}</BlockErrorBoundary>;
   }
 
   return (
-    <AnimatedBlock 
-      animation={animationType} 
-      speed={animationSpeed}
-      delay={animationDelay}
-    >
-      {sectionContent}
-    </AnimatedBlock>
+    <BlockErrorBoundary blockType={block.type}>
+      <AnimatedBlock
+        animation={animationType}
+        speed={animationSpeed}
+        delay={animationDelay}
+      >
+        {sectionContent}
+      </AnimatedBlock>
+    </BlockErrorBoundary>
   );
 }

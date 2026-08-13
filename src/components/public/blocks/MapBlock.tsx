@@ -98,7 +98,7 @@ export function MapBlock({ data }: MapBlockProps) {
 
   const containerClasses = `
     relative
-    ${HEIGHT_CLASSES[data.height || 'md']}
+    ${HEIGHT_CLASSES[data.height || 'md'] ?? HEIGHT_CLASSES.md}
     ${data.showBorder ? 'border border-border' : ''}
     ${data.rounded ? 'rounded-lg overflow-hidden' : ''}
   `;

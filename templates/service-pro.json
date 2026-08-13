@@ -227,7 +227,7 @@
           "id": "social-proof-counters",
           "type": "social-proof",
           "data": {
-            "variant": "counters",
+            "variant": "cards",
             "items": [
               {
                 "id": "spc1",

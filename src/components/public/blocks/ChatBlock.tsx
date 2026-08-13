@@ -23,7 +23,7 @@ export function ChatBlock({ data }: ChatBlockProps) {
   const { data: settings, isLoading } = useChatSettings();
   const chatModuleEnabled = useIsModuleEnabled('chat');
   const headingId = useId();
-  const height = heightClasses[data.height || 'md'];
+  const height = heightClasses[data.height || 'md'] ?? heightClasses.md;
   const hasTitle = Boolean(data.title);
 
   if (isLoading) {

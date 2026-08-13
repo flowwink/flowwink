@@ -60,7 +60,7 @@ export function TrustBarBlock({ data }: TrustBarBlockProps) {
     5: 'md:grid-cols-5',
   };
 
-  const s = sizeClasses[size];
+  const s = sizeClasses[size] ?? sizeClasses.md;
 
   return (
     <section className={cn(
@@ -71,7 +71,7 @@ export function TrustBarBlock({ data }: TrustBarBlockProps) {
       <div className="max-w-6xl mx-auto px-4">
         <div className={cn(
           'grid grid-cols-2 gap-4',
-          colClasses[columns],
+          colClasses[columns] ?? colClasses[4],
         )}>
           {items.map((item, i) => {
             const IconComponent = ICON_MAP[item.icon || ''] || ShieldCheck;

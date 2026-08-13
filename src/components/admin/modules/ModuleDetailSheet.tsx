@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import JSZip from "jszip";
 import { FlowPilotDetails } from "./FlowPilotDetails";
 import { ModuleSkillsSection } from "./ModuleSkillsSection";
+import { ModuleRoleAccessSection } from "./ModuleRoleAccessSection";
 import { ModuleAutomationsSection } from "./ModuleAutomationsSection";
 import { SubscriptionsDunningToggle } from "./SubscriptionsDunningToggle";
 import { ComposioPanel } from "./ComposioPanel";
@@ -524,6 +525,10 @@ export function ModuleDetailSheet({
                 {isEnabled ? 'Module Active' : 'Module Disabled'}
               </span>
             </div>
+
+            {/* Who sees and reaches this module (the role matrix, one dial) */}
+            <Separator />
+            <ModuleRoleAccessSection moduleId={moduleId} />
 
             {/* Agent Skills (read-only operator view) */}
             <Separator />

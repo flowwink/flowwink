@@ -28,6 +28,29 @@ export interface SalesContext {
   pagesSummary: string;
 }
 
+/**
+ * Block text can be an HTML STRING or a Tiptap DOC OBJECT — pages authored by
+ * agents store the doc form. The old `(content as string).replace(...)` threw
+ * TypeError on the first object it met, which killed the ENTIRE context load
+ * mid-loop: on optic, four Tiptap text blocks silently cost every fit analysis
+ * its our_context (ICP "undefined", letters written from nothing) even after
+ * the dynamic-import bug above was fixed. Two stacked bugs, one symptom.
+ */
+function extractText(v: unknown): string {
+  if (typeof v === 'string') return v.replace(/<[^>]*>/g, '').trim();
+  if (v && typeof v === 'object') {
+    const parts: string[] = [];
+    const walk = (n: any) => {
+      if (!n || typeof n !== 'object') return;
+      if (typeof n.text === 'string') parts.push(n.text);
+      if (Array.isArray(n.content)) n.content.forEach(walk);
+    };
+    walk(v);
+    return parts.join(' ').trim();
+  }
+  return '';
+}
+
 export async function loadSalesContext(supabase: any, options?: {
   userId?: string;
   includePages?: boolean;
@@ -90,14 +113,14 @@ export async function loadSalesContext(supabase: any, options?: {
       const textParts: string[] = [];
       for (const block of blocks) {
         if (block.type === 'text' && block.data?.content) {
-          const plain = (block.data.content as string).replace(/<[^>]*>/g, '').trim();
+          const plain = extractText(block.data.content);
           if (plain) textParts.push(plain);
         } else if (block.type === 'hero' && block.data?.title) {
-          textParts.push(block.data.title);
-          if (block.data.subtitle) textParts.push(block.data.subtitle);
-        } else if (block.type === 'features' && block.data?.features) {
+          textParts.push(extractText(block.data.title));
+          if (block.data.subtitle) textParts.push(extractText(block.data.subtitle));
+        } else if (block.type === 'features' && block.data?.features && Array.isArray(block.data.features)) {
           for (const f of block.data.features) {
-            if (f.title) textParts.push(`${f.title}: ${f.description || ''}`);
+            if (f?.title) textParts.push(`${extractText(f.title)}: ${extractText(f.description || '')}`);
           }
         }
       }

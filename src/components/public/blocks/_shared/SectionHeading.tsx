@@ -58,7 +58,7 @@ export function SectionHeading({
       <Heading
         className={cn(
           'font-bold tracking-tight text-balance',
-          SIZE_CLASSES[size],
+          SIZE_CLASSES[size] ?? SIZE_CLASSES.md,
         )}
       >
         {title}

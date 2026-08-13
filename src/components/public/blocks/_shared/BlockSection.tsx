@@ -70,8 +70,8 @@ export const BlockSection = forwardRef<HTMLElement, BlockSectionProps>(
         ref={ref}
         className={cn(
           'w-full',
-          BG_CLASSES[background],
-          PADDING_CLASSES[padding],
+          BG_CLASSES[background] ?? BG_CLASSES.default,
+          PADDING_CLASSES[padding] ?? PADDING_CLASSES.lg,
           className,
         )}
         {...rest}

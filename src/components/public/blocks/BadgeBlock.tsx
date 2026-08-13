@@ -70,7 +70,9 @@ export function BadgeBlock({ data }: BadgeBlockProps) {
   }
 
   const renderBadge = (badge: BadgeItem) => {
-    const IconComponent = badge.icon && iconComponents[badge.icon as keyof typeof iconComponents] ? iconComponents[badge.icon as keyof typeof iconComponents] : Award;
+    // Award is the fallback the ternary already expressed — an unknown icon name
+    // simply falls to it rather than rendering nothing.
+    const IconComponent = iconComponents[badge.icon as keyof typeof iconComponents] ?? Award;
     
     const content = (
       <>
@@ -153,7 +155,7 @@ export function BadgeBlock({ data }: BadgeBlockProps) {
         )}
 
         {/* Badges Grid */}
-        <div className={cn('grid', columnConfig[columns], 'gap-6')}>
+        <div className={cn('grid', columnConfig[columns] ?? columnConfig[4], 'gap-6')}>
           {badges.map(renderBadge)}
         </div>
       </div>

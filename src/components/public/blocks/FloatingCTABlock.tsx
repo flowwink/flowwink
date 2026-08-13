@@ -130,8 +130,8 @@ export function FloatingCTABlock({ data }: FloatingCTABlockProps) {
         return (
           <div className={cn(
             'fixed bottom-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-lg transition-transform duration-300',
-            sizeClasses[size],
-            animationClasses[animationType]
+            sizeClasses[size] ?? sizeClasses.md,
+            animationClasses[animationType] ?? animationClasses.slide
           )}>
             <div className="container mx-auto flex flex-wrap items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -180,13 +180,13 @@ export function FloatingCTABlock({ data }: FloatingCTABlockProps) {
         return (
           <div className={cn(
             'fixed bottom-4 z-50 transition-all duration-300',
-            positionClasses[position],
+            positionClasses[position] ?? positionClasses.bottom,
             position === 'bottom' ? 'max-w-md w-[calc(100%-2rem)]' : 'max-w-sm w-full',
-            animationClasses[animationType]
+            animationClasses[animationType] ?? animationClasses.slide
           )}>
             <div className={cn(
               'bg-card border rounded-xl shadow-xl',
-              sizeClasses[size]
+              sizeClasses[size] ?? sizeClasses.md
             )}>
               {showCloseButton && (
                 <button
@@ -223,12 +223,12 @@ export function FloatingCTABlock({ data }: FloatingCTABlockProps) {
         return (
           <div className={cn(
             'fixed bottom-4 z-50 transition-all duration-300',
-            positionClasses[position],
-            animationClasses[animationType]
+            positionClasses[position] ?? positionClasses.bottom,
+            animationClasses[animationType] ?? animationClasses.slide
           )}>
             <div className={cn(
               'flex items-center gap-3 bg-background/95 backdrop-blur border rounded-lg shadow-lg',
-              sizeClasses[size]
+              sizeClasses[size] ?? sizeClasses.md
             )}>
               <span className="font-medium text-foreground">{title}</span>
               <Button size="sm" asChild>
@@ -250,8 +250,8 @@ export function FloatingCTABlock({ data }: FloatingCTABlockProps) {
         return (
           <div className={cn(
             'fixed bottom-4 z-50 transition-all duration-300',
-            positionClasses[position],
-            animationClasses[animationType]
+            positionClasses[position] ?? positionClasses.bottom,
+            animationClasses[animationType] ?? animationClasses.slide
           )}>
             <div className="flex items-center gap-2">
               <Button

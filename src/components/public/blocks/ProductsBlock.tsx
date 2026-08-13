@@ -134,7 +134,7 @@ export function ProductsBlock({ data }: ProductsBlockProps) {
             <p className="text-muted-foreground">No products in this category</p>
           </div>
         ) : (
-          <div className={cn('grid gap-6', gridCols[columns])}>
+          <div className={cn('grid gap-6', gridCols[columns] ?? gridCols[3])}>
             {filteredProducts.map(product => {
               const inCart = isInCart(product.id);
               const hasVariants = variantProductIds?.has(product.id) ?? false;

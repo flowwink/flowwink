@@ -225,7 +225,7 @@ export function LogosBlock({ data }: LogosBlockProps) {
           <div
             className={cn(
               'grid gap-8 items-center justify-items-center',
-              gridCols[columns]
+              gridCols[columns] ?? gridCols[5]
             )}
           >
             {logos.map((logo) => (

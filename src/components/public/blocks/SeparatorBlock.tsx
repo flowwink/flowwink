@@ -13,7 +13,7 @@ const SPACING_MAP = {
 };
 
 export function SeparatorBlock({ data }: SeparatorBlockProps) {
-  const spacing = SPACING_MAP[data.spacing || 'md'];
+  const spacing = SPACING_MAP[data.spacing || 'md'] ?? SPACING_MAP.md;
 
   const renderSeparator = () => {
     switch (data.style) {

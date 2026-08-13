@@ -58,7 +58,7 @@ export function LatestPostsBlock({ data }: LatestPostsBlockProps) {
         )}
 
         {isLoading ? (
-          <div className={`grid gap-6 ${gridCols[columns]}`}>
+          <div className={`grid gap-6 ${gridCols[columns] ?? gridCols[3]}`}>
             {Array.from({ length: count }).map((_, i) => (
               <div key={i} className="space-y-3">
                 <Skeleton className="aspect-video w-full rounded-lg" />
@@ -70,7 +70,7 @@ export function LatestPostsBlock({ data }: LatestPostsBlockProps) {
         ) : !posts || posts.length === 0 ? (
           <p className="text-center text-muted-foreground">{t('blog.empty', 'No posts published yet.')}</p>
         ) : (
-          <div className={`grid gap-6 ${gridCols[columns]}`}>
+          <div className={`grid gap-6 ${gridCols[columns] ?? gridCols[3]}`}>
             {posts.map((post) => (
               <a
                 key={post.id}

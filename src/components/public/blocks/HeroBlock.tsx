@@ -50,6 +50,10 @@ export function resolveHeroHeight(heightMode: string): {
   className: string | undefined;
   style: { minHeight: string } | undefined;
 } {
+  // NB: deliberately NO `?? auto` here — this lookup's undefined is meaningful.
+  // It is what routes an unnamed value to the inline-vh branch below; a
+  // fallback on this line makes that branch unreachable (an automated sweep
+  // added one and the guardrail caught it).
   const className = heightClasses[heightMode];
   if (className) return { className, style: undefined };
   const inline = customViewportHeight(heightMode);
@@ -375,8 +379,8 @@ export function HeroBlock({ data }: HeroBlockProps) {
               <h1
                 className={cn(
                   "font-serif font-bold mb-6 text-foreground",
-                  titleSizeClasses[data.titleSize || 'default'],
-                  titleAnimationClasses[data.titleAnimation || 'none'],
+                  titleSizeClasses[data.titleSize || 'default'] ?? titleSizeClasses.default,
+                  titleAnimationClasses[data.titleAnimation || 'none'] ?? titleAnimationClasses.none,
                   data.gradientTitle && "text-gradient"
                 )}
               >
@@ -438,7 +442,7 @@ export function HeroBlock({ data }: HeroBlockProps) {
         backgroundType === 'color' && "bg-primary text-primary-foreground",
         (hasVideoBackground || hasImageBackground) && getTextColorClasses(),
         height.className,
-        heightMode !== 'auto' && alignmentClasses[contentAlignment]
+        heightMode !== 'auto' && (alignmentClasses[contentAlignment] ?? alignmentClasses.center)
       )}
       style={height.style}
     >
@@ -472,7 +476,7 @@ export function HeroBlock({ data }: HeroBlockProps) {
       
       <div className={cn(
         "relative container mx-auto max-w-3xl z-10 flex flex-col",
-        textAlignmentClasses[textAlignment],
+        textAlignmentClasses[textAlignment] ?? textAlignmentClasses.center,
         heightMode === 'auto' && "py-0"
       )}>
         {data.eyebrow && (
@@ -488,8 +492,8 @@ export function HeroBlock({ data }: HeroBlockProps) {
         <h1
           className={cn(
             "font-serif font-bold mb-6",
-            titleSizeClasses[data.titleSize || 'default'],
-            titleAnimationClasses[titleAnimation],
+            titleSizeClasses[data.titleSize || 'default'] ?? titleSizeClasses.default,
+            titleAnimationClasses[titleAnimation] ?? titleAnimationClasses.none,
             titleAnimation === 'typewriter' && "inline-block",
             // Don't apply gradient on color background or primary overlay (would be same color as bg)
             data.gradientTitle && backgroundType !== 'color' && overlayColor !== 'primary' && "text-gradient"

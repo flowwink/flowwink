@@ -31,7 +31,7 @@ export function TextOnImageOverlay({
   style,
   ...rest
 }: TextOnImageOverlayProps) {
-  const opacity = STRENGTH_STYLE[strength];
+  const opacity = STRENGTH_STYLE[strength] ?? STRENGTH_STYLE.medium;
   const overlayStyle = gradient
     ? {
         backgroundImage: `linear-gradient(180deg, hsl(var(--hero-overlay) / 0) 0%, hsl(var(--hero-overlay) / ${opacity}) 100%)`,

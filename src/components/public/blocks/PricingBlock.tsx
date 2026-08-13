@@ -115,7 +115,7 @@ export function PricingBlock({ data }: PricingBlockProps) {
         {/* Pricing Grid */}
         <div className={cn(
           'grid gap-6',
-          gridCols[columns],
+          gridCols[columns] ?? gridCols[3],
           tiers.length === 1 && 'max-w-md mx-auto',
           tiers.length === 2 && 'max-w-2xl mx-auto'
         )}>

@@ -77,7 +77,7 @@ export function TwoColumnBlock({ data }: TwoColumnBlockProps) {
     'full': 'rounded-2xl',
   };
 
-  const imageAspectClass = aspectRatioMap[imageAspect];
+  const imageAspectClass = aspectRatioMap[imageAspect] ?? aspectRatioMap.auto;
   const imageRoundedClass = roundedMap[imageRounded] ?? roundedMap.lg;
   const imageFitClass = imageFit === 'contain' ? 'object-contain' : 'object-cover';
   

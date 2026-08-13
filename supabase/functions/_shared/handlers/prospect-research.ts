@@ -124,6 +124,20 @@ export async function executeProspectResearch(
         web_summary: distilled?.summary
           ? `${distilled.summary}\n\nOfferings: ${distilled.main_offerings.join('; ')}`
           : (websiteContent ? websiteContent.slice(0, 4000) : undefined),
+        // The raw material is an asset: re-distillable for free, minable for
+        // personalization detail, searchable later. Provenance (url +
+        // fetched_at) is mandatory — content without its read-date lies.
+        ...(websiteContent || searchSnippets ? {
+          web_raw: {
+            url: scrapeUrl ?? null,
+            fetched_at: new Date().toISOString(),
+            provider: scrapeResult?.provider ?? null,
+            content: websiteContent.slice(0, 20000),
+            search_snippets: (searchResult?.results || [])
+              .map((r: any) => ({ title: r?.title ?? null, snippet: r?.snippet || r?.description || null, url: r?.url ?? null }))
+              .filter((s: any) => s.snippet),
+          },
+        } : {}),
         ...(distilled?.industry ? { industry: distilled.industry } : {}),
         ...(distilled?.size_estimate ? { size: distilled.size_estimate } : {}),
       };

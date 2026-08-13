@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813260000",
-      "migrations_count": 405,
+      "migration_head": "20260813270000",
+      "migrations_count": 406,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1625,6 +1625,10 @@
         {
           "version": "20260813260000",
           "name": "research-keeps-what-it-read"
+        },
+        {
+          "version": "20260813270000",
+          "name": "raw-research-material-is-an-asset"
         }
       ]
     },
@@ -1635,7 +1639,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:b9a2ce5fa8ed4020192a830ac087dff7acae579566ae80998fc78e8c293c83bf",
+      "shared_hash": "sha256:983bbe725f9192e1f2a8f4f75dae0848b3aca0a0dae1a9401f4b3eb63fa3ead5",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

@@ -190,6 +190,15 @@ export async function executeEnrichCompany(
           web_summary: distilled?.summary
             ? `${distilled.summary}\n\nOfferings: ${distilled.main_offerings.join('; ')}`
             : (pageContent ? pageContent.slice(0, 4000) : undefined),
+          ...(pageContent ? {
+            web_raw: {
+              url,
+              fetched_at: new Date().toISOString(),
+              provider: scrapeData.provider ?? null,
+              content: pageContent.slice(0, 20000),
+              search_snippets: [],
+            },
+          } : {}),
           // Master-data discipline: fill industry/size only when empty —
           // enrichment never overwrites what an operator typed.
           ...(distilled?.industry && !existingCompany?.industry ? { industry: distilled.industry } : {}),

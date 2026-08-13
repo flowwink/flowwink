@@ -72,7 +72,7 @@ function RolePermissionsContent() {
         <div className="flex-1">
           <h1 className="font-serif text-2xl font-bold text-foreground">Role permissions</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Control which modules each functional role can see in the admin sidebar.
+            Control which modules each functional role can see and use — one grant governs the sidebar, page access and row-level data alike.
             Admins always see everything. MCP agents are unaffected — skill exposure
             is module-based, not role-based.
           </p>

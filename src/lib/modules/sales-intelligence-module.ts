@@ -90,6 +90,30 @@ Researches a company — scrapes website, finds contacts via Hunter.io, analyzes
 - Hunter.io API key required for contact discovery. Without it, only website analysis is returned.
 - Chain: prospect_research → qualify_lead → manage_deal (create).`,
   },
+    {
+      name: 'verify_email',
+      description:
+        "Verify an email address's deliverability via Hunter's Email Verifier and stamp the verdict on the lead. COSTS ONE HUNTER CREDIT per call (50/month on the free plan) — verify only addresses you intend to contact, not whole lists. Returns status (valid/invalid/accept_all/webmail/disposable/unknown) + score; with lead_id the lead's email_status is updated so the send gate sees it. Use when: about to send outreach to an unverified address; a bounce suggests a stale address. NOT for: bulk sweeps over all leads (credit burn); finding addresses (contact_finder).",
+      category: 'crm',
+      handler: 'internal:verify_email',
+      scope: 'internal',
+      trust_level: 'notify',
+      tool_definition: {
+        type: 'function',
+        function: {
+          name: 'verify_email',
+          description: 'Verify one email address via Hunter (1 credit). Updates the lead when lead_id is given.',
+          parameters: {
+            type: 'object',
+            properties: {
+              email: { type: 'string', description: 'Address to verify.' },
+              lead_id: { type: 'string', description: 'Lead to stamp with the verdict (optional).' },
+            },
+            required: ['email'],
+          },
+        },
+      },
+    },
   {
     name: 'prospect_fit_analysis',
     description: 'Collect company data, related leads, and deals to evaluate prospect fit. Returns raw data for FlowPilot to analyze. Use when: evaluating a new prospect; scoring company fit before outreach; comparing prospects against ICP criteria. NOT for: researching a company (prospect_research); enriching company data (enrich_company).',
@@ -237,6 +261,7 @@ export const salesIntelligenceModule = defineModule<SalesIntelligenceInput, Sale
   outputSchema: salesIntelligenceOutputSchema,
 
   skills: [
+    'verify_email',
     'prospect_research',
     'prospect_fit_analysis',
     'qualify_lead',

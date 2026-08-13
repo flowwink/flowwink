@@ -52,7 +52,7 @@ describe('contact_finder internal handler — response contract', () => {
         json: async () => ({
           data: {
             total: 1,
-            emails: [{ first_name: 'Ada', last_name: null, value: 'ada@acme.com', position: 'CTO', confidence: 97 }],
+            emails: [{ first_name: 'Ada', last_name: null, value: 'ada@acme.com', position: 'CTO', confidence: 97, type: 'personal', seniority: 'executive', sources: [{ uri: 'https://acme.com/team' }] }],
           },
         }),
       };
@@ -72,6 +72,11 @@ describe('contact_finder internal handler — response contract', () => {
         position: 'CTO',
         department: null,
         confidence: 97,
+        // Contract extended 2026-08-13: trust fields the domain search already
+        // paid for — type/seniority for ranking, sources_count as provenance.
+        type: 'personal',
+        seniority: 'executive',
+        sources_count: 1,
       }],
     });
   });

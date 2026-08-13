@@ -537,6 +537,7 @@
     "upload_document",
     "users_list",
     "validate_address",
+    "verify_email",
     "weekly_business_digest",
     "wiki_page_history",
     "write_blog_post",

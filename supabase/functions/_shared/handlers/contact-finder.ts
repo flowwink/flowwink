@@ -35,6 +35,11 @@ interface HunterContact {
   position: string | null;
   department: string | null;
   confidence: number;
+  /** personal | generic — Hunter's address type; generic (info@) ranks lower. */
+  type: string | null;
+  seniority: string | null;
+  /** Where Hunter saw the address — provenance, and the GDPR Art. 14 answer. */
+  sources_count: number;
 }
 
 export async function executeContactFinder(args: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -119,6 +124,9 @@ export async function executeContactFinder(args: Record<string, unknown>): Promi
       position: e.position || null,
       department: e.department || null,
       confidence: e.confidence || 0,
+      type: e.type || null,
+      seniority: e.seniority || null,
+      sources_count: Array.isArray(e.sources) ? e.sources.length : 0,
     }));
 
     console.log(`[contact-finder] Found ${contacts.length} contacts at ${domain}`);

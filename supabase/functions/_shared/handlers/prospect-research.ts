@@ -68,7 +68,11 @@ export async function executeProspectResearch(
     }
     if (domain) {
       // Read admin-configured contact cap (defaults to 2 to save Hunter credits)
-      let maxContacts = 2;
+      // One domain search = ONE Hunter credit no matter how many contacts come
+      // back — a low cap here throws away contacts already paid for. 10 is what
+      // the search returns by default; the Email Finder (per person) is the
+      // credit-expensive endpoint and is not used on this path.
+      let maxContacts = 10;
       try {
         const { data: cfg } = await supabase
           .from('site_settings')
@@ -136,10 +140,29 @@ export async function executeProspectResearch(
         company_id: companyId,
         source: 'prospect-research',
         status: 'lead',
+        // Trust fields: what Hunter's domain search already told us, kept
+        // instead of dropped. Status stays 'unverified' until an explicit
+        // verify_email (that one costs a credit). Provenance doubles as the
+        // GDPR Art. 14 answer to "where did you get my address".
+        email_confidence: typeof c?.confidence === 'number' ? c.confidence : null,
+        email_status: 'unverified',
+        email_provenance: {
+          provider: 'hunter',
+          method: 'domain_search',
+          type: c?.type ?? null,
+          seniority: c?.seniority ?? null,
+          sources_count: c?.sources_count ?? 0,
+          found_at: new Date().toISOString(),
+        },
       };
 
       if (existingLead?.id) {
-        await supabase.from('leads').update({ company_id: companyId, name }).eq('id', existingLead.id);
+        await supabase.from('leads').update({
+          company_id: companyId,
+          name,
+          email_confidence: typeof c?.confidence === 'number' ? c.confidence : undefined,
+          email_provenance: leadPayload.email_provenance,
+        }).eq('id', existingLead.id);
         savedContacts.push({ id: existingLead.id, email, name });
       } else {
         const { data: inserted, error } = await supabase

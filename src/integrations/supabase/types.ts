@@ -3902,6 +3902,9 @@ export type Database = {
           domain: string | null
           employee_count: number | null
           enriched_at: string | null
+          fit_analysis: Json | null
+          fit_analyzed_at: string | null
+          fit_score: number | null
           id: string
           industry: string | null
           lifecycle_stage: Database["public"]["Enums"]["company_lifecycle_stage"]
@@ -3914,6 +3917,8 @@ export type Database = {
           tags: string[] | null
           updated_at: string
           vat_number: string | null
+          web_raw: Json | null
+          web_summary: string | null
           website: string | null
         }
         Insert: {
@@ -3928,6 +3933,9 @@ export type Database = {
           domain?: string | null
           employee_count?: number | null
           enriched_at?: string | null
+          fit_analysis?: Json | null
+          fit_analyzed_at?: string | null
+          fit_score?: number | null
           id?: string
           industry?: string | null
           lifecycle_stage?: Database["public"]["Enums"]["company_lifecycle_stage"]
@@ -3940,6 +3948,8 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           vat_number?: string | null
+          web_raw?: Json | null
+          web_summary?: string | null
           website?: string | null
         }
         Update: {
@@ -3954,6 +3964,9 @@ export type Database = {
           domain?: string | null
           employee_count?: number | null
           enriched_at?: string | null
+          fit_analysis?: Json | null
+          fit_analyzed_at?: string | null
+          fit_score?: number | null
           id?: string
           industry?: string | null
           lifecycle_stage?: Database["public"]["Enums"]["company_lifecycle_stage"]
@@ -3966,6 +3979,8 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           vat_number?: string | null
+          web_raw?: Json | null
+          web_summary?: string | null
           website?: string | null
         }
         Relationships: []

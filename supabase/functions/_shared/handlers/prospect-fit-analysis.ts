@@ -106,9 +106,11 @@ export async function executeProspectFitAnalysis(
 
     // The previous assessment must not grade the next one: strip persisted
     // fit_* fields so the scorer reasons from evidence, not from its own echo.
+    // web_raw is stripped too — it is the ARCHIVE (up to 20k chars of raw
+    // scrape); web_summary is the distilled working set the prompt should see.
     let companyPayload: Record<string, unknown> | { name?: string; note: string };
     if (company) {
-      const { fit_score: _fs, fit_analysis: _fa, fit_analyzed_at: _ft, ...rest } = company as Record<string, unknown>;
+      const { fit_score: _fs, fit_analysis: _fa, fit_analyzed_at: _ft, web_raw: _wr, ...rest } = company as Record<string, unknown>;
       companyPayload = rest;
     } else {
       companyPayload = { name: company_name, note: 'Not found in CRM' };

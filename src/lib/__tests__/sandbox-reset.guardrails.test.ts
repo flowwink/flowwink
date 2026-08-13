@@ -14,10 +14,9 @@ import { PLATFORM_SKILLS } from '@/lib/platform-seeds';
  */
 
 const root = process.cwd();
-// The LATEST definition of the wipe — 20260812210000 re-gated it on demo_mode
-// (one toggle owns the demo lifecycle). A guardrail reading the superseded file
-// would certify a body no instance runs.
-const mig = readFileSync(join(root, 'supabase/migrations/20260812210000_one-toggle-owns-the-demo-lifecycle.sql'), 'utf8');
+// The LATEST definition of the wipe. A guardrail reading a superseded file
+// would certify a body no instance runs — so this must move with the function.
+const mig = readFileSync(join(root, 'supabase/migrations/20260813100000_a-wipe-must-not-destroy-what-only-a-migration-provides.sql'), 'utf8');
 const ae = readFileSync(join(root, 'supabase/functions/agent-execute/index.ts'), 'utf8');
 
 describe('sandbox reset safety', () => {
@@ -31,7 +30,20 @@ describe('sandbox reset safety', () => {
   });
 
   it('the keep-list preserves every seeded layer, identity and credentials', () => {
+    // Reference data whose only source is a migration MUST survive: migrations
+    // do not re-run, so a wipe that takes them is permanent. Losing
+    // payroll_country_profiles broke the hr seeder on the first rebuilt night;
+    // the sweep that followed found seventeen more, including the role/nav
+    // matrix from the post-squash empty-views incident and the VAT box map.
     for (const t of [
+      'payroll_country_profiles',
+      'role_module_access',
+      'role_module_access_defaults',
+      'account_tax_boxes',
+      'journals',
+      'currencies',
+      'pipeline_stages',
+      'uoms',
       'agent_skills',
       'agent_automations',
       'chart_of_accounts',

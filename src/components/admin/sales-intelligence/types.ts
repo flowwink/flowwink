@@ -1,7 +1,14 @@
 export interface ResearchResult {
   success: boolean;
   company: { id?: string; name: string; domain?: string };
-  contacts: Array<{ id: string; email: string; name?: string }>;
+  contacts: Array<{
+    id: string; email: string; name?: string;
+    /** From Hunter's domain search — lets the seller choose targets on WHO, not just an address. */
+    position?: string | null;
+    seniority?: string | null;
+    confidence?: number | null;
+    type?: string | null;
+  }>;
   hunter_contacts_found: number;
   questions_and_answers: Array<{ question: string; answer: string; relevance_score: number }>;
   company_summary: {

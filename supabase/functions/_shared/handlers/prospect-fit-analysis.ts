@@ -55,9 +55,12 @@ export async function executeProspectFitAnalysis(
       // learned that prospect_research had already saved contacts, and the
       // send-email step downstream had nobody to address. company_id is the
       // very column prospect-research writes.
+      // Trust fields ride along: seniority/position (provenance) let the
+      // decision-maker derivation rank on WHO someone is instead of a score
+      // that is 0 for every fresh lead, and confidence/status feed the send gate.
       const { data } = await supabase
         .from('leads')
-        .select('id, email, name, status, score, source')
+        .select('id, email, name, status, score, source, email_confidence, email_status, email_provenance')
         .eq('company_id', company.id)
         .limit(10);
       relatedLeads = data || [];
@@ -96,10 +99,20 @@ export async function executeProspectFitAnalysis(
       console.error('[prospect_fit_analysis] Failed to load sales context:', ctxError);
     }
 
+    // The previous assessment must not grade the next one: strip persisted
+    // fit_* fields so the scorer reasons from evidence, not from its own echo.
+    let companyPayload: Record<string, unknown> | { name?: string; note: string };
+    if (company) {
+      const { fit_score: _fs, fit_analysis: _fa, fit_analyzed_at: _ft, ...rest } = company as Record<string, unknown>;
+      companyPayload = rest;
+    } else {
+      companyPayload = { name: company_name, note: 'Not found in CRM' };
+    }
+
     // Return raw data — FlowPilot does the analysis
     return {
       success: true,
-      company: company || { name: company_name, note: 'Not found in CRM' },
+      company: companyPayload,
       related_leads: relatedLeads,
       related_deals: relatedDeals,
       our_context: ourContext,
@@ -108,6 +121,9 @@ export async function executeProspectFitAnalysis(
         has_size: !!company?.size,
         has_website: !!company?.website,
         has_domain: !!company?.domain,
+        // web_summary = what research READ on their site; with it present the
+        // scorer should never claim it knows nothing about the prospect.
+        has_web_summary: !!company?.web_summary,
         is_enriched: !!company?.enriched_at,
         lead_count: relatedLeads.length,
         deal_count: relatedDeals.length,

@@ -14,6 +14,89 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { executeContactFinder } from './contact-finder.ts';
 import type { HandlerCtx } from './qualify-lead.ts';
+import { resolveAiConfig } from '../ai-config.ts';
+import { callAiCompletion } from '../ai-usage-logger.ts';
+
+interface CompanyDistillation {
+  industry: string | null;
+  size_estimate: string | null;
+  main_offerings: string[];
+  potential_pain_points: string[];
+  summary: string | null;
+}
+
+/**
+ * Distill what we read on their website into firmographics + pain points.
+ * Soft-fail by design (Law 4): no AI provider or a bad response returns null
+ * and research still succeeds with the raw scrape — the fit analysis then
+ * grounds itself in web_summary instead of the distillation.
+ */
+async function distillCompany(
+  supabase: SupabaseClient,
+  companyName: string,
+  websiteContent: string,
+  searchSnippets: string,
+): Promise<CompanyDistillation | null> {
+  try {
+    const ai = await resolveAiConfig(supabase, 'fast');
+    const result = await callAiCompletion({
+      supabase,
+      source: 'prospect-research-distill',
+      provider: ai.provider, model: ai.model, apiUrl: ai.apiUrl, apiKey: ai.apiKey,
+      metadata: { company: companyName },
+      body: {
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You distill raw website text about a company into firmographics for a CRM. ' +
+              'Ground every field in the provided text only — never guess or embellish. ' +
+              'Use null/empty when the text does not say.',
+          },
+          {
+            role: 'user',
+            content:
+              `Company: ${companyName}\n\nWebsite content:\n${websiteContent.slice(0, 6000)}` +
+              (searchSnippets ? `\n\nSearch snippets:\n${searchSnippets.slice(0, 1500)}` : ''),
+          },
+        ],
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'save_company_profile',
+            description: 'Save the distilled company profile',
+            parameters: {
+              type: 'object',
+              properties: {
+                industry: { type: ['string', 'null'], description: 'Primary industry, short (e.g. "Legal services / tax law")' },
+                size_estimate: { type: ['string', 'null'], description: 'Size if stated or clearly inferable (e.g. "50-100 employees"), else null' },
+                main_offerings: { type: 'array', items: { type: 'string' }, description: 'What they sell, max 6 short items' },
+                potential_pain_points: { type: 'array', items: { type: 'string' }, description: 'Operational problems their kind of business plausibly has, max 5, grounded in what the site describes' },
+                summary: { type: ['string', 'null'], description: '2-3 sentences: what this company does and for whom' },
+              },
+              required: ['industry', 'size_estimate', 'main_offerings', 'potential_pain_points', 'summary'],
+            },
+          },
+        }],
+        tool_choice: { type: 'function', function: { name: 'save_company_profile' } },
+        temperature: 0.1,
+      },
+    });
+    const toolCall = result?.choices?.[0]?.message?.tool_calls?.[0];
+    const parsed = JSON.parse(toolCall?.function?.arguments ?? 'null');
+    if (!parsed) return null;
+    return {
+      industry: parsed.industry ?? null,
+      size_estimate: parsed.size_estimate ?? null,
+      main_offerings: Array.isArray(parsed.main_offerings) ? parsed.main_offerings : [],
+      potential_pain_points: Array.isArray(parsed.potential_pain_points) ? parsed.potential_pain_points : [],
+      summary: parsed.summary ?? null,
+    };
+  } catch (e) {
+    console.warn('[prospect-research] distillation skipped:', e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
 async function callEdge(ctx: HandlerCtx, functionName: string, body: Record<string, unknown>): Promise<any> {
   const res = await fetch(`${ctx.supabaseUrl}/functions/v1/${functionName}`, {
@@ -91,6 +174,18 @@ export async function executeProspectResearch(
       contactsRaw = (contactsRes as any)?.contacts || [];
     }
 
+    // Step 3.5: Distill what the website says into firmographics (soft-fail).
+    // This is what fills industry/size — the exact fields every fit analysis
+    // used to flag as missing while the answer sat unread in the scrape.
+    const websiteContent: string = scrapeResult?.content || '';
+    const searchSnippets = (searchResult?.results || [])
+      .map((r: any) => r?.snippet || r?.description || '')
+      .filter(Boolean)
+      .join('\n');
+    const distilled = websiteContent || searchSnippets
+      ? await distillCompany(supabase, company_name, websiteContent, searchSnippets)
+      : null;
+
     // Step 4: Persist company (upsert by name+domain)
     let companyId: string | null = null;
     {
@@ -105,6 +200,14 @@ export async function executeProspectResearch(
         domain: domain ?? undefined,
         website: scrapeUrl ?? undefined,
         enriched_at: new Date().toISOString(),
+        // Research keeps what it read: distillation first, raw excerpt as
+        // fallback. The fit aggregator selects the row wholesale, so this is
+        // how "what THEY do" reaches the scoring prompt.
+        web_summary: distilled?.summary
+          ? `${distilled.summary}\n\nOfferings: ${distilled.main_offerings.join('; ')}`
+          : (websiteContent ? websiteContent.slice(0, 4000) : undefined),
+        ...(distilled?.industry ? { industry: distilled.industry } : {}),
+        ...(distilled?.size_estimate ? { size: distilled.size_estimate } : {}),
       };
 
       if (existing?.id) {
@@ -122,7 +225,11 @@ export async function executeProspectResearch(
     }
 
     // Step 5: Persist contacts as leads (upsert by email)
-    const savedContacts: Array<{ id: string; email: string; name?: string }> = [];
+    const savedContacts: Array<{
+      id: string; email: string; name?: string;
+      position?: string | null; seniority?: string | null;
+      confidence?: number | null; type?: string | null;
+    }> = [];
     for (const c of contactsRaw) {
       const email: string | undefined = c?.email || c?.value;
       if (!email) continue;
@@ -151,9 +258,20 @@ export async function executeProspectResearch(
           method: 'domain_search',
           type: c?.type ?? null,
           seniority: c?.seniority ?? null,
+          // position/department: Hunter gives them, the seller needs them —
+          // "Unknown role" next to a decision maker is a self-inflicted blank.
+          position: c?.position ?? null,
+          department: c?.department ?? null,
           sources_count: c?.sources_count ?? 0,
           found_at: new Date().toISOString(),
         },
+      };
+
+      const contactMeta = {
+        position: c?.position ?? null,
+        seniority: c?.seniority ?? null,
+        confidence: typeof c?.confidence === 'number' ? c.confidence : null,
+        type: c?.type ?? null,
       };
 
       if (existingLead?.id) {
@@ -163,7 +281,7 @@ export async function executeProspectResearch(
           email_confidence: typeof c?.confidence === 'number' ? c.confidence : undefined,
           email_provenance: leadPayload.email_provenance,
         }).eq('id', existingLead.id);
-        savedContacts.push({ id: existingLead.id, email, name });
+        savedContacts.push({ id: existingLead.id, email, name, ...contactMeta });
       } else {
         const { data: inserted, error } = await supabase
           .from('leads')
@@ -174,7 +292,7 @@ export async function executeProspectResearch(
           console.error('lead insert failed:', error.message);
           continue;
         }
-        if (inserted?.id) savedContacts.push({ id: inserted.id, email, name });
+        if (inserted?.id) savedContacts.push({ id: inserted.id, email, name, ...contactMeta });
       }
     }
 
@@ -209,10 +327,10 @@ export async function executeProspectResearch(
       questions_and_answers: [],
       company_summary: {
         name: company_name,
-        industry: undefined,
-        size_estimate: undefined,
-        main_offerings: [],
-        potential_pain_points: [],
+        industry: distilled?.industry ?? undefined,
+        size_estimate: distilled?.size_estimate ?? undefined,
+        main_offerings: distilled?.main_offerings ?? [],
+        potential_pain_points: distilled?.potential_pain_points ?? [],
       },
       // raw collected data preserved for FlowPilot
       _raw: {

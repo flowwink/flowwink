@@ -163,6 +163,19 @@ export default function SocialPostsPage() {
           </Dialog>
         </AdminPageHeader>
 
+        {/* The queue is honest about what happens next: without a connected
+            channel publisher the 15-minute sweep marks due posts failed
+            ("No channel publisher configured") instead of letting them linger
+            as scheduled. Magnus hit exactly this — scheduled a post, nothing
+            said it would never leave the building. */}
+        <p className="text-xs text-yellow-600 bg-yellow-500/10 rounded-md px-3 py-2">
+          Scheduled posts are stored and queued here, but publishing to the channel
+          requires a connected publisher (e.g. LinkedIn via Composio under
+          Settings&nbsp;→&nbsp;Integrations). Until one is connected, due posts are
+          marked <span className="font-medium">failed</span> by the scheduler —
+          post manually and use &ldquo;Mark posted&rdquo; to record the URL.
+        </p>
+
         {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
         {!isLoading && posts.length === 0 && (
           <Card>

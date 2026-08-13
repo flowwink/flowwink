@@ -250,12 +250,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'search_tools') {
+      // v2 /actions is retired ("This endpoint is no longer available.
+      // Please upgrade to v3 APIs") — discovered live 2026-08-14 while
+      // verifying the LinkedIn rail. v3 /tools takes the same idea:
+      // free-text search + toolkit filter.
       const searchParams = new URLSearchParams();
-      if (intent) searchParams.set('useCase', intent);
-      if (app) searchParams.set('apps', app);
+      if (intent) searchParams.set('search', intent);
+      if (app) searchParams.set('toolkit_slug', String(app).toLowerCase());
       searchParams.set('limit', '5');
 
-      const res = await callComposio(`${COMPOSIO_V2}/actions?${searchParams}`, {
+      const res = await callComposio(`${COMPOSIO_V3}/tools?${searchParams}`, {
         headers: composioHeaders,
       });
 

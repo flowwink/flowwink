@@ -138,7 +138,16 @@ export async function loadSalesContext(options?: {
     if (cp.industry) profileParts.push(`Industry: ${cp.industry}`);
     if (cp.services) {
       const svc = cp.services;
-      if (typeof svc === 'object' && !Array.isArray(svc)) {
+      // services moved from a Record to ServiceItem[] (normalizeServices in the
+      // frontend migrates old data on read) — but this formatter only handled the
+      // old object shape, so WHAT THE COMPANY SELLS silently vanished from the
+      // fit-analysis context even though the readiness check lists it as required.
+      if (Array.isArray(svc)) {
+        const rows = (svc as Array<{ name?: string; description?: string } | string>)
+          .map((it) => typeof it === 'string' ? it : `${it?.name ?? ''}${it?.description ? ` (${it.description})` : ''}`)
+          .filter(Boolean);
+        if (rows.length) profileParts.push(`Services: ${rows.join('; ')}`);
+      } else if (typeof svc === 'object' && svc) {
         const svcParts = Object.entries(svc as Record<string, string>).map(([k, v]) => v ? `${k}: ${v}` : k);
         profileParts.push(`Services: ${svcParts.join('; ')}`);
       }

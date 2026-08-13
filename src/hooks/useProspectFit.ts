@@ -56,6 +56,33 @@ function extractJson(text: string): Record<string, unknown> | null {
   }
 }
 
+
+/**
+ * Pick the outreach recipient from the leads prospect_research already saved.
+ * decision_maker was hardcoded null in both result branches, which kept the
+ * send-email button permanently disabled ("No decision-maker email") — the
+ * research found and stored contacts, but nothing carried them forward, so the
+ * whole module ended one step short of its purpose.
+ */
+function deriveDecisionMaker(raw: unknown): FitAnalysisResult['decision_maker'] {
+  const leads = ((raw as { related_leads?: unknown })?.related_leads ?? []) as Array<{
+    id?: string; email?: string; name?: string; score?: number;
+  }>;
+  const withEmail = leads.filter((l) => l?.email);
+  if (withEmail.length === 0) return null;
+  const best = [...withEmail].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const parts = String(best.name ?? '').trim().split(/\s+/).filter(Boolean);
+  return {
+    // FitAnalysisCard reads `id` for the CRM link — carried as an extra field.
+    ...( { id: best.id } as object ),
+    email: best.email as string,
+    confidence: best.score ?? 0,
+    first_name: parts[0] ?? '',
+    last_name: parts.slice(1).join(' '),
+    position: '',
+  };
+}
+
 export function useProspectFit() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { data: chatSettings } = useChatSettings();
@@ -126,7 +153,7 @@ export function useProspectFit() {
               : [],
             introduction_letter: (scored.introduction_letter as string) ?? '',
             email_subject: (scored.email_subject as string) ?? '',
-            decision_maker: null,
+            decision_maker: deriveDecisionMaker(raw),
             leads_updated: 0,
           },
         };
@@ -177,7 +204,7 @@ export function dataOnlyFit(payload: Record<string, any>): FitAnalysisResult {
     problem_mapping: [],
     introduction_letter: '',
     email_subject: '',
-    decision_maker: null,
+    decision_maker: deriveDecisionMaker(payload),
     leads_updated: 0,
   };
 }

@@ -166,6 +166,7 @@ export function FitAnalysisCard({ result, companyName }: FitAnalysisCardProps) {
           onOpenChange={setEmailOpen}
           recipientEmail={recipientEmail}
           recipientName={decisionMakerName || undefined}
+          leadId={leadId}
           initialSubject={result.email_subject || ""}
           initialBody={result.introduction_letter || ""}
           leadContext={{

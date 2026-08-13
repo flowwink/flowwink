@@ -49,10 +49,15 @@ export async function executeProspectFitAnalysis(
     // Load related leads
     let relatedLeads: any[] = [];
     if (company) {
+      // leads has no `company` text column — the old ilike on it errored on
+      // every call, so related_leads was ALWAYS empty: the fit analysis never
+      // learned that prospect_research had already saved contacts, and the
+      // send-email step downstream had nobody to address. company_id is the
+      // very column prospect-research writes.
       const { data } = await supabase
         .from('leads')
         .select('id, email, name, status, score, source')
-        .ilike('company', `%${company.name}%`)
+        .eq('company_id', company.id)
         .limit(10);
       relatedLeads = data || [];
     }

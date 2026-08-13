@@ -94,8 +94,14 @@ export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientN
         Array.isArray(companyProfile.differentiators) && companyProfile.differentiators.length
           ? `Differentiators / USPs:\n- ${companyProfile.differentiators.join('\n- ')}`
           : null,
+        // services is ServiceItem[] ({name, description}), not string[] — a raw
+        // join fed the AI draft literal "[object Object]" lines.
         Array.isArray(companyProfile.services) && companyProfile.services.length
-          ? `Services:\n- ${companyProfile.services.join('\n- ')}`
+          ? `Services:\n- ${companyProfile.services
+              .map((s: { name?: string; description?: string } | string) =>
+                typeof s === 'string' ? s : `${s?.name ?? ''}${s?.description ? ` (${s.description})` : ''}`)
+              .filter(Boolean)
+              .join('\n- ')}`
           : null,
         companyProfile.icp && `Ideal customer: ${companyProfile.icp}`,
         companyProfile.delivered_value && `Delivered value: ${companyProfile.delivered_value}`,

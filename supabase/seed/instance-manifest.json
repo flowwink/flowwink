@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813220000",
-      "migrations_count": 402,
+      "migration_head": "20260813230000",
+      "migrations_count": 403,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1613,6 +1613,10 @@
         {
           "version": "20260813220000",
           "name": "business-identity-belongs-to-the-message-owners"
+        },
+        {
+          "version": "20260813230000",
+          "name": "subscription-amount-is-per-period-not-tcv"
         }
       ]
     },

@@ -5,7 +5,8 @@
 //      the seeded layers, reinstall the configured template, normalize auth to
 //      the shared demo admin. This is what makes "testers get full admin" safe:
 //      the rebuild is the permission system.
-//   2. Scenario data: reset + reseed the pilot modules' demo data, restock.
+//   2. Scenario data: reset + reseed demo data for every module that HAS a
+//      seeder (asked of the database, not carried in a list here), restock.
 //
 // Body {"skip_rebuild": true} runs stage 2 alone (the pre-2026-08-12 behavior).
 // Deploy with --no-verify-jwt and schedule via pg_cron.
@@ -16,7 +17,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MODULES = ["crm", "quotes", "invoices", "expenses", "ecommerce"] as const;
+/**
+ * Which modules get demo data.
+ *
+ * This was a hardcoded five while seed_module_demo had grown to thirty — on a
+ * demo whose pitch is "68 modules", twenty-five seeders never ran. So ask the
+ * database what it can seed (demo_seedable_modules reads the seeder's own CASE
+ * branches) and only remove what the instance has POSITIVELY switched off.
+ *
+ * The "positively" matters: four seeder names (crm, invoices, kb, vendors) have
+ * no identically-named entry in the module settings, so requiring `enabled ===
+ * true` would silently drop the demo's most important data. An unrecognised
+ * name is seeded, not skipped — the failure mode of the other choice is an
+ * empty demo that looks like a broken product.
+ */
+async function modulesToSeed(supabase: any): Promise<{ seed: string[]; skipped: string[] }> {
+  const { data: seedable, error } = await supabase.rpc("demo_seedable_modules");
+  const all: string[] = Array.isArray(seedable) && !error && seedable.length
+    ? seedable
+    // Pre-20260813090000 instances lack the function; the old five keep working.
+    : ["crm", "quotes", "invoices", "expenses", "ecommerce"];
+
+  const { data: modSetting } = await supabase
+    .from("site_settings").select("value").eq("key", "modules").maybeSingle();
+  const modules = (modSetting?.value ?? {}) as Record<string, { enabled?: boolean }>;
+
+  const seed: string[] = [];
+  const skipped: string[] = [];
+  for (const m of all) {
+    if (modules[m] && modules[m].enabled === false) skipped.push(m);
+    else seed.push(m);
+  }
+  return { seed, skipped };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -83,6 +116,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const { seed: MODULES, skipped: modulesOff } = await modulesToSeed(supabase);
+
     for (const module of MODULES) {
       const r: { reset?: unknown; seed?: unknown; error?: string } = {};
       try {
@@ -123,6 +158,8 @@ Deno.serve(async (req) => {
         started_at: startedAt,
         finished_at: new Date().toISOString(),
         rebuild,
+        modules_seeded: MODULES.length,
+        modules_skipped_disabled: modulesOff,
         modules: results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

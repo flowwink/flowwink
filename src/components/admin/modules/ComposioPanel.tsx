@@ -492,7 +492,12 @@ export function ComposioPanel() {
               Quick Connect
             </h4>
             <div className="flex flex-wrap gap-2">
-              {['gmail', 'slack', 'google_sheets', 'hubspot', 'notion', 'calendar'].map(app => (
+              {/* linkedin/x: the social-post publisher rail — connecting here
+                  creates the account under entity 'default', which is the one
+                  composio-proxy's execute path looks up. A connection made in
+                  Composio's own dashboard can land under another entity and
+                  stays invisible to the proxy (found live 2026-08-14). */}
+              {['gmail', 'linkedin', 'x', 'slack', 'google_sheets', 'hubspot', 'notion', 'calendar'].map(app => (
                 <Button
                   key={app}
                   variant="outline"

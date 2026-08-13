@@ -85,7 +85,7 @@
       "is_featured": true,
       "content": [
         {
-          "id": "text-j1aedob",
+          "id": "text-xsi8o1a",
           "type": "text",
           "data": {
             "content": {
@@ -297,7 +297,7 @@
       "featured_image_alt": "Autonomous AI agent concept",
       "content": [
         {
-          "id": "text-99tx900",
+          "id": "text-k20wd0q",
           "type": "text",
           "data": {
             "content": {
@@ -488,7 +488,7 @@
       "featured_image_alt": "Secure server infrastructure",
       "content": [
         {
-          "id": "text-v8esiut",
+          "id": "text-b3ft03t",
           "type": "text",
           "data": {
             "content": {
@@ -677,7 +677,7 @@
       "featured_image_alt": "Continuous improvement cycle visualization",
       "content": [
         {
-          "id": "text-hxzjb8z",
+          "id": "text-j9hjvfl",
           "type": "text",
           "data": {
             "content": {
@@ -889,7 +889,7 @@
       "featured_image_alt": "Unified platform replacing multiple tools",
       "content": [
         {
-          "id": "text-xudml9a",
+          "id": "text-moxiu3x",
           "type": "text",
           "data": {
             "content": {
@@ -1190,7 +1190,7 @@
       "featured_image_alt": "Connected network representing skill engine",
       "content": [
         {
-          "id": "text-5nf0vq3",
+          "id": "text-0dj786f",
           "type": "text",
           "data": {
             "content": {
@@ -1519,7 +1519,7 @@
       "featured_image_alt": "Strategic planning board with goals and recurring tasks",
       "content": [
         {
-          "id": "text-fzam9gq",
+          "id": "text-w5yn29a",
           "type": "text",
           "data": {
             "content": {
@@ -1813,7 +1813,7 @@
       "featured_image_alt": "Network of connected nodes representing agent-to-agent communication",
       "content": [
         {
-          "id": "text-m9foui7",
+          "id": "text-pynh1t3",
           "type": "text",
           "data": {
             "content": {
@@ -2056,7 +2056,7 @@
       "featured_image_alt": "Person analyzing content strategy on multiple screens",
       "content": [
         {
-          "id": "text-qg4wddh",
+          "id": "text-0nvrhow",
           "type": "text",
           "data": {
             "content": {
@@ -2280,7 +2280,7 @@
       "featured_image_alt": "Circular process diagram representing autonomous loop",
       "content": [
         {
-          "id": "text-p0k1k7f",
+          "id": "text-2nbzvfs",
           "type": "text",
           "data": {
             "content": {
@@ -2480,7 +2480,7 @@
       "featured_image_alt": "Data flow architecture diagram",
       "content": [
         {
-          "id": "text-sk8xy6i",
+          "id": "text-0ur4n4q",
           "type": "text",
           "data": {
             "content": {
@@ -2796,7 +2796,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-1tbwi5z",
+          "id": "text-cfd25ey",
           "type": "text",
           "data": {
             "content": {
@@ -2995,7 +2995,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-vajopam",
+          "id": "text-sx0d3j2",
           "type": "text",
           "data": {
             "content": {
@@ -3314,7 +3314,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-ro54w93",
+          "id": "text-cg056yq",
           "type": "text",
           "data": {
             "content": {
@@ -3558,7 +3558,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-wev9qvw",
+          "id": "text-olb0z5b",
           "type": "text",
           "data": {
             "content": {
@@ -8167,7 +8167,7 @@
             "backgroundType": "image",
             "backgroundImage": "/templates/hero/tech-abstract.jpg",
             "overlayOpacity": 65,
-            "heightMode": "70vh",
+            "heightMode": "80vh",
             "contentAlignment": "center",
             "titleAnimation": "slide-up",
             "primaryButton": {
@@ -8687,7 +8687,7 @@
             "backgroundType": "image",
             "backgroundImage": "/templates/hero/team-collaboration.jpg",
             "overlayOpacity": 65,
-            "heightMode": "70vh",
+            "heightMode": "80vh",
             "contentAlignment": "center",
             "titleAnimation": "slide-up",
             "primaryButton": {

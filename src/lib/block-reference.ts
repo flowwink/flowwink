@@ -50,7 +50,7 @@ export const BLOCK_REFERENCE: BlockInfo[] = [
       { name: 'videoLoop', type: 'boolean', required: false, description: "Loop the background video", default: true },
       { name: 'videoMuted', type: 'boolean', required: false, description: "Start the video muted (required for autoplay in most browsers)", default: true },
       { name: 'showVideoControls', type: 'boolean', required: false, description: "Show play/pause/mute controls for video" },
-      { name: 'heightMode', type: 'string', required: false, description: "Section height", default: 'auto', options: ['viewport', '80vh', '60vh', 'auto'] },
+      { name: 'heightMode', type: 'string', required: false, description: "Section height", default: 'auto', options: ['viewport', '80vh', '70vh', '60vh', '50vh', 'auto'] },
       { name: 'contentAlignment', type: 'string', required: false, description: "Vertical position of the content block", default: 'center', options: ['top', 'center', 'bottom'] },
       { name: 'textAlignment', type: 'string', required: false, description: "Text alignment", default: 'center', options: ['left', 'center', 'right'] },
       { name: 'textTheme', type: 'string', required: false, description: "Text color scheme; \"auto\" derives it from the overlay", default: 'auto', options: ['auto', 'light', 'dark'] },

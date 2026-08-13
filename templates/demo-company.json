@@ -8,18 +8,7 @@
   "tagline": "A live business you can poke at — or download and run your own with 500+ MCP skills.",
   "aiChatPosition": "Demo concierge — explains what FlowPilot is doing in real time",
   "requiredModules": [
-    "blog",
-    "chat",
-    "leads",
-    "deals",
-    "companies",
-    "quotes",
-    "invoicing",
-    "expenses",
-    "forms",
-    "ecommerce",
-    "inventory",
-    "approvals"
+    "*"
   ],
   "pages": [
     {
@@ -148,7 +137,7 @@
                   "content": [
                     {
                       "type": "text",
-                      "text": "Every night at 04:00 UTC the whole sandbox is destroyed and rebuilt: all content and transactions are wiped, extra accounts removed, the shared admin password restored, and this template reinstalled. At 04:30 the demo-cycle seeds a fresh business scenario — leads, quotes, orders, expenses — so the sandbox wakes up clean AND alive. Build anything, break anything: nothing you do survives the night, and that is the point."
+                      "text": "Every night at 03:00 UTC one job does both halves: the instance is destroyed and rebuilt — all content and transactions wiped, extra accounts removed, the shared admin password restored, this template reinstalled — and then a fresh business scenario is staged: leads, quotes, orders, expenses. The demo wakes up clean AND alive. Build anything, break anything: nothing you do survives the night, and that is the point."
                     }
                   ]
                 },
@@ -366,7 +355,7 @@
             "backgroundType": "image",
             "backgroundImage": "/templates/hero/digital-shop-hero.jpg",
             "overlayOpacity": 60,
-            "heightMode": "compact",
+            "heightMode": "50vh",
             "contentAlignment": "center"
           }
         },
@@ -442,7 +431,7 @@
             "backgroundType": "image",
             "backgroundImage": "/templates/hero/data-abstract.jpg",
             "overlayOpacity": 65,
-            "heightMode": "compact",
+            "heightMode": "50vh",
             "contentAlignment": "center"
           }
         },

@@ -83,10 +83,21 @@ describe('enrich_company internal handler', () => {
     expect(res).toEqual({ error: 'Domain or companyId is required' });
   });
 
-  it('already-enriched company → skip shape unchanged', async () => {
+  it('COMPLETE enrichment (industry/size/web_summary present) → skips', async () => {
+    const db = stubDb({ data: { id: 'c1', domain: 'a.se', enriched_at: '2026-01-01', industry: 'Legal' }, error: null });
+    const res = await executeEnrichCompany(db, { companyId: 'c1' }, ctx);
+    expect(res).toMatchObject({ success: true, skipped: true });
+  });
+
+  it('enriched_at stamped but NO firmographics → proceeds past the guard', async () => {
+    // The seam Magnus hit live: prospect_research stamped enriched_at without
+    // ever filling industry/size, and the Enrich button answered every press
+    // with a silent "Already enriched". An incomplete enrichment must re-run.
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, text: async () => 'scrape down' })));
     const db = stubDb({ data: { id: 'c1', domain: 'a.se', enriched_at: '2026-01-01' }, error: null });
     const res = await executeEnrichCompany(db, { companyId: 'c1' }, ctx);
-    expect(res).toEqual({ success: true, message: 'Already enriched', skipped: true });
+    // Reaching the scrape (and failing on our stub) proves the skip-guard let it through.
+    expect(res).toMatchObject({ error: 'Failed to scrape website' });
   });
 });
 

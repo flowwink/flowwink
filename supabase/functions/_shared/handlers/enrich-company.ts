@@ -1,9 +1,12 @@
 // enrich_company — internal skill handler.
 //
-// Data-Only (No AI). Scrapes a company website (via the web-scrape kernel
-// function so admin-configured provider priority is respected) and extracts
-// metadata (title, description, phone) deterministically. AI-powered analysis
-// is FlowPilot's job. OpenClaw alignment: "hand" not "brain".
+// Scrapes a company website (via the web-scrape kernel function so
+// admin-configured provider priority is respected), extracts metadata
+// (description, phone, org number) deterministically, and distills
+// firmographics (industry/size/web_summary) through the shared
+// company-distill reader — the same one prospect_research uses, so the
+// company page's Enrich button and Sales Intelligence fill the same fields.
+// The distillation soft-fails without an AI provider (Law 4).
 //
 // Moved from the standalone `enrich-company` edge function (edge-surface
 // refactor B1a, wave 1). Response objects unchanged; the web-scrape call keeps
@@ -12,6 +15,7 @@
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { HandlerCtx } from './qualify-lead.ts';
+import { distillCompany } from './company-distill.ts';
 
 
 /**
@@ -50,17 +54,18 @@ export async function executeEnrichCompany(
   ctx: HandlerCtx,
 ): Promise<Record<string, unknown>> {
   try {
-    const { domain, companyId } = args as { domain?: string; companyId?: string };
+    const { domain, companyId, force } = args as { domain?: string; companyId?: string; force?: boolean };
 
     // Resolve domain from companyId if needed
     let enrichDomain = domain;
     let targetCompanyId = companyId;
     let companyName: string | null = null;
+    let existingCompany: Record<string, unknown> | null = null;
 
     if (!enrichDomain && companyId) {
       const { data: company, error: companyError } = await supabase
         .from('companies')
-        .select('id, name, domain, enriched_at')
+        .select('id, name, domain, enriched_at, industry, size, web_summary')
         .eq('id', companyId)
         .single();
 
@@ -72,13 +77,24 @@ export async function executeEnrichCompany(
         return { error: 'Company has no domain to enrich' };
       }
 
-      if (company.enriched_at) {
-        return { success: true, message: 'Already enriched', skipped: true };
+      // The old guard skipped on enriched_at alone — so a company that
+      // prospect_research had stamped (but never given industry/size) answered
+      // every Enrich press with a silent no-op. Skip only when the enrichment
+      // is actually COMPLETE; an incomplete one gets another run, and force
+      // bypasses for an explicit refresh.
+      const complete = !!(company.industry || company.size || company.web_summary);
+      if (company.enriched_at && complete && !force) {
+        return {
+          success: true,
+          skipped: true,
+          message: 'Already enriched (industry/size/web_summary present). Pass force: true to refresh.',
+        };
       }
 
       enrichDomain = company.domain;
       targetCompanyId = company.id;
       companyName = (company as { name?: string }).name ?? null;
+      existingCompany = company as Record<string, unknown>;
     }
 
     if (!enrichDomain) {
@@ -144,11 +160,19 @@ export async function executeEnrichCompany(
       }
     }
 
+    // Distill firmographics from the scrape — the same reader Sales
+    // Intelligence research uses, so both doors fill the same fields.
+    const distilled = pageContent
+      ? await distillCompany(supabase, companyName ?? enrichDomain, pageContent, '')
+      : null;
+
     const enrichment = {
       website: url,
       description: metadata.description || metadata.ogDescription || null,
       phone: extractPhone(pageContent),
       org_number: orgNumber,
+      industry: distilled?.industry ?? null,
+      size_estimate: distilled?.size_estimate ?? null,
       address: null as string | null,
       raw_content: pageContent.substring(0, 5000), // For FlowPilot to analyze later
     };
@@ -163,6 +187,13 @@ export async function executeEnrichCompany(
           website: enrichment.website,
           notes: enrichment.description || undefined,
           phone: enrichment.phone || undefined,
+          web_summary: distilled?.summary
+            ? `${distilled.summary}\n\nOfferings: ${distilled.main_offerings.join('; ')}`
+            : (pageContent ? pageContent.slice(0, 4000) : undefined),
+          // Master-data discipline: fill industry/size only when empty —
+          // enrichment never overwrites what an operator typed.
+          ...(distilled?.industry && !existingCompany?.industry ? { industry: distilled.industry } : {}),
+          ...(distilled?.size_estimate && !existingCompany?.size ? { size: distilled.size_estimate } : {}),
           enriched_at: new Date().toISOString(),
         })
         .eq('id', targetCompanyId);

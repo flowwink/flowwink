@@ -120,6 +120,12 @@ export const navigationGroups: NavGroup[] = [
     label: "Content",
     items: [
       { name: "Website", href: "/admin/pages", icon: FileText, moduleId: "pages" },
+      // Two things sharing a URL: legal formalia AND the go-to-market message
+      // (ICP, positioning) — the AI's outward grounding. It sat in the adminOnly
+      // group while the matrix granted it to sales: the one group gate that
+      // silences module items, so the grant was a lie (the Profile class).
+      // Matrix-gated here; a formalia/message split is deliberately deferred.
+      { name: "Business Identity", href: "/admin/company-insights", icon: Building2, moduleId: "companyInsights" },
       { name: "Blog", href: "/admin/blog", icon: BookOpen, moduleId: "blog" },
       { name: "Media Library", href: "/admin/media", icon: Image, moduleId: "mediaLibrary" },
       { name: "Knowledge Base", href: "/admin/knowledge-base", icon: Library, moduleId: "knowledgeBase" },
@@ -267,7 +273,6 @@ export const navigationGroups: NavGroup[] = [
     collapsible: true,
     items: [
       { name: "Site Settings", href: "/admin/settings", icon: Settings },
-      { name: "Business Identity", href: "/admin/company-insights", icon: Building2, moduleId: "companyInsights" },
       { name: "Branding", href: "/admin/branding", icon: Image },
       { name: "Users", href: "/admin/users", icon: Users },
       { name: "Role Permissions", href: "/admin/roles", icon: Shield },

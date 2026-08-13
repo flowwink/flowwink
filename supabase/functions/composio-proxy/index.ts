@@ -325,7 +325,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'gmail_send') {
-      const { to, subject, body: emailBody, cc, bcc, in_reply_to, references, thread_id, is_html, account_id: explicitAccountId } = params || {};
+      const { to, subject, body: emailBody, cc, bcc, in_reply_to, references, thread_id, is_html, extra_headers, account_id: explicitAccountId } = params || {};
       if (!to || !subject || !emailBody) {
         return json({ error: 'to, subject, and body required' }, 400);
       }
@@ -353,13 +353,14 @@ Deno.serve(async (req) => {
       };
       if (cc) input.cc = cc;
       if (bcc) input.bcc = bcc;
-      // Composio GMAIL_SEND_EMAIL accepts extra_headers + thread_id for threading.
-      if (in_reply_to) {
-        input.extra_headers = {
-          'In-Reply-To': in_reply_to,
-          ...(references ? { References: references } : {}),
-        };
-      }
+      // Composio GMAIL_SEND_EMAIL accepts extra_headers + thread_id. Threading
+      // headers and caller-supplied ones (e.g. email-send's RFC 8058
+      // List-Unsubscribe pair) merge into the same map.
+      const mergedHeaders: Record<string, string> = {
+        ...((extra_headers && typeof extra_headers === 'object') ? extra_headers as Record<string, string> : {}),
+        ...(in_reply_to ? { 'In-Reply-To': in_reply_to, ...(references ? { References: references } : {}) } : {}),
+      };
+      if (Object.keys(mergedHeaders).length) input.extra_headers = mergedHeaders;
       if (thread_id) input.thread_id = thread_id;
 
       const data = await executeToolV3('GMAIL_SEND_EMAIL', input as Record<string, string>, accountId);

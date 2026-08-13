@@ -471,11 +471,10 @@ serve(async (req: Request) => {
       });
     } else if (provider === "composio") {
       // Delegate to composio-proxy → Gmail OAuth send.
-      // NOTE: no List-Unsubscribe headers on this path — Composio's gmail_send
-      // action does not accept custom headers. Acceptable: this rail carries
-      // 1:1 conversational mail (expects_reply) from a real person's mailbox,
-      // not bulk, and the suppression check above still gates it. Body-level
-      // opt-out text is the composer's responsibility for cold outreach.
+      // RFC 8058 headers ride along here too: GMAIL_SEND_EMAIL accepts
+      // extra_headers (the proxy already uses it for threading), so cold
+      // outreach sent from the company Gmail carries the same one-click
+      // unsubscribe as the Resend/SMTP rails.
       // The proxy logs to outbound_communications itself with provider='composio',
       // so we skip our own logComm below to avoid duplicate rows. We MUST pass the
       // entity binding and source through, otherwise the outbound row is orphaned
@@ -499,6 +498,7 @@ serve(async (req: Request) => {
           params: {
             to: recipients.join(", "),
             subject: body.subject,
+            extra_headers: recipients.length === 1 ? await unsubscribeHeaders(recipients[0]) : undefined,
             // Gmail send expects an HTML body — pass the html (proxy forwards as `body`).
             body: body.html,
             // This rail only ever sends rendered HTML, so say so rather than

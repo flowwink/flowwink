@@ -87,19 +87,32 @@ export function DemoModeCard() {
           p_anon_key: ANON_KEY,
         });
         if (cronErr) throw new Error(`Toggle saved, but cron schedule failed: ${cronErr.message}`);
+
+        // Stage the demo data NOW rather than at 03:00 — a toggle that promises
+        // a demo instance and delivers it tomorrow reads as a broken switch.
+        // Deliberately skip_rebuild: enabling must never destroy anything. The
+        // wipe belongs to the announced nightly schedule, where the card's own
+        // warning is what makes it fair.
+        const res = await fetch(FN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ANON_KEY}` },
+          body: JSON.stringify({ skip_rebuild: true }),
+        });
+        const seedResult = res.ok ? await res.json().catch(() => null) : null;
+        return { next, seeded: seedResult?.modules_seeded as number | undefined };
       } else {
         const { error: cronErr } = await supabase.rpc('disable_demo_cycle_cron' as any);
         if (cronErr) throw new Error(`Toggle saved, but cron unschedule failed: ${cronErr.message}`);
       }
-      return next;
+      return { next, seeded: undefined as number | undefined };
     },
-    onSuccess: (next) => {
+    onSuccess: ({ next, seeded }) => {
       qc.invalidateQueries({ queryKey: ['site_settings', KEY] });
       qc.invalidateQueries({ queryKey: ['demo_cycle_cron_status'] });
       toast({
         title: next ? 'Demo mode enabled' : 'Demo mode disabled',
         description: next
-          ? 'demo-cycle scheduled daily on this instance.'
+          ? `Scheduled daily${typeof seeded === 'number' ? ` — demo data staged across ${seeded} modules.` : '. Demo data staging may still be running.'}`
           : 'demo-cycle unscheduled on this instance.',
       });
     },
@@ -123,8 +136,10 @@ export function DemoModeCard() {
           Enable only on a dedicated, disposable demo instance. Every night at 03:00 UTC
           the <code>demo-cycle</code> job rebuilds this instance from its template:{' '}
           <strong>all content, settings changes and user accounts are destroyed</strong>{' '}
-          (except the shared demo admin), then fresh demo data is staged across the pilot
-          modules. If people you know by name use this instance, this switch is not for it.
+          (except the shared demo admin), then fresh demo data is staged across every module
+          that has a seeder. Turning this on stages that data immediately — it does not
+          wipe anything until the first nightly run. If people you know by name use this
+          instance, this switch is not for it.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

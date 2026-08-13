@@ -26,7 +26,12 @@ describe('the displayed role is the most meaningful one', () => {
 
   it('customer is only primary when it is the only role', () => {
     // Not "first row": row order is insertion order, and the fail-closed
-    // customer row always predates a granted staff role.
-    expect(auth).toMatch(/allRoles\.find\(r => r !== 'customer'\)/);
+    // customer row always predates a granted staff role. The rule lives in ONE
+    // exported function since 2026-08-13 — the bug shipped twice precisely
+    // because two copies of the derivation existed. Behavior is pinned in
+    // src/hooks/__tests__/primary-role.guardrails.test.ts; this pins that both
+    // call sites actually use it.
+    expect(auth).toMatch(/setRole\(primaryRole\(/);
+    expect(auth).toMatch(/effectivePrimary: AppRole \| null = primaryRole\(/);
   });
 });

@@ -38,6 +38,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * The role a user IS, for display: admin first, then any functional role,
+ * customer last. "First row" is insertion order, and the signup trigger's
+ * fail-closed customer row is always oldest — so any account upgraded from a
+ * signup was displayed as "Customer" forever. This bug has now been fixed
+ * TWICE (fetchUserData 2026-07, effectivePrimary 2026-08-13) because the
+ * derivation existed in two copies; this is the only one.
+ */
+export function primaryRole(roles: AppRole[]): AppRole | null {
+  if (roles.includes('admin')) return 'admin';
+  return roles.find((r) => r !== 'customer') ?? roles[0] ?? null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -149,14 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const allRoles = (roleData ?? []).map(r => r.role as AppRole);
       setRoles(allRoles);
-      // Primary role: admin first, then any functional role, customer LAST.
-      // "First row" was insertion order — the signup trigger's fail-closed
-      // customer row is always oldest, so a salesperson upgraded from a
-      // customer account was displayed as "Customer" forever.
-      const primary = allRoles.includes('admin')
-        ? 'admin'
-        : (allRoles.find(r => r !== 'customer') ?? allRoles[0] ?? null);
-      setRole(primary);
+      setRole(primaryRole(allRoles));
     } catch (error) {
       logger.error('Error fetching user data:', error);
     } finally {
@@ -221,9 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const effectiveRoles: AppRole[] = realIsAdmin && previewRoles && previewRoles.length > 0
     ? previewRoles
     : realRoles;
-  const effectivePrimary: AppRole | null = effectiveRoles.includes('admin')
-    ? 'admin'
-    : (effectiveRoles[0] ?? null);
+  const effectivePrimary: AppRole | null = primaryRole(effectiveRoles);
 
   const isAdmin = effectiveRoles.includes('admin');
   const isWriter = isAdmin || effectiveRoles.includes('writer') || effectiveRoles.includes('approver') || effectiveRoles.length > 0;

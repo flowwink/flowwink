@@ -8783,6 +8783,66 @@ export type Database = {
           },
         ]
       }
+      journal_entry_documents: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          journal_entry_id: string
+          kind: string
+          label: string | null
+          sort_order: number
+          source: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          journal_entry_id: string
+          kind?: string
+          label?: string | null
+          sort_order?: number
+          source?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          journal_entry_id?: string
+          kind?: string
+          label?: string | null
+          sort_order?: number
+          source?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_documents_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entry_line_taxes: {
         Row: {
           amount_cents: number
@@ -19955,6 +20015,10 @@ export type Database = {
         Args: { p_assignee: string; p_lead: string }
         Returns: Json
       }
+      attach_expense_receipts_to_entry: {
+        Args: { p_entry_id: string; p_report_id: string }
+        Returns: number
+      }
       attach_return_label: {
         Args: {
           p_carrier_code?: string
@@ -21836,6 +21900,19 @@ export type Database = {
           p_start_date?: string
           p_status?: string
           p_template_id?: string
+        }
+        Returns: Json
+      }
+      manage_journal_entry_document: {
+        Args: {
+          p_action?: string
+          p_attachment_id?: string
+          p_document_id?: string
+          p_entry_id?: string
+          p_file_name?: string
+          p_file_url?: string
+          p_kind?: string
+          p_label?: string
         }
         Returns: Json
       }

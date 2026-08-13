@@ -240,10 +240,12 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
       3: 'grid-cols-2 md:grid-cols-3',
       4: 'grid-cols-2 md:grid-cols-4',
     };
-    return cn('grid gap-4', gridCols[columns]);
+    return cn('grid gap-4', gridCols[columns] ?? gridCols[4]);
   };
 
   const renderItem = (item: SocialProofItem) => {
+    // deliberately NO fallback: this gates whether an icon renders at all, so
+    // a wrong-but-present icon (the map's first key) is worse than none.
     const IconComponent = item.icon ? ICONS[item.icon] : null;
 
     const itemContent = (
@@ -380,7 +382,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
                 {showIcons && item.icon && (
                   <span className="opacity-80">
                     {(() => {
-                      const Icon = ICONS[item.icon];
+                      const Icon = ICONS[item.icon] ?? ICONS.users;
                       return <Icon className={sz.icon} />;
                     })()}
                   </span>

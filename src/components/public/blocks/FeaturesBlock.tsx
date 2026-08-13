@@ -84,8 +84,8 @@ function FeatureCard({
     variant === 'cards' && cn(
       "p-6 rounded-xl border bg-card transition-all duration-300",
       cardStyle === 'default' && hoverEffect === 'none' && "hover:shadow-md",
-      hoverEffectClasses[hoverEffect],
-      cardStyleClasses[cardStyle]
+      hoverEffectClasses[hoverEffect] ?? hoverEffectClasses.none,
+      cardStyleClasses[cardStyle] ?? cardStyleClasses.default
     ),
     variant === 'minimal' && "text-left",
     variant === 'centered' && "text-center flex flex-col items-center",

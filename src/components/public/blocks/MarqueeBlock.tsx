@@ -50,7 +50,7 @@ export function MarqueeBlock({ data }: MarqueeBlockProps) {
   const duplicatedItems = [...items, ...items, ...items];
 
   return (
-    <section className={cn('py-4 overflow-hidden', variantStyles[variant])}>
+    <section className={cn('py-4 overflow-hidden', variantStyles[variant] ?? variantStyles.default)}>
       <div 
         className={cn(
           'flex whitespace-nowrap',

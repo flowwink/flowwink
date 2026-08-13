@@ -177,7 +177,7 @@ export function LottieBlock({ data }: LottieBlockProps) {
           className={cn(
             SIZE_CLASSES[size] ?? SIZE_CLASSES.md,
             ALIGNMENT_CLASSES[alignment] ?? ALIGNMENT_CLASSES.center,
-            variantClasses[variant],
+            variantClasses[variant] ?? variantClasses.default,
             data.playOn === 'click' && 'cursor-pointer',
             data.playOn === 'hover' && 'cursor-default'
           )}

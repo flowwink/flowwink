@@ -132,6 +132,8 @@ export function NotificationToastBlock({ data }: NotificationToastBlockProps) {
   }
 
   const notification = notifications[currentIndex];
+  // deliberately NO fallback: this gates whether an icon renders at all, so
+  // a wrong-but-present icon (the map's first key) is worse than none.
   const IconComponent = notification.icon ? ICONS[notification.icon] : null;
 
   const positionClasses = {
@@ -242,8 +244,8 @@ export function NotificationToastBlock({ data }: NotificationToastBlockProps) {
     <div
       className={cn(
         'fixed z-50 p-4 rounded-lg transition-all duration-300 ease-out',
-        positionClasses[position],
-        maxWidthClasses[maxWidth],
+        positionClasses[position] ?? positionClasses['bottom-left'],
+        maxWidthClasses[maxWidth] ?? maxWidthClasses.sm,
         getVariantClasses(),
         getAnimationClasses(),
         !isVisible && 'pointer-events-none'

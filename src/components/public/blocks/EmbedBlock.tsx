@@ -124,10 +124,10 @@ export function EmbedBlock({ data }: EmbedBlockProps) {
   if (data.customEmbed) {
     return (
       <section className="py-8 px-6">
-        <div className={cn('container mx-auto', maxWidthStyles[maxWidth])}>
-          <div className={cn(variantStyles[variant])}>
+        <div className={cn('container mx-auto', maxWidthStyles[maxWidth] ?? maxWidthStyles.lg)}>
+          <div className={cn(variantStyles[variant] ?? variantStyles.default)}>
             <div 
-              className={cn(aspectRatioStyles[data.aspectRatio || 'auto'], 'w-full')}
+              className={cn(aspectRatioStyles[data.aspectRatio || 'auto'] ?? aspectRatioStyles.auto, 'w-full')}
               dangerouslySetInnerHTML={{ __html: data.customEmbed }}
             />
           </div>
@@ -144,7 +144,7 @@ export function EmbedBlock({ data }: EmbedBlockProps) {
   if (!embedUrl && !data.url) {
     return (
       <section className="py-8 px-6">
-        <div className={cn('container mx-auto', maxWidthStyles[maxWidth])}>
+        <div className={cn('container mx-auto', maxWidthStyles[maxWidth] ?? maxWidthStyles.lg)}>
           <div className="bg-muted rounded-lg p-8 text-center text-muted-foreground">
             Paste an embed URL to display content
           </div>
@@ -155,9 +155,9 @@ export function EmbedBlock({ data }: EmbedBlockProps) {
 
   return (
     <section className="py-8 px-6">
-      <div className={cn('container mx-auto', maxWidthStyles[maxWidth])}>
-        <div className={cn(variantStyles[variant])}>
-          <div className={cn(aspectRatioStyles[data.aspectRatio || 'auto'], 'w-full')}>
+      <div className={cn('container mx-auto', maxWidthStyles[maxWidth] ?? maxWidthStyles.lg)}>
+        <div className={cn(variantStyles[variant] ?? variantStyles.default)}>
+          <div className={cn(aspectRatioStyles[data.aspectRatio || 'auto'] ?? aspectRatioStyles.auto, 'w-full')}>
             <iframe
               src={embedUrl || data.url}
               className="w-full h-full border-0"

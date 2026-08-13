@@ -78,7 +78,7 @@ export function ParallaxSectionBlock({ data }: ParallaxSectionBlockProps) {
       {/* Content */}
       <div className={cn(
         'relative z-10 h-full flex flex-col justify-center px-6 py-16',
-        alignmentClasses[alignment]
+        alignmentClasses[alignment] ?? alignmentClasses.center
       )}>
         <div
           className={cn(

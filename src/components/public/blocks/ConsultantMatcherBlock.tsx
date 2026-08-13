@@ -118,9 +118,9 @@ const MatchCard = memo(function MatchCard({
           </div>
           <Badge
             variant="outline"
-            className={`text-xs font-semibold shrink-0 ${strengthClass[strength]}`}
+            className={`text-xs font-semibold shrink-0 ${strengthClass[strength] ?? strengthClass.fair}`}
           >
-            {strengthLabel[strength]}
+            {strengthLabel[strength] ?? strengthLabel.fair}
           </Badge>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
@@ -168,8 +168,8 @@ const MatchDetail = memo(function MatchDetail({
               {match.availability && <span>Availability: {match.availability}</span>}
             </div>
           </div>
-          <Badge className={`text-sm px-3 py-1 shrink-0 ${strengthClass[strength]}`}>
-            {strengthLabel[strength]}
+          <Badge className={`text-sm px-3 py-1 shrink-0 ${strengthClass[strength] ?? strengthClass.fair}`}>
+            {strengthLabel[strength] ?? strengthLabel.fair}
           </Badge>
         </div>
       </CardHeader>

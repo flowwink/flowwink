@@ -32,7 +32,7 @@ export function QuickLinksBlock({ data }: { data: QuickLinksBlockData }) {
   };
 
   return (
-    <section className={cn('py-5 md:py-6', bgClasses[variant])}>
+    <section className={cn('py-5 md:py-6', bgClasses[variant] ?? bgClasses.dark)}>
       <div className={cn(
         'container mx-auto max-w-6xl px-6',
         layout === 'split' ? 'flex flex-col md:flex-row md:items-center md:gap-10' : 'text-center'
@@ -55,7 +55,7 @@ export function QuickLinksBlock({ data }: { data: QuickLinksBlockData }) {
               href={link.url}
               className={cn(
                 'px-5 py-2.5 rounded-full border text-sm font-medium transition-colors',
-                buttonClasses[variant]
+                buttonClasses[variant] ?? buttonClasses.dark
               )}
             >
               {link.label}

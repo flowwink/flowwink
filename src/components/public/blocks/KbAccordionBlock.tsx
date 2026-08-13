@@ -134,7 +134,7 @@ export function KbAccordionBlock({ data }: KbAccordionBlockProps) {
               <AccordionItem
                 key={article.id}
                 value={article.id}
-                className={variantClasses[variant]}
+                className={variantClasses[variant] ?? variantClasses.default}
               >
                 <AccordionTrigger className="text-left font-medium hover:no-underline py-4">
                   <div className="flex items-center gap-3 flex-1">
@@ -168,7 +168,7 @@ export function KbAccordionBlock({ data }: KbAccordionBlockProps) {
               <AccordionItem
                 key={article.id}
                 value={article.id}
-                className={variantClasses[variant]}
+                className={variantClasses[variant] ?? variantClasses.default}
               >
                 <AccordionTrigger className="text-left font-medium hover:no-underline py-4">
                   <div className="flex items-center gap-3 flex-1">

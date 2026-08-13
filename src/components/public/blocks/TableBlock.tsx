@@ -90,7 +90,7 @@ export function TableBlock({ data }: TableBlockProps) {
             stickyHeader && 'max-h-[500px]'
           )}
         >
-          <Table className={cn(sizeClasses[size])}>
+          <Table className={cn(sizeClasses[size] ?? sizeClasses.md)}>
             {caption && (
               <caption className="mt-4 text-sm text-muted-foreground">
                 {caption}
@@ -110,7 +110,7 @@ export function TableBlock({ data }: TableBlockProps) {
                   <TableHead
                     key={column.id}
                     className={cn(
-                      cellPaddingClasses[size],
+                      cellPaddingClasses[size] ?? cellPaddingClasses.md,
                       getAlignClass(column.align),
                       'font-semibold'
                     )}
@@ -137,7 +137,7 @@ export function TableBlock({ data }: TableBlockProps) {
                       <TableCell
                         key={column.id}
                         className={cn(
-                          cellPaddingClasses[size],
+                          cellPaddingClasses[size] ?? cellPaddingClasses.md,
                           getAlignClass(column.align)
                         )}
                       >

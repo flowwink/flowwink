@@ -152,7 +152,7 @@ export function TestimonialsBlock({ data }: TestimonialsBlockProps) {
         {data.layout === 'grid' && (
           <div className={cn(
             'grid gap-6',
-            gridCols[data.columns || 3]
+            gridCols[data.columns || 3] ?? gridCols[3]
           )}>
             {testimonials.map((testimonial) => (
               <TestimonialCard

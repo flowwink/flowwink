@@ -130,7 +130,7 @@ export function FeaturedCarouselBlock({ data }: FeaturedCarouselBlockProps) {
             {/* Content */}
             <div className={cn(
               'absolute inset-0 z-10 flex flex-col justify-end pb-16 md:pb-24 px-6 md:px-16 lg:px-24',
-              textAlignMap[pos],
+              textAlignMap[pos] ?? textAlignMap.center,
             )}>
               <div className="max-w-2xl space-y-4">
                 {slide.subtitle && (

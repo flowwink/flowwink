@@ -147,8 +147,8 @@ export function TeamBlock({ data }: TeamBlockProps) {
 
   const GridWrapper = staggeredReveal ? StaggeredReveal : 'div';
   const gridProps = staggeredReveal 
-    ? { animation: 'fade-up' as const, delayBetween: 100, className: cn('grid gap-6 md:gap-8', gridCols[columns]) }
-    : { className: cn('grid gap-6 md:gap-8', gridCols[columns]) };
+    ? { animation: 'fade-up' as const, delayBetween: 100, className: cn('grid gap-6 md:gap-8', gridCols[columns] ?? gridCols[3]) }
+    : { className: cn('grid gap-6 md:gap-8', gridCols[columns] ?? gridCols[3]) };
 
   return (
     <section>

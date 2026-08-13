@@ -30,7 +30,7 @@ export function CategoryNavBlock({ data }: CategoryNavBlockProps) {
     return (
       <section>
         <div className="max-w-6xl mx-auto px-4">
-          <div className={cn('grid grid-cols-2 gap-4', colClasses[columns])}>
+          <div className={cn('grid grid-cols-2 gap-4', colClasses[columns] ?? colClasses[3])}>
             {Array.from({ length: columns }).map((_, i) => (
               <div key={i} className="aspect-[4/3] bg-muted rounded-2xl animate-pulse" />
             ))}
@@ -60,7 +60,7 @@ export function CategoryNavBlock({ data }: CategoryNavBlockProps) {
           </h2>
         )}
 
-        <div className={cn('grid grid-cols-2 gap-4 md:gap-6', colClasses[columns])}>
+        <div className={cn('grid grid-cols-2 gap-4 md:gap-6', colClasses[columns] ?? colClasses[3])}>
           {categories.map(cat => (
             <Link
               key={cat.id}

@@ -64,9 +64,9 @@ export function ImageBlock({ data }: ImageBlockProps) {
           'relative overflow-hidden group',
           !fullBleed && 'container mx-auto max-w-6xl',
           rounded && !fullBleed && 'rounded-xl',
-          shadowMap[shadow],
+          shadowMap[shadow] ?? shadowMap.md,
           hoverEffect === 'lift' && 'hover:-translate-y-1 hover:shadow-xl transition-all duration-300',
-          aspectRatioMap[aspectRatio]
+          aspectRatioMap[aspectRatio] ?? aspectRatioMap.auto
         )}
       >
         <img 
@@ -75,7 +75,7 @@ export function ImageBlock({ data }: ImageBlockProps) {
           className={cn(
             'w-full h-full object-cover',
             aspectRatio !== 'auto' && 'absolute inset-0',
-            hoverEffectMap[hoverEffect]
+            hoverEffectMap[hoverEffect] ?? hoverEffectMap.none
           )}
         />
         
@@ -83,7 +83,7 @@ export function ImageBlock({ data }: ImageBlockProps) {
           <div 
             className={cn(
               'absolute inset-0 flex bg-gradient-to-t from-black/60 via-transparent to-transparent',
-              overlayPositionMap[data.overlayPosition || 'center']
+              overlayPositionMap[data.overlayPosition || 'center'] ?? overlayPositionMap.center
             )}
           >
             <h3 className="text-white text-2xl md:text-4xl font-bold drop-shadow-lg max-w-2xl">

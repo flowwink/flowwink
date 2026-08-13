@@ -38,8 +38,9 @@ function buildPrompt(payload: Record<string, unknown>): string {
     '',
     'Rules:',
     '- Score against OUR ICP and positioning in `our_context`. If the ICP is empty, say so in fit_advice and score conservatively.',
+    '- `company.web_summary` is what we read on THEIR website. Use it to map their business against the problems we solve — problem_mapping entries must reference what they actually do, not generic pains.',
     '- Ground every claim in the data below. Never invent facts about the prospect.',
-    '- Write the introduction letter in the sender profile\'s tone when one is provided.',
+    '- Write the introduction letter in the sender profile\'s tone when one is provided. Reference something specific about their business so it could not have been sent to anyone else.',
     '',
     'DATA:',
     JSON.stringify(payload, null, 2),
@@ -65,23 +66,42 @@ function extractJson(text: string): Record<string, unknown> | null {
  * send-email button permanently disabled ("No decision-maker email") — the
  * research found and stored contacts, but nothing carried them forward, so the
  * whole module ended one step short of its purpose.
+ *
+ * Ranking: every fresh lead has score 0, so score alone picks whoever sorts
+ * first — an arbitrary "decision maker". Hunter already told us WHO people
+ * are: rank on seniority (executive > senior > junior), then personal address
+ * over generic (info@), then email confidence. Title comes from provenance
+ * instead of the old hardcoded '' that rendered as "Unknown role".
  */
+const SENIORITY_RANK: Record<string, number> = { executive: 3, senior: 2, junior: 1 };
+
+type RankableLead = {
+  id?: string; email?: string; name?: string; score?: number;
+  email_confidence?: number | null;
+  email_provenance?: { seniority?: string | null; type?: string | null; position?: string | null } | null;
+};
+
+function leadRank(l: RankableLead): number {
+  const seniority = SENIORITY_RANK[l.email_provenance?.seniority ?? ''] ?? 0;
+  const personal = l.email_provenance?.type === 'generic' ? 0 : 1;
+  const confidence = l.email_confidence ?? 0;
+  return seniority * 10000 + personal * 1000 + confidence + (l.score ?? 0);
+}
+
 function deriveDecisionMaker(raw: unknown): FitAnalysisResult['decision_maker'] {
-  const leads = ((raw as { related_leads?: unknown })?.related_leads ?? []) as Array<{
-    id?: string; email?: string; name?: string; score?: number;
-  }>;
+  const leads = ((raw as { related_leads?: unknown })?.related_leads ?? []) as RankableLead[];
   const withEmail = leads.filter((l) => l?.email);
   if (withEmail.length === 0) return null;
-  const best = [...withEmail].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const best = [...withEmail].sort((a, b) => leadRank(b) - leadRank(a))[0];
   const parts = String(best.name ?? '').trim().split(/\s+/).filter(Boolean);
   return {
     // FitAnalysisCard reads `id` for the CRM link — carried as an extra field.
     ...( { id: best.id } as object ),
     email: best.email as string,
-    confidence: best.score ?? 0,
+    confidence: best.email_confidence ?? best.score ?? 0,
     first_name: parts[0] ?? '',
     last_name: parts.slice(1).join(' '),
-    position: '',
+    position: best.email_provenance?.position ?? '',
   };
 }
 

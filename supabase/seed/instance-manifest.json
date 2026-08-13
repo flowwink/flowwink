@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260813250000",
-      "migrations_count": 404,
+      "migration_head": "20260813260000",
+      "migrations_count": 405,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1621,6 +1621,10 @@
         {
           "version": "20260813250000",
           "name": "fit-analysis-survives-the-tab"
+        },
+        {
+          "version": "20260813260000",
+          "name": "research-keeps-what-it-read"
         }
       ]
     },
@@ -1631,7 +1635,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:4d4b0cfed9301f2fe458121ae49f5651f4cf8fd30a23871926f715a643ad8440",
+      "shared_hash": "sha256:43af9e717de1748ca996b8429d0802d765c8a8b648ed3e49bc5f12eee7384dc8",
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

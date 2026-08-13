@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,11 +10,65 @@ import {
   MessageSquare,
   CheckCircle2,
   ExternalLink,
+  Mail,
 } from "lucide-react";
+import { SendEmailDialog } from "@/components/admin/crm/SendEmailDialog";
 import type { ResearchResult } from "./types";
 
 interface ResearchResultCardsProps {
   result: ResearchResult;
+}
+
+/**
+ * Multi-threading without batch machinery: the seller picks WHO gets outreach
+ * by composing per contact — each send passes its own verify gate and
+ * suppression check in SendEmailDialog. Verification costs a Hunter credit
+ * per address, so "choose your targets" is also the budget gate.
+ */
+function ContactRow({ contact, companyName }: {
+  contact: ResearchResult["contacts"][number];
+  companyName?: string;
+}) {
+  const [composeOpen, setComposeOpen] = useState(false);
+  const meta = [contact.position, contact.seniority].filter(Boolean).join(" · ");
+
+  return (
+    <div className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50">
+      <div className="min-w-0">
+        <p className="text-sm font-medium truncate">
+          {contact.name || "Unknown"}
+          {contact.seniority === "executive" && (
+            <Badge variant="default" className="ml-2 text-[10px] align-middle">executive</Badge>
+          )}
+          {contact.type === "generic" && (
+            <Badge variant="outline" className="ml-2 text-[10px] align-middle">generic address</Badge>
+          )}
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {contact.email}
+          {meta && <span> · {meta}</span>}
+          {typeof contact.confidence === "number" && <span> · {contact.confidence}%</span>}
+        </p>
+      </div>
+      <Button size="sm" variant="ghost" className="gap-1.5 shrink-0" onClick={() => setComposeOpen(true)}>
+        <Mail className="h-3.5 w-3.5" />
+        Compose
+      </Button>
+      <SendEmailDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        recipientEmail={contact.email}
+        recipientName={contact.name || undefined}
+        leadId={contact.id}
+        leadContext={{
+          name: contact.name || undefined,
+          email: contact.email,
+          role: contact.position ?? undefined,
+          company_name: companyName,
+        }}
+      />
+    </div>
+  );
 }
 
 export function ResearchResultCards({ result }: ResearchResultCardsProps) {
@@ -93,13 +149,11 @@ export function ResearchResultCards({ result }: ResearchResultCardsProps) {
           <CardContent>
             <div className="space-y-2">
               {result.contacts?.map((contact) => (
-                <div key={contact.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                  <div>
-                    <p className="text-sm font-medium">{contact.name || "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground">{contact.email}</p>
-                  </div>
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                </div>
+                <ContactRow
+                  key={contact.id}
+                  contact={contact}
+                  companyName={result.company_summary?.name || result.company?.name}
+                />
               ))}
             </div>
           </CardContent>

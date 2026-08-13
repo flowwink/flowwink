@@ -24,6 +24,14 @@ export interface ResearchResult {
 export interface FitAnalysisResult {
   success: boolean;
   fit_score: number;
+  /**
+   * True when FlowPilot reasoned the score against the ICP; false when the
+   * deterministic data-signal fallback produced it. The fallback counts
+   * signals (website/domain/industry/size/enriched) — a COMPLETE company row
+   * scores "100" while saying nothing about fit. The card must never present
+   * that as an assessment.
+   */
+  ai_scored?: boolean;
   fit_advice: string;
   problem_mapping: Array<{ prospect_problem: string; our_solution: string }>;
   introduction_letter: string;

@@ -187,8 +187,12 @@ export function useProspectFit() {
             }
           }
           scored = extractJson(full);
+          if (!scored) logger.error('Fit scoring: AI svarade men JSON kunde inte extraheras', full.slice(0, 300));
+        } else {
+          logger.error(`Fit scoring: chat-completion HTTP ${response.status}`);
         }
-      } catch {
+      } catch (e) {
+        logger.error('Fit scoring: chat-completion-anropet kastade', e);
         scored = null;
       }
 
@@ -198,6 +202,7 @@ export function useProspectFit() {
       if (scored && typeof scored.fit_score === 'number') {
         const fit: FitAnalysisResult = {
           success: true,
+          ai_scored: true,
           fit_score: Math.max(0, Math.min(100, Math.round(scored.fit_score as number))),
           fit_advice: (scored.fit_advice as string) ?? 'Fit analysis completed.',
           problem_mapping: Array.isArray(scored.problem_mapping)
@@ -254,6 +259,7 @@ export function dataOnlyFit(payload: Record<string, any>): FitAnalysisResult {
 
   return {
     success: true,
+    ai_scored: false,
     fit_score: Math.round((signals / 5) * 100),
     fit_advice: `${advice} CRM context: ${leadCount} related lead${leadCount === 1 ? '' : 's'}, ${dealCount} related deal${dealCount === 1 ? '' : 's'}.${icpNote}`,
     problem_mapping: [],

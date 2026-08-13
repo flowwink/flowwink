@@ -21356,6 +21356,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_fiscal_years: { Args: never; Returns: Json }
       list_flowtable_tables: {
         Args: { p_base_id?: string; p_base_slug?: string }
         Returns: Json

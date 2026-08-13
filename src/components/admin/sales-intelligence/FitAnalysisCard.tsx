@@ -14,12 +14,22 @@ interface FitAnalysisCardProps {
   companyName?: string;
 }
 
-function ScoreRing({ score }: { score: number }) {
-  const color = score >= 70 ? 'text-green-500' : score >= 40 ? 'text-yellow-500' : 'text-red-500';
+function ScoreRing({ score, aiScored }: { score: number; aiScored: boolean }) {
+  // A data-only score must not wear the assessment's colors: the fallback
+  // counts signals (a complete company row = "100") and says nothing about
+  // fit. Magnus read exactly that as "100% fit!" — never again.
+  const color = !aiScored
+    ? 'text-muted-foreground'
+    : score >= 70 ? 'text-green-500' : score >= 40 ? 'text-yellow-500' : 'text-red-500';
   return (
     <div className={`flex items-center gap-1.5 ${color}`}>
       <span className="text-2xl font-bold">{score}</span>
       <span className="text-xs text-muted-foreground">/100</span>
+      {!aiScored && (
+        <Badge variant="outline" className="ml-1 text-[10px] text-yellow-600 border-yellow-600/40">
+          data only — not an AI fit assessment
+        </Badge>
+      )}
     </div>
   );
 }
@@ -57,9 +67,17 @@ export function FitAnalysisCard({ result, companyName }: FitAnalysisCardProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start justify-between gap-4">
-            <ScoreRing score={result.fit_score} />
+            <ScoreRing score={result.fit_score} aiScored={result.ai_scored !== false} />
             <p className="text-sm text-muted-foreground flex-1">{result.fit_advice}</p>
           </div>
+
+          {result.ai_scored === false && (
+            <p className="text-xs text-yellow-600 bg-yellow-500/10 rounded-md px-3 py-2">
+              The AI reasoning step did not run — this number only counts data signals
+              (website, domain, industry, size, enrichment). Re-run Fit Analysis; if it
+              persists, check the AI provider under Settings.
+            </p>
+          )}
 
           {(result.problem_mapping?.length ?? 0) > 0 && (
             <>

@@ -476,7 +476,7 @@ const flowwinkAgencyPages: TemplatePage[] = [
           columns: 4,
           layout: 'grid',
           variant: 'minimal',
-          iconStyle: 'outline',
+          iconStyle: 'circle',
         },
       },
       {

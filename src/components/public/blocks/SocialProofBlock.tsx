@@ -153,13 +153,18 @@ function RatingStars({ rating, maxRating = 5, size = 'md' }: { rating: number; m
     lg: 'h-5 w-5',
   };
 
+  // An unknown size used to yield undefined, and the very next property access
+  // (.icon/.value/.label) threw — white-screening the whole page, since nothing
+  // in the app caught render errors.
+  const sz = sizeClasses[size] ?? sizeClasses.md;
+
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: maxRating }).map((_, i) => (
         <Star
           key={i}
           className={cn(
-            sizeClasses[size],
+            sz,
             i < rating 
               ? 'fill-warning text-warning' 
               : 'fill-muted text-muted'
@@ -197,7 +202,6 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
     showLiveIndicator = false,
     liveText = 'Live',
   } = data;
-
   const sizeClasses = {
     sm: {
       value: 'text-xl font-bold',
@@ -218,6 +222,10 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
       padding: 'p-6',
     },
   };
+
+  // Unknown size → undefined → the next property access (.icon/.value/.label)
+  // threw, and with no error boundary that white-screened the whole page.
+  const sz = sizeClasses[size] ?? sizeClasses.md;
 
   const getLayoutClasses = () => {
     if (layout === 'horizontal') {
@@ -245,7 +253,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
             'text-accent-foreground',
             variant === 'cards' && 'mb-2'
           )}>
-            <IconComponent className={sizeClasses[size].icon} />
+            <IconComponent className={sz.icon} />
           </div>
         )}
         
@@ -255,7 +263,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
         )}>
           {item.type === 'rating' ? (
             <div className="space-y-1">
-              <div className={sizeClasses[size].value}>
+              <div className={sz.value}>
                 {item.value}
               </div>
               <RatingStars 
@@ -263,13 +271,13 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
                 maxRating={item.maxRating || 5} 
                 size={size}
               />
-              <div className={cn('text-muted-foreground', sizeClasses[size].label)}>
+              <div className={cn('text-muted-foreground', sz.label)}>
                 {item.label}
               </div>
             </div>
           ) : item.type === 'activity' ? (
             <div className="space-y-1">
-              <div className={sizeClasses[size].value}>
+              <div className={sz.value}>
                 {animated ? (
                   <AnimatedCounter 
                     value={item.value} 
@@ -281,7 +289,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
                   <>{item.prefix}{item.value}{item.suffix}</>
                 )}
               </div>
-              <div className={cn('text-muted-foreground', sizeClasses[size].label)}>
+              <div className={cn('text-muted-foreground', sz.label)}>
                 {item.label}
               </div>
               {item.description && (
@@ -292,7 +300,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
             </div>
           ) : (
             <div className="space-y-1">
-              <div className={sizeClasses[size].value}>
+              <div className={sz.value}>
                 {animated ? (
                   <AnimatedCounter 
                     value={item.value} 
@@ -304,7 +312,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
                   <>{item.prefix}{item.value}{item.suffix}</>
                 )}
               </div>
-              <div className={cn('text-muted-foreground', sizeClasses[size].label)}>
+              <div className={cn('text-muted-foreground', sz.label)}>
                 {item.label}
               </div>
             </div>
@@ -320,7 +328,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
           key={item.id} 
           className={cn(
             'flex flex-col items-center justify-center rounded-lg border bg-card',
-            sizeClasses[size].padding
+            sz.padding
           )}
         >
           {itemContent}
@@ -342,7 +350,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
           key={item.id} 
           className={cn(
             'flex items-center gap-3 rounded-full bg-card border shadow-lg',
-            sizeClasses[size].padding
+            sz.padding
           )}
         >
           {itemContent}
@@ -373,7 +381,7 @@ export function SocialProofBlock({ data }: SocialProofBlockProps) {
                   <span className="opacity-80">
                     {(() => {
                       const Icon = ICONS[item.icon];
-                      return <Icon className={sizeClasses[size].icon} />;
+                      return <Icon className={sz.icon} />;
                     })()}
                   </span>
                 )}

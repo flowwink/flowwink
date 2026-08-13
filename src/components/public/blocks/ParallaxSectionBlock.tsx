@@ -58,7 +58,7 @@ export function ParallaxSectionBlock({ data }: ParallaxSectionBlockProps) {
       ref={sectionRef}
       className={cn(
         'relative overflow-hidden',
-        heightClasses[data.height || 'md']
+        heightClasses[data.height || 'md'] ?? heightClasses.md
       )}
     >
       {/* Background with CSS parallax */}

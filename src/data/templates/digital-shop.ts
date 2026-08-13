@@ -35,7 +35,7 @@ const digitalShopPages: TemplatePage[] = [
         type: 'marquee',
         data: {
           text: 'SUMMER SALE: 30% OFF EVERYTHING  •  FREE INSTANT DELIVERY  •  LIFETIME UPDATES  •  10,000+ HAPPY CREATORS  •  30-DAY MONEY BACK',
-          speed: 'medium',
+          speed: 'normal',
           direction: 'left',
           variant: 'default',
           pauseOnHover: true,

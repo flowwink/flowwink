@@ -269,7 +269,7 @@ const trustcorpPages: StarterTemplate['pages'] = [
         data: {
           title: 'Data Sovereignty Guaranteed',
           content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Our Private AI runs entirely on your infrastructure. Your data never leaves your servers, ensuring complete compliance with data protection regulations.' }] }] },
-          variant: 'highlight',
+          variant: 'info',
         },
       },
       {

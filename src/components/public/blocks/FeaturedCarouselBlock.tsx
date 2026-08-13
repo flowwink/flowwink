@@ -81,7 +81,7 @@ export function FeaturedCarouselBlock({ data }: FeaturedCarouselBlockProps) {
 
   return (
     <section
-      className={cn('relative w-full overflow-hidden bg-[hsl(var(--hero-overlay))]', HEIGHT_MAP[height])}
+      className={cn('relative w-full overflow-hidden bg-[hsl(var(--hero-overlay))]', HEIGHT_MAP[height] ?? HEIGHT_MAP.md)}
       onMouseEnter={() => pauseOnHover && setIsPaused(true)}
       onMouseLeave={() => pauseOnHover && setIsPaused(false)}
       aria-roledescription="carousel"

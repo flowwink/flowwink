@@ -214,7 +214,7 @@ export function ProgressBlock({ data }: ProgressBlockProps) {
     animationDuration = 1500,
   } = data;
 
-  const config = sizeConfig[size];
+  const config = sizeConfig[size] ?? sizeConfig.md;
 
   if (items.length === 0) {
     return (

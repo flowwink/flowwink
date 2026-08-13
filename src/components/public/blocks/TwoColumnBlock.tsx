@@ -66,16 +66,19 @@ export function TwoColumnBlock({ data }: TwoColumnBlockProps) {
   };
 
   // Border-radius mapping
-  const roundedMap: Record<ImageRounded, string> = {
+  // Authored values outside this map used to yield undefined — no rounding at
+  // all, silently ('xl' ships in two templates). Keyed loosely with a fallback.
+  const roundedMap: Record<string, string> = {
     'none': 'rounded-none',
     'sm': 'rounded-sm',
     'md': 'rounded-md',
     'lg': 'rounded-lg',
+    'xl': 'rounded-xl',
     'full': 'rounded-2xl',
   };
 
   const imageAspectClass = aspectRatioMap[imageAspect];
-  const imageRoundedClass = roundedMap[imageRounded];
+  const imageRoundedClass = roundedMap[imageRounded] ?? roundedMap.lg;
   const imageFitClass = imageFit === 'contain' ? 'object-contain' : 'object-cover';
   
   // Use the shared tiptap-utils for consistent rendering

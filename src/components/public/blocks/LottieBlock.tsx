@@ -151,9 +151,9 @@ export function LottieBlock({ data }: LottieBlockProps) {
         <div className="container mx-auto">
           <div 
             className={cn(
-              SIZE_CLASSES[size],
-              ASPECT_CLASSES[aspectRatio],
-              ALIGNMENT_CLASSES[alignment],
+              SIZE_CLASSES[size] ?? SIZE_CLASSES.md,
+              ASPECT_CLASSES[aspectRatio] ?? ASPECT_CLASSES.auto,
+              ALIGNMENT_CLASSES[alignment] ?? ALIGNMENT_CLASSES.center,
               'bg-muted/30 animate-pulse rounded-lg'
             )}
             style={{ minHeight: aspectRatio === 'auto' ? '200px' : undefined }}
@@ -175,8 +175,8 @@ export function LottieBlock({ data }: LottieBlockProps) {
         <div
           ref={containerRef}
           className={cn(
-            SIZE_CLASSES[size],
-            ALIGNMENT_CLASSES[alignment],
+            SIZE_CLASSES[size] ?? SIZE_CLASSES.md,
+            ALIGNMENT_CLASSES[alignment] ?? ALIGNMENT_CLASSES.center,
             variantClasses[variant],
             data.playOn === 'click' && 'cursor-pointer',
             data.playOn === 'hover' && 'cursor-default'
@@ -191,7 +191,7 @@ export function LottieBlock({ data }: LottieBlockProps) {
           role={data.alt ? 'img' : undefined}
           aria-label={data.alt}
         >
-          <div className={cn(ASPECT_CLASSES[aspectRatio], 'w-full')}>
+          <div className={cn(ASPECT_CLASSES[aspectRatio] ?? ASPECT_CLASSES.auto, 'w-full')}>
             <Player
               ref={playerRef}
               src={data.src}

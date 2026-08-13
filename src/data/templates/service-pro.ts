@@ -152,7 +152,7 @@ const serviceProPages: TemplatePage[] = [
         id: 'social-proof-counters',
         type: 'social-proof',
         data: {
-          variant: 'counters',
+          variant: 'cards',
           items: [
             { id: 'spc1', value: '5,000+', label: 'Happy Clients', icon: 'Users' },
             { id: 'spc2', value: '4,800+', label: '5-Star Reviews', icon: 'Star' },

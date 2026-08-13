@@ -30,9 +30,13 @@ export function MarqueeBlock({ data }: MarqueeBlockProps) {
 
   if (items.length === 0) return null;
 
-  const speedMap = {
+  // An unknown speed produced `animation: marquee undefined linear infinite` —
+  // invalid CSS, so the marquee never moved. A still marquee looks like a
+  // styling choice, which is why it survived in digital-shop unnoticed.
+  const speedMap: Record<string, string> = {
     slow: '40s',
     normal: '25s',
+    medium: '25s', // synonym authors reach for
     fast: '15s',
   };
 
@@ -53,7 +57,7 @@ export function MarqueeBlock({ data }: MarqueeBlockProps) {
           pauseOnHover && 'hover:[animation-play-state:paused]'
         )}
         style={{
-          animation: `marquee ${speedMap[speed]} linear infinite`,
+          animation: `marquee ${speedMap[speed] ?? speedMap.normal} linear infinite`,
           animationDirection: direction === 'right' ? 'reverse' : 'normal',
         }}
       >

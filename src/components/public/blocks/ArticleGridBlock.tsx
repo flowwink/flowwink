@@ -21,7 +21,7 @@ export function ArticleGridBlock({ data }: ArticleGridBlockProps) {
         {data.title && (
           <h2 className="font-serif text-3xl font-bold mb-8">{data.title}</h2>
         )}
-        <div className={`grid gap-8 ${gridCols[data.columns]}`}>
+        <div className={`grid gap-8 ${gridCols[data.columns] ?? gridCols[3]}`}>
           {data.articles.map((article, index) => (
             <a
               key={index}

@@ -116,7 +116,7 @@ export function PopupBlock({ data }: PopupBlockProps) {
     <div
       className={cn(
         'fixed inset-0 z-50 flex',
-        positionClasses[data.position],
+        positionClasses[data.position] ?? positionClasses.center,
         data.overlayDark && data.position === 'center' && 'bg-background/80 backdrop-blur-sm'
       )}
       onClick={(e) => {
@@ -128,7 +128,7 @@ export function PopupBlock({ data }: PopupBlockProps) {
       <div
         className={cn(
           'relative bg-card border rounded-lg shadow-xl animate-in fade-in-0 zoom-in-95 duration-300',
-          sizeClasses[data.size],
+          sizeClasses[data.size] ?? sizeClasses.md,
           data.position !== 'center' && 'shadow-2xl'
         )}
       >

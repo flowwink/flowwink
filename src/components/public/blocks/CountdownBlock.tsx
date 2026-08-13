@@ -112,7 +112,7 @@ export function CountdownBlock({ data }: CountdownBlockProps) {
     },
   };
 
-  const currentSize = sizeClasses[size];
+  const currentSize = sizeClasses[size] ?? sizeClasses.md;
 
   if (!targetDate) {
     return (

@@ -62,6 +62,9 @@ export function TabsBlock({ data }: TabsBlockProps) {
     },
   };
 
+  // Unknown variant → undefined → `.list`/`.trigger` threw on the next line.
+  const vs = variantStyles[variant] ?? variantStyles.underline;
+
   return (
     <section className="py-16 px-6">
       <div className="container mx-auto max-w-6xl">
@@ -86,7 +89,7 @@ export function TabsBlock({ data }: TabsBlockProps) {
           <TabsList 
             className={cn(
               'w-full justify-start relative z-10',
-              variantStyles[variant].list,
+              vs.list,
               orientation === 'vertical' && 'flex-col h-auto w-auto items-stretch'
             )}
           >
@@ -96,7 +99,7 @@ export function TabsBlock({ data }: TabsBlockProps) {
                 value={tab.id}
                 className={cn(
                   'flex items-center gap-2 transition-all cursor-pointer',
-                  variantStyles[variant].trigger
+                  vs.trigger
                 )}
               >
                 {getIcon(tab.icon)}

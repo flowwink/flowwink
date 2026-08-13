@@ -184,7 +184,7 @@ export function BookingBlock({ data, blockId, pageId }: BookingBlockProps) {
       );
     }
 
-    const height = HEIGHT_MAP[data.height || 'md'];
+    const height = HEIGHT_MAP[data.height || 'md'] ?? HEIGHT_MAP.md;
 
     return (
       <section className={containerClasses}>

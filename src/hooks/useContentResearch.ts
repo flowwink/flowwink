@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useChatSettings } from './useSiteSettings';
+import { callSkill } from '@/lib/call-skill';
 import { ChannelType } from './useContentProposals';
 
 export interface ContentAngle {
@@ -62,73 +62,30 @@ interface ResearchResponse {
   ai_provider: string;
 }
 
-// Route through FlowPilot (chat-completion) so brand voice, soul, and
-// objectives shape the research — not a parallel AI pipeline.
-const RESEARCH_SYSTEM_PROMPT = `You are a content strategist assistant. When asked to research a content topic, ALWAYS call the research_content tool with all provided parameters. After calling the tool, respond with ONLY the raw JSON object returned by the tool — no prose, no explanation, no markdown. Output only valid JSON.`;
 
 export function useContentResearch() {
   const [progress, setProgress] = useState<string | null>(null);
-  const { data: chatSettings } = useChatSettings();
 
   const mutation = useMutation({
     mutationFn: async (input: ResearchInput): Promise<ResearchResponse> => {
       setProgress('Researching topic & generating angles...');
 
-      const userMessage = `Research content for the following brief and call research_content:\n${JSON.stringify(input)}`;
+      // Direct skill call, not the chat model-echo dance. The old path asked
+      // chat-completion to pick the research_content tool and then ECHO the
+      // JSON verbatim — when the model skipped the tool or paraphrased, the
+      // parse yielded an empty object and the UI advanced to step 2 with
+      // "0 options" as a success (Magnus, live campaign run 2026-08-14; no
+      // research_content row in agent_activity = the tool never even ran).
+      // A deterministic call has no business passing through a model's mouth.
+      const result = await callSkill<Record<string, any>>('research_content', input as unknown as Record<string, unknown>);
+      if (result?.error) throw new Error(String(result.error));
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-completion`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: userMessage }],
-            settings: {
-              aiProvider: chatSettings?.aiProvider || 'openai',
-              systemPrompt: RESEARCH_SYSTEM_PROMPT,
-              toolCallingEnabled: true,
-              allowGeneralKnowledge: false,
-              includeContentAsContext: false,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      // Accumulate SSE stream
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        for (const line of chunk.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) fullContent += delta;
-          } catch { /* ignore malformed SSE frames */ }
-        }
-      }
-
-      const jsonStr = fullContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const result = JSON.parse(jsonStr);
-
-      // The tool result may arrive in any of three shapes, depending on how the
-      // model echoes it: the ai-task envelope { success, result: <research> },
-      // a legacy { success, research } wrapper, or the bare ContentResearch
-      // object. Unwrap to the actual research either way.
       const research = (result?.result ?? result?.research ?? result) as ContentResearch;
+      // Empty research is a FAILURE, not a quiet success — never hand the
+      // angle-picker "0 options" as if research happened.
+      if (!Array.isArray(research?.content_angles) || research.content_angles.length === 0) {
+        throw new Error('Research returned no content angles — check the AI provider under Settings and try again.');
+      }
       const ai_provider = result?.provider_used ?? result?.ai_provider ?? 'flowpilot';
       return { success: true, research, ai_provider };
     },

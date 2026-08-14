@@ -342,12 +342,18 @@ export function useChat(options?: UseChatOptions) {
   const saveMessage = useCallback(async (
     convId: string,
     role: 'user' | 'assistant',
-    content: string
+    content: string,
+    id?: string,
   ) => {
     if (!settings?.saveConversations) return;
 
     try {
+      // Persist WITH the client-generated uuid: the UI message object carries
+      // crypto.randomUUID(), and chat_feedback.message_id now has an FK to
+      // chat_messages — letting the DB mint its own id made every thumbs-up
+      // fail 23503 ("could not save", found live 2026-08-14).
       const { error } = await supabase.from('chat_messages').insert({
+        ...(id ? { id } : {}),
         conversation_id: convId,
         role,
         content,
@@ -439,7 +445,7 @@ export function useChat(options?: UseChatOptions) {
 
     // Save user message
     if (!options?.checkinId && convId) {
-      await saveMessage(convId, 'user', content.trim());
+      await saveMessage(convId, 'user', content.trim(), userMessage.id);
     }
 
     // Prepare assistant message placeholder
@@ -579,7 +585,7 @@ export function useChat(options?: UseChatOptions) {
 
       // Save assistant message
       if (convId && assistantContent) {
-        await saveMessage(convId, 'assistant', assistantContent);
+        await saveMessage(convId, 'assistant', assistantContent, assistantMessageId);
       }
 
     } catch (err) {

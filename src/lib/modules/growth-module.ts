@@ -375,9 +375,9 @@ Analyzes campaign performance and recommends optimizations. Requires approval fo
 
   {
     name: 'process_due_social_posts',
-    description: 'Process scheduled social posts whose publish time has passed. Use when: running the periodic social-post sweep (the Social Post Scheduler automation calls this). Takes no arguments. NOT for: scheduling a post (manage_social_post).',
+    description: 'Publish scheduled social posts whose publish time has passed. Use when: running the periodic social-post sweep (the Social Post Scheduler automation calls this). Takes no arguments. NOT for: scheduling a post (schedule_social_post).',
     category: 'growth',
-    handler: 'rpc:process_due_social_posts',
+    handler: 'internal:process_due_social_posts',
     scope: 'internal',
     tool_definition: {
       type: 'function',
@@ -386,7 +386,7 @@ Analyzes campaign performance and recommends optimizations. Requires approval fo
         parameters: { type: 'object', properties: {} },
       },
     },
-    instructions: 'Sweep RPC. Without per-channel publisher credentials wired, due posts are marked failed with a "no publisher configured" note rather than silently lingering — so the queue never grows unbounded.',
+    instructions: 'The publish weld: linkedin posts go out via Composio (LINKEDIN_CREATE_LINKED_IN_POST signed with the connected account\'s author URN) and are marked posted with the external URL. Channels without a publisher — or LinkedIn without a connected account — are marked failed with the reason, never left lingering, so the queue stays honest. Scheduling IS the approval: only status=scheduled posts with a passed time are touched.',
   },
 ];
 

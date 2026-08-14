@@ -38,7 +38,7 @@ export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps
   // Default models used by edge functions when no explicit override is set.
   // Keep in sync with supabase/functions/_shared/ai-config.ts.
   const DEFAULT_FALLBACK_MODEL: Record<SystemAiProvider, { fast: string; reasoning: string; multimodal: string }> = {
-    openai: { fast: 'gpt-4.1-mini', reasoning: 'gpt-4.1', multimodal: 'gpt-4.1-mini' },
+    openai: { fast: 'gpt-4.1-mini', reasoning: 'gpt-5.6-luna', multimodal: 'gpt-4.1-mini' },
     gemini: { fast: 'gemini-2.5-flash', reasoning: 'gemini-2.5-pro', multimodal: 'gemini-2.5-flash' },
     anthropic: { fast: 'claude-3-5-haiku', reasoning: 'claude-3-5-sonnet', multimodal: 'claude-3-5-sonnet' },
     local: { fast: '', reasoning: '', multimodal: '' },
@@ -254,6 +254,7 @@ export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="gpt-5.6-luna">GPT-5.6 Luna</SelectItem>
                     <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
                     <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
                     <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>
@@ -273,6 +274,7 @@ export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="gpt-5.6-luna">GPT-5.6 Luna</SelectItem>
                     <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
                     <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
                     <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>

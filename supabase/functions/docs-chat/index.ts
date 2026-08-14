@@ -7,6 +7,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getAnonClient, getServiceClient } from '../_shared/supabase-clients.ts';
 import { retrieve, renderContext } from '../_shared/retrieval/index.ts';
 import { embedQuery } from '../_shared/retrieval/embedder.ts';
+import { resolveAiConfig } from '../_shared/ai-config.ts';
+import { aiCall } from '../_shared/ai-call.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,25 +59,29 @@ RULES:
 DOCUMENTATION CONTEXT:
 ${context || "(no relevant docs found for this query)"}`;
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // The instance's OWN configured AI provider (System AI settings) via the
+    // platform adapter — this function was hardwired to Lovable's gateway
+    // (LOVABLE_API_KEY + ai.gateway.lovable.dev), which only exists on the
+    // Lovable-managed dev instance: every self-hosted/fork install answered
+    // "AI gateway not configured" no matter what the admin configured
+    // (www.flowwink.com/docs, found live 2026-08-14). Law 3: no parallel
+    // AI pipelines — the adapter is the one door.
+    let ai;
+    try {
+      ai = await resolveAiConfig(getServiceClient(), 'fast');
+    } catch (cfgErr) {
+      return new Response(JSON.stringify({
+        error: "No AI provider configured — set one under Settings → System AI.",
+        details: cfgErr instanceof Error ? cfgErr.message : String(cfgErr),
+      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        stream: true,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-      }),
+    const aiRes = await aiCall({
+      apiKey: ai.apiKey,
+      apiUrl: ai.apiUrl,
+      model: ai.model,
+      stream: true,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
     });
 
     if (!aiRes.ok) {

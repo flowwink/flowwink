@@ -74,10 +74,12 @@ describe('Retrieval Engine confidentiality guardrails', () => {
     // The chunk search must run on the anon client…
     expect(fn).toMatch(/retrieve\(\s*getAnonClient\(\)/);
     expect(fn).not.toMatch(/retrieve\(\s*getServiceClient/);
-    // …and the service client may appear ONLY as the embedQuery config source.
+    // …and the service client may appear ONLY as a CONFIG source: embedQuery
+    // (embedding provider keys) and resolveAiConfig (System AI provider keys,
+    // added when the Lovable-gateway hardwiring was replaced). Never search.
     const serviceUses = fn.match(/getServiceClient\(\)/g) ?? [];
-    const embedConfigUses = fn.match(/embedQuery\(\s*getServiceClient\(\)/g) ?? [];
-    expect(serviceUses.length).toBe(embedConfigUses.length);
+    const configUses = fn.match(/(?:embedQuery|resolveAiConfig)\(\s*getServiceClient\(\)/g) ?? [];
+    expect(serviceUses.length).toBe(configUses.length);
   });
 
   it('chat-completion SEARCHES with the anon client (rung 0), never service', () => {

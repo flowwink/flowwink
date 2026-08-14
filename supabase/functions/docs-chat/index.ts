@@ -8,7 +8,7 @@ import { getAnonClient, getServiceClient } from '../_shared/supabase-clients.ts'
 import { retrieve, renderContext } from '../_shared/retrieval/index.ts';
 import { embedQuery } from '../_shared/retrieval/embedder.ts';
 import { resolveAiConfig } from '../_shared/ai-config.ts';
-import { aiCall } from '../_shared/ai-call.ts';
+import { callAi } from '../_shared/ai-call.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,7 +76,7 @@ ${context || "(no relevant docs found for this query)"}`;
       }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const aiRes = await aiCall({
+    const aiRes = await callAi({
       apiKey: ai.apiKey,
       apiUrl: ai.apiUrl,
       model: ai.model,

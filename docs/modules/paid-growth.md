@@ -1,71 +1,72 @@
 ---
-title: "Paid Growth Module"
+title: "Growth Module"
 module_id: "paidGrowth"
-version: "1.0.0"
+version: "2.0.0"
 category: "insights"
 autonomy: "agent-capable"
-generated: true
-generated_at: "2026-08-08"
+manual: true
+description: Campaigns author the message once; the channel rails deliver it — social queue with real LinkedIn publishing, blog and newsletter drafts behind their own gates.
 ---
 
-# Paid Growth
+# Growth — Campaigns & Social Publishing
 
-> Manage ad campaigns and track paid growth performance
+> **Status:** manually maintained — describes the process as verified live
+> (first campaign-born LinkedIn post, 2026-08-14). The auto-generator skips
+> this file. **Source of truth:** `src/lib/modules/growth-module.ts` + this file.
 
-Ships with **9 agent skills**.
+Growth is two surfaces with one principle: **the campaign owns the message and
+the decision; each channel rail owns delivery with the gate that matches its
+blast radius.**
 
-## Quick Facts
+## The campaign flow (create once, publish everywhere)
 
-| Property | Value |
-|----------|-------|
-| **Module ID** | `paidGrowth` |
-| **Version** | 1.0.0 |
-| **Category** | insights |
-| **Autonomy** | agent-capable |
-| **Core** | No |
-| **Capabilities** | `data:read`, `data:write` |
-| **MCP-exposed skills** | 9 |
-| **Owns tables** | — |
+```
+Campaigns (Content Hub)
+  ├─ research the topic → content angles + hooks (saved, reusable)
+  ├─ pick an angle → AI generates per-channel variants in ONE voice
+  │    grounded in: Business Identity (always) + published knowledge on the
+  │    topic (Knowledge Recycling — retrieved with a VISITOR's eyes, so
+  │    internal material can never leak into outward copy) + the last 15
+  │    published pieces (anti-repetition). Your brief overrides defaults.
+  ├─ review, edit, pick a featured image (per-channel overrides supported)
+  ↓
+APPROVE  ← the decision. Fan-out materializes:
+  ├─ linkedin/x/instagram/facebook → Social Posts queue
+  │     campaign-linked, image inherited, scheduled if the campaign has a time
+  ├─ blog       → blog post DRAFT   (a human publishes from the blog surface)
+  ├─ newsletter → newsletter DRAFT  (sending stays behind the send gate:
+  │                                  recipients, test send, send)
+  └─ re-approving returns existing artifacts — nothing duplicates
+```
 
-## Integrations
+## The social queue (delivery)
 
-**Required:** `meta_ads`
-**Optional:** `openai`, `gemini`
+Social Posts is the **scheduler and executor**. Every 15 minutes a sweep
+publishes due posts:
 
-## Skills
+- **LinkedIn** publishes for real via Composio (`LINKEDIN_CREATE_LINKED_IN_POST`,
+  signed with the connected account's author URN) → status `posted` + the
+  external post URL. Connect the account via **Modules → Composio → Quick
+  Connect → LinkedIn** — the connection must be made through FlowWink (it
+  lands under the entity the publisher looks up), not in Composio's dashboard.
+- Channels without a connected publisher are marked **failed with the reason**
+  — the queue never lies and never grows unbounded.
+- **Scheduling IS the approval**: only `scheduled` posts with a passed time
+  are touched; drafts are never published.
 
-These skills are seeded into `agent_skills` when the module is enabled and exposed via MCP.
-External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can call them directly.
+Ad-hoc posts (no campaign) use the same queue — two doors, one rail.
 
-| Skill | Scope | Description |
-|-------|-------|-------------|
-| `ad_campaign_create` | internal | Create a new ad campaign with objective, budget, target audience, and platform. Requires approval due to budget commitment. Use when: launching a marketing initiative; defining advertising paramete… |
-| `ad_creative_generate` | internal | Generate ad creative (headline, body, CTA) using AI based on campaign objective and target audience. Use when: creating ad copy for a campaign; generating variations for A/B testing; needing creati… |
-| `ad_performance_check` | internal | Check ad campaign performance metrics: spend, impressions, clicks, CTR, CPC, conversions. Use when: monitoring campaign metrics; building performance reports; evaluating ROI. NOT for: optimizing ca… |
-| `ad_optimize` | internal | Analyze campaign performance and recommend optimizations: pause underperformers, scale winners, adjust budgets. Requires approval. Use when: reviewing campaign results; optimizing ad spend; identif… |
-| `get_attribution_report` | internal | Return campaign/source/medium attribution over a window: visits, unique visitors, leads, orders, and revenue by UTM. Use when: reviewing which campaigns actually drive conversions; comparing paid v… |
-| `schedule_social_post` | internal | Create or schedule an organic social post (linkedin/x/instagram/facebook). If scheduled_at is set, status becomes "scheduled"; otherwise "draft". Actual channel publish requires per-channel credent… |
-| `list_social_posts` | internal | List organic social posts filtered by status/channel — inspect the calendar or moderation queue. |
-| `mark_social_post_posted` | internal | Mark an organic social post as posted with the external ref/url returned by the channel. |
-| `process_due_social_posts` | internal | Process scheduled social posts whose publish time has passed. Use when: running the periodic social-post sweep (the Social Post Scheduler automation calls this). Takes no arguments. NOT for: schedu… |
+## Why the channels behave differently after Approve
 
-## File Map
+That asymmetry is the design, not a seam: a social post's blast radius is one
+feed (schedule = consent), a blog post is your permanent public record (a human
+presses Publish), a newsletter hits every subscriber's inbox (its own send
+flow). One decision, three rails, three proportionate gates — the same shape as
+propose → approve → voucher in accounting.
 
-| Purpose | Path |
-|---------|------|
-| Module definition | `src/lib/modules/growth-module.ts` |
+## Ads (the original surface)
 
-## Contributing
-
-To enhance this module, see [Contributing Guide](../contributing/contributing.md).
-
-Key rules:
-- Follow `ModuleDefinition<I, O>` contract pattern
-- All schema changes require idempotent migrations
-- Skills must be self-describing ([Law 2](../concepts/openclaw-law.md))
-- Blocks are interfaces, not pipelines ([Law 3](../concepts/openclaw-law.md))
-- New skills must pass the [Agent Contract Integrity](../../mem/architecture/agent-contract-integrity.md) checklist (`bun run lint:skills`)
-
----
-
-*This file is auto-generated by `scripts/generate-module-docs.ts`. Do not edit manually — re-run the script after changing the module definition.*
+Ad campaign skills (`ad_campaign_create`, `ad_creative_generate`,
+`ad_performance_check`, `ad_optimize`, `get_attribution_report`) manage paid
+campaigns and last-touch UTM attribution. Note: `social_posts.campaign_id`
+refers to **content campaigns** (content_proposals), not ad campaigns.

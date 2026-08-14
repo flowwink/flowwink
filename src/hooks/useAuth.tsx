@@ -1,5 +1,5 @@
 import { logger } from '@/lib/logger';
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile, AppRole } from '@/types/cms';
@@ -13,6 +13,15 @@ interface AuthContextType {
   /** All roles assigned to the user (multi-role support). */
   roles: AppRole[];
   loading: boolean;
+  /**
+   * True once user_roles has been fetched for the CURRENT user. Distinct from
+   * `loading`: on sign-in, onAuthStateChange sets `user` immediately but
+   * defers the roles fetch (setTimeout-deadlock guard) — in that window
+   * user≠null, loading=false, roles=[] and every role-derived flag (isWriter,
+   * isAdmin) is momentarily FALSE. Guards that deny on those flags must wait
+   * for rolesReady, or every login flashes "Access Denied" for half a second.
+   */
+  rolesReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -58,6 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rolesReady, setRolesReady] = useState(false);
+  // Token refreshes re-fire onAuthStateChange for the SAME user — roles are
+  // already loaded then, and resetting rolesReady would flash the spinner
+  // mid-session. Only unknown users reset it.
+  const rolesFetchedFor = useRef<string | null>(null);
 
   const [previewRoles, setPreviewRolesState] = useState<AppRole[] | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -90,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Defer profile fetch with setTimeout to avoid deadlock
         if (session?.user) {
+          if (rolesFetchedFor.current !== session.user.id) setRolesReady(false);
           setTimeout(() => {
             fetchUserData(session.user.id);
           }, 0);
@@ -97,6 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setRole(null);
           setRoles([]);
+          rolesFetchedFor.current = null;
+          setRolesReady(true); // nothing to load — guards may judge
           setLoading(false);
         }
       }
@@ -163,9 +180,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const allRoles = (roleData ?? []).map(r => r.role as AppRole);
       setRoles(allRoles);
       setRole(primaryRole(allRoles));
+      rolesFetchedFor.current = userId;
     } catch (error) {
       logger.error('Error fetching user data:', error);
     } finally {
+      // Ready even on error — an infinite spinner is worse than a deny the
+      // user can retry; the error is logged above.
+      setRolesReady(true);
       setLoading(false);
     }
   };
@@ -244,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: effectivePrimary,
       roles: effectiveRoles,
       loading,
+      rolesReady,
       signIn,
       signUp,
       signOut,

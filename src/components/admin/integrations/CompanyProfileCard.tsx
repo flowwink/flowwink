@@ -211,7 +211,7 @@ export function CompanyProfileCard() {
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Unified business context used by Sales Intelligence, Chat AI, and FlowAgent
+                Unified business context used by Sales Intelligence, Chat AI, FlowPilot, and external agents
               </CardDescription>
             </div>
           </div>

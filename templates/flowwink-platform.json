@@ -85,7 +85,7 @@
       "is_featured": true,
       "content": [
         {
-          "id": "text-5szkk8o",
+          "id": "text-00q6dr4",
           "type": "text",
           "data": {
             "content": {
@@ -297,7 +297,7 @@
       "featured_image_alt": "Autonomous AI agent concept",
       "content": [
         {
-          "id": "text-tq3bws3",
+          "id": "text-t0xi25j",
           "type": "text",
           "data": {
             "content": {
@@ -488,7 +488,7 @@
       "featured_image_alt": "Secure server infrastructure",
       "content": [
         {
-          "id": "text-1xbzrl9",
+          "id": "text-7ipg3vu",
           "type": "text",
           "data": {
             "content": {
@@ -677,7 +677,7 @@
       "featured_image_alt": "Continuous improvement cycle visualization",
       "content": [
         {
-          "id": "text-usyj2vl",
+          "id": "text-ohri8ke",
           "type": "text",
           "data": {
             "content": {
@@ -889,7 +889,7 @@
       "featured_image_alt": "Unified platform replacing multiple tools",
       "content": [
         {
-          "id": "text-runrx3s",
+          "id": "text-jk7v0dt",
           "type": "text",
           "data": {
             "content": {
@@ -1190,7 +1190,7 @@
       "featured_image_alt": "Connected network representing skill engine",
       "content": [
         {
-          "id": "text-zykvc99",
+          "id": "text-benrhgt",
           "type": "text",
           "data": {
             "content": {
@@ -1519,7 +1519,7 @@
       "featured_image_alt": "Strategic planning board with goals and recurring tasks",
       "content": [
         {
-          "id": "text-pino103",
+          "id": "text-q3hmh09",
           "type": "text",
           "data": {
             "content": {
@@ -1813,7 +1813,7 @@
       "featured_image_alt": "Network of connected nodes representing agent-to-agent communication",
       "content": [
         {
-          "id": "text-okqepg6",
+          "id": "text-h9jvfm2",
           "type": "text",
           "data": {
             "content": {
@@ -2056,7 +2056,7 @@
       "featured_image_alt": "Person analyzing content strategy on multiple screens",
       "content": [
         {
-          "id": "text-xyfcnm6",
+          "id": "text-pxkxb7v",
           "type": "text",
           "data": {
             "content": {
@@ -2273,14 +2273,14 @@
       }
     },
     {
-      "title": "The 7-Step FlowAgent Loop Explained",
+      "title": "The 7-Step FlowPilot Loop Explained",
       "slug": "flowagent-7-step-autonomous-loop",
       "excerpt": "FlowPilot's reasoning engine has evolved into a 7-step autonomous loop. Understanding each phase reveals how an AI agent maintains, improves, and operates your entire digital presence.",
       "featured_image": "/templates/blog/process-diagram.jpg",
       "featured_image_alt": "Circular process diagram representing autonomous loop",
       "content": [
         {
-          "id": "text-uti5mai",
+          "id": "text-pvn4c1a",
           "type": "text",
           "data": {
             "content": {
@@ -2291,7 +2291,7 @@
                   "content": [
                     {
                       "type": "text",
-                      "text": "FlowPilot's autonomous engine — internally called FlowAgent — has matured from a simple heartbeat into a sophisticated 7-step reasoning loop. Each step serves a distinct purpose in maintaining and advancing your digital operations."
+                      "text": "FlowPilot's autonomous engine — internally called FlowPilot — has matured from a simple heartbeat into a sophisticated 7-step reasoning loop. Each step serves a distinct purpose in maintaining and advancing your digital operations."
                     }
                   ]
                 },
@@ -2469,7 +2469,7 @@
         }
       ],
       "meta": {
-        "description": "Deep dive into the 7-step FlowAgent loop — Self-Heal, Propose, Plan, Advance, Automate, Reflect, Remember — the reasoning engine behind autonomous CMS operations."
+        "description": "Deep dive into the 7-step FlowPilot loop — Self-Heal, Propose, Plan, Advance, Automate, Reflect, Remember — the reasoning engine behind autonomous CMS operations."
       }
     },
     {
@@ -2480,7 +2480,7 @@
       "featured_image_alt": "Data flow architecture diagram",
       "content": [
         {
-          "id": "text-wze2gql",
+          "id": "text-btfh9i4",
           "type": "text",
           "data": {
             "content": {
@@ -2796,7 +2796,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-69b690v",
+          "id": "text-za7wcqv",
           "type": "text",
           "data": {
             "content": {
@@ -2995,7 +2995,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-djzh2bc",
+          "id": "text-nwum8rc",
           "type": "text",
           "data": {
             "content": {
@@ -3314,7 +3314,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-o3hcfne",
+          "id": "text-43ral9q",
           "type": "text",
           "data": {
             "content": {
@@ -3558,7 +3558,7 @@
       "is_featured": false,
       "content": [
         {
-          "id": "text-3lrrwyh",
+          "id": "text-vz8ix6u",
           "type": "text",
           "data": {
             "content": {
@@ -4416,7 +4416,7 @@
       ]
     },
     {
-      "name": "FlowAgent Framework",
+      "name": "FlowPilot Framework",
       "slug": "flowagent-framework",
       "description": "The 7-step autonomous reasoning engine that powers FlowPilot.",
       "icon": "Cpu",
@@ -4424,8 +4424,8 @@
         {
           "title": "The 7-Step Loop",
           "slug": "seven-step-loop",
-          "question": "What is the FlowAgent 7-step loop?",
-          "answer_text": "FlowAgent implements a 7-step autonomous reasoning loop: 1) Self-Heal — check system health, retry failed operations. 2) Propose — evaluate objectives and suggest next actions. 3) Plan — decompose proposals into specific skill calls. 4) Advance — execute skills via agent-execute. 5) Automate — identify patterns that should become recurring automations. 6) Reflect — evaluate what worked and what failed. 7) Remember — store learnings in persistent memory.",
+          "question": "What is the FlowPilot 7-step loop?",
+          "answer_text": "FlowPilot implements a 7-step autonomous reasoning loop: 1) Self-Heal — check system health, retry failed operations. 2) Propose — evaluate objectives and suggest next actions. 3) Plan — decompose proposals into specific skill calls. 4) Advance — execute skills via agent-execute. 5) Automate — identify patterns that should become recurring automations. 6) Reflect — evaluate what worked and what failed. 7) Remember — store learnings in persistent memory.",
           "is_featured": true,
           "include_in_chat": true
         },
@@ -4440,8 +4440,8 @@
         {
           "title": "Built-in Tools",
           "slug": "flowagent-built-in-tools",
-          "question": "What tools does the FlowAgent reasoning engine have access to?",
-          "answer_text": "FlowAgent has 26+ built-in tools across categories: Ecommerce (product management, order tracking), CRM (lead qualification, company enrichment, deal management), Content (blog writing, page creation, KB updates), Analytics (performance review, conversion analysis), System (soul update, skill instruct, memory management), and A2A (peer communication). The tool registry is database-driven and extensible.",
+          "question": "What tools does the FlowPilot reasoning engine have access to?",
+          "answer_text": "FlowPilot has 26+ built-in tools across categories: Ecommerce (product management, order tracking), CRM (lead qualification, company enrichment, deal management), Content (blog writing, page creation, KB updates), Analytics (performance review, conversion analysis), System (soul update, skill instruct, memory management), and A2A (peer communication). The tool registry is database-driven and extensible.",
           "include_in_chat": true
         },
         {

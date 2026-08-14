@@ -27,7 +27,7 @@ const COMPANY_INSIGHTS_SKILLS: SkillSeed[] = [
       type: 'function',
       function: {
         name: 'get_company_profile',
-        description: 'Returns the full Business Identity (company_profile) used across Sales Intelligence, Chat AI, SEO, and FlowAgent. Read-only.',
+        description: 'Returns the full Business Identity (company_profile) used across Sales Intelligence, Chat AI, SEO, FlowPilot, and external agents (MCP gateway). Read-only.',
         parameters: { type: 'object', properties: {}, additionalProperties: false },
       },
     },
@@ -106,7 +106,7 @@ export const companyInsightsModule = defineModule<Input, Output>({
   version: '1.0.0',
   processes: ['lead-to-customer'],
   maturity: 'L3',
-  description: 'Unified business identity, financials, and market positioning. Feeds Sales Intelligence, Chat AI, SEO, and FlowAgent with company context.',
+  description: 'Unified business identity, financials, and market positioning. Feeds Sales Intelligence, Chat AI, SEO, FlowPilot, and external agents (MCP gateway) with company context.',
   capabilities: ['data:read', 'data:write'],
   tier: 'standard',
   inputSchema,

@@ -42,7 +42,6 @@ export function useGenerateProposal() {
       // A deterministic generation call has no business passing through a
       // model's mouth. (The identity/knowledge grounding lives server-side in
       // the ai-task, so nothing is lost by skipping chat-completion.)
-      void user; // attribution rides via callSkill's authenticated session
       const envelope = await callSkill<Record<string, any>>('generate_content_proposal', input as unknown as Record<string, unknown>);
       if (envelope?.error) throw new Error(String(envelope.error));
 
@@ -51,9 +50,26 @@ export function useGenerateProposal() {
         throw new Error('Generation returned no channel variants — check the AI provider under Settings and try again.');
       }
 
+      // Persist — the ai-task only GENERATES; without this insert the content
+      // evaporated on dialog close (the fan-out approves content_proposals
+      // rows, so a row is the campaign).
+      const { data: saved, error: saveErr } = await supabase
+        .from('content_proposals')
+        .insert({
+          topic: input.topic,
+          pillar_content: generated.pillar_content ?? input.pillar_content ?? null,
+          channel_variants: generated.channel_variants,
+          status: 'pending_review',
+          scheduled_for: input.schedule_for ?? null,
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single();
+      if (saveErr) throw new Error(`Generated but save failed: ${saveErr.message}`);
+
       return {
         success: true,
-        proposal: generated as unknown as GenerateProposalResponse['proposal'],
+        proposal: saved as unknown as GenerateProposalResponse['proposal'],
         message: 'Content proposal generated',
       } as GenerateProposalResponse;
     },

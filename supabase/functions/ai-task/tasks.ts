@@ -605,11 +605,22 @@ const contentResearchTask: TaskSpec<z.infer<typeof contentResearchInput>, any> =
 // (pillar_content + channel_variants keyed by channel).
 const contentProposalInput = z.object({
   topic: z.string(),
+  // The chosen research angle/hooks ride here — the whole point of step 2.
+  // Was absent from the schema, so zod silently stripped the user's choice.
+  pillar_content: z.string().optional(),
   target_channels: z.array(z.string()).default(["blog", "newsletter", "linkedin"]),
   brand_voice: z.string().optional(),
   target_audience: z.string().optional(),
-  tone_level: z.string().optional(),
+  // The dialog's slider sends a NUMBER (1-5); the model-echo path used to
+  // mask that by paraphrasing args. Direct calls must accept both.
+  tone_level: z.coerce.string().optional(),
   industry: z.string().optional(),
+  // The step-2 choice and goals — verified against the live failed run
+  // 2026-08-14 11:03 (agent_activity): the dialog sends unique_angle and
+  // content_goals; unknown-key stripping silently discarded the user's pick.
+  unique_angle: z.string().optional(),
+  content_goals: z.array(z.string()).optional(),
+  schedule_for: z.string().optional(),
 });
 
 const contentProposalTask: TaskSpec<z.infer<typeof contentProposalInput>, any> = {
@@ -637,6 +648,9 @@ const contentProposalTask: TaskSpec<z.infer<typeof contentProposalInput>, any> =
   user: (input) =>
     `## Brief\n${JSON.stringify({
       topic: (input as any).topic,
+      chosen_angle: (input as any).unique_angle ?? null,
+      chosen_angle_and_hooks: (input as any).pillar_content ?? null,
+      content_goals: (input as any).content_goals ?? null,
       target_channels: (input as any).target_channels ?? [],
       brand_voice: (input as any).brand_voice ?? null,
       target_audience: (input as any).target_audience ?? null,

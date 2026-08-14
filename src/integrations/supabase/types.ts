@@ -9408,6 +9408,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string
+          email_confidence: number | null
+          email_provenance: Json | null
+          email_status: string | null
           first_utm_campaign: string | null
           first_utm_medium: string | null
           first_utm_source: string | null
@@ -9436,6 +9439,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email: string
+          email_confidence?: number | null
+          email_provenance?: Json | null
+          email_status?: string | null
           first_utm_campaign?: string | null
           first_utm_medium?: string | null
           first_utm_source?: string | null
@@ -9464,6 +9470,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string
+          email_confidence?: number | null
+          email_provenance?: Json | null
+          email_status?: string | null
           first_utm_campaign?: string | null
           first_utm_medium?: string | null
           first_utm_source?: string | null
@@ -16391,7 +16400,7 @@ export type Database = {
             foreignKeyName: "social_posts_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
-            referencedRelation: "ad_campaigns"
+            referencedRelation: "content_proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -20228,6 +20237,10 @@ export type Database = {
         Args: { _base_id: string }
         Returns: boolean
       }
+      can_access_module: {
+        Args: { _module_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_ticket: { Args: { _ticket_id: string }; Returns: boolean }
       cancel_manual_subscription: {
         Args: {
@@ -20707,6 +20720,7 @@ export type Database = {
       current_employee_id: { Args: never; Returns: string }
       current_user_company_ids: { Args: never; Returns: string[] }
       delete_email_template: { Args: { p_name: string }; Returns: boolean }
+      demo_seedable_modules: { Args: never; Returns: string[] }
       detach_user_references: { Args: { p_user_id: string }; Returns: Json }
       dispatch_automation_event: {
         Args: {
@@ -23033,6 +23047,10 @@ export type Database = {
         Returns: Json
       }
       register_knowledge_indexer_cron: {
+        Args: { p_anon_key: string; p_supabase_url: string }
+        Returns: Json
+      }
+      register_retrieval_cron: {
         Args: { p_anon_key: string; p_supabase_url: string }
         Returns: Json
       }

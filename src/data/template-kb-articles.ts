@@ -971,7 +971,7 @@ export const flowwinkKbCategories: TemplateKbCategory[] = [
 
   // ===== FLOWAGENT FRAMEWORK =====
   {
-    name: 'FlowAgent Framework',
+    name: 'FlowPilot Framework',
     slug: 'flowagent-framework',
     description: 'The 7-step autonomous reasoning engine that powers FlowPilot.',
     icon: 'Cpu',
@@ -979,8 +979,8 @@ export const flowwinkKbCategories: TemplateKbCategory[] = [
       {
         title: 'The 7-Step Loop',
         slug: 'seven-step-loop',
-        question: 'What is the FlowAgent 7-step loop?',
-        answer_text: 'FlowAgent implements a 7-step autonomous reasoning loop: 1) Self-Heal — check system health, retry failed operations. 2) Propose — evaluate objectives and suggest next actions. 3) Plan — decompose proposals into specific skill calls. 4) Advance — execute skills via agent-execute. 5) Automate — identify patterns that should become recurring automations. 6) Reflect — evaluate what worked and what failed. 7) Remember — store learnings in persistent memory.',
+        question: 'What is the FlowPilot 7-step loop?',
+        answer_text: 'FlowPilot implements a 7-step autonomous reasoning loop: 1) Self-Heal — check system health, retry failed operations. 2) Propose — evaluate objectives and suggest next actions. 3) Plan — decompose proposals into specific skill calls. 4) Advance — execute skills via agent-execute. 5) Automate — identify patterns that should become recurring automations. 6) Reflect — evaluate what worked and what failed. 7) Remember — store learnings in persistent memory.',
         is_featured: true,
         include_in_chat: true,
       },
@@ -995,8 +995,8 @@ export const flowwinkKbCategories: TemplateKbCategory[] = [
       {
         title: 'Built-in Tools',
         slug: 'flowagent-built-in-tools',
-        question: 'What tools does the FlowAgent reasoning engine have access to?',
-        answer_text: 'FlowAgent has 26+ built-in tools across categories: Ecommerce (product management, order tracking), CRM (lead qualification, company enrichment, deal management), Content (blog writing, page creation, KB updates), Analytics (performance review, conversion analysis), System (soul update, skill instruct, memory management), and A2A (peer communication). The tool registry is database-driven and extensible.',
+        question: 'What tools does the FlowPilot reasoning engine have access to?',
+        answer_text: 'FlowPilot has 26+ built-in tools across categories: Ecommerce (product management, order tracking), CRM (lead qualification, company enrichment, deal management), Content (blog writing, page creation, KB updates), Analytics (performance review, conversion analysis), System (soul update, skill instruct, memory management), and A2A (peer communication). The tool registry is database-driven and extensible.',
         include_in_chat: true,
       },
       {

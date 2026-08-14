@@ -690,7 +690,7 @@ export const flowwinkBlogPosts: TemplateBlogPost[] = [
     meta: { description: 'How FlowPilot builds thought leadership automatically with competitor monitoring, content research, social post generation, and multi-channel distribution.' },
   },
   {
-    title: 'The 7-Step FlowAgent Loop Explained',
+    title: 'The 7-Step FlowPilot Loop Explained',
     slug: 'flowagent-7-step-autonomous-loop',
     excerpt: 'FlowPilot\'s reasoning engine has evolved into a 7-step autonomous loop. Understanding each phase reveals how an AI agent maintains, improves, and operates your entire digital presence.',
     featured_image: '/templates/blog/process-diagram.jpg',
@@ -699,7 +699,7 @@ export const flowwinkBlogPosts: TemplateBlogPost[] = [
       createTextBlock({
         type: 'doc',
         content: [
-          p('FlowPilot\'s autonomous engine — internally called FlowAgent — has matured from a simple heartbeat into a sophisticated 7-step reasoning loop. Each step serves a distinct purpose in maintaining and advancing your digital operations.'),
+          p('FlowPilot\'s autonomous engine — internally called FlowPilot — has matured from a simple heartbeat into a sophisticated 7-step reasoning loop. Each step serves a distinct purpose in maintaining and advancing your digital operations.'),
           h2('Step 1: Self-Heal'),
           p('Before doing anything new, FlowPilot checks system health. Are all edge functions deployed? Are API keys valid? Are there failed skills that need retry? Self-healing ensures the foundation is stable before advancing.'),
           h2('Step 2: Propose'),
@@ -719,7 +719,7 @@ export const flowwinkBlogPosts: TemplateBlogPost[] = [
         ],
       }),
     ],
-    meta: { description: 'Deep dive into the 7-step FlowAgent loop — Self-Heal, Propose, Plan, Advance, Automate, Reflect, Remember — the reasoning engine behind autonomous CMS operations.' },
+    meta: { description: 'Deep dive into the 7-step FlowPilot loop — Self-Heal, Propose, Plan, Advance, Automate, Reflect, Remember — the reasoning engine behind autonomous CMS operations.' },
   },
   {
     title: 'Module Registry: Orchestration Behind FlowWink',

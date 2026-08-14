@@ -86,7 +86,7 @@ export default function CompanyInsightsPage() {
             <div>
               <h1 className="font-serif text-2xl font-bold text-foreground">Business Identity</h1>
               <p className="text-sm text-muted-foreground">
-                Central identity used across Sales, Chat, SEO, and FlowAgent
+                Central identity used across Sales, Chat, SEO, FlowPilot, and external agents
               </p>
             </div>
           </div>

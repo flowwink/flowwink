@@ -10510,6 +10510,18 @@ async function executeDbAction(
       throw new Error(`Unknown invoices action: ${action}. Supported: list, get, create, update, send, mark_paid, cancel. To "delete" an invoice use cancel (audit-preserving).`);
     }
 
+    case 'social_posts': {
+      // Same status rule as the UI hook (useSocialPosts): a post created WITH
+      // a scheduled_at is 'scheduled', without one 'draft'. The generic CRUD
+      // let the column default win, so skill-scheduled posts were born draft —
+      // and the 15-minute sweep (correctly) never touched them: the agent said
+      // "schedule for wednesday 09:00" and the post silently never left draft.
+      if (skillName === 'schedule_social_post' && args.status === undefined) {
+        args = { ...args, status: args.scheduled_at ? 'scheduled' : 'draft' };
+      }
+      return await executeGenericCrud(supabase, table, skillName, args, auditCtx);
+    }
+
     default:
       // ─── Generic CRUD engine for any db:tablename handler ─────────────
       // Handles list, get, create, update, delete for tables that don't

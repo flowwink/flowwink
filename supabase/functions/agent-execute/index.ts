@@ -27,6 +27,7 @@ import { executeQualifyLead } from '../_shared/handlers/qualify-lead.ts';
 import { executeEnrichCompany } from '../_shared/handlers/enrich-company.ts';
 import { executeProspectFitAnalysis } from '../_shared/handlers/prospect-fit-analysis.ts';
 import { executeProcessDueSocialPosts } from '../_shared/handlers/social-publish.ts';
+import { executeApproveCampaign } from '../_shared/handlers/campaign-fanout.ts';
 import { executeSalesProfileSetup } from '../_shared/handlers/sales-profile-setup.ts';
 import { executeProspectResearch } from '../_shared/handlers/prospect-research.ts';
 import { executeParseResume } from '../_shared/handlers/parse-resume.ts';
@@ -750,6 +751,9 @@ serve(async (req) => {
 
       } else if (handler === 'internal:process_due_social_posts') {
         result = await executeProcessDueSocialPosts(supabase, args as Record<string, unknown>, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
+
+      } else if (handler === 'internal:approve_content_campaign') {
+        result = await executeApproveCampaign(supabase, args as Record<string, unknown>, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
 
       } else if (handler === 'internal:verify_email') {
         result = await executeVerifyEmail(supabase, args as Record<string, unknown>);

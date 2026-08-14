@@ -64,7 +64,10 @@ export function ContentProposalCard({ proposal, onSelect, onApprove, onDelete }:
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {proposal.status === 'draft' && onApprove && (
+              {/* pending_review is THE state awaiting approval — the draft-only
+                  condition hid the Approve action from every generated
+                  campaign (they are born pending_review). */}
+              {(proposal.status === 'draft' || proposal.status === 'pending_review') && onApprove && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onApprove(proposal.id); }}>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Approve

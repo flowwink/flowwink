@@ -199,3 +199,46 @@ describe('prospect_research internal handler', () => {
     expect(urls.every((u: string) => u.includes('web-search') || u.includes('web-scrape'))).toBe(true);
   });
 });
+
+describe('approve_content_campaign fan-out', () => {
+  it('materializes linkedin + blog variants and stamps approval', async () => {
+    const proposal = {
+      id: 'prop-1', status: 'pending_review', featured_image: 'https://img/x.png',
+      scheduled_for: '2026-08-20T09:00:00Z',
+      channel_variants: {
+        linkedin: { text: 'Hello LinkedIn', hashtags: ['flowwink'] },
+        blog: { title: 'Vår resa', excerpt: 'kort', body: 'Stycke ett.\n\nStycke två.', seo_keywords: ['bos'] },
+        print: {},
+      },
+    };
+    const inserted: Record<string, any[]> = { social_posts: [], blog_posts: [] };
+    const updates: any[] = [];
+    const db: any = {
+      from(table: string) {
+        const chain: any = {
+          select: () => chain, eq: () => chain, maybeSingle: () =>
+            Promise.resolve({ data: table === 'content_proposals' ? proposal : null }),
+          insert: (row: any) => {
+            inserted[table]?.push(row);
+            return { select: () => ({ single: () => Promise.resolve({ data: { id: `${table}-id`, status: row.status } }) }) };
+          },
+          update: (row: any) => { updates.push({ table, row }); return { eq: () => Promise.resolve({ error: null }) }; },
+        };
+        return chain;
+      },
+    };
+    const { executeApproveCampaign } = await import('../../../supabase/functions/_shared/handlers/campaign-fanout.ts');
+    const res = await executeApproveCampaign(db, { proposal_id: 'prop-1' }, ctx as any);
+    expect(res.success).toBe(true);
+    expect(inserted.social_posts).toHaveLength(1);
+    expect(inserted.social_posts[0]).toMatchObject({
+      channel: 'linkedin', campaign_id: 'prop-1', status: 'scheduled',
+      media_url: 'https://img/x.png', scheduled_at: '2026-08-20T09:00:00Z',
+    });
+    expect(inserted.social_posts[0].content).toContain('#flowwink');
+    expect(inserted.blog_posts[0]).toMatchObject({ slug: 'var-resa', status: 'draft' });
+    expect(inserted.blog_posts[0].content_json.content).toHaveLength(2);
+    expect((res.skipped as any[]).some((s) => s.channel === 'print')).toBe(true);
+    expect(updates.some((u) => u.table === 'content_proposals' && u.row.status === 'approved')).toBe(true);
+  });
+});

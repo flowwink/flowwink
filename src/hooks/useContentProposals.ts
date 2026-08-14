@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { callSkill } from '@/lib/call-skill';
 import { toast } from 'sonner';
 
 export type ProposalStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
@@ -205,31 +206,45 @@ export function useUpdateProposal() {
   });
 }
 
+interface FanoutResult {
+  success: boolean;
+  error?: string;
+  already_approved?: boolean;
+  materialized?: Array<{ channel: string; id: string; status: string }>;
+  skipped?: Array<{ channel: string; reason: string }>;
+  note?: string;
+}
+
+/**
+ * Approve = fan-out. The old mutation only stamped status='approved' and
+ * nothing happened — social_posts.campaign_id existed in the schema but was
+ * never set. The approve_content_campaign skill materializes the channel
+ * variants onto their delivery rails (social queue, blog draft, newsletter
+ * draft); the same verb works for agents via the gateway.
+ */
 export function useApproveProposal() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const { data, error } = await supabase
-        .from('content_proposals')
-        .update({
-          status: 'approved',
-          approved_by: user?.id,
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as ContentProposal;
+      const result = await callSkill<FanoutResult>('approve_content_campaign', { proposal_id: id });
+      if (!result?.success) throw new Error(result?.error ?? 'Approval failed');
+      return { id, result };
     },
-    onSuccess: (data) => {
+    onSuccess: ({ id, result }) => {
       queryClient.invalidateQueries({ queryKey: ['content-proposals'] });
-      queryClient.invalidateQueries({ queryKey: ['content-proposal', data.id] });
-      toast.success('Proposal approved');
+      queryClient.invalidateQueries({ queryKey: ['content-proposal', id] });
+      queryClient.invalidateQueries({ queryKey: ['social-posts'] });
+      const n = result.materialized?.length ?? 0;
+      if (result.already_approved) {
+        toast.info(`Already approved — ${n} existing artifact${n === 1 ? '' : 's'}`);
+      } else {
+        const channels = (result.materialized ?? []).map((m) => m.channel).join(', ');
+        toast.success(n > 0 ? `Approved — created on: ${channels}` : 'Approved (no channel variants to materialize)');
+        for (const s of result.skipped ?? []) {
+          if (s.channel !== 'print') toast.warning(`${s.channel}: ${s.reason}`);
+        }
+      }
     },
     onError: (error) => {
       toast.error('Failed to approve proposal: ' + error.message);

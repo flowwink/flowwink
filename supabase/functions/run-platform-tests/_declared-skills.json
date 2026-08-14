@@ -24,6 +24,7 @@
     "apply_tax_correction",
     "apply_timesheet_overtime",
     "approve_company_quote",
+    "approve_content_campaign",
     "approve_expense_report",
     "approve_payroll_run",
     "approve_pending_operation",

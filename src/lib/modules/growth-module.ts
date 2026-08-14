@@ -388,6 +388,30 @@ Analyzes campaign performance and recommends optimizations. Requires approval fo
     },
     instructions: 'The publish weld: linkedin posts go out via Composio (LINKEDIN_CREATE_LINKED_IN_POST signed with the connected account\'s author URN) and are marked posted with the external URL. Channels without a publisher — or LinkedIn without a connected account — are marked failed with the reason, never left lingering, so the queue stays honest. Scheduling IS the approval: only status=scheduled posts with a passed time are touched.',
   },
+
+  {
+    name: 'approve_content_campaign',
+    description: 'Approve a content campaign (content_proposals) and FAN OUT its channel variants to the delivery rails: linkedin/twitter/instagram/facebook variants become social_posts rows (campaign_id set, image inherited, scheduled if the campaign has a time), the blog variant becomes a blog_posts draft, the newsletter variant a newsletters draft. Use when: a reviewed campaign should go live per its plan. NOT for: creating or editing a campaign (manage the proposal first), publishing an individual social post (schedule_social_post), or re-running delivery (idempotent — re-approval returns existing artifacts).',
+    category: 'growth',
+    handler: 'internal:approve_content_campaign',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'approve_content_campaign',
+        description: 'Approve a content proposal and materialize its channel variants onto the delivery rails.',
+        parameters: {
+          type: 'object',
+          required: ['proposal_id'],
+          properties: {
+            proposal_id: { type: 'string', description: 'content_proposals.id to approve.' },
+            scheduled_for: { type: 'string', description: 'ISO timestamp overriding the proposal\'s own schedule for the social posts. Omit to use the proposal\'s scheduled_for; if neither exists the social posts are created as drafts.' },
+          },
+        },
+      },
+    },
+    instructions: 'THE CAMPAIGN FAN-OUT — approve is the decision, the rails are the execution (same shape as propose→approve→voucher in accounting). What happens per channel variant: linkedin/twitter (→ channel x)/instagram/facebook → social_posts with campaign_id, content = text + hashtags, media_url = the variant\'s image_override or the campaign\'s featured_image, status scheduled when a time exists (the 15-minute sweep then publishes via Composio) else draft. blog → blog_posts DRAFT (body converted to a Tiptap doc, slug auto-derived, seo_keywords into meta_json) — a human publishes it from the blog surface. newsletter → newsletters DRAFT — sending stays behind the newsletter rail\'s own gate. print → skipped (no rail). Idempotent on approved campaigns: existing artifacts are returned, nothing duplicated. The response lists materialized ids per channel and every skipped channel with its reason.',
+  },
 ];
 
 const GROWTH_AUTOMATIONS: AutomationSeed[] = [
@@ -422,7 +446,9 @@ export const growthModule = defineModule<GrowthCampaignInput, GrowthCampaignOutp
     'schedule_social_post',
     'list_social_posts',
     'mark_social_post_posted',
-  , 'process_due_social_posts'],
+    'process_due_social_posts',
+    'approve_content_campaign',
+  ],
   data: {
     tables: ['ad_creatives', 'ad_campaigns', 'content_proposals', 'content_research', 'utm_attributions', 'social_posts'],
   },

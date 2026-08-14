@@ -29,6 +29,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { AiTier } from "../_shared/ai-config.ts";
 import { loadContentMemoryBlock } from "../_shared/domains/content-memory.ts";
+import { loadBusinessIdentityBlock } from "../_shared/domains/business-identity-block.ts";
 
 export interface TaskSpec<I = unknown, O = unknown> {
   name: string;
@@ -616,11 +617,17 @@ const contentProposalTask: TaskSpec<z.infer<typeof contentProposalInput>, any> =
     "Generate a multi-channel content proposal from a topic — a pillar piece plus channel-adapted variants (blog, newsletter, linkedin, x). Returns pillar_content + channel_variants.",
   tier: "reasoning",
   inputSchema: contentProposalInput,
+  // Grounding, in order: (1) Business Identity — the same company_profile the
+  // sales/marketing roles curate; the audit 2026-08-14 found brand voice/
+  // audience/industry were retyped per run while the answers sat there.
+  // (2) existing coverage so proposals don't repeat published ground.
+  // The brief's own fields still win when the user fills them.
   load: async (_input, supabase) => ({
     existing_coverage: await loadContentMemoryBlock(supabase, { limit: 15 }),
+    business_identity: await loadBusinessIdentityBlock(supabase),
   }),
   system: (input) =>
-    `You are an expert multi-channel content strategist. From the brief, write ONE strong pillar piece and adapt it into native variants for ONLY the requested channels, returning everything via the submit_content_proposal tool. Match the brand voice and tone. Per channel shape: blog = {title, excerpt, body (markdown), seo_keywords[]}; newsletter = {subject, preview_text, content}; linkedin = {text, hashtags[]}; x = {thread[] (each item one tweet)}. Requested channels: ${JSON.stringify((input as any).target_channels ?? [])}. No filler or platitudes.${(input as any).existing_coverage ?? ""}`,
+    `You are an expert multi-channel content strategist. From the brief, write ONE strong pillar piece and adapt it into native variants for ONLY the requested channels, returning everything via the submit_content_proposal tool. Match the brand voice and tone. Per channel shape: blog = {title, excerpt, body (markdown), seo_keywords[]}; newsletter = {subject, preview_text, content}; linkedin = {text, hashtags[]}; x = {thread[] (each item one tweet)}. Requested channels: ${JSON.stringify((input as any).target_channels ?? [])}. No filler or platitudes.${(input as any).business_identity ?? ""}${(input as any).existing_coverage ?? ""}`,
   user: (input) =>
     `## Brief\n${JSON.stringify({
       topic: (input as any).topic,
@@ -765,8 +772,13 @@ const socialPostTask: TaskSpec<z.infer<typeof socialPostInput>, any> = {
     "Generate native social media posts (LinkedIn, X) for a topic, optionally from key points. Returns one post per requested platform with copy and hashtags.",
   tier: "reasoning",
   inputSchema: socialPostInput,
+  // Same voice, same source: batch-generated social posts ground in Business
+  // Identity exactly like campaign proposals do.
+  load: async (_input, supabase) => ({
+    business_identity: await loadBusinessIdentityBlock(supabase),
+  }),
   system: (input) =>
-    `You are an expert social media copywriter. Write ONE native post per requested platform, returning everything via the submit_social_posts tool. Match each platform's norms: LinkedIn = hook + value + soft CTA, professional; X = punchy, ≤ 280 chars, can be a short thread if needed. Use the tone "${(input as any).tone ?? "professional"}". 3-6 relevant hashtags per post. No emojis-spam, no filler. Platforms: ${JSON.stringify((input as any).platforms ?? [])}.`,
+    `You are an expert social media copywriter. Write ONE native post per requested platform, returning everything via the submit_social_posts tool. Match each platform's norms: LinkedIn = hook + value + soft CTA, professional; X = punchy, ≤ 280 chars, can be a short thread if needed. Use the tone "${(input as any).tone ?? "professional"}". 3-6 relevant hashtags per post. No emojis-spam, no filler. Platforms: ${JSON.stringify((input as any).platforms ?? [])}.${(input as any).business_identity ?? ""}`,
   user: (input) =>
     `## Source\n${JSON.stringify({
       topic: (input as any).topic,

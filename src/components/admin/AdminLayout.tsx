@@ -24,7 +24,7 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, loading, isWriter, isAdmin, roles } = useAuth();
+  const { user, loading, rolesReady, isWriter, isAdmin, roles } = useAuth();
   const { data: accessMap, isLoading: accessLoading } = useRoleModuleAccess();
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,6 +74,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
           <span className="text-sm">Redirecting to sign in…</span>
         </div>
+      </div>
+    );
+  }
+
+  // On sign-in, `user` lands before the roles fetch (deferred in useAuth) —
+  // judging isWriter in that window flashed "Access Denied" at every login
+  // for half a second. Wait for the verdict before delivering one; the
+  // matrix gate below already had this discipline (accessLoading).
+  if (!rolesReady) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

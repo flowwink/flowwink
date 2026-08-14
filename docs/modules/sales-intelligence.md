@@ -1,74 +1,77 @@
 ---
 title: "Sales Intelligence Module"
 module_id: "salesIntelligence"
-version: "2.0.0"
+version: "3.0.0"
 category: "data"
 autonomy: "agent-capable"
-generated: true
-generated_at: "2026-08-08"
+manual: true
+description: The prospecting chain — research a company once, remember everything it read, score fit against your own ICP, and send verified, suppressible outreach.
 ---
 
 # Sales Intelligence
 
-> Prospect research, fit analysis, profile management, and introduction letter generation
+> **Status:** manually maintained — describes the process as verified live
+> (Svalner test run, 2026-08-13/14). The auto-generator skips this file.
+> **Source of truth:** `src/lib/modules/sales-intelligence-module.ts` + this file.
 
-Ships with **4 agent skills**, an **admin UI**.
+Sales Intelligence is the **prospecting chain**: from a company name to a
+grounded, verified, deliverable outreach email — with every step leaving
+evidence. The design principle throughout is *find → verify → gate*: discovery
+is cheap and broad, verification is explicit and paid, and sending is gated on
+deliverability and consent.
 
-## Quick Facts
+## The chain
 
-| Property | Value |
-|----------|-------|
-| **Module ID** | `salesIntelligence` |
-| **Version** | 2.0.0 |
-| **Category** | data |
-| **Autonomy** | agent-capable |
-| **Core** | No |
-| **Capabilities** | `data:read`, `data:write` |
-| **MCP-exposed skills** | 4 |
-| **Owns tables** | — |
+```
+Research (company name / website)
+  ├─ web search + site scrape (provider-routed: Firecrawl → Jina)
+  ├─ AI distillation → industry, size, offerings, pain points  → companies row
+  ├─ raw material archived with provenance                     → companies.web_raw
+  └─ Hunter domain search (1 credit TOTAL)                     → leads rows
+        each lead carries: email_confidence, email_status='unverified',
+        email_provenance {provider, method, position, seniority, sources_count, found_at}
+  ↓
+Fit Analysis (one button)
+  ├─ aggregator collects BOTH sides: their record (incl. web_summary)
+  │   and OUR side: Business Identity ICP + published pages
+  ├─ FlowPilot scores 0-100 against the ICP; analysis in the platform
+  │   language, the letter in the language the PROSPECT publishes in
+  ├─ decision maker ranked by seniority > personal-address > confidence
+  └─ assessment persisted on the company (fit_score / fit_analysis) —
+      survives the tab, restored on re-research
+  ↓
+Outreach (per contact — the seller picks targets)
+  ├─ Verify (1 Hunter credit, explicit button) → email_status valid/invalid/…
+  ├─ send gate: invalid/disposable BLOCK, accept_all/unknown warn
+  └─ send → RFC 8058 unsubscribe headers → global suppression on click/bounce
+```
 
-## Integrations
+## What makes it honest
 
-**Optional:** `hunter`, `jina`, `firecrawl`, `openai`, `gemini`
+- **Research remembers what it read.** The scrape is distilled into
+  firmographics AND archived raw (`web_raw`, with URL + fetch date) — free
+  re-distillation, deeper personalization, future breadth search.
+- **Provenance is the GDPR Art. 14 answer.** Every found address knows where
+  it came from, when, and how confident the source was — the evidence for
+  "where did you get my address" and "that person left."
+- **A data-only score never wears the assessment's colors.** If the AI
+  reasoning step fails, the fallback number is visibly labeled *"data only —
+  not an AI fit assessment"* instead of masquerading as a perfect fit.
+- **Two doors, one reader.** The company page's Enrich button and the research
+  flow share the same distillation (`company-distill`), fill the same fields,
+  and never overwrite operator-entered master data.
 
-## Skills
+## Grounding
 
-These skills are seeded into `agent_skills` when the module is enabled and exposed via MCP.
-External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can call them directly.
+Fit scoring and letters ground in **Business Identity** (ICP, value
+proposition, services — editable by sales/accounting/marketing, not only
+admins) plus the prospect's own distilled website. This is deliberate: the
+people who prospect can refine the identity they ground in.
 
-| Skill | Scope | Description |
-|-------|-------|-------------|
-| `prospect_research` | internal | Research a company — search web, scrape website, find contacts via Hunter.io. Returns raw data for FlowPilot to analyze. Use when: preparing for outreach; gathering intelligence on a prospect; buil… |
-| `prospect_fit_analysis` | internal | Collect company data, related leads, and deals to evaluate prospect fit. Returns raw data for FlowPilot to analyze. Use when: evaluating a new prospect; scoring company fit before outreach; compari… |
-| `process_signal` | internal | Process an incoming signal from Chrome extension or external webhook. Analyzes content and determines next actions. Use when: a website event is detected; an external system sends an update; respon… |
-| `sales_profile_setup` | internal | Set up or update the Sales Intelligence company profile or user profile. Use when: configuring sales profile, updating company positioning for prospecting. NOT for: managing business identity (use … |
+## Costs (Hunter free tier: 50/month)
 
-## Module API Contract
-
-**Actions:** `research`, `fit-analysis`, `profile-setup`, `web-search`, `web-scrape`, `contact-finder`
-
-**Input fields:** `action`, `company_name`, `company_url`, `company_id`, `profile_type`, `profile_data`, `decision_maker_first_name`, `decision_maker_last_name`
-
-**Output fields:** `success`, `company`, `contacts`, `hunter_contacts_found`, `questions_and_answers`, `company_summary`, `fit_score`, `fit_advice`, `problem_mapping`, `introduction_letter`, `email_subject`, `profile`, `error`
-
-## File Map
-
-| Purpose | Path |
-|---------|------|
-| Module definition | `src/lib/modules/sales-intelligence-module.ts` |
-| Admin page | `src/pages/admin/SalesIntelligencePage.tsx` |
-
-## Contributing
-
-To enhance this module, see [Contributing Guide](../contributing/contributing.md).
-
-Key rules:
-- Follow `ModuleDefinition<I, O>` contract pattern
-- All schema changes require idempotent migrations
-- Skills must be self-describing ([Law 2](../concepts/openclaw-law.md))
-- Blocks are interfaces, not pipelines ([Law 3](../concepts/openclaw-law.md))
-- New skills must pass the [Agent Contract Integrity](../../mem/architecture/agent-contract-integrity.md) checklist (`bun run lint:skills`)
-
----
-
-*This file is auto-generated by `scripts/generate-module-docs.ts`. Do not edit manually — re-run the script after changing the module definition.*
+| Action | Cost |
+|---|---|
+| Domain search (all contacts found) | 1 credit total |
+| Verify one address | 1 credit |
+| Fit analysis, letters, distillation | AI tokens only |

@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260813270000",
-      "migrations_count": 406,
+      "migrations_count": 410,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1619,6 +1619,22 @@
           "name": "subscription-amount-is-per-period-not-tcv"
         },
         {
+          "version": "20260813233952",
+          "name": "e7a0a841-7c37-424d-ad04-fc6d4bc7efbe"
+        },
+        {
+          "version": "20260813234053",
+          "name": "208210e7-5808-4994-bc13-ac76fd4230c9"
+        },
+        {
+          "version": "20260813234135",
+          "name": "b6230ef3-456a-4905-9c96-f03b9ea8f132"
+        },
+        {
+          "version": "20260813234217",
+          "name": "32064d12-9ad1-4763-9e95-db2318ada8f5"
+        },
+        {
           "version": "20260813250000",
           "name": "fit-analysis-survives-the-tab"
         },
@@ -1643,7 +1659,7 @@
       "functions": {
         "a2a": "sha256:ce9a4fb6212cae08011c6418af9ad906786f4bbad6a8de6f962eda2eb4c54978",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:7f0213e8b671a8e8835c9f65f6d4ae95e8d747189bf2a5c499bd49b1664bc504",
+        "agent-execute": "sha256:d02bd13f84ff728cc18d3ecb96286290c0c01fb0fadb38d82aa71ad867124765",
         "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
         "ai-task": "sha256:6a0c6b21f9f0575650d9e478bc9184ce24541d3a18d00bb6c80c64a60f5e28aa",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

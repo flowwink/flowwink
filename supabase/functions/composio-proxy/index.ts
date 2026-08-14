@@ -720,13 +720,24 @@ Deno.serve(async (req) => {
         const staleItems = Array.isArray(staleRes.data?.items) ? staleRes.data.items : [];
         for (const acc of staleItems) {
           const status = getConnectedAccountStatus(acc);
-          if (status && status !== 'ACTIVE' && acc?.id) {
+          // A young non-ACTIVE account may be an OAuth IN FLIGHT: purging it
+          // here made the user's callback land on a deleted account
+          // ("Connected account ca_… not found" on Composio's own completion
+          // page — LinkedIn, 2026-08-14, two clicks 20 min apart). Only sweep
+          // accounts old enough that their popup is certainly dead; the
+          // 422-triggered force-purge below stays unconditional — there
+          // Composio itself has refused the state.
+          const ageMs = Date.now() - new Date(acc?.created_at ?? 0).getTime();
+          const midFlight = Number.isFinite(ageMs) && ageMs < 15 * 60 * 1000;
+          if (status && status !== 'ACTIVE' && acc?.id && !midFlight) {
             console.log(`[composio-proxy] Purging stale ${status} account ${acc.id}`);
             await callComposio(`${COMPOSIO_V3}/connected_accounts/${encodeURIComponent(acc.id)}`, {
               method: 'DELETE',
               headers: composioHeaders,
             });
             purgedAny = true;
+          } else if (status && status !== 'ACTIVE' && midFlight) {
+            console.log(`[composio-proxy] Leaving young ${status} account ${acc?.id} (possible OAuth in flight)`);
           }
         }
       } catch (e) {

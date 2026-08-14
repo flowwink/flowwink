@@ -35,7 +35,10 @@ async function composioExecute(
     const res = await fetch(`${ctx.supabaseUrl}/functions/v1/composio-proxy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ctx.serviceKey}` },
-      body: JSON.stringify({ action: 'execute', params: { action_name: actionName, toolkit: 'linkedin', ...args } }),
+      // The proxy reads tool args from params.arguments — top-level spread
+      // reached Composio as {} ("author, commentary missing" on the premiere
+      // post; GET_MY_INFO had masked it by taking no arguments).
+      body: JSON.stringify({ action: 'execute', params: { action_name: actionName, toolkit: 'linkedin', arguments: args } }),
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {

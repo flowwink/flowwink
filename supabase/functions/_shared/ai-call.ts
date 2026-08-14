@@ -151,7 +151,7 @@ function fromAnthropicResponse(data: any): any {
  * Make an AI call that works with both OpenAI-compatible and Anthropic APIs
  */
 export async function callAi(options: AiCallOptions): Promise<Response> {
-  const { apiKey, apiUrl, model, messages, tools, tool_choice, max_tokens } = options;
+  const { apiKey, apiUrl, model, messages, tools, tool_choice, max_tokens, stream } = options;
 
   if (isAnthropicProvider(apiUrl)) {
     const { system, messages: anthropicMessages } = toAnthropicMessages(messages);
@@ -197,6 +197,11 @@ export async function callAi(options: AiCallOptions): Promise<Response> {
     body.tools = tools;
     body.tool_choice = tool_choice || 'auto';
   }
+  // Stream passthrough — the option existed in the interface but was never
+  // forwarded, so stream:true callers (docs-chat) got a complete JSON body
+  // their SSE parsers rendered as "…". Anthropic's convert path stays
+  // non-streaming (it must transform the response shape).
+  if (stream) body.stream = true;
 
   return fetch(apiUrl, {
     method: 'POST',

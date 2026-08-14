@@ -30,6 +30,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { AiTier } from "../_shared/ai-config.ts";
 import { loadContentMemoryBlock } from "../_shared/domains/content-memory.ts";
 import { loadBusinessIdentityBlock } from "../_shared/domains/business-identity-block.ts";
+import { loadPublicKnowledgeBlock } from "../_shared/domains/knowledge-recycling.ts";
 
 export interface TaskSpec<I = unknown, O = unknown> {
   name: string;
@@ -617,17 +618,22 @@ const contentProposalTask: TaskSpec<z.infer<typeof contentProposalInput>, any> =
     "Generate a multi-channel content proposal from a topic — a pillar piece plus channel-adapted variants (blog, newsletter, linkedin, x). Returns pillar_content + channel_variants.",
   tier: "reasoning",
   inputSchema: contentProposalInput,
-  // Grounding, in order: (1) Business Identity — the same company_profile the
-  // sales/marketing roles curate; the audit 2026-08-14 found brand voice/
-  // audience/industry were retyped per run while the answers sat there.
-  // (2) existing coverage so proposals don't repeat published ground.
-  // The brief's own fields still win when the user fills them.
-  load: async (_input, supabase) => ({
-    existing_coverage: await loadContentMemoryBlock(supabase, { limit: 15 }),
-    business_identity: await loadBusinessIdentityBlock(supabase),
-  }),
+  // Grounding, in order: (1) Business Identity — always-on, the constitution.
+  // (2) Knowledge recycling — the company's PUBLISHED knowledge on this topic,
+  // retrieved per-topic with the anon client's eyes so only public sources can
+  // ground outward copy (RLS is the filter, not a list). (3) existing coverage
+  // so proposals don't repeat published ground. The brief's own fields win.
+  load: async (input, supabase) => {
+    const knowledge = await loadPublicKnowledgeBlock((input as any).topic ?? '');
+    return {
+      existing_coverage: await loadContentMemoryBlock(supabase, { limit: 15 }),
+      business_identity: await loadBusinessIdentityBlock(supabase),
+      public_knowledge: knowledge.block,
+      _grounding_sources: knowledge.sources,
+    };
+  },
   system: (input) =>
-    `You are an expert multi-channel content strategist. From the brief, write ONE strong pillar piece and adapt it into native variants for ONLY the requested channels, returning everything via the submit_content_proposal tool. Match the brand voice and tone. Per channel shape: blog = {title, excerpt, body (markdown), seo_keywords[]}; newsletter = {subject, preview_text, content}; linkedin = {text, hashtags[]}; x = {thread[] (each item one tweet)}. Requested channels: ${JSON.stringify((input as any).target_channels ?? [])}. No filler or platitudes.${(input as any).business_identity ?? ""}${(input as any).existing_coverage ?? ""}`,
+    `You are an expert multi-channel content strategist. From the brief, write ONE strong pillar piece and adapt it into native variants for ONLY the requested channels, returning everything via the submit_content_proposal tool. Match the brand voice and tone. Per channel shape: blog = {title, excerpt, body (markdown), seo_keywords[]}; newsletter = {subject, preview_text, content}; linkedin = {text, hashtags[]}; x = {thread[] (each item one tweet)}. Requested channels: ${JSON.stringify((input as any).target_channels ?? [])}. No filler or platitudes.${(input as any).business_identity ?? ""}${(input as any).public_knowledge ?? ""}${(input as any).existing_coverage ?? ""}`,
   user: (input) =>
     `## Brief\n${JSON.stringify({
       topic: (input as any).topic,

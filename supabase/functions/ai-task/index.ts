@@ -162,6 +162,12 @@ serve(async (req) => {
         task: taskName,
         result: finalResult,
         apply: applied,
+        // Knowledge recycling disclosure: which public sources grounded this
+        // run (set by the task's load step). Transparency over settings —
+        // an admin cannot change what they cannot see.
+        ...((promptInput as any)._grounding_sources?.length
+          ? { grounding_sources: (promptInput as any)._grounding_sources }
+          : {}),
         provider_used: ai.provider,
         provider_fallback: ai.fallback,
       });

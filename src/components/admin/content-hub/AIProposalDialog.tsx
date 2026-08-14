@@ -303,9 +303,10 @@ export function AIProposalDialog({ open, onOpenChange, onSuccess }: AIProposalDi
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2 flex items-start gap-2">
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span>
-            Generation is grounded in your <span className="font-medium text-foreground">Business Identity</span> (Settings → Business Identity:
-            voice, ICP, services), this brief, any saved research you pick, and the last 15 published pieces
-            (to avoid repeating covered ground). Fields you fill here override the identity defaults.
+            Generation is grounded in your <span className="font-medium text-foreground">Business Identity</span> (voice, ICP, services),
+            your <span className="font-medium text-foreground">published knowledge</span> on the topic (public KB, pages, blog — retrieved
+            with a visitor&apos;s eyes, so internal material never leaks into outward copy), this brief, any saved research
+            you pick, and the last 15 published pieces (to avoid repetition). Fields you fill here override the identity defaults.
           </span>
         </p>
 

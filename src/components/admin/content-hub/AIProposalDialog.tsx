@@ -296,6 +296,19 @@ export function AIProposalDialog({ open, onOpenChange, onSuccess }: AIProposalDi
           </DialogDescription>
         </DialogHeader>
 
+        {/* Transparency over settings (Magnus, 2026-08-14): no extra knobs,
+            but an admin must SEE where the knowledge comes from — you cannot
+            change what you do not understand. This line states the grounding
+            contract of the generation task verbatim. */}
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2 flex items-start gap-2">
+          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>
+            Generation is grounded in your <span className="font-medium text-foreground">Business Identity</span> (Settings → Business Identity:
+            voice, ICP, services), this brief, any saved research you pick, and the last 15 published pieces
+            (to avoid repeating covered ground). Fields you fill here override the identity defaults.
+          </span>
+        </p>
+
         {step === 'input' && (
           <div className="space-y-4 py-4">
             {/* Topic - Required */}

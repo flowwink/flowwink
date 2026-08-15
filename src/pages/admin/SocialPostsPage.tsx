@@ -28,9 +28,11 @@ import { Plus, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useSocialPosts,
+  useUpdateSocialPost,
   useCreateSocialPost,
   useMarkSocialPostPosted,
   useDeleteSocialPost,
+  type SocialPost,
   type SocialChannel,
   type SocialPostStatus,
 } from '@/hooks/useSocialPosts';
@@ -50,36 +52,73 @@ export default function SocialPostsPage() {
   const [filter, setFilter] = useState<SocialPostStatus | 'all'>('all');
   const { data: posts = [], isLoading } = useSocialPosts(filter === 'all' ? undefined : filter);
   const create = useCreateSocialPost();
+  const update = useUpdateSocialPost();
   const markPosted = useMarkSocialPostPosted();
   const del = useDeleteSocialPost();
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
+  // Set while editing an existing post — the same dialog serves both verbs, so
+  // there is one place where a post's fields are defined.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [channel, setChannel] = useState<SocialChannel>('linkedin');
   const [scheduledAt, setScheduledAt] = useState<string>('');
   const [linkUrl, setLinkUrl] = useState('');
+
+  const resetForm = () => {
+    setEditingId(null);
+    setContent('');
+    setScheduledAt('');
+    setLinkUrl('');
+  };
+
+  /** datetime-local wants 'YYYY-MM-DDTHH:mm' in LOCAL time, not an ISO string. */
+  const toLocalInput = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openEdit = (p: SocialPost) => {
+    setEditingId(p.id);
+    setContent(p.content);
+    setChannel(p.channel);
+    setScheduledAt(toLocalInput(p.scheduled_at));
+    setLinkUrl(p.link_url ?? '');
+    setOpen(true);
+  };
 
   const submit = async () => {
     if (!content.trim()) {
       toast({ title: 'Content required', variant: 'destructive' });
       return;
     }
+    const payload = {
+      content: content.trim(),
+      channel,
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      link_url: linkUrl.trim() || null,
+    };
     try {
-      await create.mutateAsync({
-        content: content.trim(),
-        channel,
-        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-        link_url: linkUrl.trim() || null,
-      });
-      setContent('');
-      setScheduledAt('');
-      setLinkUrl('');
+      if (editingId) {
+        await update.mutateAsync({ id: editingId, ...payload });
+      } else {
+        await create.mutateAsync(payload);
+      }
+      const scheduled = !!payload.scheduled_at;
+      resetForm();
       setOpen(false);
-      toast({ title: 'Post created' });
+      toast({
+        title: editingId ? 'Post updated' : 'Post created',
+        description: scheduled
+          ? 'Scheduled — the publisher picks it up on the next sweep (every 15 min).'
+          : 'Saved as draft — set a time to schedule it.',
+      });
     } catch (e) {
       toast({
-        title: 'Could not create post',
+        title: editingId ? 'Could not update post' : 'Could not create post',
         description: e instanceof Error ? e.message : 'Try again',
         variant: 'destructive',
       });
@@ -107,16 +146,16 @@ export default function SocialPostsPage() {
             </SelectContent>
           </Select>
 
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" onClick={resetForm}>
                 <Plus className="h-4 w-4 mr-1" />
                 New post
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Schedule a social post</DialogTitle>
+                <DialogTitle>{editingId ? 'Edit post' : 'Schedule a social post'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-2">
@@ -155,8 +194,8 @@ export default function SocialPostsPage() {
                 <Button variant="ghost" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={submit} disabled={create.isPending}>
-                  {create.isPending ? 'Saving…' : 'Save'}
+                <Button onClick={submit} disabled={create.isPending || update.isPending}>
+                  {create.isPending || update.isPending ? 'Saving…' : 'Save'}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -204,6 +243,11 @@ export default function SocialPostsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    {p.status !== 'posted' && (
+                      <Button size="sm" variant="outline" onClick={() => openEdit(p)}>
+                        {p.status === 'draft' || p.status === 'failed' ? 'Edit / schedule' : 'Edit'}
+                      </Button>
+                    )}
                     {p.status !== 'posted' && (
                       <Button
                         size="sm"

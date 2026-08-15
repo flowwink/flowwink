@@ -5,6 +5,9 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { SaveButton } from '@/components/admin/SaveButton';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
+import { Target, ArrowRight } from 'lucide-react';
+import { useIsModuleEnabled } from '@/hooks/useModules';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +21,7 @@ import { Loader2, Upload, User, Camera, KeyRound, Eye, EyeOff } from 'lucide-rea
 
 export default function ProfilePage() {
   const { profile, user, refreshProfile } = useAuth();
+  const salesEnabled = useIsModuleEnabled('salesIntelligence');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -178,6 +182,32 @@ export default function ProfilePage() {
         >
           <SaveButton onClick={handleSave} isPending={loading} />
         </AdminPageHeader>
+
+        {/* Two profiles, two homes: THIS page is who you are in the platform;
+            the sales profile is how your outreach sounds (title, pitch, tone,
+            signature) and lives with Sales Intelligence because that is what
+            consumes it. Sellers could not find it — nothing pointed there. */}
+        {salesEnabled && (
+          <Card className="mb-4">
+            <CardContent className="py-4 flex items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Target className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Sales profile</p>
+                  <p className="text-xs text-muted-foreground">
+                    Your sender context for outreach — title, personal pitch, tone and signature.
+                    Introduction letters are written in this voice.
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" asChild className="shrink-0">
+                <Link to="/admin/sales-intelligence?tab=profiles">
+                  Open <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
           {/* Avatar Section */}
           <Card>

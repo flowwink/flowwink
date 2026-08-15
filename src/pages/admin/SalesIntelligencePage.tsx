@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminPageContainer } from "@/components/admin/AdminPageContainer";
@@ -25,6 +26,10 @@ export default function SalesIntelligencePage() {
   const { analyze, isAnalyzing } = useProspectFit();
   const [result, setResult] = useState<ResearchResult | null>(null);
   const [fitResult, setFitResult] = useState<FitAnalysisResult | null>(null);
+  // Deep-linkable tabs: the Profile page points sellers straight at their
+  // sender profile (?tab=profiles), which is otherwise three clicks deep.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') ?? 'research';
 
   const handleResearch = async () => {
     if (!companyName.trim()) {
@@ -88,7 +93,11 @@ export default function SalesIntelligencePage() {
           description="Research prospects, evaluate fit, and generate introduction letters"
         />
 
-        <Tabs defaultValue="research" className="space-y-4">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setSearchParams(v === 'research' ? {} : { tab: v }, { replace: true })}
+          className="space-y-4"
+        >
           <TabsList>
             <TabsTrigger value="research">Research</TabsTrigger>
             <TabsTrigger value="profiles">Sales Profile</TabsTrigger>

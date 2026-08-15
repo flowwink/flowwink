@@ -16,6 +16,27 @@ import { executeContactFinder } from './contact-finder.ts';
 import type { HandlerCtx } from './qualify-lead.ts';
 import { distillCompany } from './company-distill.ts';
 
+/**
+ * Country from the domain's TLD — the cheap, honest signal. The outreach
+ * country policy (#89) needs companies.country to tell the seller which
+ * regime applies, and a blank field means "check yourself" for every
+ * prospect. A ccTLD is strong evidence of where a business operates; a
+ * generic TLD (.com/.io/.ai) says nothing, so it stays null rather than
+ * guessing. Written only when the column is empty — never over an
+ * operator's own entry, same discipline as industry/size.
+ */
+const TLD_COUNTRY: Record<string, string> = {
+  se: 'SE', dk: 'DK', fi: 'FI', no: 'NO', nl: 'NL', fr: 'FR', ie: 'IE',
+  be: 'BE', de: 'DE', at: 'AT', it: 'IT', es: 'ES', ch: 'CH', pt: 'PT',
+  pl: 'PL', cz: 'CZ', uk: 'GB', us: 'US', ca: 'CA', au: 'AU', nz: 'NZ',
+};
+
+function countryFromDomain(domain: string | null): string | null {
+  if (!domain) return null;
+  const tld = domain.split('.').pop()?.toLowerCase() ?? '';
+  return TLD_COUNTRY[tld] ?? null;
+}
+
 async function callEdge(ctx: HandlerCtx, functionName: string, body: Record<string, unknown>): Promise<any> {
   const res = await fetch(`${ctx.supabaseUrl}/functions/v1/${functionName}`, {
     method: 'POST',
@@ -141,14 +162,22 @@ export async function executeProspectResearch(
         ...(distilled?.industry ? { industry: distilled.industry } : {}),
         ...(distilled?.size_estimate ? { size: distilled.size_estimate } : {}),
       };
+      const derivedCountry = countryFromDomain(domain);
 
       if (existing?.id) {
         await supabase.from('companies').update(companyPayload).eq('id', existing.id);
         companyId = existing.id;
+        // Master-data discipline: fill the blank, never overwrite a decision.
+        if (derivedCountry) {
+          await supabase.from('companies')
+            .update({ country: derivedCountry })
+            .eq('id', existing.id)
+            .is('country', null);
+        }
       } else {
         const { data: inserted, error } = await supabase
           .from('companies')
-          .insert(companyPayload)
+          .insert({ ...companyPayload, ...(derivedCountry ? { country: derivedCountry } : {}) })
           .select('id')
           .single();
         if (error) console.error('company insert failed:', error.message);

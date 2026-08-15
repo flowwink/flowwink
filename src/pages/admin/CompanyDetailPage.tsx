@@ -33,6 +33,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { callSkill } from '@/lib/call-skill';
 import { CompanyContactsSection } from '@/components/admin/CompanyContactsSection';
 import { toast } from 'sonner';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -414,6 +415,24 @@ export default function CompanyDetailPage() {
                     </div>
                   )}
                   
+                  {/* #97 A4: the text that grounds fit scoring and intro
+                      letters was stored but never shown — an admin could not
+                      see what the AI believed about this company. */}
+                  {company.web_summary && (
+                    <div className="pt-4 border-t space-y-2">
+                      <ProvenanceLine icon={Sparkles}>
+                        What we read on their site
+                        {company.web_raw?.fetched_at
+                          ? ` (${new Date(company.web_raw.fetched_at).toLocaleDateString()})`
+                          : ''}{' '}
+                        — this grounds fit scoring and intro letters.
+                      </ProvenanceLine>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-[12]">
+                        {company.web_summary}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="pt-4 border-t text-xs text-muted-foreground space-y-1">
                     <p>Created: {formatDateTime(company.created_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}</p>
                     <p>Updated: {formatDateTime(company.updated_at, { year: 'numeric', month: 'long', day: 'numeric', hour: undefined, minute: undefined })}</p>

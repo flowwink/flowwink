@@ -53,6 +53,9 @@ export interface ContentProposal {
   status: ProposalStatus;
   topic: string;
   source_research: Record<string, unknown>;
+  /** Published knowledge that grounded generation ([{title, source}]) — disclosure (#97 A1).
+   * Optional: the generated Supabase types lag behind the migration. */
+  grounding_sources?: Array<{ title: string; source: string }> | null;
   pillar_content: string | null;
   featured_image: string | null;
   channel_variants: ChannelVariant;

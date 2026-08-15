@@ -437,9 +437,11 @@ export function AIProposalDialog({ open, onOpenChange, onSuccess }: AIProposalDi
                           )}>
                             {config?.label}
                           </span>
+                          {/* #97 B3: the reason lives in the row, not only
+                              in a tooltip. */}
                           {!available && (
                             <p className="text-[10px] text-muted-foreground truncate">
-                              Module disabled
+                              {hint ?? 'Module disabled'}
                             </p>
                           )}
                         </div>

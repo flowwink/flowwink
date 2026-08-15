@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { SendEmailDialog } from "@/components/admin/crm/SendEmailDialog";
 import type { ResearchResult } from "./types";
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 interface ResearchResultCardsProps {
   result: ResearchResult;
@@ -83,7 +84,7 @@ export function ResearchResultCards({ result }: ResearchResultCardsProps) {
       {/* Company Summary */}
       {result.company_summary && (
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 space-y-1">
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               {result.company_summary.name || result.company.name}
@@ -93,6 +94,12 @@ export function ResearchResultCards({ result }: ResearchResultCardsProps) {
                 </Badge>
               )}
             </CardTitle>
+            {result.read_from && (
+              <ProvenanceLine>
+                Read from {result.read_from.url ? new URL(result.read_from.url).hostname.replace(/^www\./, '') : 'their site'} on{' '}
+                {new Date(result.read_from.fetched_at).toLocaleDateString()} — distilled by AI, not verified.
+              </ProvenanceLine>
+            )}
             {result.company_summary.size_estimate && (
               <CardDescription>Size: {result.company_summary.size_estimate}</CardDescription>
             )}

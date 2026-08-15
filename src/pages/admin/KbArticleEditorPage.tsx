@@ -439,8 +439,12 @@ export default function KbArticleEditorPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">Include in Chat</p>
+                    {/* #97 C3: say WHICH audience the grounding reaches —
+                        "AI will use this" hid that public means anonymous
+                        visitors. */}
                     <p className="text-xs text-muted-foreground">
-                      AI will use this to answer questions
+                      Public articles can ground answers to anonymous visitors; internal ones
+                      only staff-facing agents.
                     </p>
                   </div>
                   <Switch

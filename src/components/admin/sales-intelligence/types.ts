@@ -1,6 +1,8 @@
 export interface ResearchResult {
   success: boolean;
   company: { id?: string; name: string; domain?: string };
+  /** Which page grounded company_summary, and when it was read (#97 A3). */
+  read_from?: { url: string | null; fetched_at: string } | null;
   contacts: Array<{
     id: string; email: string; name?: string;
     /** From Hunter's domain search — lets the seller choose targets on WHO, not just an address. */
@@ -32,6 +34,12 @@ export interface FitAnalysisResult {
    * that as an assessment.
    */
   ai_scored?: boolean;
+  /** What the score stands on — relayed from the aggregator (#97 A5). */
+  data_completeness?: {
+    icp_defined?: boolean;
+    has_web_summary?: boolean;
+    sender_profile_defined?: boolean;
+  } | null;
   fit_advice: string;
   problem_mapping: Array<{ prospect_problem: string; our_solution: string }>;
   introduction_letter: string;

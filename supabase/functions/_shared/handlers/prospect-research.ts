@@ -271,6 +271,11 @@ export async function executeProspectResearch(
     const result = {
       success: true,
       researched,
+      // Provenance for the UI (#97 A3): which page grounded the summary, read
+      // when. "Distilled by AI" is only honest if we say from what.
+      read_from: scrapeResult?.content
+        ? { url: scrapeUrl ?? null, fetched_at: new Date().toISOString() }
+        : null,
       ...(researched ? {} : {
         warning:
           'No data source responded — this is not a finding about the company. ' +

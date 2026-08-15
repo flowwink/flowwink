@@ -89,6 +89,9 @@ export interface IntegrationConfig {
   icon: string;
   category: 'payments' | 'communication' | 'ai' | 'media' | 'automation' | 'analytics' | 'notifications' | 'sales' | 'advertising';
   features: string[];
+  /** Who actually calls this key — so an admin can judge what a disconnect
+   * costs (#97 B2). Skills/functions/surfaces, human-readable. */
+  consumedBy?: string[];
   secretName?: string;
   docsUrl: string;
   docsLabel?: string;
@@ -135,6 +138,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'CreditCard',
     category: 'payments',
     features: ['E-commerce', 'Checkout', 'Subscriptions'],
+    consumedBy: ['create-checkout', 'stripe-webhook', 'invoice payments', 'subscriptions'],
     secretName: 'STRIPE_SECRET_KEY',
     docsUrl: 'https://stripe.com/docs/keys',
     docsLabel: 'Get API key',
@@ -157,6 +161,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Mail',
     category: 'communication',
     features: ['Newsletter', 'Order confirmations', 'Booking confirmations', 'Dunning'],
+    consumedBy: ['email-send rail (all outbound email)', 'newsletters', 'order & booking confirmations', 'dunning'],
     secretName: 'RESEND_API_KEY',
     docsUrl: 'https://resend.com/docs/introduction',
     docsLabel: 'Get API key',
@@ -197,6 +202,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Bot',
     category: 'ai',
     features: ['AI Chat', 'Text generation', 'Content migration'],
+    consumedBy: ['chat-completion', 'FlowPilot reasoning', 'campaign generation', 'fit analysis', 'embeddings'],
     secretName: 'OPENAI_API_KEY',
     docsUrl: 'https://platform.openai.com/api-keys',
     docsLabel: 'Get API key',
@@ -214,6 +220,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Bot',
     category: 'ai',
     features: ['AI Chat', 'Text generation', 'Content migration'],
+    consumedBy: ['chat-completion', 'FlowPilot reasoning (provider choice)'],
     secretName: 'GEMINI_API_KEY',
     docsUrl: 'https://aistudio.google.com/apikey',
     docsLabel: 'Get API key',
@@ -228,6 +235,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Bot',
     category: 'ai',
     features: ['AI Chat', 'Text generation', 'Content migration', 'Superior tool use'],
+    consumedBy: ['chat-completion', 'FlowPilot reasoning (provider choice)'],
     secretName: 'ANTHROPIC_API_KEY',
     docsUrl: 'https://console.anthropic.com/settings/keys',
     docsLabel: 'Get API key',
@@ -274,6 +282,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Image',
     category: 'media',
     features: ['Image picker in editor'],
+    consumedBy: ['media library stock search'],
     secretName: 'UNSPLASH_ACCESS_KEY',
     docsUrl: 'https://unsplash.com/developers',
     docsLabel: 'Get API key',
@@ -330,6 +339,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Flame',
     category: 'sales',
     features: ['Web scraping', 'Search', 'Company enrichment'],
+    consumedBy: ['web-scrape', 'prospect_research', 'enrich_company', 'migrate_url'],
     secretName: 'FIRECRAWL_API_KEY',
     docsUrl: 'https://firecrawl.dev/docs',
     docsLabel: 'Get API key',
@@ -341,6 +351,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Target',
     category: 'sales',
     features: ['Domain Search', 'Email Finder', 'Prospect Research'],
+    consumedBy: ['contact-finder (prospect_research)', 'verify_email'],
     secretName: 'HUNTER_API_KEY',
     docsUrl: 'https://hunter.io/api',
     docsLabel: 'Get API key',
@@ -355,6 +366,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Search',
     category: 'sales',
     features: ['Jina Search', 'Jina Reader', 'Prospect Research', 'Content Extraction'],
+    consumedBy: ['web-search', 'web-scrape (fallback)', 'prospect_research'],
     secretName: 'JINA_API_KEY',
     docsUrl: 'https://jina.ai/reader/',
     docsLabel: 'Get API key',
@@ -382,6 +394,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Network',
     category: 'automation',
     features: ['Gmail', 'Slack', 'HubSpot', 'Sheets', 'Intent-based tool resolution'],
+    consumedBy: ['gmail-inbox-scan', 'social publishing (LinkedIn)', 'composio-proxy'],
     secretName: 'COMPOSIO_API_KEY',
     docsUrl: 'https://docs.composio.dev',
     docsLabel: 'Get API key',
@@ -392,6 +405,7 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     icon: 'Globe',
     category: 'sales',
     features: ['Web search', 'Self-hosted', 'Free', 'Fallback for Firecrawl/Jina'],
+    consumedBy: ['web-search (first choice)', 'research skills'],
     docsUrl: 'https://docs.searxng.org/',
     docsLabel: 'SearXNG docs',
     config: {

@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 
 interface FlowPilotSummary {
-  recentActions: Array<{ skill_name: string; status: string; created_at: string }>;
+  recentActions: Array<{ skill_name: string; status: string; created_at: string; agent: string | null; error_message: string | null }>;
   activeObjectives: number;
   completedObjectives: number;
   lastHeartbeat: string | null;
@@ -25,7 +25,7 @@ function useFlowPilotSummary() {
       const [activityRes, objectivesRes, heartbeatRes] = await Promise.all([
         supabase
           .from('agent_activity')
-          .select('skill_name, status, created_at')
+          .select('skill_name, status, created_at, agent, error_message')
           .eq('agent', 'flowpilot')
           .gte('created_at', weekAgo)
           .order('created_at', { ascending: false })
@@ -129,8 +129,18 @@ export function FlowPilotDashboardWidget() {
                 ) : (
                   <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
                 )}
-                <span className="truncate flex-1 font-mono">
-                  {action.skill_name || 'unknown'}
+                <span className="truncate flex-1">
+                  <span className="font-mono">{action.skill_name || 'unknown'}</span>
+                  {/* #97 C1: WHO ran it, and on failure WHY it failed — the
+                      data has been in agent_activity all along. */}
+                  {action.agent && (
+                    <span className="text-muted-foreground"> · via {action.agent}</span>
+                  )}
+                  {action.status === 'failed' && action.error_message && (
+                    <span className="block text-[10px] text-destructive/80 truncate">
+                      {action.error_message}
+                    </span>
+                  )}
                 </span>
                 <span className="text-muted-foreground shrink-0">
                   {formatDistanceToNow(new Date(action.created_at), { addSuffix: true })}

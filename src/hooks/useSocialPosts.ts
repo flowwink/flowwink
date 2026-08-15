@@ -74,6 +74,51 @@ export function useCreateSocialPost() {
   });
 }
 
+interface UpdateSocialPost {
+  id: string;
+  content?: string;
+  channel?: SocialChannel;
+  scheduled_at?: string | null;
+  status?: SocialPostStatus;
+  link_url?: string | null;
+  media_url?: string | null;
+}
+
+/**
+ * Edit a queued post — the missing verb. The page could create, mark posted
+ * and delete, but never CHANGE: a draft (which is what campaign fan-out
+ * produces when the campaign has no schedule) could therefore never reach
+ * 'scheduled', and the sweep correctly ignores drafts. Magnus hit exactly
+ * that wall with the first campaign-born post (2026-08-14).
+ *
+ * Setting a time implies scheduling, mirroring create's rule — scheduling IS
+ * the approval, so it must be an explicit act either way.
+ */
+export function useUpdateSocialPost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateSocialPost) => {
+      const { id, ...rest } = input;
+      const patch: Record<string, unknown> = { ...rest };
+      if (rest.scheduled_at !== undefined && rest.status === undefined) {
+        patch.status = rest.scheduled_at ? 'scheduled' : 'draft';
+      }
+      // Re-arming a failed post clears the old reason — a stale error next to
+      // a queued post reads as "it failed again".
+      if (patch.status === 'scheduled') patch.error = null;
+      const { data, error } = await supabase
+        .from('social_posts')
+        .update(patch)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as SocialPost;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['social-posts'] }),
+  });
+}
+
 export function useMarkSocialPostPosted() {
   const qc = useQueryClient();
   return useMutation({

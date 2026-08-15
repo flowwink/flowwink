@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, ShoppingBag, ArrowLeft, Tag, X, Truck } from 'lucide-react';
+import { buildAttributionFields } from '@/lib/utm';
 
 interface AppliedDiscount {
   code: string;
@@ -224,6 +225,8 @@ export default function CheckoutPage() {
           })),
           customerName: formData.name,
           customerEmail: formData.email,
+          // Attribution follows the order — the campaign that earned this sale.
+          attribution: buildAttributionFields(),
           userId: user?.id || null,
           currency: currency,
           discountCode: appliedDiscount?.code ?? null,

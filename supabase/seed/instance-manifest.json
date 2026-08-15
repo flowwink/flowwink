@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260815130000",
-      "migrations_count": 426,
+      "migrations_count": 427,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1705,6 +1705,10 @@
         {
           "version": "20260814170000",
           "name": "outreach-country-policy"
+        },
+        {
+          "version": "20260814180000",
+          "name": "campaign-learning-mode"
         },
         {
           "version": "20260815130000",

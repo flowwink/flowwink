@@ -16,6 +16,8 @@ interface GenerateProposalInput {
   content_goals?: string[];
   unique_angle?: string;
   schedule_for?: string;
+  /** Traceability (learning mode): which research + angle shaped this campaign. */
+  source_research?: { research_id: string; topic: string; chosen_angle: string | null };
 }
 
 interface GenerateProposalResponse {
@@ -61,6 +63,7 @@ export function useGenerateProposal() {
           channel_variants: generated.channel_variants,
           status: 'pending_review',
           scheduled_for: input.schedule_for ?? null,
+          source_research: (input.source_research ?? null) as never,
           created_by: user?.id ?? null,
         })
         .select()

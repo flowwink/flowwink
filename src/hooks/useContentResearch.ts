@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { callSkill } from '@/lib/call-skill';
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { ChannelType } from './useContentProposals';
 
 export interface ContentAngle {
@@ -60,6 +62,8 @@ interface ResearchResponse {
   success: boolean;
   research: ContentResearch;
   ai_provider: string;
+  /** Row id of the auto-saved research — carried so the choice can be stamped on it. */
+  research_id?: string | null;
 }
 
 
@@ -87,7 +91,34 @@ export function useContentResearch() {
         throw new Error('Research returned no content angles — check the AI provider under Settings and try again.');
       }
       const ai_provider = result?.provider_used ?? result?.ai_provider ?? 'flowpilot';
-      return { success: true, research, ai_provider };
+
+      // Learning mode: research is ALWAYS persisted, not only when someone
+      // presses "Save Research". The fetch is the expensive part and the brief
+      // is its provenance — an answer without its question teaches nothing.
+      // Fire-and-forget: a failed save must not lose a finished research.
+      let research_id: string | null = null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: saved } = await supabase
+          .from('content_research')
+          .insert([{
+            topic: input.topic,
+            target_audience: input.target_audience ?? null,
+            industry: input.industry ?? null,
+            target_channels: input.target_channels ?? [],
+            research_data: research as never,
+            brief: input as never,
+            ai_provider,
+            created_by: user?.id ?? null,
+          }])
+          .select('id')
+          .single();
+        research_id = (saved as { id?: string } | null)?.id ?? null;
+      } catch (e) {
+        logger.warn('Research auto-save failed (research kept in memory)', e);
+      }
+
+      return { success: true, research, ai_provider, research_id };
     },
     onSuccess: (data) => {
       const angleCount = data.research.content_angles?.length || 0;

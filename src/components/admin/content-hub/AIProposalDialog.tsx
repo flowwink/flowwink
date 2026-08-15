@@ -36,6 +36,8 @@ import { ChannelIcon, ALL_CHANNELS, getChannelConfig, INTERNAL_CHANNELS } from '
 import { ResearchPreview } from './ResearchPreview';
 import { SavedResearchPicker } from './SavedResearchPicker';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface AIProposalDialogProps {
   open: boolean;
@@ -94,6 +96,9 @@ export function AIProposalDialog({ open, onOpenChange, onSuccess }: AIProposalDi
   const [selectedAngle, setSelectedAngle] = useState<ContentAngle | null>(null);
   const [selectedHooks, setSelectedHooks] = useState<string[]>([]);
   const [researchData, setResearchData] = useState<ContentResearch | null>(null);
+  // Learning mode: the auto-saved research row this session came from — the
+  // choice made below is stamped back onto it, and the campaign links to it.
+  const [researchId, setResearchId] = useState<string | null>(null);
 
   const { generateProposal, isGenerating, progress } = useGenerateProposal();
   const { research, isResearching, progress: researchProgress, reset: resetResearch } = useContentResearch();
@@ -146,6 +151,7 @@ export function AIProposalDialog({ open, onOpenChange, onSuccess }: AIProposalDi
 
       if (result.research) {
         setResearchData(result.research);
+        setResearchId(result.research_id ?? null);
         setStep('research');
       }
     } catch {
@@ -210,7 +216,31 @@ export function AIProposalDialog({ open, onOpenChange, onSuccess }: AIProposalDi
         industry: industry || undefined,
         content_goals: contentGoals.length > 0 ? contentGoals : undefined,
         unique_angle: selectedAngle?.angle || uniqueAngle || undefined,
+        // Traceability: the campaign knows which research (and which angle out
+        // of which alternatives) shaped it.
+        source_research: researchId
+          ? { research_id: researchId, topic, chosen_angle: selectedAngle?.angle ?? uniqueAngle ?? null }
+          : undefined,
       });
+
+      // Stamp the verdict on the research: what won, what lost. This is the
+      // only signal that says something about THIS company's taste rather than
+      // the model's priors — the raw material a preference distillate is built
+      // from (never raw rows in a prompt).
+      if (researchId) {
+        void supabase
+          .from('content_research')
+          .update({
+            chosen_angle: selectedAngle?.angle ?? uniqueAngle ?? null,
+            chosen_hooks: selectedHooks.length ? selectedHooks : null,
+            rejected_angles: (researchData?.content_angles ?? [])
+              .map((a) => a.angle)
+              .filter((a) => a !== selectedAngle?.angle),
+            chosen_at: new Date().toISOString(),
+          } as never)
+          .eq('id', researchId)
+          .then(({ error }) => { if (error) logger.warn('Choice stamp failed', error); });
+      }
 
       if (result.proposal) {
         onOpenChange(false);

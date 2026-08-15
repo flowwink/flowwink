@@ -164,10 +164,12 @@ async function extractEntity(
     case 'docs_pages': {
       const { data } = await service
         .from('docs_pages')
-        .select('title, slug, category, content')
+        .select('title, slug, category, content, is_published')
         .eq('id', entityId)
         .maybeSingle();
-      if (!data || !data.content?.trim()) return null;
+      // `=== false` not `!`: on a schema-drifted instance without the column,
+      // undefined must mean "published" (the column default), not de-index.
+      if (!data || data.is_published === false || !data.content?.trim()) return null;
       return {
         title: data.title,
         // INTERNAL, never public. docs_pages is FlowWink's OWN repo
@@ -178,7 +180,11 @@ async function extractEntity(
         // design) could read our entire architecture documentation out of a
         // customer's database with one RPC call. Found 2026-08-12 on four
         // fleet instances at once — 7,959 chunks in total. Staff surfaces keep
-        // it via the internal tier; the public path is closed by class.
+        // it via the internal tier; the /docs page's own chat serves anonymous
+        // readers through the ONE named exception (retrieval/vendor-docs.ts —
+        // service eyes, source pinned to docs_pages). Because that exception
+        // bypasses RLS, the is_published gate above is load-bearing: an
+        // unpublished docs page must leave the index, not rely on a tier.
         visibility: 'internal',
         chunks: chunkMarkdown(data.title, data.content),
         metadata: { slug: data.slug, category: data.category, url: `/docs/${data.category}/${data.slug}` },

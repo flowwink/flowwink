@@ -138,6 +138,16 @@ language sql stable security invoker ...
   Flowwork/workspace-chat. **Never the service-role key.** SECURITY INVOKER +
   RLS makes a leak structurally impossible rather than prompt-discouraged —
   the read-side twin of agent-safe-by-construction.
+- **One named exception:** `retrieveVendorDocs`
+  (`_shared/retrieval/vendor-docs.ts`). Vendor docs are classed `internal` so
+  no customer-facing anon surface can request them (#214) — but the /docs
+  page's own chat is their sanctioned public reader (the docs are public on
+  GitHub; the tier is audience routing, not secrecy). That one surface
+  retrieves with service eyes and a source list pinned to `docs_pages` inside
+  the helper — not a parameter, so no caller input can widen it. Guardrails
+  pin the helper's scope, pin docs-chat to the helper, and forbid every other
+  consumer from importing it. Retired when #80 ships docs as a prebuilt
+  artifact.
 
 ## 5. Consumers and migration order
 

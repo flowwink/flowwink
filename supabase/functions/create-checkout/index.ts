@@ -316,6 +316,26 @@ serve(async (req: Request) => {
       cancelUrl,
       bookingId,
     } = body;
+    // Attribution rides in from the storefront (src/lib/utm.ts). Orders have
+    // carried first_/last_utm_* columns since the attribution model landed,
+    // but NOTHING ever wrote them — get_attribution_report could therefore
+    // never connect a campaign to revenue (growth audit 2026-08-14).
+    const attribution = ((): Record<string, string | null> => {
+      const a = (body as Record<string, unknown>).attribution as Record<string, unknown> | undefined;
+      const pick = (k: string) => {
+        const v = a?.[k];
+        return typeof v === 'string' && v.trim() ? v.trim() : null;
+      };
+      return {
+        first_utm_source: pick('first_utm_source'),
+        first_utm_medium: pick('first_utm_medium'),
+        first_utm_campaign: pick('first_utm_campaign'),
+        last_utm_source: pick('last_utm_source'),
+        last_utm_medium: pick('last_utm_medium'),
+        last_utm_campaign: pick('last_utm_campaign'),
+      };
+    })();
+
     const discountCode = (body.discountCode ?? body.discount_code ?? "").trim() || null;
     const shippingAddress = body.shippingAddress ?? body.shipping_address ?? null;
     const shippingRateId = (body.shippingRateId ?? body.shipping_rate_id ?? "").toString().trim() || null;
@@ -382,6 +402,7 @@ serve(async (req: Request) => {
           total_cents: totalCents,
           currency: (currency || 'SEK').toUpperCase(),
           status: orderStatus,
+          ...attribution,
           user_id: userId || null,
           discount_code: discount?.code ?? null,
           discount_cents: discount?.discountCents ?? null,
@@ -647,6 +668,7 @@ serve(async (req: Request) => {
         total_cents: totalCents,
         currency: currency.toUpperCase(),
         status: "pending",
+        ...attribution,
         user_id: userId || null,
         discount_code: discount?.code ?? null,
         discount_cents: discount?.discountCents ?? null,

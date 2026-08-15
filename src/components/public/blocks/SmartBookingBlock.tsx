@@ -14,6 +14,7 @@ import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { webhookEvents } from '@/lib/webhook-utils';
 import { format, addDays, startOfWeek, addWeeks, isSameDay, isToday, isBefore, startOfDay } from 'date-fns';
 import { FALLBACK_CURRENCY } from '@/lib/platform-fallbacks';
+import { buildAttributionFields } from '@/lib/utm';
 
 interface SmartBookingBlockProps {
   data: BookingBlockData;
@@ -136,6 +137,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                 }],
                 customerName: formData.name,
                 customerEmail: formData.email,
+                attribution: buildAttributionFields(),
                 userId: null,
                 currency: selectedService.currency || FALLBACK_CURRENCY,
                 successUrl: `${window.location.origin}/checkout/success`,

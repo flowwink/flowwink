@@ -128,6 +128,9 @@ export async function createLeadFromForm(options: {
   // returns nothing so an outsider cannot probe which emails exist in the CRM.
   // The legacy path stays as fallback for instances that have not run the
   // migration yet (the fleet runs several schema versions at once by design).
+  // Read once, before either path — both stamp the same values.
+  const attributionOnSubmit = buildAttributionFields();
+
   try {
     const rpcCall = supabase.rpc as unknown as (
       fn: string,
@@ -148,6 +151,17 @@ export async function createLeadFromForm(options: {
       // "no journey to attach", which is the consent-respecting answer.
       p_visitor_id:
         typeof localStorage !== 'undefined' ? localStorage.getItem('pez_visitor_id') : null,
+      // Attribution rides the PRIMARY path now. It was captured client-side all
+      // along (captureUtmOnLanding) but only stamped in the legacy fallback
+      // below — which fails for every anonymous visitor by design — so every
+      // real form lead was born unattributed and the revenue report truthfully
+      // showed nothing (growth audit 2026-08-14).
+      p_first_utm_source: attributionOnSubmit.first_utm_source,
+      p_first_utm_medium: attributionOnSubmit.first_utm_medium,
+      p_first_utm_campaign: attributionOnSubmit.first_utm_campaign,
+      p_last_utm_source: attributionOnSubmit.last_utm_source,
+      p_last_utm_medium: attributionOnSubmit.last_utm_medium,
+      p_last_utm_campaign: attributionOnSubmit.last_utm_campaign,
     });
     if (!rpcError) {
       return { lead: null, isNew: true, error: null };

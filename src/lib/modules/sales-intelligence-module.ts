@@ -36,15 +36,6 @@ export const salesIntelligenceOutputSchema = z.object({
 export type SalesIntelligenceInput = z.infer<typeof salesIntelligenceInputSchema>;
 export type SalesIntelligenceOutput = z.infer<typeof salesIntelligenceOutputSchema>;
 
-const ACTION_MAP: Record<string, string> = {
-  'research': 'prospect-research',
-  'fit-analysis': 'prospect-fit-analysis',
-  'profile-setup': 'sales-profile-setup',
-  'web-search': 'web-search',
-  'web-scrape': 'web-scrape',
-  'contact-finder': 'contact-finder',
-};
-
 // ── Bundled skill definitions (migrated from setup-flowpilot) ──
 const SALESINTELLIGENCE_SKILLS: SkillSeed[] = [
   {
@@ -212,7 +203,7 @@ This skill is primarily triggered by automations, not directly by users.
   },
   {
     name: 'sales_profile_setup',
-    description: 'Set up or update the Sales Intelligence company profile or user profile. Use when: configuring sales profile, updating company positioning for prospecting. NOT for: managing business identity (use manage_business_identity).',
+    description: 'Set up or update the per-seller sales profile (type "user"): name, title, personal pitch, tone, signature — the sender context outreach is written in. Use when: a salesperson configures how their outreach sounds. NOT for: company-level ICP, value proposition, services or positioning — those live in Business Identity (site_settings.company_profile, via manage_site_settings or the Business Identity page) and a type:"company" call here is REFUSED with that pointer, because nothing reads it.',
     category: 'crm',
     handler: 'internal:sales_profile_setup',
     scope: 'internal',
@@ -237,7 +228,7 @@ This skill is primarily triggered by automations, not directly by users.
                 'user',
               ],
               type: 'string',
-              description: 'Profile type: company (shared business profile) or user (personal sales profile)',
+              description: 'Always "user" (the per-seller sender profile). "company" is refused — company positioning lives in Business Identity.',
             },
           },
         },
@@ -275,45 +266,4 @@ export const salesIntelligenceModule = defineModule<SalesIntelligenceInput, Sale
     tables: ['sales_intelligence_profiles'],
   },
   skillSeeds: SALESINTELLIGENCE_SKILLS,
-
-  async publish(input: SalesIntelligenceInput): Promise<SalesIntelligenceOutput> {
-    try {
-      const validated = salesIntelligenceInputSchema.parse(input);
-      const action = validated.action || 'research';
-      const edgeFunction = ACTION_MAP[action];
-
-      if (!edgeFunction) {
-        return { success: false, error: `Unknown action: ${action}` };
-      }
-
-      let body: Record<string, unknown>;
-      if (action === 'profile-setup') {
-        body = { type: validated.profile_type, data: validated.profile_data };
-      } else if (action === 'fit-analysis') {
-        body = {
-          company_id: validated.company_id,
-          company_name: validated.company_name,
-          decision_maker_first_name: validated.decision_maker_first_name,
-          decision_maker_last_name: validated.decision_maker_last_name,
-        };
-      } else {
-        body = {
-          company_name: validated.company_name,
-          company_url: validated.company_url,
-        };
-      }
-
-      const { data, error } = await supabase.functions.invoke(edgeFunction, { body });
-
-      if (error) {
-        logger.error(`[SalesIntelligenceModule] ${edgeFunction} error:`, error);
-        return { success: false, error: error.message };
-      }
-
-      return data as SalesIntelligenceOutput;
-    } catch (error) {
-      logger.error('[SalesIntelligenceModule] Error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  },
 });

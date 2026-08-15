@@ -31,6 +31,26 @@ export async function executeSalesProfileSetup(
       return { error: 'type must be "company" or "user"' };
     }
 
+    // type:'company' wrote a row NOBODY reads: the company side of sales
+    // grounding comes from site_settings.company_profile (Business Identity) —
+    // that is what loadSalesContext, the fit analysis and every outward AI
+    // surface actually consume. A write here answered success while changing
+    // nothing anyone would ever see: the silent no-op class. Refuse, and say
+    // where the truth lives (self-correcting error, #89 cleanup).
+    if (type === 'company') {
+      return {
+        error:
+          'Company-level ICP/positioning lives in Business Identity ' +
+          '(site_settings.company_profile), not in sales_intelligence_profiles — ' +
+          'a profile written here is read by nothing. Use manage_site_settings ' +
+          'with key "company_profile" (fields: icp, value_proposition, ' +
+          'differentiators, services, target_industries), or the admin page ' +
+          'Business Identity. This skill handles type:"user" — the per-seller ' +
+          'sender profile (name, title, personal pitch, tone, signature).',
+        wrote_nothing: true,
+      };
+    }
+
     // Tolerant arg-mapping: accept either { type, data: {...} } or a flat
     // { type, icp, value_proposition, ... } payload from MCP/FlowChat callers.
     let data: Record<string, unknown>;

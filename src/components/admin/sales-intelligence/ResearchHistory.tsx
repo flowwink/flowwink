@@ -60,7 +60,11 @@ export function ResearchHistory() {
               return (
                 <Link
                   key={c.id}
-                  to={`/admin/leads?company=${c.id}`}
+                  /* /admin/leads never read a ?company= param — the link
+                     silently landed on an unfiltered lead list. The company's
+                     own page is where a researched prospect belongs anyway:
+                     firmographics, what we read, and its contacts in one view. */
+                  to={`/admin/companies/${c.id}`}
                   className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">

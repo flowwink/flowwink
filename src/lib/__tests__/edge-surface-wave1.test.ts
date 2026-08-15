@@ -165,12 +165,25 @@ describe('sales_profile_setup internal handler — auth semantics', () => {
 
   it('flat payload (no data wrapper) is accepted — MCP/FlowChat tolerance kept', async () => {
     const db = stubDb({ data: { id: 'p2' }, error: null });
-    const res = await executeSalesProfileSetup(db, { type: 'company', icp: 'SMBs', value_proposition: 'v' }, ctx);
+    const res = await executeSalesProfileSetup(
+      db,
+      { type: 'user', title: 'AE', personal_pitch: 'v' },
+      { ...ctx, callerUserId: 'u1' },
+    );
     expect(res).toMatchObject({ success: true });
     expect(db._q.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { icp: 'SMBs', value_proposition: 'v' } }),
+      expect.objectContaining({ data: { title: 'AE', personal_pitch: 'v' } }),
       expect.anything(),
     );
+  });
+
+  it('type company is REFUSED and points at Business Identity — it wrote a row nobody reads', async () => {
+    const db = stubDb({ data: { id: 'p3' }, error: null });
+    const res = await executeSalesProfileSetup(db, { type: 'company', data: { icp: 'SMBs' } }, ctx);
+    expect(res).toMatchObject({ wrote_nothing: true });
+    expect(String(res.error)).toContain('company_profile');
+    // The point of refusing: nothing may be written on this path.
+    expect(db._q.upsert).not.toHaveBeenCalled();
   });
 
   it('bad type → exact validation message', async () => {

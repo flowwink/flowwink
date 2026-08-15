@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useDocuments, useDeleteDocument, getDocumentSignedUrl, type Document } from "@/hooks/useDocuments";
+import { useDocuments, useDeleteDocument, getDocumentSignedUrl, isDownloadableDocument, type Document } from "@/hooks/useDocuments";
 import { FileText, Trash2, ExternalLink, FolderOpen, Plus } from "lucide-react";
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { AddDocumentDialog } from "@/components/admin/documents/AddDocumentDialog";
@@ -141,7 +141,7 @@ export default function DocumentsPage() {
                           <TableCell className="text-sm">{formatDateTime(doc.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: undefined, minute: undefined })}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-1">
-                              {doc.file_url && (
+                              {isDownloadableDocument(doc.file_url) && (
                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openFile(doc.file_url)}>
                                   <ExternalLink className="h-3.5 w-3.5" />
                                 </Button>

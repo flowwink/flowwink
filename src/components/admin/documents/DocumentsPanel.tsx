@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Plus, ExternalLink, Trash2, FolderOpen } from "lucide-react";
-import { useEntityDocuments, useDeleteDocument, getDocumentSignedUrl } from "@/hooks/useDocuments";
+import { useEntityDocuments, useDeleteDocument, getDocumentSignedUrl, isDownloadableDocument } from "@/hooks/useDocuments";
 import { usePlatformFormat } from "@/hooks/usePlatformFormat";
 import { AddDocumentDialog } from "./AddDocumentDialog";
 
@@ -62,7 +62,7 @@ export function DocumentsPanel({ entityType, entityId, defaultCategory, title }:
                 </p>
               </div>
               <Badge variant="outline" className="capitalize text-xs">{d.category}</Badge>
-              {d.file_url && (
+              {isDownloadableDocument(d.file_url) && (
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => open(d.file_url)}>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Button>

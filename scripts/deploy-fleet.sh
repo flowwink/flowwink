@@ -2,9 +2,9 @@
 #
 # deploy-fleet.sh — ship the 3 non-frontend layers (migrations, edge functions,
 # skills) to a FlowWink instance. The frontend deploys separately (Vercel auto
-# for www/demo from `main`; a manual rebuild for forks/separate accounts).
+# for www from `main`; a manual rebuild for forks/separate accounts).
 #
-# A `git push` ships ONLY the frontend, and only to www + demo. Everything this
+# A `git push` ships ONLY the frontend, and only to www. Everything this
 # script does must run per-instance — see docs/operators/provisioning-and-updates.md.
 #
 # Usage:
@@ -89,7 +89,7 @@ deploy_one() {
 main() {
   local target="${1:-}"
   if [[ -z "$target" ]]; then
-    echo "usage: bash scripts/deploy-fleet.sh <www|demo|liteit|autoversio|all>" >&2
+    echo "usage: bash scripts/deploy-fleet.sh <www|liteit|autoversio|optic|all>" >&2
     exit 1
   fi
 
@@ -98,7 +98,7 @@ main() {
   npm run --silent skills:json
 
   if [[ "$target" == "all" ]]; then
-    for n in www demo liteit autoversio; do deploy_one "$n"; done
+    for n in www liteit autoversio; do deploy_one "$n"; done
   else
     deploy_one "$target"
   fi

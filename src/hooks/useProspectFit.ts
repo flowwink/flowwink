@@ -214,10 +214,16 @@ export function useProspectFit() {
       const companyId = args.company_id
         ?? ((raw as { company?: { id?: string } })?.company?.id ?? undefined);
 
+      // #97 A5: the aggregator has always reported what the score stands on
+      // (ICP defined? site read? sender profile?) — relay it so the card can
+      // say what was weighed instead of presenting a bare number.
+      const completeness = ((raw as Record<string, unknown>)?.data_completeness ?? null) as FitAnalysisResult['data_completeness'];
+
       if (scored && typeof scored.fit_score === 'number') {
         const fit: FitAnalysisResult = {
           success: true,
           ai_scored: true,
+          data_completeness: completeness,
           fit_score: Math.max(0, Math.min(100, Math.round(scored.fit_score as number))),
           fit_advice: (scored.fit_advice as string) ?? 'Fit analysis completed.',
           problem_mapping: Array.isArray(scored.problem_mapping)
@@ -232,7 +238,7 @@ export function useProspectFit() {
         return { raw, aiScored: true, fit };
       }
 
-      const fallback = dataOnlyFit(raw);
+      const fallback = { ...dataOnlyFit(raw), data_completeness: completeness };
       if (companyId) void persistFit(companyId, fallback, false);
       return { raw, aiScored: false, fit: fallback };
     } finally {

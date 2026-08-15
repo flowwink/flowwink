@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260815130000",
-      "migrations_count": 427,
+      "migrations_count": 428,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1711,6 +1711,10 @@
           "name": "campaign-learning-mode"
         },
         {
+          "version": "20260814200000",
+          "name": "proposals-remember-their-sources"
+        },
+        {
           "version": "20260815130000",
           "name": "unpublished-vendor-docs-leave-the-index"
         }
@@ -1723,7 +1727,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:71a81163c1f478681c02f21a851e128ed27dbd9fc2d6f27b18f920f412f3f5b2",
+      "shared_hash": "sha256:f9dda7fac62b764760773a66b5e43d869a691f78aac8585b1ccb1f0e4c4476cb",
       "functions": {
         "a2a": "sha256:fe31e0b157534cc856e40c84efef6ff7f2ecc34ffd2cca250d8aed8ffe345397",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",

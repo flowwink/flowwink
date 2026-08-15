@@ -48,6 +48,9 @@ export function useGenerateProposal() {
       if (envelope?.error) throw new Error(String(envelope.error));
 
       const generated = envelope?.result ?? envelope?.proposal ?? envelope;
+      // A1 (#97): the backend has disclosed grounding_sources all along —
+      // keep them so the preview can say what shaped this campaign.
+      const groundingSources = (envelope as Record<string, unknown>)?.grounding_sources ?? null;
       if (!generated?.channel_variants || Object.keys(generated.channel_variants).length === 0) {
         throw new Error('Generation returned no channel variants — check the AI provider under Settings and try again.');
       }
@@ -64,6 +67,7 @@ export function useGenerateProposal() {
           status: 'pending_review',
           scheduled_for: input.schedule_for ?? null,
           source_research: (input.source_research ?? null) as never,
+          grounding_sources: groundingSources as never,
           created_by: user?.id ?? null,
         })
         .select()

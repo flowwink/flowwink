@@ -8,6 +8,7 @@ import { Target, Mail, ArrowRight, Copy, ExternalLink, Sparkles } from "lucide-r
 import { toast } from "sonner";
 import { SendEmailDialog } from "@/components/admin/crm/SendEmailDialog";
 import type { FitAnalysisResult } from "./types";
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 interface FitAnalysisCardProps {
   result: FitAnalysisResult;
@@ -70,6 +71,23 @@ export function FitAnalysisCard({ result, companyName }: FitAnalysisCardProps) {
             <ScoreRing score={result.fit_score} aiScored={result.ai_scored !== false} />
             <p className="text-sm text-muted-foreground flex-1">{result.fit_advice}</p>
           </div>
+
+          {/* What the number stands on (#97 A5) — grounding, not decoration. */}
+          {result.ai_scored !== false && result.data_completeness && (
+            <ProvenanceLine
+              {...(!result.data_completeness.icp_defined
+                ? { to: '/admin/company-insights', linkLabel: 'Define your ICP' }
+                : {})}
+            >
+              {result.data_completeness.icp_defined
+                ? 'Scored against your ICP in Business Identity'
+                : 'No ICP defined — scored against positioning only.'}
+              {result.data_completeness.icp_defined &&
+                (result.data_completeness.has_web_summary
+                  ? ' vs. what we read on their site.'
+                  : ' — their site has not been read yet, so this leans on firmographics.')}
+            </ProvenanceLine>
+          )}
 
           {result.ai_scored === false && (
             <p className="text-xs text-yellow-600 bg-yellow-500/10 rounded-md px-3 py-2">

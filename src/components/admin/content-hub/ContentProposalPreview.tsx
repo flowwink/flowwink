@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
-import {
+import { BookOpen,
   CheckCircle2, 
   RefreshCw, 
   X, 
@@ -24,6 +24,7 @@ import { ChannelMockup } from './ChannelMockup';
 import { ChannelImageOverride } from './FeaturedImagePicker';
 import { EditProposalDialog } from './EditProposalDialog';
 import { cn } from '@/lib/utils';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 interface ContentProposalPreviewProps {
   proposal: ContentProposal;
@@ -164,6 +165,18 @@ export function ContentProposalPreview({ proposal, onClose, onRegenerate }: Cont
             alt="Featured"
             className="w-full max-h-32 object-cover rounded-lg"
           />
+        </div>
+      )}
+
+      {/* What shaped this campaign — the disclosure the backend has made all
+          along (knowledge recycling); the UI finally relays it (#97 A1). */}
+      {(proposal.grounding_sources?.length ?? 0) > 0 && (
+        <div className="flex-shrink-0 border-b px-4 py-2">
+          <ProvenanceLine icon={BookOpen}>
+            Grounded in {proposal.grounding_sources!.length} published{' '}
+            {proposal.grounding_sources!.length === 1 ? 'source' : 'sources'}:{' '}
+            {proposal.grounding_sources!.map((s) => s.title).join(', ')}
+          </ProvenanceLine>
         </div>
       )}
 

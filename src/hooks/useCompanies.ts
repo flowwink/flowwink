@@ -28,6 +28,9 @@ export interface Company {
   tags?: string[] | null;
   parent_company_id?: string | null;
   account_owner?: string | null;
+  /** What research read on their site — grounds fit scoring and intro letters (#97 A4). */
+  web_summary?: string | null;
+  web_raw?: { url?: string | null; fetched_at?: string | null } | null;
 }
 
 export function useCompanies() {

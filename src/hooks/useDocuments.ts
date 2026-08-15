@@ -32,6 +32,14 @@ export type Document = {
   visibility: DocumentVisibility;
   /** Required when visibility is `role`; ignored otherwise. */
   visible_to_role: AppRole | null;
+  /**
+   * Text the extraction pipeline pulled out of the file. This is what makes a
+   * document searchable — and for a document whose bytes are not fetchable
+   * (demo fixtures), reading THIS is the honest equivalent of opening it.
+   */
+  content_md: string | null;
+  extraction_status: string | null;
+  extraction_error: string | null;
 };
 
 export type DocumentVisibility = 'shared' | 'role' | 'private';

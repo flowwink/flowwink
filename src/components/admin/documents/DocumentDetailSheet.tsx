@@ -15,8 +15,10 @@ import {
 } from '@/components/ui/select';
 import {
   History, Share2, PenTool, Upload, RotateCcw, Copy, Ban, X, CheckCircle2,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 import { getDocumentSignedUrl, isDownloadableDocument, type Document } from '@/hooks/useDocuments';
 import {
   useDocumentVersions, useReplaceDocumentFile, useRestoreDocumentVersion,
@@ -89,6 +91,37 @@ function VersionsCard({ doc }: { doc: Document }) {
   };
 
   return (
+    <div className="space-y-4">
+    {/* Extracted content — for a document whose bytes are not fetchable (demo
+        fixtures, or a file that lives only as extracted text) this IS the
+        honest "open": the module's real product is the searchable content. */}
+    {doc.content_md ? (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Extracted content
+            {!isDownloadableDocument(doc.file_url) && (
+              <span className="text-xs font-normal text-muted-foreground">
+                — no file to download; this is what the document holds
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-y-auto rounded-md border bg-muted/30 p-3">
+            <ReactMarkdown>{doc.content_md}</ReactMarkdown>
+          </div>
+        </CardContent>
+      </Card>
+    ) : doc.extraction_status && doc.extraction_status !== 'success' ? (
+      <Card>
+        <CardContent className="py-4 text-sm text-muted-foreground">
+          No extracted content — status <span className="font-medium text-foreground">{doc.extraction_status}</span>
+          {doc.extraction_error ? `: ${doc.extraction_error}` : '.'}
+        </CardContent>
+      </Card>
+    ) : null}
+
     <Card>
       <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base flex items-center gap-2">
@@ -134,6 +167,7 @@ function VersionsCard({ doc }: { doc: Document }) {
         ))}
       </CardContent>
     </Card>
+    </div>
   );
 }
 

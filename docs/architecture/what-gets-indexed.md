@@ -25,7 +25,7 @@ tokens for FlowWink's own material. The module expresses which case applies:
 | **Pages** (CMS) | The instance | Published = public | Locally, on publish |
 | **Blog posts** | The instance | Published = public | Locally, on publish |
 | **KB articles** | The instance | Per-article public/internal flag | Locally |
-| **Docs** | FlowWink (vendor repo) | Public | *Today:* locally, behind an admin sync. *Target (#80):* shipped artifact — chunks + embeddings prebuilt in the repo, hash-gated |
+| **Docs** | FlowWink (vendor repo) | Internal tier; served publicly ONLY through the docs surface (the one named exception, `retrieveVendorDocs`) | *Today:* locally, behind an admin sync. *Target (#80):* shipped artifact — chunks + embeddings prebuilt in the repo, hash-gated |
 | **Wiki** | The instance | Internal | Locally |
 | **Documents** (uploads) | The instance | Inherits the document's own access | Locally, by the document sweeper |
 
@@ -34,11 +34,15 @@ the first sync. A new company cannot accidentally spend money on embeddings.
 
 ## What outward-facing AI may ground in
 
-Outward copy (campaign proposals, social posts, the public site chat, the docs
-assistant) grounds through an **anonymous** client. Internal wiki pages,
-handbook sections and uploaded documents are invisible to it — by the same
-mechanism that hides them on the website. See
-[knowledge-recycling.md](../concepts/knowledge-recycling.md).
+Outward copy (campaign proposals, social posts, the public site chat) grounds
+through an **anonymous** client. Internal wiki pages, handbook sections and
+uploaded documents are invisible to it — by the same mechanism that hides them
+on the website. See
+[knowledge-recycling.md](../concepts/knowledge-recycling.md). The docs
+assistant is the one exception: it grounds through `retrieveVendorDocs`
+(service eyes, source pinned to `docs_pages`) because vendor docs sit on the
+internal tier for audience-routing reasons, not secrecy — see
+[retrieval-engine.md](retrieval-engine.md).
 
 Internal surfaces (FlowWork, admin chat, FlowPilot) run with the *user's* eyes:
 role and module access decide reach, again via RLS.

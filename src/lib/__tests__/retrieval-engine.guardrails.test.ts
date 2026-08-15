@@ -13,7 +13,10 @@
  *  2. RLS being dropped from the migration, or the anon policy widening
  *     beyond visibility='public'.
  *  3. A consumer calling the search RPC through the service-role client
- *     (bypasses RLS the other way around).
+ *     (bypasses RLS the other way around). ONE named exception exists:
+ *     retrieveVendorDocs (_shared/retrieval/vendor-docs.ts) — the /docs
+ *     surface serving FlowWink's own docs, with the source list pinned in
+ *     code the caller can't reach. Its locks are below.
  *
  * Live rung-boundary tests (seeded fixture, anon vs staff caller) live in
  * scripts/smoke/retrieval-leak.sql — run against any instance. These static
@@ -69,17 +72,45 @@ describe('Retrieval Engine confidentiality guardrails', () => {
     expect(lib).not.toMatch(/SERVICE_ROLE|getServiceClient/);
   });
 
-  it('docs-chat SEARCHES with the anon client (caller’s eyes) — service is config-only', () => {
+  it('docs-chat grounds ONLY through the named vendor-docs exception', () => {
+    // docs-chat is the sanctioned public reader of docs_pages (the docs are
+    // public on GitHub — 'internal' is audience routing, not secrecy). It may
+    // NOT call retrieve() itself: its privileged search travels through
+    // retrieveVendorDocs, whose source pin it cannot widen. History of this
+    // seam: 'public' chunks leaked via anon RPC (#214) → tier fix starved the
+    // anon-eyes search here and the chat answered ungrounded fleet-wide (#95).
     const fn = read('supabase/functions/docs-chat/index.ts');
-    // The chunk search must run on the anon client…
-    expect(fn).toMatch(/retrieve\(\s*getAnonClient\(\)/);
-    expect(fn).not.toMatch(/retrieve\(\s*getServiceClient/);
-    // …and the service client may appear ONLY as a CONFIG source: embedQuery
-    // (embedding provider keys) and resolveAiConfig (System AI provider keys,
-    // added when the Lovable-gateway hardwiring was replaced). Never search.
+    expect(fn).toMatch(/retrieveVendorDocs\(\s*getServiceClient\(\)/);
+    expect(fn, 'docs-chat must not call retrieve() directly').not.toMatch(/[^A-Za-z]retrieve\(/);
+    // The service client may appear ONLY for: config reads (embedQuery,
+    // resolveAiConfig) and the vendor-docs retrieval itself.
     const serviceUses = fn.match(/getServiceClient\(\)/g) ?? [];
-    const configUses = fn.match(/(?:embedQuery|resolveAiConfig)\(\s*getServiceClient\(\)/g) ?? [];
-    expect(serviceUses.length).toBe(configUses.length);
+    const sanctionedUses = fn.match(/(?:embedQuery|resolveAiConfig|retrieveVendorDocs)\(\s*getServiceClient\(\)/g) ?? [];
+    expect(serviceUses.length).toBe(sanctionedUses.length);
+  });
+
+  it('the vendor-docs exception is pinned to docs_pages and cannot be widened by callers', () => {
+    const helper = read('supabase/functions/_shared/retrieval/vendor-docs.ts');
+    // The pin is a module-local constant containing exactly one source…
+    expect(helper).toMatch(/const VENDOR_DOCS_SOURCES = \['docs_pages'\]/);
+    // …the options type must not grow a `sources` escape hatch…
+    const iface = helper.match(/export interface VendorDocsQuery \{[\s\S]*?\}/)?.[0] ?? '';
+    expect(iface, 'VendorDocsQuery must exist').not.toBe('');
+    expect(iface).not.toMatch(/sources\??:/);
+    // …and the retrieve call must use the pin, not a parameter.
+    expect(helper).toMatch(/sources:\s*VENDOR_DOCS_SOURCES/);
+  });
+
+  it('no customer-facing surface imports the vendor-docs exception', () => {
+    // The exception exists FOR the /docs surface. The customer-facing chats
+    // and the agent gateway must keep grounding with the caller's eyes.
+    for (const surface of [
+      'supabase/functions/chat-completion/index.ts',
+      'supabase/functions/workspace-chat/index.ts',
+      'supabase/functions/agent-execute/index.ts',
+    ]) {
+      expect(read(surface), `${surface} must not use retrieveVendorDocs`).not.toContain('retrieveVendorDocs');
+    }
   });
 
   it('chat-completion SEARCHES with the anon client (rung 0), never service', () => {

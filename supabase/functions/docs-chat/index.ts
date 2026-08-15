@@ -1,11 +1,17 @@
 // Public AI chat over the docs (Retrieval Engine consumer — see
 // docs/architecture/retrieval-engine.md). No JWT required (visitors are
-// anonymous). Retrieval runs with the CALLER's eyes: the anon client + RLS
-// on knowledge_chunks means this surface can only ever ground on 'public'
-// chunks — never internal wiki/documents content.
+// anonymous). Grounding runs through retrieveVendorDocs — the one NAMED
+// exception to caller's-eyes retrieval: docs_pages chunks are classed
+// 'internal' (so no customer-facing anon surface can request them, #214),
+// which starved this surface when it searched with anon eyes — from
+// 2026-08-12 it grounded on nothing and answered "not in the documentation"
+// fleet-wide (#95). The exception's scope is pinned inside vendor-docs.ts
+// (sources = docs_pages only, not a parameter); this request body carries
+// only `messages`, so no caller input can widen it.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getAnonClient, getServiceClient } from '../_shared/supabase-clients.ts';
-import { retrieve, renderContext } from '../_shared/retrieval/index.ts';
+import { getServiceClient } from '../_shared/supabase-clients.ts';
+import { renderContext } from '../_shared/retrieval/index.ts';
+import { retrieveVendorDocs } from '../_shared/retrieval/vendor-docs.ts';
 import { embedQuery } from '../_shared/retrieval/embedder.ts';
 import { resolveAiConfig } from '../_shared/ai-config.ts';
 import { callAi } from '../_shared/ai-call.ts';
@@ -34,15 +40,14 @@ serve(async (req) => {
 
     // Hybrid: the query embedding is computed with provider CONFIG (service
     // client — site_settings holds the API keys; null → text-only, Law 4).
-    // The chunk SEARCH still runs with the caller's eyes (anon client + RLS).
     const queryEmbedding = await embedQuery(getServiceClient(), lastUser);
 
-    // This surface answers from the docs site only (sources filter runs in SQL).
-    const chunks = await retrieve(getAnonClient(), {
+    // This surface answers from the vendor docs only — the source pin lives
+    // inside retrieveVendorDocs, not here (see the header comment).
+    const chunks = await retrieveVendorDocs(getServiceClient(), {
       query: lastUser,
       k: 8,
       tokenBudget: 4000,
-      sources: ["docs_pages"],
       queryEmbedding,
     });
 

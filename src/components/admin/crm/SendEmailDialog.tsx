@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { callSkill } from '@/lib/call-skill';
 import { useLeadEmailStatus } from '@/hooks/useLeadEmailStatus';
+import { useOutreachPolicy } from '@/hooks/useOutreachPolicy';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,12 @@ export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientN
   const [verifiedStatus, setVerifiedStatus] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const { data: storedStatus } = useLeadEmailStatus(leadId, open);
+  const { data: outreach } = useOutreachPolicy(leadId, open);
+  // Consent-required jurisdictions are not blocked — the seller may hold
+  // consent or an existing relationship. They must ACKNOWLEDGE the regime,
+  // which is both the honest gate and the record that they knew.
+  const [lawfulBasis, setLawfulBasis] = useState(false);
+  const consentRequired = outreach?.policy === 'consent_required';
   const emailStatus = verifiedStatus ?? storedStatus ?? null;
 
   const statusBlocksSend = emailStatus === 'invalid' || emailStatus === 'disposable';
@@ -317,6 +324,38 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
                 )}
               </div>
             )}
+            {/* The RECIPIENT's country decides the cold-outreach regime, not
+                ours (ePrivacy is implemented per member state). Data-driven —
+                outreach_country_policy — so the send path never branches on a
+                country name. */}
+            {leadId && outreach && (
+              consentRequired ? (
+                <div className="text-xs rounded-md border border-yellow-600/40 bg-yellow-500/10 px-3 py-2 space-y-2">
+                  <p className="text-yellow-700 dark:text-yellow-500">
+                    <span className="font-medium">{outreach.countryName ?? outreach.country}: prior consent required.</span>{' '}
+                    {outreach.note}
+                  </p>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={lawfulBasis}
+                      onChange={(e) => setLawfulBasis(e.target.checked)}
+                    />
+                    <span>I have consent or an existing business relationship with this recipient.</span>
+                  </label>
+                </div>
+              ) : outreach.policy === 'unknown' ? (
+                <p className="text-xs text-muted-foreground">
+                  Recipient country unknown — check the local rules before cold outreach.
+                  Set the company&apos;s country to get the regime shown here.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {outreach.countryName}: B2B outreach allowed with a working opt-out (already in every send).
+                </p>
+              )
+            )}
           </div>
           <div className="flex justify-end">
             <Button
@@ -358,7 +397,7 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
           </Button>
           <Button
             onClick={handleSend}
-            disabled={sending || !subject.trim() || !body.trim() || statusBlocksSend}
+            disabled={sending || !subject.trim() || !body.trim() || statusBlocksSend || (consentRequired && !lawfulBasis)}
           >
             <Send className="h-4 w-4 mr-2" />
             {sending ? 'Sending...' : 'Send Email'}

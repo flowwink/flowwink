@@ -201,8 +201,23 @@ export function useDeleteDocument() {
   });
 }
 
+/**
+ * Demo fixtures carry a `demo://` file_url: they exist to show the extraction
+ * STATE SPACE (extracted / failed / unsupported / image / pending), not to be
+ * downloaded — no bytes were ever uploaded, and a migration cannot upload any.
+ * The UI must therefore not offer an action that can only fail; where the
+ * fixture has extracted content, showing THAT is the honest "open".
+ */
+export function isDownloadableDocument(fileUrl: string | null | undefined): boolean {
+  return !!fileUrl && !fileUrl.startsWith('demo://');
+}
+
 /** Get a short-lived signed URL for a private documents-bucket path. */
 export async function getDocumentSignedUrl(filePath: string, expiresIn = 60): Promise<string | null> {
+  if (!isDownloadableDocument(filePath)) {
+    toast.info('Demo document — no file was uploaded. It illustrates an extraction state.');
+    return null;
+  }
   if (/^https?:\/\//i.test(filePath)) return filePath; // already a public/external URL
   const { data, error } = await supabase.storage.from("documents").createSignedUrl(filePath, expiresIn);
   if (error) {

@@ -17,7 +17,7 @@ import {
   History, Share2, PenTool, Upload, RotateCcw, Copy, Ban, X, CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getDocumentSignedUrl, type Document } from '@/hooks/useDocuments';
+import { getDocumentSignedUrl, isDownloadableDocument, type Document } from '@/hooks/useDocuments';
 import {
   useDocumentVersions, useReplaceDocumentFile, useRestoreDocumentVersion,
   useDocumentShareLinks, useCreateDocumentShareLink, useRevokeDocumentShareLink, publicShareUrl,
@@ -103,7 +103,11 @@ function VersionsCard({ doc }: { doc: Document }) {
         <div className="rounded-md border p-2 text-sm flex items-center gap-2 bg-muted/40">
           <Badge>v{(doc as any).current_version_no ?? 1}</Badge>
           <div className="flex-1 truncate">{doc.file_name} <span className="text-muted-foreground">(current)</span></div>
-          <Button size="sm" variant="ghost" onClick={() => open(doc.file_url)}>Open</Button>
+          {isDownloadableDocument(doc.file_url) ? (
+            <Button size="sm" variant="ghost" onClick={() => open(doc.file_url)}>Open</Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">demo — no file</span>
+          )}
         </div>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>

@@ -62,7 +62,7 @@ because that determines how a change reaches it:
 > curl -sL https://<site>/ | grep -oE '[a-z]{20}\.supabase\.co'
 > ```
 
-- **Pushing to `main`** auto-deploys the *frontend* to flowwink.com + demo only.
+- **Pushing to `main`** auto-deploys the *frontend* to flowwink.com only.
 - **Backend auto-deploy (dev instance):** `.github/workflows/supabase-deploy.yml`
   runs `supabase db push` + `supabase functions deploy` on every push to `main`
   that touches `supabase/**`, targeting the `SUPABASE_PROJECT_REF` variable
@@ -134,7 +134,7 @@ After merging a change that touches **skills, handlers, or edge functions**:
 
 1. **Regenerate the artifact** (if `skillSeeds` changed): `npm run skills:json`,
    commit `supabase/seed/module-skills.json`.
-2. **Push to `main`** → flowwink.com + demo frontends auto-deploy.
+2. **Push to `main`** → flowwink.com frontend auto-deploys.
 3. **Migrations** (if any) — apply to every instance:
    `supabase db push --project-ref <ref>` (or via `flowwink.sh`). All migrations
    are idempotent (`IF NOT EXISTS` / `CREATE OR REPLACE` / conditional `UPDATE`).

@@ -12,6 +12,7 @@
 
 import { resolveAiConfig } from '../ai-config.ts';
 import { callAiCompletion } from '../ai-usage-logger.ts';
+import { loadBusinessIdentityBlock } from '../domains/business-identity-block.ts';
 
 export interface CompanyDistillation {
   industry: string | null;
@@ -28,6 +29,12 @@ export async function distillCompany(
   searchSnippets: string,
 ): Promise<CompanyDistillation | null> {
   try {
+    // OUR side, in the reading step. The fit analysis has grounded in Business
+    // Identity since the our_context fix, but distillation — which decides what
+    // is even worth extracting from their site — read the prospect blind. With
+    // the ICP present the same page yields sharper pain points: what matters is
+    // what OUR offering could act on, not a neutral summary (#89).
+    const identity = await loadBusinessIdentityBlock(supabase);
     const ai = await resolveAiConfig(supabase, 'fast');
     const result = await callAiCompletion({
       supabase,
@@ -41,7 +48,14 @@ export async function distillCompany(
             content:
               'You distill raw website text about a company into firmographics for a CRM. ' +
               'Ground every field in the provided text only — never guess or embellish. ' +
-              'Use null/empty when the text does not say.',
+              'Use null/empty when the text does not say.' +
+              (identity
+                ? identity +
+                  '\n\nUse the identity above ONLY to choose what is worth noting about the ' +
+                  'prospect — especially which of their operational problems our offering ' +
+                  'could plausibly act on. Never import our claims into their profile: every ' +
+                  'field must still be true of THEM, grounded in their own text.'
+                : ''),
           },
           {
             role: 'user',

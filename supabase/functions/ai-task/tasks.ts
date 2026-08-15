@@ -31,6 +31,7 @@ import type { AiTier } from "../_shared/ai-config.ts";
 import { loadContentMemoryBlock } from "../_shared/domains/content-memory.ts";
 import { loadBusinessIdentityBlock } from "../_shared/domains/business-identity-block.ts";
 import { loadPublicKnowledgeBlock } from "../_shared/domains/knowledge-recycling.ts";
+import { loadPreferenceDistillate } from "../_shared/domains/preference-distillate.ts";
 
 export interface TaskSpec<I = unknown, O = unknown> {
   name: string;
@@ -495,9 +496,13 @@ const contentResearchTask: TaskSpec<z.infer<typeof contentResearchInput>, any> =
   // _shared/domains/content-memory.ts.
   load: async (_input, supabase) => ({
     existing_coverage: await loadContentMemoryBlock(supabase, { limit: 15 }),
+    // Learning mode: past angle choices, distilled — the angle-picker step is
+    // where taste matters most, so the generator should propose in that
+    // direction (while existing_coverage stops it repeating itself).
+    editorial_taste: await loadPreferenceDistillate(supabase),
   }),
   system: (input) =>
-    `You are an expert content strategist. Produce deep, specific, non-generic research for the given brief and return it via the submit_content_research tool. Ground angles and hooks in real audience psychology; avoid filler and platitudes. Tailor angles to the requested channels.${(input as any).existing_coverage ?? ""}`,
+    `You are an expert content strategist. Produce deep, specific, non-generic research for the given brief and return it via the submit_content_research tool. Ground angles and hooks in real audience psychology; avoid filler and platitudes. Tailor angles to the requested channels.${(input as any).existing_coverage ?? ""}${(input as any).editorial_taste ?? ""}`,
   user: (input) =>
     `## Brief\n${JSON.stringify({
       topic: (input as any).topic,
@@ -640,11 +645,14 @@ const contentProposalTask: TaskSpec<z.infer<typeof contentProposalInput>, any> =
       existing_coverage: await loadContentMemoryBlock(supabase, { limit: 15 }),
       business_identity: await loadBusinessIdentityBlock(supabase),
       public_knowledge: knowledge.block,
+      // (4) Learning mode: what this team historically picks, distilled to a
+      // few lines — never the raw choice rows (#90).
+      editorial_taste: await loadPreferenceDistillate(supabase),
       _grounding_sources: knowledge.sources,
     };
   },
   system: (input) =>
-    `You are an expert multi-channel content strategist. From the brief, write ONE strong pillar piece and adapt it into native variants for ONLY the requested channels, returning everything via the submit_content_proposal tool. Match the brand voice and tone. Per channel shape: blog = {title, excerpt, body (markdown), seo_keywords[]}; newsletter = {subject, preview_text, content}; linkedin = {text, hashtags[]}; x = {thread[] (each item one tweet)}. Requested channels: ${JSON.stringify((input as any).target_channels ?? [])}. No filler or platitudes.${(input as any).business_identity ?? ""}${(input as any).public_knowledge ?? ""}${(input as any).existing_coverage ?? ""}`,
+    `You are an expert multi-channel content strategist. From the brief, write ONE strong pillar piece and adapt it into native variants for ONLY the requested channels, returning everything via the submit_content_proposal tool. Match the brand voice and tone. Per channel shape: blog = {title, excerpt, body (markdown), seo_keywords[]}; newsletter = {subject, preview_text, content}; linkedin = {text, hashtags[]}; x = {thread[] (each item one tweet)}. Requested channels: ${JSON.stringify((input as any).target_channels ?? [])}. No filler or platitudes.${(input as any).business_identity ?? ""}${(input as any).public_knowledge ?? ""}${(input as any).existing_coverage ?? ""}${(input as any).editorial_taste ?? ""}`,
   user: (input) =>
     `## Brief\n${JSON.stringify({
       topic: (input as any).topic,

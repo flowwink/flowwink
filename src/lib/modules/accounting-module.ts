@@ -140,6 +140,12 @@ Routing rules in order: (1) vendor.default_account_code wins; (2) keyword-match 
         parameters: { type: 'object', properties: { type: { type: 'string', enum: ['balance_sheet', 'income_statement', 'general_ledger', 'trial_balance', 'unbooked_invoices'] }, from_date: { type: 'string' }, to_date: { type: 'string' } }, required: ['type'] },
       },
     },
+    instructions:
+      'Read-only. income_statement returns the annual-report shape: total_income_cents − total_expenses_cents = result_before_tax_cents, minus tax_cents = net_result_cents. ' +
+      'total_expenses_cents EXCLUDES tax (its own `tax` block) and excludes the account the closing entry carries the result on — that account is named per locale in account_statement_sections/section=year_result, never assumed. ' +
+      'Check result_carrier.source: "unmapped" means no carrier is mapped, so if this chart closes the year onto a P&L account the net result will read as zero — say so rather than reporting the zero. ' +
+      'result_carrier.agrees_with_net_result=false means the closing entry does not hold the result the ledger computes (partial closing, or an account classified wrongly) — investigate before quoting the figure. ' +
+      'balance_sheet returns current_year_result_cents as the part of the result NOT yet closed to equity; after a closing entry it is 0 because equity already holds it.',
   },
   {
     name: 'manage_accounting_template',

@@ -7,6 +7,9 @@ interface PnLResult {
   net_result_cents: number;
   total_income_cents: number;
   total_expenses_cents: number;
+  /** Absent on instances whose agent-execute predates the result-carrier fix. */
+  result_before_tax_cents?: number;
+  tax_cents?: number;
 }
 
 export function useIncomeStatementYTD() {

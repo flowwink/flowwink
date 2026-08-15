@@ -23,7 +23,11 @@ export function TaxPreviewCard() {
     );
   }
 
-  const result = data.net_result_cents;
+  // Corporate tax is levied on the result BEFORE tax. Once a closing entry
+  // exists, net_result_cents is already net of the tax booked on 8910 and using
+  // it here would tax the after-tax figure. Older report payloads (an instance
+  // whose agent-execute has not been redeployed) carry no result_before_tax_cents.
+  const result = data.result_before_tax_cents ?? data.net_result_cents;
   if (result <= 0) {
     return (
       <DashCard label="Estimated corporate tax">

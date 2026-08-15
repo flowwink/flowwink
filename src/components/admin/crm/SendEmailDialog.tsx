@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useChatSettings } from '@/hooks/useSiteSettings';
 import { useQueryClient } from '@tanstack/react-query';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 export interface LeadComposeContext {
   name?: string | null;
@@ -49,6 +50,9 @@ interface SendEmailDialogProps {
 export function SendEmailDialog({ open, onOpenChange, recipientEmail, recipientName, leadContext, initialSubject, initialBody, leadId }: SendEmailDialogProps) {
   const [subject, setSubject] = useState(initialSubject ?? '');
   const [body, setBody] = useState(initialBody ?? '');
+  // #97 A6: true after "Draft with AI" filled the fields — the provenance
+  // line clears as soon as the human edits (then it is THEIR text).
+  const [aiDrafted, setAiDrafted] = useState(false);
   const [sending, setSending] = useState(false);
   const [drafting, setDrafting] = useState(false);
   // Deliverability gate (find → verify → gate, 2026 practice): the lead's
@@ -221,6 +225,7 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
       const draft = JSON.parse(jsonMatch[0]);
       if (draft.subject) setSubject(String(draft.subject));
       if (draft.body) setBody(String(draft.body));
+      setAiDrafted(true);
       toast.success('Draft ready — review before sending');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to draft email');
@@ -385,9 +390,14 @@ Return ONLY a JSON object: {"subject": "...", "body": "..."}. No code fences, no
               id="body"
               placeholder="Write your message..."
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => { setBody(e.target.value); setAiDrafted(false); }}
               rows={10}
             />
+            {aiDrafted && (
+              <ProvenanceLine>
+                Drafted from your Business Identity and this contact&apos;s CRM record.
+              </ProvenanceLine>
+            )}
           </div>
         </div>
 

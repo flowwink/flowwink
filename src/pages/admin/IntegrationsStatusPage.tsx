@@ -56,6 +56,7 @@ import {
 import { useIntegrationStatus } from "@/hooks/useIntegrationStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { callSkill } from '@/lib/call-skill';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 // Icon mapping
 const iconMap = {
@@ -1502,6 +1503,14 @@ export default function IntegrationsStatusPage() {
                                   )}
                                 </CardTitle>
                                 <CardDescription>{integration.description}</CardDescription>
+                                {/* #97 B2: what a disconnect costs — the
+                                    description says what the provider IS,
+                                    this says who USES the key. */}
+                                {integration.consumedBy && integration.consumedBy.length > 0 && (
+                                  <ProvenanceLine className="mt-1">
+                                    Consumed by: {integration.consumedBy.join(', ')}.
+                                  </ProvenanceLine>
+                                )}
                               </div>
                             </div>
                             <Tooltip>

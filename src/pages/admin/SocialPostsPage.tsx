@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Plus, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 import {
   useSocialPosts,
   useUpdateSocialPost,
@@ -279,6 +280,13 @@ export default function SocialPostsPage() {
                   >
                     <ExternalLink className="h-3 w-3" /> {p.link_url}
                   </a>
+                )}
+                {/* #97 C2: fan-out stamps campaign_id — say where the post
+                    was born instead of letting it look hand-written. */}
+                {p.campaign_id && (
+                  <ProvenanceLine to="/admin/campaigns" linkLabel="View campaigns">
+                    Born from a campaign fan-out.
+                  </ProvenanceLine>
                 )}
                 {p.error && (
                   <p className="text-xs text-destructive">{p.error}</p>

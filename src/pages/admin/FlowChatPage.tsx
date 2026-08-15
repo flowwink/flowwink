@@ -21,6 +21,7 @@ import { SessionsAside } from '@/components/admin/workspace/SessionsAside';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import type { WorkspaceSession } from '@/hooks/useWorkspaceSessions';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 export default function FlowChatPage() {
   const { user, isWriter } = useAuth();
@@ -98,20 +99,18 @@ export default function FlowChatPage() {
             </Badge>
           </div>
 
-          {/* Desktop: operator badge floats top-right of the chat column */}
-          <div className="hidden md:flex justify-end px-4 pt-3 shrink-0">
-            <Badge
-              variant="secondary"
-              className="text-[10px]"
-              title={
-                skillStats
-                  ? `${skillStats.exposed} skills exposed to FlowChat. ${skillStats.disabled} more skills exist but are hidden because their module is off (${skillStats.modulesOff} modules disabled).`
-                  : `${skills.length} skills total in catalog`
-              }
-            >
+          {/* Desktop: operator badge floats top-right of the chat column.
+              #97 B1: the WHY must live in the line, not in a title-tooltip —
+              tooltips are never the only carrier. */}
+          <div className="hidden md:flex flex-col items-end px-4 pt-3 shrink-0">
+            <Badge variant="secondary" className="text-[10px]">
               Operator · {skillStats ? `${skillStats.exposed} active` : `${skills.length} skills`}
-              {skillStats && skillStats.disabled > 0 ? ` · ${skillStats.disabled} hidden` : ''}
             </Badge>
+            {skillStats && skillStats.disabled > 0 && (
+              <ProvenanceLine className="mt-1" to="/admin/modules" linkLabel="Modules">
+                {skillStats.disabled} skills hidden — their modules are off.
+              </ProvenanceLine>
+            )}
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">

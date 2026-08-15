@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { cn } from '@/lib/utils';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 
 export default function LeadDetailPage() {
   const { formatDateTime } = usePlatformFormat();
@@ -237,9 +238,16 @@ export default function LeadDetailPage() {
                   </Select>
                 </div>
 
-                <Badge variant="outline" className="font-mono text-lg">
-                  {lead.score} points
-                </Badge>
+                <div className="space-y-1">
+                  <Badge variant="outline" className="font-mono text-lg">
+                    {lead.score} points
+                  </Badge>
+                  {/* #97 A7: the score is deterministic activity counting —
+                      never let a bare number read as an AI judgement. */}
+                  <ProvenanceLine>
+                    Activity points from logged interactions — not an AI judgement.
+                  </ProvenanceLine>
+                </div>
 
                 {lead.needs_review && (
                   <Badge variant="destructive" className="flex items-center gap-1">
@@ -264,7 +272,7 @@ export default function LeadDetailPage() {
                     disabled={qualifyLead.isPending}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
-                    {qualifyLead.isPending ? 'Qualifying...' : 'AI Qualify'}
+                    {qualifyLead.isPending ? 'Scoring...' : 'Score activity'}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

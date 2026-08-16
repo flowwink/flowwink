@@ -28,6 +28,10 @@ const PAGES_SKILLS: SkillSeed[] = [
         parameters: {
           type: 'object',
           properties: {
+            slug: {
+              type: 'string',
+              description: 'Page slug — accepted anywhere page_id is, and resolved automatically. Use whichever identifier you already hold.',
+            },
             page_id: {
               type: 'string',
               description: 'Optional UUID of a single page to process.',
@@ -293,7 +297,9 @@ Granular block-level operations on pages: add, update, remove, reorder blocks.
 - Reordering page layout
 ### Parameters
 - **action**: Required. One of: add, update, remove, reorder.
-- **page_id**: Required. The page to modify.
+- **page_id**: The page to modify. A **slug** is accepted here too and resolved
+  automatically — pass whichever you hold; you never need a lookup call just to
+  turn a slug into an id.
 - **block_id**: Required for update/remove.
 - **block_data**: Block object for add/update.
 - **position**: Insert position for add.

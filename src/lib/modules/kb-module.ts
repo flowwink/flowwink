@@ -65,12 +65,15 @@ const KB_SKILLS: SkillSeed[] = [
             },
             article_id: {
               type: 'string',
+              description: 'Article UUID. For get/update/publish/unpublish, slug or title work just as well — all three are resolved.',
             },
             slug: {
               type: 'string',
+              description: 'Article slug. Identifies an existing article for get/update/publish/unpublish; names the NEW article on create.',
             },
             title: {
               type: 'string',
+              description: 'Display title. On create it names the article; on get/update/publish/unpublish it also IDENTIFIES one (exact match, then unique prefix) — an ambiguous title errors rather than guessing.',
             },
             question: {
               type: 'string',

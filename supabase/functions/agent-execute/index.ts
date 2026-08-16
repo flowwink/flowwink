@@ -3706,9 +3706,13 @@ async function executePagesAction(
     }
 
     case 'manage_page_blocks': {
-      const { action = 'list', page_id } = args as any;
-      if (!page_id) throw new Error('page_id is required');
-      const resolvedPageId = await resolvePageId(page_id);
+      // slug is as good as an id here (#99): manage_page resolves either, so an
+      // agent that just created or listed a page holds a slug and had no reason
+      // to expect this surface to refuse it.
+      const { action = 'list', page_id, slug } = args as any;
+      const identifier = page_id ?? slug;
+      if (!identifier) throw new Error('page_id or slug is required (both are accepted and resolved).');
+      const resolvedPageId = await resolvePageId(String(identifier));
 
       // Fetch current page blocks and hydrate missing IDs
       const { data: page, error: fetchErr } = await supabase.from('pages')
@@ -3871,10 +3875,12 @@ async function executePagesAction(
 
     case 'create_page_block': {
       // Supports single block OR batch: { blocks: [{ type, data }] }
-      const { page_id, block_type, block_data = {}, position, blocks: batchBlocks } = args as any;
+      const { page_id: rawPageId, slug: pageSlug, block_type, block_data = {}, position, blocks: batchBlocks } = args as any;
+      // Same parity as manage_page_blocks (#99) — slug is a valid identifier.
+      const page_id = rawPageId ?? pageSlug;
       if (!page_id) {
         return {
-          error: 'page_id is required. Create the page first with manage_page { action: "create", title, slug? } and then call create_page_block using the returned page_id.',
+          error: 'page_id or slug is required (both are accepted and resolved). Create the page first with manage_page { action: "create", title, slug? }, then call create_page_block with the returned page_id — or with the slug you chose.',
           next_step: 'manage_page.create',
         };
       }
@@ -4554,12 +4560,35 @@ async function executeKbAction(
     return { article_id: data.id, slug: data.slug, title: data.title, status: 'draft', visibility: data.visibility };
   }
 
-  // Resolve article_id from slug if missing — common when agent chains create→publish
+  // Resolve article_id from slug OR title if missing — common when an agent
+  // chains create→publish, or holds a title from a list/search.
+  //
+  // Title was accepted by `get` but NOT by update/publish/unpublish (#99): the
+  // read path resolved it, the write path answered "article_id or slug is
+  // required" and the agent had to go find an id it should never have needed.
+  // Read and write must accept the same identifiers — a write surface that is
+  // pickier than the read surface it follows is a trap, not a safeguard.
   async function resolveArticleId(args: any): Promise<string | null> {
     if (args?.article_id) return args.article_id;
     if (args?.slug) {
       const { data } = await supabase.from('kb_articles').select('id').eq('slug', args.slug).maybeSingle();
-      return data?.id ?? null;
+      if (data?.id) return data.id;
+    }
+    if (args?.title) {
+      // Exact (case-insensitive) first, then a unique prefix — same ladder the
+      // `get` action uses. Ambiguity must NOT silently pick one on a write.
+      const { data: exact } = await supabase.from('kb_articles')
+        .select('id').ilike('title', String(args.title)).limit(2);
+      if (exact?.length === 1) return exact[0].id;
+      if ((exact?.length ?? 0) > 1) {
+        throw new Error(`Title "${args.title}" matches ${exact!.length} articles — pass article_id or slug to disambiguate.`);
+      }
+      const { data: prefix } = await supabase.from('kb_articles')
+        .select('id, title').ilike('title', `${String(args.title)}%`).limit(2);
+      if (prefix?.length === 1) return prefix[0].id;
+      if ((prefix?.length ?? 0) > 1) {
+        throw new Error(`Title "${args.title}" is a prefix of ${prefix!.length} articles — pass article_id or slug.`);
+      }
     }
     return null;
   }
@@ -4567,7 +4596,7 @@ async function executeKbAction(
   if (action === 'update') {
     const { article_id: _aid, slug: _slug, answer, ...rest } = args as any;
     const article_id = await resolveArticleId(args);
-    if (!article_id) throw new Error('article_id or slug is required');
+    if (!article_id) throw new Error('article_id, slug or title is required (all three are accepted and resolved).');
     // Strip agent-internal underscore-prefixed fields (_caller_user_id,
     // _caller_api_key_id, etc.) and the routing 'action' field — they are
     // not real kb_articles columns and PostgREST rejects them.
@@ -4594,7 +4623,7 @@ async function executeKbAction(
 
   if (action === 'publish') {
     const article_id = await resolveArticleId(args);
-    if (!article_id) throw new Error('article_id or slug is required');
+    if (!article_id) throw new Error('article_id, slug or title is required (all three are accepted and resolved).');
     const { data, error } = await supabase.from('kb_articles')
       .update({ is_published: true, updated_at: new Date().toISOString() })
       .eq('id', article_id).select('id, title, slug').single();
@@ -4604,7 +4633,7 @@ async function executeKbAction(
 
   if (action === 'unpublish') {
     const article_id = await resolveArticleId(args);
-    if (!article_id) throw new Error('article_id or slug is required');
+    if (!article_id) throw new Error('article_id, slug or title is required (all three are accepted and resolved).');
     const { data, error } = await supabase.from('kb_articles')
       .update({ is_published: false, updated_at: new Date().toISOString() })
       .eq('id', article_id).select('id, title').single();

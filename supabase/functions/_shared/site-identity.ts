@@ -35,6 +35,32 @@ export interface SecretHit {
   path: string;
   kind: 'email' | 'credential' | 'token' | 'endpoint';
   redacted: string;
+  /**
+   * The value sits in a field whose NAME says it is example text
+   * (emailPlaceholder, fields[].placeholder, …), so it is almost certainly
+   * "din@epost.se" rather than a real address. Reported, never hidden — but
+   * the caller should render it quietly. A warning that cries wolf stops being
+   * read, and then it is worthless on the day it matters (#100).
+   *
+   * Only ever set for `email`: a token or credential pattern in a placeholder
+   * field is still worth shouting about — nobody puts a real API key in an
+   * example, so if one is there, something is wrong.
+   */
+  placeholder?: true;
+}
+
+/**
+ * Field names that announce their own contents as an example. Matched against
+ * the LEAF key, so both `placeholder` and camelCase `emailPlaceholder` count
+ * (the live case was `data.emailPlaceholder`, where the word is preceded by
+ * "email" rather than a separator — the first regex missed it).
+ */
+const PLACEHOLDER_KEY_RE = /(place_?holder|example|sample|dummy)s?$/i;
+
+/** The last key in a dotted path, with any array indices stripped. */
+function leafKey(path: string): string {
+  const last = path.split('.').pop() ?? '';
+  return last.replace(/\[\d+\]/g, '');
 }
 
 export interface IdentityReport {
@@ -146,8 +172,14 @@ export function scanForSecrets(value: unknown, path = ''): SecretHit[] {
       for (const m of v.match(CREDENTIAL_RE) ?? []) {
         hits.push({ path: p, kind: 'credential', redacted: redact(m) });
       }
+      const isPlaceholderField = PLACEHOLDER_KEY_RE.test(leafKey(p));
       for (const m of v.match(EMAIL_RE) ?? []) {
-        hits.push({ path: p, kind: 'email', redacted: redact(m) });
+        hits.push({
+          path: p,
+          kind: 'email',
+          redacted: redact(m),
+          ...(isPlaceholderField ? { placeholder: true as const } : {}),
+        });
       }
       return;
     }

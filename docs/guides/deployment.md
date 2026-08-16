@@ -93,7 +93,7 @@ values ('<your-auth-uid>', 'admin');
 
 ## 5. Enable Demo Mode (optional)
 
-If you're running a public demo instance (like `demo.flowwink.com`), go to **`/admin/settings` → General → Demo Mode** and flip the switch. It schedules an hourly reset cron that wipes dynamic module data and re-seeds the demo template.
+If you're running a public demo instance (like `sandbox.flowwink.com`, which replaced the retired `demo.flowwink.com`), go to **`/admin/settings` → General → Demo Mode** and flip the switch. It schedules an hourly reset cron that wipes dynamic module data and re-seeds the demo template.
 
 ---
 

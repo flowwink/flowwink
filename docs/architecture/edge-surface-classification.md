@@ -174,7 +174,9 @@ defense lines; the second one is what has been missing.
    internal HTTP hops before re-homing their callers.
 4. **B3 as config migration:** seed the six cron functions as
    agent_automations rows, verify via automation health, retire functions.
-5. **The demo.flowwink.com reinstall is the measuring stick:** every edge
+5. **The fresh-instance reinstall is the measuring stick** (historically
+   demo.flowwink.com; that project is retired — sandbox.flowwink.com is the
+   public demo now, reborn nightly):** every edge
    function that must be hand-deployed and hand-configured for a fresh
    instance is a point for this consolidation; the fresh-install protocol
    doubles as the priority order.

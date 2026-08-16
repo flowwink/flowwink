@@ -23,6 +23,10 @@ interface CompanyProfile {
   // Sales-specific fields
   value_proposition: string;
   icp: string;
+  /** How claims are made, not what is claimed — e.g. "we describe our services
+   * precisely; we never interpret regulations on a customer's behalf". Injected
+   * into every outward AI surface as a writing rule. */
+  claim_stance: string;
   competitors: string;
   pricing_notes: string;
   industry: string;
@@ -43,6 +47,7 @@ const defaultProfile: CompanyProfile = {
   differentiators: [],
   value_proposition: "",
   icp: "",
+  claim_stance: "",
   competitors: "",
   pricing_notes: "",
   industry: "",
@@ -327,6 +332,21 @@ export function CompanyProfileCard() {
               />
             </Field>
           </div>
+
+          <Field
+            label="Claim stance"
+            htmlFor="cp-claim-stance"
+            hint="How claims are made — not what is claimed. Every outward AI surface writes under this rule."
+            value={profile.claim_stance}
+          >
+            <Textarea
+              id="cp-claim-stance"
+              value={profile.claim_stance}
+              onChange={(e) => update("claim_stance", e.target.value)}
+              placeholder={'e.g. "We describe what our services do, precisely enough for the customer and their advisers to assess. We never interpret what regulations require of a specific organization, and we never state or imply that buying us makes anyone compliant."'}
+              className="min-h-[120px] resize-y leading-relaxed"
+            />
+          </Field>
 
           <Field
             label="Delivered Value"

@@ -38,7 +38,16 @@ export async function loadBusinessIdentityBlock(supabase: any): Promise<string> 
     if (map.brand_tone) lines.push(`Brand tone: ${typeof map.brand_tone === 'string' ? map.brand_tone : JSON.stringify(map.brand_tone)}`);
     if (lines.length === 0) return '';
 
-    return `\n\n## Company identity (Business Identity — ground everything in this)\n${lines.join('\n')}\nWrite as this company. Never contradict the identity; when the brief leaves voice, audience or industry unspecified, derive them from here.`;
+    // claim_stance is a RULE about form, not a fact to recite — it governs how
+    // every claim is phrased (e.g. "describe our services; never interpret
+    // regulations on a customer's behalf; never imply buying us = compliance").
+    // Appended after the facts so it reads as an instruction, and it must win
+    // over the brief: a campaign brief cannot talk the model out of the stance.
+    const stance = typeof cp.claim_stance === 'string' && cp.claim_stance.trim()
+      ? `\nClaim stance (a rule about HOW claims are made — it overrides the brief): ${cp.claim_stance.trim()}`
+      : '';
+
+    return `\n\n## Company identity (Business Identity — ground everything in this)\n${lines.join('\n')}${stance}\nWrite as this company. Never contradict the identity; when the brief leaves voice, audience or industry unspecified, derive them from here.`;
   } catch {
     return '';
   }

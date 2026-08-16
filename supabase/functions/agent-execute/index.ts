@@ -4669,14 +4669,58 @@ async function executeWikiAction(
     const query = String((args as any).query || '').trim();
     const limit = Math.min(Math.max(Number((args as any).limit) || 10, 1), 50);
     if (!query) return { matches: [] };
-    const { data, error } = await supabase
-      .from('wiki_pages')
-      .select('slug, title, updated_at, content_md')
-      .or(`title.ilike.%${sanitizeOrTerm(query)}%,content_md.ilike.%${sanitizeOrTerm(query)}%`)
-      .limit(limit);
+
+    // Word-by-word, not phrase-by-phrase (#99). The old ilike ran the WHOLE
+    // query as one substring, so "informationslagren arbetsmodell" found
+    // nothing while either word alone found the page — an agent that describes
+    // what it wants in its own words got silence and concluded the page did not
+    // exist. Terms are ANDed (all must appear somewhere in title or body) and
+    // then ranked: title hits over body hits, more matched terms over fewer.
+    const terms = query.split(/\s+/).map((t) => t.trim()).filter((t) => t.length >= 2).slice(0, 8);
+    if (terms.length === 0) return { matches: [] };
+
+    let q = supabase.from('wiki_pages').select('slug, title, updated_at, content_md');
+    for (const t of terms) {
+      const safe = sanitizeOrTerm(t);
+      q = q.or(`title.ilike.%${safe}%,content_md.ilike.%${safe}%`);
+    }
+    // Over-fetch: ranking happens here, so the DB limit must not decide winners.
+    const { data, error } = await q.limit(Math.max(limit * 5, 50));
     if (error) throw new Error(`search_wiki failed: ${error.message}`);
+
+    const lowerTerms = terms.map((t) => t.toLowerCase());
+    const scored = (data || []).map((p: any) => {
+      const title = String(p.title || '').toLowerCase();
+      const body = String(p.content_md || '').toLowerCase();
+      let score = 0;
+      let matched = 0;
+      for (const t of lowerTerms) {
+        const inTitle = title.includes(t);
+        const inBody = body.includes(t);
+        if (inTitle || inBody) matched++;
+        if (inTitle) score += 10;
+        if (inBody) score += 1;
+      }
+      // Every term must appear somewhere — an OR chain alone would return
+      // pages matching a single common word.
+      return { p, score, matched };
+    })
+      .filter((r) => r.matched === lowerTerms.length)
+      .sort((a, b) => b.score - a.score);
+
+    // Nothing matched ALL terms → fall back to best partial rather than
+    // answering "no such page" when a page is plainly relevant.
+    const rows = (scored.length ? scored : (data || [])
+      .map((p: any) => {
+        const hay = `${String(p.title || '')} ${String(p.content_md || '')}`.toLowerCase();
+        const matched = lowerTerms.filter((t) => hay.includes(t)).length;
+        return { p, score: matched, matched };
+      })
+      .filter((r) => r.matched > 0)
+      .sort((a, b) => b.score - a.score)).slice(0, limit);
+
     return {
-      matches: (data || []).map((p: any) => ({
+      matches: rows.map(({ p }) => ({
         slug: p.slug,
         title: p.title,
         updated_at: p.updated_at,

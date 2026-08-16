@@ -28,10 +28,6 @@ const PAGES_SKILLS: SkillSeed[] = [
         parameters: {
           type: 'object',
           properties: {
-            slug: {
-              type: 'string',
-              description: 'Page slug — accepted anywhere page_id is, and resolved automatically. Use whichever identifier you already hold.',
-            },
             page_id: {
               type: 'string',
               description: 'Optional UUID of a single page to process.',
@@ -254,7 +250,11 @@ Full page lifecycle management: list, get, create, update, publish, archive, del
             },
             page_id: {
               type: 'string',
-              description: 'Page UUID',
+              description: 'Page UUID — or pass slug instead; both are accepted and resolved.',
+            },
+            slug: {
+              type: 'string',
+              description: 'Page slug. Works anywhere page_id does, so the slug you used with manage_page carries straight over — no lookup call needed.',
             },
             block_id: {
               type: 'string',
@@ -262,7 +262,7 @@ Full page lifecycle management: list, get, create, update, publish, archive, del
             },
             block_type: {
               type: 'string',
-              description: 'Block type (for add): text, hero, cta, accordion, info-box, two-column, quote, separator, stats, features, form, newsletter',
+              description: 'Block type (for add): text, hero, cta, accordion, info-box, two-column, quote, separator, stats, features, form, newsletter. NOTE the shape: block_type and block_data are SEPARATE top-level arguments — there is no nested "block" object. A full add call is { action: "add", slug, block_type: "text", block_data: { content: {...} } }.',
             },
             block_data: {
               type: 'object',

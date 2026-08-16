@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
+import { countConsentRequiredLeads } from '@/hooks/useOutreachPolicy';
 
 const STATUSES = ['lead', 'opportunity', 'customer'] as const;
 
@@ -41,6 +43,14 @@ export function BulkLeadEmailDialog({
   const [statuses, setStatuses] = useState<string[]>(['lead', 'opportunity']);
   const [minScore, setMinScore] = useState('');
   const [preview, setPreview] = useState<BlastResult | null>(null);
+  // #97 B5: the RECIPIENTS' countries decide the cold-outreach regime (same
+  // rule as the single-send dialog). Counted at preview time over the same
+  // segment; consent-required recipients demand an acknowledgment, which is
+  // both the honest gate and the record that the sender knew.
+  const [consentCount, setConsentCount] = useState<number | null>(null);
+  const [lawfulBasis, setLawfulBasis] = useState(false);
+
+
 
   const run = useMutation({
     mutationFn: async (dryRun: boolean): Promise<BlastResult> => {
@@ -58,6 +68,8 @@ export function BulkLeadEmailDialog({
     onSuccess: (data, dryRun) => {
       if (dryRun) {
         setPreview(data);
+        setLawfulBasis(false);
+        void countConsentRequiredLeads(statuses, minScore ? Number(minScore) : undefined).then(setConsentCount);
       } else {
         toast.success(`Sent to ${data.sent} recipients (${data.excluded_unsubscribed + data.excluded_consent_revoked} excluded)`);
         setPreview(null);
@@ -132,6 +144,36 @@ export function BulkLeadEmailDialog({
               )}
             </div>
           )}
+
+          {preview && consentCount !== null && (
+            consentCount > 0 ? (
+              <div className="text-xs rounded-md border border-yellow-600/40 bg-yellow-500/10 px-3 py-2 space-y-2">
+                <p className="text-yellow-700 dark:text-yellow-500">
+                  <span className="font-medium">
+                    {consentCount} of {preview.targeted} targeted leads are in consent-required
+                    countries
+                  </span>{' '}
+                  — prior consent is required for B2B email there (e.g. Germany, Austria, Italy).
+                </p>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={lawfulBasis}
+                    onChange={(e) => setLawfulBasis(e.target.checked)}
+                  />
+                  <span>
+                    I have consent or an existing business relationship with these recipients.
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <ProvenanceLine>
+                No targeted leads in consent-required countries — B2B outreach with the appended
+                opt-out is allowed for this audience.
+              </ProvenanceLine>
+            )
+          )}
         </div>
 
         <DialogFooter>
@@ -144,7 +186,7 @@ export function BulkLeadEmailDialog({
             Preview audience
           </Button>
           <Button
-            disabled={!preview || preview.sent === 0 || run.isPending}
+            disabled={!preview || preview.sent === 0 || run.isPending || ((consentCount ?? 0) > 0 && !lawfulBasis)}
             onClick={() => run.mutate(false)}
           >
             Send to {preview?.sent ?? 0}

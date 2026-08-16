@@ -60,3 +60,34 @@ export function useOutreachPolicy(leadId: string | undefined, enabled = true) {
     },
   });
 }
+
+
+/**
+ * How many leads in a bulk segment sit in consent-required countries — the
+ * bulk sibling of useOutreachPolicy, kept here so dialogs never read the
+ * leads table raw (table-ownership rule). null = could not determine, which
+ * the UI must say instead of assuming zero.
+ */
+export async function countConsentRequiredLeads(
+  statuses: string[],
+  minScore?: number,
+): Promise<number | null> {
+  try {
+    const { data: codes } = await supabase
+      .from('outreach_country_policy' as never)
+      .select('country_code')
+      .eq('policy', 'consent_required');
+    const list = (codes as Array<{ country_code: string }> | null)?.map((c) => c.country_code) ?? [];
+    if (!list.length) return 0;
+    let q = supabase
+      .from('leads')
+      .select('id, companies!inner(country)', { count: 'exact', head: true })
+      .in('companies.country', list);
+    if (statuses.length) q = q.in('status', statuses as never[]);
+    if (minScore !== undefined && !Number.isNaN(minScore)) q = q.gte('score', minScore);
+    const { count } = await q;
+    return count ?? 0;
+  } catch {
+    return null;
+  }
+}

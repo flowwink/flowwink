@@ -277,3 +277,42 @@ describe('the field list stays reviewable', () => {
     expect(paths).toContain('footerSettings.email');
   });
 });
+
+describe('placeholder fields are reported quietly, never hidden (#100)', () => {
+  it('an email in a *Placeholder field is flagged as placeholder', () => {
+    // The live case: exporting the Optic template flagged din@epost.se and
+    // namn@foretag.se — both form hints, neither a real address.
+    const hits = scanForSecrets({
+      pages: [{ blocks: [{ data: { emailPlaceholder: 'din@epost.se' } }] }],
+    });
+    const email = hits.find((h) => h.kind === 'email');
+    expect(email).toBeDefined();
+    expect(email!.placeholder).toBe(true);
+  });
+
+  it('fields[].placeholder counts too — the nested form-field case', () => {
+    const hits = scanForSecrets({ fields: [{ placeholder: 'namn@foretag.se' }] });
+    expect(hits.find((h) => h.kind === 'email')!.placeholder).toBe(true);
+  });
+
+  it('a real address in a real field stays LOUD', () => {
+    const hits = scanForSecrets({ contact: { email: 'magnus@liteit.se' } });
+    const email = hits.find((h) => h.kind === 'email')!;
+    expect(email.placeholder).toBeUndefined();
+  });
+
+  it('a TOKEN in a placeholder field still shouts — nobody puts a real key in an example', () => {
+    // The demotion is deliberately email-only: if an API key sits in a field
+    // named "placeholder", something is wrong and silence would be the bug.
+    const hits = scanForSecrets({
+      block: { apiKeyPlaceholder: 'sk-live-abcdefghijklmnopqrstuvwxyz0123456789' },
+    });
+    const loud = hits.filter((h) => h.kind !== 'email' && !h.placeholder);
+    expect(loud.length).toBeGreaterThan(0);
+  });
+
+  it('nothing is dropped — placeholder hits are still returned', () => {
+    const hits = scanForSecrets({ a: { emailPlaceholder: 'din@epost.se' } });
+    expect(hits.length).toBe(1);
+  });
+});

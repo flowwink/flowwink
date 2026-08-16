@@ -307,18 +307,29 @@ export function TemplateExportTab() {
                       </div>
                     )}
 
-                    {exportResult.identity.possible_secrets.length > 0 && (
+                    {/* #100: a field NAMED placeholder holds example text by
+                        definition. Still listed — nothing is hidden — but in
+                        one quiet line, so a real leak stands out instead of
+                        drowning among "din@epost.se". */}
+                    {exportResult.identity.possible_secrets.some((h) => !h.placeholder) && (
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-destructive">
                           Still in the body, and it looks sensitive — check before sharing this template:
                         </p>
-                        {exportResult.identity.possible_secrets.map((h, i) => (
+                        {exportResult.identity.possible_secrets.filter((h) => !h.placeholder).map((h, i) => (
                           <div key={i} className="flex items-start gap-2 text-xs text-destructive">
                             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                             <span><code>{h.path}</code> — {h.kind}: {h.redacted}</span>
                           </div>
                         ))}
                       </div>
+                    )}
+
+                    {exportResult.identity.possible_secrets.some((h) => h.placeholder) && (
+                      <p className="text-xs text-muted-foreground">
+                        {exportResult.identity.possible_secrets.filter((h) => h.placeholder).length} example
+                        value(s) in placeholder fields left as they are — form hints, not real data.
+                      </p>
                     )}
 
                     {exportResult.identity.broken_nav_targets.length > 0 && (

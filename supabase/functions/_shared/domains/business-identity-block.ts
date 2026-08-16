@@ -47,7 +47,16 @@ export async function loadBusinessIdentityBlock(supabase: any): Promise<string> 
       ? `\nClaim stance (a rule about HOW claims are made — it overrides the brief): ${cp.claim_stance.trim()}`
       : '';
 
-    return `\n\n## Company identity (Business Identity — ground everything in this)\n${lines.join('\n')}${stance}\nWrite as this company. Never contradict the identity; when the brief leaves voice, audience or industry unspecified, derive them from here.`;
+    // Boundaries: topics this channel must NOT answer, however well it could.
+    // Not secrecy — the questions are legitimate and get answered, by a person.
+    // An agent that reasons freely about network routes, ownership or named
+    // competitors does damage no amount of accuracy repairs, so this is stated
+    // as a refusal WITH a route, never as a gap.
+    const bounds = typeof cp.boundaries === 'string' && cp.boundaries.trim()
+      ? `\nOff-limits for this channel (answer by pointing to a human, never by reasoning about it — say the question is legitimate and that we answer it directly): ${cp.boundaries.trim()}`
+      : '';
+
+    return `\n\n## Company identity (Business Identity — ground everything in this)\n${lines.join('\n')}${stance}${bounds}\nWrite as this company. Never contradict the identity; when the brief leaves voice, audience or industry unspecified, derive them from here.`;
   } catch {
     return '';
   }

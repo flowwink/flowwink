@@ -3843,8 +3843,24 @@ async function executePagesAction(
         const idx = blocks.findIndex((b: any) => b.id === block_id);
         if (idx === -1) throw new Error(`Block not found: ${block_id}`);
 
-        // Merge first, then validate the merged result
-        const mergedData = { ...blocks[idx].data as Record<string, unknown>, ...block_data };
+        // Merge first, then validate the merged result.
+        // block_data accepts BOTH shapes: a bare data-fields object, or a full
+        // block {id, type, data} — the instructions called it a "Block object",
+        // callers sent exactly that, and the old spread nested it under data.*
+        // while the rendered fields stayed stale (silent corruption, found on
+        // optic 2026-08-17). Unwrap, and scrub the block-shaped junk keys that
+        // shape of corruption left behind.
+        const _isFullBlock = block_data && typeof block_data === 'object'
+          && 'data' in (block_data as any) && typeof (block_data as any).data === 'object';
+        const _incoming = _isFullBlock ? (block_data as any).data : block_data;
+        const mergedData = { ...blocks[idx].data as Record<string, unknown>, ..._incoming };
+        for (const junk of ['id', 'type', 'data'] as const) {
+          const v = (mergedData as any)[junk];
+          if (v !== undefined && (junk === 'data' ? typeof v === 'object' : typeof v === 'string')
+              && !(_incoming && typeof _incoming === 'object' && junk in _incoming)) {
+            delete (mergedData as any)[junk];
+          }
+        }
         const blockType = String(blocks[idx].type);
         const validation = validateBlockData(blockType, mergedData);
         if (!validation.valid) {

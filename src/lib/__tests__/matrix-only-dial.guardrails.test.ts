@@ -106,3 +106,14 @@ describe('every ai-task declares its owning module', () => {
     }
   });
 });
+
+describe('manage_page_blocks update never nests a full block into data', () => {
+  it('unwraps {id,type,data}-shaped block_data and scrubs the corruption it caused', () => {
+    const src = read('supabase/functions/agent-execute/index.ts');
+    // The instructions called block_data a "Block object"; callers sent exactly
+    // that and the bare spread nested it under data.* while rendered fields
+    // stayed stale (optic, 2026-08-17). The unwrap must stay.
+    expect(src).toContain('_isFullBlock');
+    expect(src).toMatch(/_incoming = _isFullBlock \? \(block_data as any\)\.data : block_data/);
+  });
+});

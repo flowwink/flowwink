@@ -106,6 +106,19 @@ import bundledLocalePacks from "./_locale-packs.json" with { type: "json" };
 // reconciles the instance against it — no browser, no DATABASE_URL.
 import bundledModuleSkills from "./_module-skills.json" with { type: "json" };
 
+// ─── Skill → owning module (rollsvepet #102) ─────────────────────────────
+// The auth gate below authorizes non-admin staff per the skill's OWNING
+// MODULE via can_access_module() — the same single dial (role_module_access)
+// that gates nav, RLS and workspace-chat. The ownership map comes from the
+// bundled seed artifact, so it deploys atomically with this function and can
+// never drift from the DB rows it seeded. Skills owned by the `platform`
+// pseudo-module (search_web, manage_site_settings, …) and skills absent from
+// the artifact (a future agent-created origin) stay admin-only: fail closed.
+const SKILL_OWNER_MODULE: Record<string, string> = {};
+for (const mod of (bundledModuleSkills as { modules: Array<{ moduleId: string; skills: Array<{ name: string }> }> }).modules) {
+  for (const s of mod.skills) SKILL_OWNER_MODULE[s.name] = mod.moduleId;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -379,23 +392,32 @@ serve(async (req) => {
     // internet. Legitimate callers are exactly two: internal edge functions
     // (mcp-server, voice-ingest, a2a, automation-dispatcher, send-webhook,
     // run-autonomy-tests) which send Bearer <service_role key>, and the admin
-    // UI which sends the logged-in admin's JWT via functions.invoke. Anyone
-    // else → 401. (Same gate as newsletter/send + create-user.)
+    // UI which sends the logged-in user's JWT via functions.invoke.
+    //
+    // AUTHENTICATION happens here (who are you); AUTHORIZATION for JWT callers
+    // happens after the skill lookup (may you run THIS skill) — admins run
+    // everything, other staff run skills whose owning module their role is
+    // granted in role_module_access. Before #102 this gate required admin for
+    // every JWT caller, which 401'd module-granted staff out of every skill-
+    // backed surface (accounting tabs, staged FlowWork actions, order actions).
     const authHeader = req.headers.get('Authorization') ?? '';
     const bearer = authHeader.replace(/^Bearer\s+/i, '').trim();
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     let gateUserId: string | null = null;
-    let authorized = false;
+    let gateIsAdmin = false;
+    let isServiceCaller = false;
     if (bearer && serviceKey && bearer === serviceKey) {
-      authorized = true; // trusted internal edge caller
-    } else if (bearer) {
+      isServiceCaller = true; // trusted internal edge caller
+    } else if (bearer && bearer !== anonKey) {
       const { data: userData } = await supabase.auth.getUser(bearer);
       if (userData?.user) {
-        const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: userData.user.id, _role: 'admin' });
-        if (isAdmin) { authorized = true; gateUserId = userData.user.id; }
+        gateUserId = userData.user.id;
+        const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: gateUserId, _role: 'admin' });
+        gateIsAdmin = isAdmin === true;
       }
     }
-    if (!authorized) {
+    if (!isServiceCaller && !gateUserId) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -464,6 +486,30 @@ serve(async (req) => {
     }
 
     const skill = skills;
+
+    // 1b. AUTHORIZATION (JWT callers): the matrix is the only dial (#102).
+    // Admins run everything. Other authenticated users may run a skill iff
+    // their role is granted the skill's OWNING module in role_module_access —
+    // the same can_access_module() that gates nav, RLS and workspace-chat.
+    // Platform-owned and unmapped skills stay admin-only (fail closed).
+    if (!isServiceCaller && !gateIsAdmin) {
+      const ownerModule = SKILL_OWNER_MODULE[skill.name];
+      let allowed = false;
+      if (ownerModule && ownerModule !== 'platform') {
+        const { data: canAccess } = await supabase.rpc('can_access_module', {
+          _user_id: gateUserId, _module_id: ownerModule,
+        });
+        allowed = canAccess === true;
+      }
+      if (!allowed) {
+        const why = ownerModule && ownerModule !== 'platform'
+          ? `your role is not granted the "${ownerModule}" module — an admin can grant it under Users → Role Permissions`
+          : 'this skill is platform-level and requires the admin role';
+        return new Response(JSON.stringify({ error: `Forbidden: "${skill.name}" — ${why}` }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // 2. Validate scope
     if (agent_type === 'chat' && skill.scope === 'internal') {

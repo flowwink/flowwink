@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260817210000",
-      "migrations_count": 430,
+      "migration_head": "20260817213000",
+      "migrations_count": 431,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1725,6 +1725,10 @@
         {
           "version": "20260817210000",
           "name": "marketing-edits-the-website"
+        },
+        {
+          "version": "20260817213000",
+          "name": "chat-settings-follow-the-module"
         }
       ]
     },

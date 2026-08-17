@@ -30,6 +30,7 @@ const alignmentClasses: Record<string, string> = {
 
 export function ParallaxSectionBlock({ data }: ParallaxSectionBlockProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -49,6 +50,43 @@ export function ParallaxSectionBlock({ data }: ParallaxSectionBlockProps) {
     return () => observer.disconnect();
   }, []);
 
+  // True parallax: the background layer is 30% taller than the section and
+  // translates at a fraction of the scroll delta. The old implementation used
+  // background-attachment: fixed, which is not parallax (the image just sits
+  // still) and which Chrome/iOS silently degrade to a plain static background
+  // on composited layers — the effect never fired for most visitors.
+  useEffect(() => {
+    const section = sectionRef.current;
+    const bg = bgRef.current;
+    if (!section || !bg || !data.backgroundImage) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const rect = section.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+      // -1 (section below viewport) … +1 (above); 0 when centered.
+      const progress =
+        (rect.top + rect.height / 2 - window.innerHeight / 2) /
+        (window.innerHeight / 2 + rect.height / 2);
+      // The layer is 30% taller, so ±15% of section height stays covered.
+      const shift = -progress * rect.height * 0.15;
+      bg.style.transform = `translate3d(0, ${shift}px, 0)`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [data.backgroundImage]);
+
   const isLight = data.textColor !== 'dark';
   const opacity = data.overlayOpacity ?? 50;
   const alignment = data.contentAlignment || 'center';
@@ -61,11 +99,17 @@ export function ParallaxSectionBlock({ data }: ParallaxSectionBlockProps) {
         heightClasses[data.height || 'md'] ?? heightClasses.md
       )}
     >
-      {/* Background with CSS parallax */}
+      {/* Background layer — 30% taller than the section; the scroll handler
+          above translates it so the image drifts slower than the page. */}
       {data.backgroundImage && (
         <div
-          className="absolute inset-0 w-full h-full bg-cover bg-center bg-fixed"
-          style={{ backgroundImage: `url(${data.backgroundImage})` }}
+          ref={bgRef}
+          className="absolute left-0 w-full bg-cover bg-center will-change-transform"
+          style={{
+            backgroundImage: `url(${data.backgroundImage})`,
+            top: '-15%',
+            height: '130%',
+          }}
         />
       )}
 

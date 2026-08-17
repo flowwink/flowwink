@@ -5441,8 +5441,22 @@ async function executeProductsAction(
   }
 
   if (action === 'update') {
-    const { product_id, ...rest } = args as any;
-    if (!product_id) throw new Error('product_id is required');
+    let { product_id, ...rest } = args as any;
+    // Write/read identifier parity (#99): the caller may hold a NAME from a
+    // list/browse call — resolve it instead of demanding the id back.
+    if (!product_id && typeof rest.name === 'string' && rest.name.trim()) {
+      const { data: byName } = await supabase
+        .from('products').select('id').eq('name', rest.name.trim()).limit(2);
+      if (byName && byName.length === 1) {
+        product_id = byName[0].id;
+        // Only consume the name as an identifier — if the caller ALSO meant to
+        // rename, they pass product_id + name, which skips this branch.
+        delete rest.name;
+      } else if (byName && byName.length > 1) {
+        throw new Error(`Product name "${rest.name}" is ambiguous — pass product_id`);
+      }
+    }
+    if (!product_id) throw new Error('product_id (or a unique name) is required');
     // Strip agent-internal fields (_caller_api_key_id, _caller_user_id, …) and
     // the routing `action` so they never reach the products update — otherwise
     // PostgREST rejects with "Could not find the '_caller_api_key_id' column".

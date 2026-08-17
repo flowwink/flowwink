@@ -51,9 +51,18 @@ describe('no default layout advertises it to non-approvers', () => {
 });
 
 describe('the one remaining quick-action surface is gated', () => {
-  it('QuickCreateMenu filters on role and module per action', () => {
+  it('QuickCreateMenu filters on the matrix and enabled modules — no shadow role lists', () => {
     const menu = read('src/components/admin/QuickCreateMenu.tsx');
-    expect(menu).toMatch(/roles: AppRole\[\]/);
+    // #102: the matrix (role_module_access via useModuleAccess) is the only
+    // dial. A hardcoded `roles: [...]` next to a moduleId always drifts.
+    expect(menu).toMatch(/useModuleAccess/);
     expect(menu).toMatch(/useEnabledModules/);
+    expect(menu).not.toMatch(/roles: \[/);
+  });
+
+  it('AdminSearchCommand quick creates follow the matrix too', () => {
+    const cmd = read('src/components/admin/AdminSearchCommand.tsx');
+    expect(cmd).toMatch(/useModuleAccess/);
+    expect(cmd).not.toMatch(/roles: \[/);
   });
 });

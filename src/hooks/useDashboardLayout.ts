@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useModuleAccess } from '@/hooks/useRoleModuleAccess';
 import {
   DEFAULT_WIDGET_ORDER,
   buildPresetLayout,
@@ -55,6 +56,7 @@ function loadLocal(userId: string, presetKey: AppRole | 'admin'): DashboardLayou
  */
 export function useDashboardLayout() {
   const { profile, roles, isAdmin } = useAuth();
+  const { canAccess } = useModuleAccess();
   const userId = profile?.id || 'anonymous';
   const presetKey = presetKeyForRoles(roles ?? [], isAdmin);
   const isAuthed = !!profile?.id;
@@ -163,9 +165,9 @@ export function useDashboardLayout() {
   }, [saveLayout]);
 
   const isWidgetVisible = useCallback((widgetId: string) => {
-    if (!isWidgetRoleRelevant(widgetId, roles ?? [], isAdmin)) return false;
+    if (!isWidgetRoleRelevant(widgetId, canAccess, isAdmin)) return false;
     return layout.widgets.find((w) => w.id === widgetId)?.visible ?? true;
-  }, [layout, roles, isAdmin]);
+  }, [layout, canAccess, isAdmin]);
 
   const getWidgetOrder = useCallback(() => layout.widgets.map((w) => w.id), [layout]);
 

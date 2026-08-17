@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import type { AppRole } from '@/types/cms';
 
 export type RoleModuleAccessMap = Partial<Record<AppRole, Set<string>>>;
@@ -29,6 +31,29 @@ export function useRoleModuleAccess() {
     },
     staleTime: 60 * 1000,
   });
+}
+
+/**
+ * Client-side mirror of the DB's can_access_module(): true when the user is
+ * admin, or any of their roles is granted the module in role_module_access.
+ *
+ * UI-gating ONLY (which buttons/actions to render) — the server re-checks on
+ * every access via RLS policies and edge-function gates. Rollsvepet #102: use
+ * THIS instead of hardcoded `roles: [...]` lists next to a moduleId — a
+ * shadow role list next to the matrix always drifts.
+ */
+export function useModuleAccess() {
+  const { isAdmin, roles } = useAuth();
+  const { data: accessMap } = useRoleModuleAccess();
+  const canAccess = useCallback(
+    (moduleId: string): boolean => {
+      if (isAdmin) return true;
+      if (!accessMap) return false; // not loaded yet — fail closed, UI fills in
+      return roles.some((r) => accessMap[r as AppRole]?.has(moduleId) ?? false);
+    },
+    [isAdmin, roles, accessMap],
+  );
+  return { canAccess, isAdmin };
 }
 
 export function useToggleRoleModuleAccess() {

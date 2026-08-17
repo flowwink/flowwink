@@ -35,6 +35,7 @@ import { BusinessPulseWidget } from '@/components/admin/BusinessPulseWidget';
 import { LiveSupportDashboardWidget } from '@/components/admin/LiveSupportDashboardWidget';
 import { usePages } from '@/hooks/usePages';
 import { useAuth } from '@/hooks/useAuth';
+import { useModuleAccess } from '@/hooks/useRoleModuleAccess';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { useLeadStats } from '@/hooks/useLeads';
 import { useSupportConversations } from '@/hooks/useSupportConversations';
@@ -109,6 +110,7 @@ function NeedsAttentionItem({
 export default function AdminDashboard() {
   const { data: pages, isLoading } = usePages();
   const { profile, isApprover } = useAuth();
+  const { canAccess } = useModuleAccess();
   const leadsEnabled = useIsModuleEnabled('leads');
   const chatEnabled = useIsModuleEnabled('chat');
   const liveSupportEnabled = useIsModuleEnabled('liveSupport');
@@ -522,7 +524,7 @@ export default function AdminDashboard() {
                         {layout.widgets.map(widget => {
                           const meta = WIDGET_META[widget.id];
                           if (!meta) return null;
-                          if (!isWidgetRoleRelevant(widget.id, roles ?? [], isAdmin)) return null;
+                          if (!isWidgetRoleRelevant(widget.id, canAccess, isAdmin)) return null;
                           const available = moduleAvailable[widget.id];
                           return (
                             <div key={widget.id} className={!available ? 'opacity-50' : ''}>

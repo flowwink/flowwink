@@ -3,38 +3,38 @@ import type { AppRole } from '@/types/cms';
 /**
  * Dashboard widget catalog.
  *
- * `roles` = the functional roles the widget is relevant for. `undefined` means
- * "relevant for everyone". Admin always sees everything (same rule as the
- * sidebar / role_module_access matrix).
+ * `moduleId` gates relevance via the matrix (role_module_access) — the only
+ * dial (#102). `undefined` means "relevant for everyone". Admin always sees
+ * everything. ROLE_PRESETS below are pure personalization defaults (which
+ * widgets START visible for a role) — they never gate.
  */
 export interface DashboardWidgetMeta {
   id: string;
   title: string;
   description: string;
   moduleId?: string;
-  roles?: AppRole[];
 }
 
 export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   { id: 'my-day', title: 'My Day', description: 'Everything assigned to or waiting on you' },
   { id: 'business-pulse', title: 'Business Pulse', description: 'Health score, key metrics & daily briefing' },
   { id: 'needs-attention', title: 'Needs Attention', description: 'Action items requiring your attention' },
-  { id: 'content-overview', title: 'Content Overview', description: 'Page statistics overview', roles: ['marketing'] },
-  { id: 'leads', title: 'Leads', description: 'Recent leads and stats', moduleId: 'leads', roles: ['sales', 'marketing'] },
-  { id: 'live-support', title: 'Live Support', description: 'Support conversations', moduleId: 'liveSupport', roles: ['support'] },
-  { id: 'chat-analytics', title: 'Chat Analytics', description: 'AI chat usage statistics', moduleId: 'chat', roles: ['support', 'marketing'] },
-  { id: 'chat-feedback', title: 'Chat Feedback', description: 'User feedback on AI chat', moduleId: 'chat', roles: ['support', 'marketing'] },
-  { id: 'finance', title: 'Receivables', description: 'Outstanding, overdue & draft invoices', moduleId: 'invoicing', roles: ['accounting', 'sales'] },
-  { id: 'tickets', title: 'Support Queue', description: 'Open, unassigned & SLA-breached tickets', moduleId: 'tickets', roles: ['support'] },
-  { id: 'approvals', title: 'Approvals', description: 'Pending approval requests and amount at stake', moduleId: 'approvals', roles: ['accounting', 'purchasing', 'hr'] },
-  { id: 'inventory', title: 'Inventory', description: 'Low stock, out of stock & open stock moves', moduleId: 'inventory', roles: ['warehouse'] },
-  { id: 'purchasing', title: 'Purchasing', description: 'Draft POs, late deliveries & committed spend', moduleId: 'purchasing', roles: ['purchasing'] },
-  { id: 'hr', title: 'People', description: 'Headcount, leave to approve & open roles', moduleId: 'hr', roles: ['hr'] },
-  { id: 'projects', title: 'Projects', description: 'Active projects, overdue & unassigned tasks', moduleId: 'projects', roles: ['projects'] },
-  { id: 'aeo', title: 'AEO Insights', description: 'Answer Engine Optimization', roles: ['marketing'] },
+  { id: 'content-overview', title: 'Content Overview', description: 'Page statistics overview', moduleId: 'pages' },
+  { id: 'leads', title: 'Leads', description: 'Recent leads and stats', moduleId: 'leads' },
+  { id: 'live-support', title: 'Live Support', description: 'Support conversations', moduleId: 'liveSupport' },
+  { id: 'chat-analytics', title: 'Chat Analytics', description: 'AI chat usage statistics', moduleId: 'chat' },
+  { id: 'chat-feedback', title: 'Chat Feedback', description: 'User feedback on AI chat', moduleId: 'chat' },
+  { id: 'finance', title: 'Receivables', description: 'Outstanding, overdue & draft invoices', moduleId: 'invoicing' },
+  { id: 'tickets', title: 'Support Queue', description: 'Open, unassigned & SLA-breached tickets', moduleId: 'tickets' },
+  { id: 'approvals', title: 'Approvals', description: 'Pending approval requests and amount at stake', moduleId: 'approvals' },
+  { id: 'inventory', title: 'Inventory', description: 'Low stock, out of stock & open stock moves', moduleId: 'inventory' },
+  { id: 'purchasing', title: 'Purchasing', description: 'Draft POs, late deliveries & committed spend', moduleId: 'purchasing' },
+  { id: 'hr', title: 'People', description: 'Headcount, leave to approve & open roles', moduleId: 'hr' },
+  { id: 'projects', title: 'Projects', description: 'Active projects, overdue & unassigned tasks', moduleId: 'projects' },
+  { id: 'aeo', title: 'AEO Insights', description: 'Answer Engine Optimization', moduleId: 'pages' },
   { id: 'automation-health', title: 'Automation Health', description: 'Automation run counts and error rates' },
   { id: 'flowpilot', title: 'FlowPilot', description: 'AI agent activity and goals' },
-  { id: 'recent-pages', title: 'Recent Pages', description: 'Recently updated pages', roles: ['marketing'] },
+  { id: 'recent-pages', title: 'Recent Pages', description: 'Recently updated pages', moduleId: 'pages' },
   // Wire id kept ('quick-actions' lives in stored layouts); the ungated
   // shortcut card it once named was removed — the top bar's QuickCreateMenu is
   // the one quick-action surface, role- and module-gated. What remains under
@@ -65,16 +65,21 @@ export const ROLE_PRESETS: Partial<Record<AppRole | 'admin', string[]>> = {
   projects: ['my-day', 'needs-attention', 'projects'],
 };
 
-/** Roles that may see a widget, taking admin's super-role into account. */
+/**
+ * Whether a widget is relevant for the current user: admin sees all, others
+ * see a widget iff its owning module is granted to one of their roles in
+ * role_module_access (#102 — the matrix, not a third hardcoded role list).
+ * Pass `canAccess` from useModuleAccess().
+ */
 export function isWidgetRoleRelevant(
   widgetId: string,
-  roles: AppRole[],
+  canAccess: (moduleId: string) => boolean,
   isAdmin: boolean,
 ): boolean {
   if (isAdmin) return true;
   const meta = WIDGET_META[widgetId];
-  if (!meta || !meta.roles) return true;
-  return meta.roles.some((r) => roles.includes(r));
+  if (!meta || !meta.moduleId) return true;
+  return canAccess(meta.moduleId);
 }
 
 /** Preset key for a user's role set: admin wins, else first functional role. */

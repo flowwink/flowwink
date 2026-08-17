@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -38,7 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Download, Trash2, Eye, FileText } from 'lucide-react';
+import { Loader2, Search, Download, Trash2, Eye, FileText, Check, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { toast } from 'sonner';
@@ -51,7 +52,15 @@ interface FormSubmission {
   data: Record<string, unknown>;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  lead_id: string | null;
+  handled_at: string | null;
+  handled_by: string | null;
   page?: { title: string; slug: string } | null;
+}
+
+/** Handled = provenance first (a lead exists), manual "Done" second. */
+function isHandled(s: FormSubmission): boolean {
+  return !!s.lead_id || !!s.handled_at;
 }
 
 /** A file-upload field value persisted by FormBlock: { path, name }. */
@@ -87,6 +96,7 @@ export default function FormSubmissionsPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterFormName, setFilterFormName] = useState<string>('all');
+  const [filterHandled, setFilterHandled] = useState<'unhandled' | 'all' | 'handled'>('unhandled');
   const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -126,6 +136,30 @@ export default function FormSubmissionsPage() {
     },
   });
 
+  // Toggle handled. lead_id is never touched here — provenance is stamped by
+  // the ingest rail, the button only covers submissions that made no artifact.
+  const toggleHandled = useMutation({
+    mutationFn: async (submission: FormSubmission) => {
+      const { data: auth } = await supabase.auth.getUser();
+      const patch = submission.handled_at
+        ? { handled_at: null, handled_by: null }
+        : { handled_at: new Date().toISOString(), handled_by: auth?.user?.id ?? null };
+      // Cast: the generated types predate the handled columns (migration
+      // 20260817238000); the DB and RLS are the source of truth here.
+      const { error, data } = await (supabase.from('form_submissions') as never as {
+        update: (p: object) => { eq: (c: string, v: string) => { select: (c: string) => { single: () => Promise<{ error: { message: string } | null; data: unknown }> } } };
+      }).update(patch).eq('id', submission.id).select('id').single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['form-submissions'] });
+    },
+    onError: (e: Error) => {
+      toast.error(`Could not update: ${e.message}`);
+    },
+  });
+
   // Get unique form names for filter
   const formNames = useMemo(() => {
     const names = new Set<string>();
@@ -142,6 +176,10 @@ export default function FormSubmissionsPage() {
       if (filterFormName !== 'all' && submission.form_name !== filterFormName) {
         return false;
       }
+
+      // Handled filter — default shows the actual inbox (unhandled only)
+      if (filterHandled === 'unhandled' && isHandled(submission)) return false;
+      if (filterHandled === 'handled' && !isHandled(submission)) return false;
 
       // Search filter
       if (searchQuery) {
@@ -264,6 +302,16 @@ export default function FormSubmissionsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterHandled} onValueChange={(v) => setFilterHandled(v as 'unhandled' | 'all' | 'handled')}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unhandled">Inbox</SelectItem>
+              <SelectItem value="handled">Handled</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
           <Button onClick={exportToCSV} variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
@@ -310,6 +358,7 @@ export default function FormSubmissionsPage() {
                   <TableHead>Form</TableHead>
                   <TableHead>Page</TableHead>
                   <TableHead className="hidden md:table-cell">Data Preview</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -327,6 +376,41 @@ export default function FormSubmissionsPage() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground max-w-xs truncate">
                       {renderDataPreview(submission.data)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {submission.lead_id ? (
+                        // Provenance beats a flag: the lead IS the proof it was
+                        // taken care of, and the chip says WHAT happened.
+                        <Link to={`/admin/leads?id=${submission.lead_id}`} className="inline-flex">
+                          <Badge variant="outline" className="gap-1 border-success/40 text-success hover:bg-success/10">
+                            <UserPlus className="h-3 w-3" />
+                            Lead created
+                          </Badge>
+                        </Link>
+                      ) : submission.handled_at ? (
+                        <button
+                          type="button"
+                          className="inline-flex"
+                          title={`Handled ${formatDateTime(submission.handled_at)} — click to undo`}
+                          onClick={() => toggleHandled.mutate(submission)}
+                        >
+                          <Badge variant="outline" className="gap-1 text-muted-foreground">
+                            <Check className="h-3 w-3" />
+                            Done
+                          </Badge>
+                        </button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7"
+                          disabled={toggleHandled.isPending}
+                          onClick={() => toggleHandled.mutate(submission)}
+                        >
+                          <Check className="h-3.5 w-3.5 mr-1" />
+                          Done
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

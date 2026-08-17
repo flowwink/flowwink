@@ -2,7 +2,7 @@
 // Creates survey_sends rows + dispatches branded email with one-click answer link.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
-import { requireServiceOrRole, unauthorized } from '../_shared/edge-auth.ts';
+import { requireServiceOrModule, unauthorized } from '../_shared/edge-auth.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +80,7 @@ export async function handler(req: Request): Promise<Response> {
     // Privileged: sends branded email to arbitrary recipients from your domain.
     // Callers: send_survey skill (service key), csat-dispatch (service key),
     // admin UI (session JWT). Gate to stop anonymous mail/spam abuse.
-    const auth = await requireServiceOrRole(req, supabase);
+    const auth = await requireServiceOrModule(req, supabase, 'surveys');
     if (!auth.authorized) return unauthorized(corsHeaders);
 
     const body: Body = await req.json();

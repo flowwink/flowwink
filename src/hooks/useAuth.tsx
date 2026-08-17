@@ -251,7 +251,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const effectivePrimary: AppRole | null = primaryRole(effectiveRoles);
 
   const isAdmin = effectiveRoles.includes('admin');
-  const isWriter = isAdmin || effectiveRoles.includes('writer') || effectiveRoles.includes('approver') || effectiveRoles.length > 0;
+  // #102: `length > 0` counted CUSTOMER as staff — a customer navigating to
+  // /admin passed this gate (matrix-empty nav, but inside the shell). Staff =
+  // any non-customer role.
+  const isWriter = isAdmin || effectiveRoles.some((r) => r !== 'customer');
   const isApprover = isAdmin || effectiveRoles.includes('approver');
 
   const hasRole = (r: AppRole) => isAdmin || effectiveRoles.includes(r);

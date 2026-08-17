@@ -11,7 +11,7 @@ import {
   useBulkRejectReports,
   type ExpenseReport,
 } from '@/hooks/useExpenses';
-import { useAuth } from '@/hooks/useAuth';
+import { useModuleAccess } from '@/hooks/useRoleModuleAccess';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function ExpenseReportsTab() {
   const { data: reports, isLoading } = useExpenseReports();
-  const { isAdmin } = useAuth();
+  // #102: approval follows the expenses module via the matrix (RLS enforces
+  // the same rule server-side) — not the admin role.
+  const { canAccess } = useModuleAccess();
+  const canApprove = canAccess('expenses');
   const { formatCurrency } = usePlatformFormat();
   const formatCents = (cents: number, currency?: string | null) => formatCurrency(cents, currency);
   const generate = useGenerateMonthlyReport();
@@ -139,7 +142,7 @@ export function ExpenseReportsTab() {
       </div>
 
       {/* Bulk action bar (admins only, when submitted reports selected) */}
-      {isAdmin && selected.size > 0 && (
+      {canApprove && selected.size > 0 && (
         <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
           <div className="text-sm">
             <strong>{selected.size}</strong> selected · {formatCents(selectedAmount)}
@@ -174,7 +177,7 @@ export function ExpenseReportsTab() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  {isAdmin && submittedReports.length > 0 && (
+                  {canApprove && submittedReports.length > 0 && (
                     <Checkbox
                       checked={allSubmittedSelected}
                       onCheckedChange={toggleAllSubmitted}
@@ -213,7 +216,7 @@ export function ExpenseReportsTab() {
                 reports.map((report) => (
                   <TableRow key={report.id} className={selected.has(report.id) ? 'bg-primary/5' : ''}>
                     <TableCell>
-                      {isAdmin && report.status === 'submitted' && (
+                      {canApprove && report.status === 'submitted' && (
                         <Checkbox
                           checked={selected.has(report.id)}
                           onCheckedChange={() => toggleOne(report.id)}
@@ -253,7 +256,7 @@ export function ExpenseReportsTab() {
                             Submit
                           </Button>
                         )}
-                        {isAdmin && report.status === 'submitted' && (
+                        {canApprove && report.status === 'submitted' && (
                           <>
                             <Button
                               size="sm"
@@ -273,7 +276,7 @@ export function ExpenseReportsTab() {
                             </Button>
                           </>
                         )}
-                        {isAdmin && report.status === 'approved' && (
+                        {canApprove && report.status === 'approved' && (
                           <Button
                             size="sm"
                             onClick={() => book.mutate(report.id)}
@@ -283,7 +286,7 @@ export function ExpenseReportsTab() {
                             Book
                           </Button>
                         )}
-                        {isAdmin && report.status === 'booked' && (
+                        {canApprove && report.status === 'booked' && (
                           <Button
                             size="sm"
                             onClick={() => setPayTarget(report)}

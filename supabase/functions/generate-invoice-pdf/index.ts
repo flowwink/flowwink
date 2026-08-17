@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
-import { requireServiceOrRole, unauthorized } from '../_shared/edge-auth.ts';
+import { requireServiceOrModule, unauthorized } from '../_shared/edge-auth.ts';
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       invoice = data; invErr = error;
     } else {
       // invoice_id path — must be an admin or the service role.
-      const auth = await requireServiceOrRole(req, supabase, "admin");
+      const auth = await requireServiceOrModule(req, supabase, "invoicing");
       if (!auth.authorized) return unauthorized(corsHeaders);
       const { data, error } = await supabase
         .from("invoices")

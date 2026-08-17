@@ -141,7 +141,10 @@ export const navigationGroups: NavGroup[] = [
     // out of Content/Main so marketing has one home.
     label: "Marketing",
     items: [
-      { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone, moduleId: "developer" },
+      // moduleId was "developer" — a copy-paste bug that admin-gated Campaigns
+      // silently (#102 gränsfall 2). Campaigns is the demand-gen fan-out
+      // surface; it follows the paidGrowth dial like its Growth/Social peers.
+      { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone, moduleId: "paidGrowth" },
       { name: "Newsletter", href: "/admin/newsletter", icon: Mail, moduleId: "newsletter" },
       { name: "Growth", href: "/admin/growth", icon: Target, moduleId: "paidGrowth" },
       { name: "Social posts", href: "/admin/growth/social", icon: Megaphone, moduleId: "paidGrowth" },
@@ -199,6 +202,10 @@ export const navigationGroups: NavGroup[] = [
         featureFlag: "dunning.enabled",
       },
       { name: "Point of Sale", href: "/admin/pos", icon: Receipt, moduleId: "pos" },
+      // Moved out of the adminOnly System group (#102 gränsfall 1): the same
+      // moduleId gave two different answers — /admin/pos passed the matrix
+      // while POS Audit was eaten by the group's admin gate.
+      { name: "POS Audit", href: "/admin/pos/audit", icon: ShieldCheck, moduleId: "pos" },
       { name: "Accounting", href: "/admin/accounting", icon: BookOpen, moduleId: "accounting" },
       { name: "Expenses", href: "/admin/expenses", icon: Wallet, moduleId: "expenses" },
       { name: "Timesheets", href: "/admin/timesheets", icon: Timer, moduleId: "timesheets" },
@@ -294,7 +301,6 @@ export const navigationGroups: NavGroup[] = [
       { name: "Developer", href: "/admin/developer", icon: Code2, moduleId: "developer" },
       { name: "AI Usage", href: "/admin/ai-usage", icon: BarChart3 },
       { name: "System", href: "/admin/system", icon: Database },
-      { name: "POS Audit", href: "/admin/pos/audit", icon: ShieldCheck, moduleId: "pos" },
     ],
   },
 ];

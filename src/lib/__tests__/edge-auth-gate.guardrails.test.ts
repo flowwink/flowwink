@@ -37,12 +37,12 @@ const MUST_BE_GATED = [
 // Accept the shared helper OR a hand-rolled gate (service-role compare + a
 // role/user resolution). Either proves the caller is authenticated in-body.
 function isGated(src: string): boolean {
-  if (src.includes('requireServiceOrRole')) return true;
+  if (/requireServiceOr(Role|Module|Staff)/.test(src)) return true;
   const comparesServiceKey =
     /===\s*serviceKey/.test(src) || /serviceKey\s*===/.test(src) ||
     /===\s*SERVICE_ROLE_KEY/.test(src);
   const resolvesIdentity =
-    src.includes('auth.getUser') || src.includes('has_role') || src.includes('resolveCaller');
+    src.includes('auth.getUser') || src.includes('has_role') || src.includes('can_access_module') || src.includes('resolveCaller');
   return comparesServiceKey && resolvesIdentity;
 }
 
@@ -50,6 +50,9 @@ describe('Privileged edge functions authenticate the caller (edge-auth gate)', (
   it('the shared edge-auth helper exists', () => {
     const helper = readFileSync(join(FUNCTIONS_DIR, '_shared', 'edge-auth.ts'), 'utf-8');
     expect(helper).toContain('export async function requireServiceOrRole');
+    // #102: the matrix variants — module-gated and staff-gated — must exist too.
+    expect(helper).toContain('export async function requireServiceOrModule');
+    expect(helper).toContain('export async function requireServiceOrStaff');
     expect(helper).toContain('SUPABASE_SERVICE_ROLE_KEY');
   });
 

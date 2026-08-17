@@ -40,11 +40,12 @@ import {
 } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useModuleAccess } from '@/hooks/useRoleModuleAccess';
 import { useModules } from '@/hooks/useModules';
 import { useNavFeatureFlags, isFeatureFlagOn } from '@/hooks/useNavFeatureFlags';
 import { navigationGroups } from './adminNavigation';
 import { supabase } from '@/integrations/supabase/client';
-import type { AppRole } from '@/types/cms';
+
 
 const RECENT_KEY = 'admin-search-recent';
 const MAX_RECENT = 5;
@@ -73,39 +74,40 @@ interface QuickAction {
   href: string;
   icon: any;
   moduleId?: string;
-  roles: AppRole[]; // admin sees all
+
 }
 
-// Role-aware quick creates surfaced at the top of ⌘K. Filtered by user roles + enabled modules.
+// Quick creates surfaced at the top of ⌘K. Filtered by enabled modules + the
+// matrix (role_module_access) via useModuleAccess — no hardcoded role lists (#102).
 const QUICK_ACTIONS: QuickAction[] = [
   // Sales
-  { label: 'New lead',            href: '/admin/leads?new=1',           icon: UserPlus,      moduleId: 'leads',       roles: ['sales', 'marketing'] },
-  { label: 'New deal',            href: '/admin/deals?new=1',           icon: HandCoins,     moduleId: 'deals',       roles: ['sales'] },
-  { label: 'New quote',           href: '/admin/quotes?new=1',            icon: FileSignature, moduleId: 'quotes',      roles: ['sales'] },
-  { label: 'New company',         href: '/admin/companies?new=1',       icon: Building2,     moduleId: 'companies',   roles: ['sales', 'accounting', 'support'] },
+  { label: 'New lead',            href: '/admin/leads?new=1',           icon: UserPlus,      moduleId: 'leads' },
+  { label: 'New deal',            href: '/admin/deals?new=1',           icon: HandCoins,     moduleId: 'deals' },
+  { label: 'New quote',           href: '/admin/quotes?new=1',            icon: FileSignature, moduleId: 'quotes' },
+  { label: 'New company',         href: '/admin/companies?new=1',       icon: Building2,     moduleId: 'companies' },
   // Accounting / CFO
-  { label: 'New invoice',         href: '/admin/invoices?new=1',          icon: FileText,      moduleId: 'invoicing',   roles: ['accounting', 'sales'] },
-  { label: 'New expense',         href: '/admin/expenses?new=1',        icon: Receipt,       moduleId: 'expenses',    roles: ['accounting', 'hr'] },
-  { label: 'New purchase order',  href: '/admin/purchase-orders?new=1', icon: ClipboardList, moduleId: 'purchasing',  roles: ['purchasing', 'accounting'] },
+  { label: 'New invoice',         href: '/admin/invoices?new=1',          icon: FileText,      moduleId: 'invoicing' },
+  { label: 'New expense',         href: '/admin/expenses?new=1',        icon: Receipt,       moduleId: 'expenses' },
+  { label: 'New purchase order',  href: '/admin/purchase-orders?new=1', icon: ClipboardList, moduleId: 'purchasing' },
   // Support
-  { label: 'New ticket',          href: '/admin/tickets?new=1',         icon: LifeBuoy,      moduleId: 'tickets',     roles: ['support'] },
+  { label: 'New ticket',          href: '/admin/tickets?new=1',         icon: LifeBuoy,      moduleId: 'tickets' },
   // HR
-  { label: 'New employee',        href: '/admin/hr?new=1',       icon: User,          moduleId: 'hr',          roles: ['hr'] },
-  { label: 'New job posting',     href: '/admin/recruitment?new=1',     icon: Briefcase,     moduleId: 'recruitment', roles: ['hr'] },
+  { label: 'New employee',        href: '/admin/hr?new=1',       icon: User,          moduleId: 'hr' },
+  { label: 'New job posting',     href: '/admin/recruitment?new=1',     icon: Briefcase,     moduleId: 'recruitment' },
   // Marketing / content
-  { label: 'New blog post',       href: '/admin/blog/new',              icon: Newspaper,     moduleId: 'blog',        roles: ['marketing'] },
-  { label: 'New page',            href: '/admin/pages/new',             icon: FileCode,      moduleId: 'pages',       roles: ['marketing'] },
-  { label: 'New campaign',        href: '/admin/campaigns?new=1',       icon: Megaphone,     moduleId: 'paidGrowth',  roles: ['marketing'] },
-  { label: 'New media upload',    href: '/admin/media?upload=1',      icon: ImageIcon,     moduleId: 'media',       roles: ['marketing'] },
+  { label: 'New blog post',       href: '/admin/blog/new',              icon: Newspaper,     moduleId: 'blog' },
+  { label: 'New page',            href: '/admin/pages/new',             icon: FileCode,      moduleId: 'pages' },
+  { label: 'New campaign',        href: '/admin/campaigns?new=1',       icon: Megaphone,     moduleId: 'paidGrowth' },
+  { label: 'New media upload',    href: '/admin/media?upload=1',      icon: ImageIcon,     moduleId: 'mediaLibrary' },
   // Projects
-  { label: 'New project',         href: '/admin/projects?new=1',        icon: Briefcase,     moduleId: 'projects',    roles: ['projects'] },
-  { label: 'New task',            href: '/admin/projects?new=task',           icon: CalendarPlus,  moduleId: 'projects',    roles: ['projects', 'sales', 'support'] },
-  { label: 'New time entry',      href: '/admin/timesheets?tab=entries&new=1', icon: Clock,      moduleId: 'projects',    roles: ['projects', 'hr', 'sales'] },
+  { label: 'New project',         href: '/admin/projects?new=1',        icon: Briefcase,     moduleId: 'projects' },
+  { label: 'New task',            href: '/admin/projects?new=task',           icon: CalendarPlus,  moduleId: 'projects' },
+  { label: 'New time entry',      href: '/admin/timesheets?tab=entries&new=1', icon: Clock,      moduleId: 'projects' },
   // Warehouse / purchasing
-  { label: 'New product',         href: '/admin/products?new=1',        icon: Package,       moduleId: 'ecommerce',   roles: ['warehouse', 'sales'] },
-  { label: 'New vendor',          href: '/admin/vendors?new=1',         icon: Truck,         moduleId: 'purchasing',  roles: ['purchasing', 'warehouse'] },
+  { label: 'New product',         href: '/admin/products?new=1',        icon: Package,       moduleId: 'ecommerce' },
+  { label: 'New vendor',          href: '/admin/vendors?new=1',         icon: Truck,         moduleId: 'purchasing' },
   // Accounting
-  { label: 'New journal entry',   href: '/admin/accounting?tab=journal&new=1', icon: BookOpen,   moduleId: 'accounting',  roles: ['accounting'] },
+  { label: 'New journal entry',   href: '/admin/accounting?tab=journal&new=1', icon: BookOpen,   moduleId: 'accounting' },
 ];
 
 interface SearchHit {
@@ -176,7 +178,8 @@ interface AdminSearchCommandProps {
 
 export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandProps) {
   const navigate = useNavigate();
-  const { isAdmin, roles } = useAuth();
+  const { isAdmin } = useAuth();
+  const { canAccess } = useModuleAccess();
   const { data: modules } = useModules();
   const { data: featureFlags } = useNavFeatureFlags();
   const [query, setQuery] = useState('');
@@ -197,24 +200,25 @@ export function AdminSearchCommand({ open, onOpenChange }: AdminSearchCommandPro
           ...group,
           items: group.items.filter((item) => {
             if (item.moduleId) {
-              if (!modules) return true;
-              if (!(modules[item.moduleId]?.enabled ?? true)) return false;
+              if (modules && !(modules[item.moduleId]?.enabled ?? true)) return false;
+              // #102: the palette used to show pages the matrix then denied —
+              // filter on role_module_access too, same as the sidebar.
+              if (!canAccess(item.moduleId)) return false;
             }
             if (!isFeatureFlagOn(featureFlags, item.featureFlag)) return false;
             return true;
           }),
         }))
         .filter((group) => group.items.length > 0),
-    [roleFilteredGroups, modules, featureFlags]
+    [roleFilteredGroups, modules, featureFlags, canAccess]
   );
 
   const quickActions = useMemo(() => {
     return QUICK_ACTIONS.filter((a) => {
       if (a.moduleId && modules && !(modules[a.moduleId]?.enabled ?? true)) return false;
-      if (isAdmin) return true;
-      return a.roles.some((r) => roles.includes(r));
+      return a.moduleId ? canAccess(a.moduleId) : true;
     });
-  }, [modules, isAdmin, roles]);
+  }, [modules, canAccess]);
 
   const { data: hits, isFetching } = useQuery({
     queryKey: ['global-search', debouncedQuery],

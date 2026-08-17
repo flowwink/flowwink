@@ -31,12 +31,16 @@ describe('comms-send consolidation', () => {
     }
   });
 
-  it('the formerly JWT-gated kinds keep an in-body gate', () => {
-    const gated = index.match(/const GATED = new Set\(\[([^\]]*)\]\)/)?.[1] ?? '';
-    for (const k of ['invoice_email', 'return_confirmation', 'csat_dispatch']) {
-      expect(gated, `GATED must include ${k}`).toContain(k);
+  it('the formerly JWT-gated kinds keep an in-body gate, per owning module (#102)', () => {
+    const gated = index.match(/const GATED_MODULE: Record<string, string> = \{([^}]*)\}/)?.[1] ?? '';
+    for (const [k, mod] of [
+      ['invoice_email', 'invoicing'],
+      ['return_confirmation', 'returns'],
+      ['csat_dispatch', 'surveys'],
+    ]) {
+      expect(gated, `GATED_MODULE must map ${k} → ${mod}`).toContain(`${k}: '${mod}'`);
     }
-    expect(index).toMatch(/requireServiceOrRole/);
+    expect(index).toMatch(/requireServiceOrModule/);
   });
 
   it('is registered verify_jwt=false in config.toml (public flows depend on it)', () => {

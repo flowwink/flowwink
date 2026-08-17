@@ -144,6 +144,30 @@ export async function buildKnowledgeBase(
     }
   }
 
+  // Active products ground the chat — the catalog IS public web content
+  // (name, description, family), so the same publication-is-the-decision rule
+  // applies. price_cents is DELIBERATELY not selected: pricing sits behind the
+  // boundaries line ("tas i samtal") and a context that never contains the
+  // number cannot leak it. Soft-fail like the rest.
+  try {
+    const { data: products } = await supabase
+      .from('products')
+      .select('name, description, type')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .limit(30);
+    if (products?.length) {
+      const text = `### Services and products\n` + products
+        .map((pr: any) => `- ${pr.name}${pr.type ? ` (${pr.type})` : ''}: ${pr.description ?? ''}`)
+        .join('\n');
+      const contentTokens = Math.ceil(text.length / 4);
+      if (estimatedTokens + contentTokens <= maxTokens) {
+        sections.push(text);
+        estimatedTokens += contentTokens;
+      }
+    }
+  } catch { /* products module absent — other sources still ground */ }
+
   // Published blog posts ground the chat — no toggle, by design. Publication
   // IS the decision: a post visible to every anonymous visitor on the web has
   // no reason to be invisible to the same visitor in the chat, and the off

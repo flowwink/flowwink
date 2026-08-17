@@ -162,7 +162,7 @@ export default function ProductsPage() {
                       <Package className="h-5 w-5 text-muted-foreground" />
                     </div>
                   )}
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3">
                       <h3 className="font-medium truncate">{product.name}</h3>
                       <Badge variant={product.type === 'recurring' ? 'secondary' : 'outline'}>
@@ -172,8 +172,12 @@ export default function ProductsPage() {
                         <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
                       )}
                     </div>
+                    {/* Master-language descriptions are full sentences now —
+                        wrap two lines and clamp, instead of one truncated line
+                        that pushed the row off the page (min-w-0 on the column
+                        is what lets the clamp actually bite). */}
                     {product.description && (
-                      <p className="text-sm text-muted-foreground mt-1 truncate">{product.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2 break-words">{product.description}</p>
                     )}
                   </div>
                 </div>

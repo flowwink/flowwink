@@ -152,8 +152,22 @@ export default function FormSubmissionsPage() {
       if (error) throw new Error(error.message);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, submission) => {
       queryClient.invalidateQueries({ queryKey: ['form-submissions'] });
+      // The default view is the inbox (unhandled), so the row leaves the list
+      // on Done — say where it went and offer the way back, or the disappear
+      // reads as data loss (Magnus, 2026-08-17).
+      if (!submission.handled_at) {
+        toast.success('Marked as done — find it under the Handled filter', {
+          action: {
+            label: 'Undo',
+            onClick: () =>
+              toggleHandled.mutate({ ...submission, handled_at: new Date().toISOString() }),
+          },
+        });
+      } else {
+        toast.success('Moved back to inbox');
+      }
     },
     onError: (e: Error) => {
       toast.error(`Could not update: ${e.message}`);
@@ -342,11 +356,17 @@ export default function FormSubmissionsPage() {
         ) : filteredSubmissions.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No submissions found</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {filterHandled === 'unhandled' && submissions.some(isHandled)
+                ? 'Inbox zero'
+                : 'No submissions found'}
+            </h3>
             <p className="text-sm text-muted-foreground">
-              {searchQuery || filterFormName !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Form submissions will appear here'}
+              {filterHandled === 'unhandled' && submissions.some(isHandled)
+                ? `Everything is taken care of — ${submissions.filter(isHandled).length} handled submission${submissions.filter(isHandled).length === 1 ? '' : 's'} under the Handled filter`
+                : searchQuery || filterFormName !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'Form submissions will appear here'}
             </p>
           </div>
         ) : (

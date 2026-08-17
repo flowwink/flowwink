@@ -4755,16 +4755,39 @@ async function executeWikiAction(
     const terms = query.split(/\s+/).map((t) => t.trim()).filter((t) => t.length >= 2).slice(0, 8);
     if (terms.length === 0) return { matches: [] };
 
-    let q = supabase.from('wiki_pages').select('slug, title, updated_at, content_md');
-    for (const t of terms) {
-      const safe = sanitizeOrTerm(t);
-      q = q.or(`title.ilike.%${safe}%,content_md.ilike.%${safe}%`);
-    }
-    // Over-fetch: ranking happens here, so the DB limit must not decide winners.
-    const { data, error } = await q.limit(Math.max(limit * 5, 50));
+    const runQuery = async (queryTerms: string[]) => {
+      let q = supabase.from('wiki_pages').select('slug, title, updated_at, content_md');
+      for (const t of queryTerms) {
+        const safe = sanitizeOrTerm(t);
+        q = q.or(`title.ilike.%${safe}%,content_md.ilike.%${safe}%`);
+      }
+      // Over-fetch: ranking happens here, so the DB limit must not decide winners.
+      return q.limit(Math.max(limit * 5, 50));
+    };
+
+    let { data, error } = await runQuery(terms);
     if (error) throw new Error(`search_wiki failed: ${error.message}`);
 
-    const lowerTerms = terms.map((t) => t.toLowerCase());
+    // Swedish-compound fallback: "granskningschecklista" is ONE term but the
+    // page says "Granskning … checklista" — no substring match anywhere, and a
+    // perfectly good query got silence. On zero hits, retry once with each
+    // long term shortened to a prefix (compounds share their head word), so
+    // the lexical net widens without any intent routing (Law 1: still pure
+    // string matching, ranked below by the same scorer).
+    let effectiveTerms = terms;
+    if ((data || []).length === 0 && terms.some((t) => t.length >= 6)) {
+      const prefixTerms = terms.map((t) =>
+        t.length >= 6 ? t.slice(0, Math.max(4, Math.ceil(t.length * 0.5))) : t);
+      const retry = await runQuery(prefixTerms);
+      if (!retry.error && (retry.data || []).length > 0) {
+        data = retry.data;
+        // Score with the terms that actually hit, or the strict AND filter
+        // below would silently discard every fallback row again.
+        effectiveTerms = prefixTerms;
+      }
+    }
+
+    const lowerTerms = effectiveTerms.map((t) => t.toLowerCase());
     const scored = (data || []).map((p: any) => {
       const title = String(p.title || '').toLowerCase();
       const body = String(p.content_md || '').toLowerCase();

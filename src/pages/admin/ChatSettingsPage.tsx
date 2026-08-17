@@ -30,6 +30,8 @@ import { toast } from 'sonner';
 import { IntegrationsSettings } from '@/hooks/useIntegrations';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { VisitorSessionsTab } from '@/components/admin/chat/VisitorSessionsTab';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
+import { useAuth } from '@/hooks/useAuth';
 
 // Component to show which AI provider is currently active
 function ActiveProviderIndicator({ 
@@ -136,6 +138,12 @@ export default function ChatSettingsPage() {
   const updateSettings = useUpdateChatSettings();
   const [formData, setFormData] = useState<ChatSettings | null>(null);
   const isOpenAIConfigured = useIsOpenAIConfigured();
+  // Provider status is verified via check-secrets, an ADMIN-gated probe. For a
+  // non-admin it answers denied, which the hooks read as "not configured" — a
+  // check without read access must not condemn the configuration (#97-klassen,
+  // tredje gången i dag). Non-admins get an honest line instead of warnings.
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
   const isGeminiConfigured = useIsGeminiConfigured();
   const { data: integrationSettings } = useIntegrations();
   const flowpilotReadiness = useModuleReadiness('chat');
@@ -210,11 +218,17 @@ export default function ChatSettingsPage() {
           </Button>
         </AdminPageHeader>
 
-        {formData.aiProvider === 'openai' && isOpenAIConfigured === false && (
+        {isAdmin && formData.aiProvider === 'openai' && isOpenAIConfigured === false && (
           <IntegrationWarning integration="openai" />
         )}
-        {formData.aiProvider === 'gemini' && isGeminiConfigured === false && (
+        {isAdmin && formData.aiProvider === 'gemini' && isGeminiConfigured === false && (
           <IntegrationWarning integration="gemini" />
+        )}
+        {!isAdmin && (
+          <ProvenanceLine>
+            Provider status is verified by an admin-only check — the assistant runs on the
+            provider your administrator configured, even if it cannot be shown here.
+          </ProvenanceLine>
         )}
 
         <div className="max-w-4xl space-y-6">
@@ -291,6 +305,11 @@ export default function ChatSettingsPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="systemPrompt">System Prompt</Label>
+                    <ProvenanceLine>
+                      Business Identity — facts, claim stance and boundaries — is injected
+                      automatically at runtime. Keep this field to personality and tone;
+                      rules written here would only duplicate the identity and drift.
+                    </ProvenanceLine>
                     <Textarea
                       id="systemPrompt"
                       value={formData.systemPrompt}

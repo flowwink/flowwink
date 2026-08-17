@@ -159,10 +159,6 @@ Per-page summary with images_fixed count and the actual alt strings generated.
               type: 'string',
               description: 'Page slug. Identifies an existing page for get/update/publish/archive/delete/rollback when page_id is omitted; names the NEW page for create.',
             },
-            blocks: {
-              type: 'array',
-              description: 'Full replacement of the page body on update: an array of ContentBlocks. content_json is accepted as an alias — send back what get returned. Invalid blocks make the whole update FAIL with per-block reasons (nothing is written); fix the named fields and retry.',
-            },
             title: {
               type: 'string',
               description: 'Page title (for create/update)',
@@ -178,7 +174,7 @@ Per-page summary with images_fixed count and the actual alt strings generated.
             },
             blocks: {
               type: 'array',
-              description: 'Content blocks for create/update. Each block: { id, type, data }. Block types: hero, text, cta, accordion, info-box, two-column, quote, separator, etc.',
+              description: 'Content blocks for create/update — a FULL replacement of the page body. content_json is accepted as an alias (send back what get returned). Each block: { id, type, data }. Invalid blocks make the whole update FAIL with per-block reasons (nothing is written); fix the named fields and retry.',
               items: {
                 type: 'object',
                 properties: {

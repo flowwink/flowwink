@@ -177,6 +177,34 @@ export default function CompanyInsightsPage() {
                 </CardContent>
               </Card>
 
+              {/* Editorial rules — not facts about the company but rules about
+                  how every outward AI surface may speak for it. Injected into
+                  the always-on identity block; the stance overrides briefs. */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Editorial rules</CardTitle>
+                  <CardDescription>
+                    How every AI surface speaks for this company — chat, campaigns, letters. Rules, not facts.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FieldArea
+                    label="Claim stance — HOW claims are made"
+                    value={p.claim_stance}
+                    onChange={v => update("claim_stance", v)}
+                    placeholder={'e.g. "We describe what our services do, precisely enough for the customer and their advisers to assess. We never interpret what regulations require of a specific organization, and never imply that buying us makes anyone compliant."'}
+                    rows={4}
+                  />
+                  <FieldArea
+                    label="Answered by a person, not here"
+                    value={p.boundaries}
+                    onChange={v => update("boundaries", v)}
+                    placeholder={'Topics the site, chat and generated copy must route to a human — e.g. network routes, ownership, named competitors. Legitimate questions, wrong channel: say so and point to contact.'}
+                    rows={4}
+                  />
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Competitive Intelligence</CardTitle>

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260817233000",
-      "migrations_count": 434,
+      "migration_head": "20260817238000",
+      "migrations_count": 437,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1741,6 +1741,18 @@
         {
           "version": "20260817233000",
           "name": "p1-tables-follow-the-matrix"
+        },
+        {
+          "version": "20260817235000",
+          "name": "pages-writes-follow-the-matrix"
+        },
+        {
+          "version": "20260817236000",
+          "name": "form-submissions-delete-follows-the-matrix"
+        },
+        {
+          "version": "20260817238000",
+          "name": "form-submissions-handled-provenance"
         }
       ]
     },

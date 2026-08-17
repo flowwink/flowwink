@@ -116,8 +116,11 @@ export async function createLeadFromForm(options: {
   formData: Record<string, unknown>;
   sourceId?: string;
   pageId?: string;
+  /** The form_submissions row this lead came from — the RPC stamps lead_id
+   *  back onto it so the inbox can show what happened (handled-provenance). */
+  submissionId?: string;
 }): Promise<{ lead: Lead | null; isNew: boolean; error: string | null }> {
-  const { email, name, company, phone, formName, formData, sourceId, pageId } = options;
+  const { email, name, company, phone, formName, formData, sourceId, pageId, submissionId } = options;
 
   // The RPC is the working path. The client-side flow below fails for every
   // anonymous visitor: the duplicate check runs as anon so RLS filters it to
@@ -144,6 +147,7 @@ export async function createLeadFromForm(options: {
       p_form_name: formName,
       p_source_id: sourceId ?? null,
       p_page_id: pageId ?? null,
+      p_submission_id: submissionId ?? null,
       p_form_data: (formData ?? {}) as never,
       // The tracked-visitor cookie id — lets the server stitch the browsing
       // history onto the lead (page_views.lead_id backfill). Null when the

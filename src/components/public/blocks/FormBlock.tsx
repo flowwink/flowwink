@@ -136,9 +136,14 @@ export function FormBlock({ data, blockId, pageId }: FormBlockProps) {
           : (field.type === 'checkbox' ? false : '');
       });
 
+      // Client-generated id: an anonymous INSERT cannot use RETURNING (no read
+      // grant, by design), but the lead rail needs the submission's id to stamp
+      // lead_id back onto it — the inbox's "handled" provenance.
+      const submissionId = crypto.randomUUID();
       const { error } = await supabase
         .from('form_submissions')
         .insert([{
+          id: submissionId,
           block_id: blockId,
           page_id: pageId || null,
           form_name: data.title || 'Contact Form',
@@ -175,6 +180,7 @@ export function FormBlock({ data, blockId, pageId }: FormBlockProps) {
           formData: submissionData as Record<string, unknown>,
           sourceId: blockId,
           pageId: pageId,
+          submissionId,
         });
       }
 

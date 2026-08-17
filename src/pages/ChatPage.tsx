@@ -43,11 +43,19 @@ export default function ChatPage() {
   }, [settings, settingsLoading, navigate, checkinId]);
 
   const loadConversations = useCallback(async () => {
-    // /chat is the visitor surface — only show anonymous visitor threads
-    // tied to this browser's session_id. Admin history lives in
-    // /admin/flowchat (operator) and /admin/cowork (workspace Q&A).
+    // /chat is the visitor surface. Anonymous threads are tied to this
+    // browser's session_id — but a LOGGED-IN user's /chat threads get
+    // user_id instead (useChat stamps one or the other, never both), so the
+    // list must match either. Found when Magnus and Svante tested /chat
+    // signed in and saw an empty history (2026-08-17). Admin history still
+    // lives in /admin/flowchat (operator) and /admin/cowork (workspace Q&A);
+    // this only lists scope='visitor' threads.
     const sessionId = localStorage.getItem('chat-session-id');
-    if (!sessionId) {
+    const identityFilters = [
+      sessionId ? `session_id.eq.${sessionId}` : null,
+      user?.id ? `user_id.eq.${user.id}` : null,
+    ].filter(Boolean);
+    if (identityFilters.length === 0) {
       setConversations([]);
       return;
     }
@@ -55,10 +63,10 @@ export default function ChatPage() {
       .from('chat_conversations')
       .select('id, title, created_at')
       .eq('scope', 'visitor')
-      .eq('session_id', sessionId)
+      .or(identityFilters.join(','))
       .order('created_at', { ascending: false });
     if (data) setConversations(data);
-  }, []);
+  }, [user?.id]);
 
   // Load conversations on mount
   useEffect(() => {

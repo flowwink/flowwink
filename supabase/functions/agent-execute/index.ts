@@ -3630,9 +3630,23 @@ async function executePagesAction(
         if (title !== undefined) updates.title = title;
         if (slug !== undefined) updates.slug = slug;
         if (meta !== undefined) updates.meta_json = meta;
-        if (blocks !== undefined) {
-          normalizeBlocks(blocks as unknown[]);
-          updates.content_json = blocks;
+        // content_json is an alias for blocks (#99-klassen, live miss
+        // 2026-08-17): `get` returns the column as content_json, so that is
+        // the name a caller naturally sends back. The old code dropped the
+        // unknown arg SILENTLY and answered success while writing nothing —
+        // the exact silent-noop class the read-back rule exists for.
+        const effectiveBlocks = blocks !== undefined ? blocks : (args as any).content_json;
+        if (effectiveBlocks !== undefined) {
+          const dropped = normalizeBlocks(effectiveBlocks as unknown[]);
+          if (dropped.length > 0) {
+            // A page update that quietly loses blocks is worse than one that
+            // fails: say WHICH block and WHAT it needs, Tiptap-error style.
+            throw new Error(
+              `Block validation dropped ${dropped.length} block(s): ${dropped.join('; ')}. ` +
+              `Fix the named fields and retry — nothing was written.`,
+            );
+          }
+          updates.content_json = effectiveBlocks;
         }
         const { data, error } = await supabase.from('pages')
           .update(updates).eq('id', page_id).select('id, title, slug, status').single();

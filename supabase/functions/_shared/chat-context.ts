@@ -144,6 +144,31 @@ export async function buildKnowledgeBase(
     }
   }
 
+  // Published blog posts ground the chat — no toggle, by design. Publication
+  // IS the decision: a post visible to every anonymous visitor on the web has
+  // no reason to be invisible to the same visitor in the chat, and the off
+  // switch already exists (unpublish). This closes the knowledge-recycling
+  // loop: campaign-born posts become answerable knowledge the moment they go
+  // live. Soft-fail on any shape difference across the fleet.
+  try {
+    const { data: posts } = await supabase
+      .from('blog_posts')
+      .select('title, slug, excerpt, content_json')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(15);
+    for (const post of posts ?? []) {
+      // content_json is Tiptap; the same extractor pages use handles both
+      // doc objects and strings (the optic incident's lesson).
+      const body = extractTextFromBlock({ type: 'text', data: { content: post.content_json } });
+      const text = `### Blog: ${post.title} (/blog/${post.slug})\n${post.excerpt ?? ''}\n${(body ?? '').slice(0, 2000)}`;
+      const contentTokens = Math.ceil(text.length / 4);
+      if (estimatedTokens + contentTokens > maxTokens) break;
+      sections.push(text);
+      estimatedTokens += contentTokens;
+    }
+  } catch { /* blog module absent or older schema — pages+KB still ground */ }
+
   if (includeKbArticles) {
     // This runs on the SERVICE client, which bypasses RLS — the policy that
     // protects visitors elsewhere protects nobody here. Without the visibility

@@ -422,13 +422,19 @@ function useUpdateSiteSettings<T>(key: string, successMessage: string) {
       const jsonValue = settings as unknown as Json;
 
       if (existing) {
+        // .select().single() makes an RLS-blocked write ERROR instead of
+        // silently updating zero rows and toasting success (Svante edited the
+        // chat prompt as sales/marketing, saw "saved", nothing was written —
+        // the read-back rule: never trust a write you did not read back).
         const { error } = await supabase
           .from('site_settings')
           .update({ 
             value: jsonValue,
             updated_at: new Date().toISOString()
           })
-          .eq('key', key);
+          .eq('key', key)
+          .select('key')
+          .single();
 
         if (error) throw error;
       } else {

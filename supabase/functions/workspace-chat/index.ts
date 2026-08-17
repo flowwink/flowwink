@@ -758,12 +758,17 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = getServiceClient();
 
-    // Role gate
-    const { data: roleRows } = await supabaseAdmin
-      .from('user_roles').select('role').eq('user_id', user.id);
-    const roles = (roleRows || []).map((r: any) => r.role);
-    if (!(roles.includes('admin') || roles.includes('employee') || roles.includes('manager'))) {
-      return new Response(JSON.stringify({ error: 'Forbidden — admin or employee role required' }), {
+    // Role gate — the MATRIX decides, not a hardcoded role list (Svante-fynd
+    // #3, 2026-08-17: sales/marketing had the workspaceChat module granted in
+    // Role Permissions and were still refused by an admin/employee/manager
+    // literal from the pre-matrix era). FlowWork is everyone's workroom: any
+    // staff role the matrix has given the module to belongs here. Customers
+    // stay out the same way they stay out of every staff surface — the matrix
+    // has no workspaceChat grant for them.
+    const { data: allowed } = await supabaseAdmin
+      .rpc('can_access_module', { _user_id: user.id, _module_id: 'workspaceChat' });
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: 'Forbidden — your role has not been granted the FlowWork module (Role Permissions → workspaceChat)' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

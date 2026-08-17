@@ -1817,7 +1817,7 @@
         "voice-recording": "sha256:41391de110f7f3e138df5c50b1901dd6c7928d2be18ad82fa5e166d48f66cca2",
         "web-scrape": "sha256:f0948362eb60ff2d597de407af0f3eedb3b0f892b75ce4acff960e0b6ebf146f",
         "web-search": "sha256:6002f6b14ad490cfa0b444129694f123fad021050234cc8f87ee04ebb16c5320",
-        "workspace-chat": "sha256:a7bda6127a892d590e794601d94f222e998c929ede08d591394b7fe5a6299c61"
+        "workspace-chat": "sha256:55fc9f79afc6df832ef6d414cbf78e3c282a74d4ef07c90b9a1d00f54338597a"
       }
     },
     "frontend": {

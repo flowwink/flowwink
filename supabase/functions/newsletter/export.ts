@@ -44,12 +44,12 @@ export async function handle(req: Request): Promise<Response> {
     }
 
     // Check admin role
-    const { data: hasAdmin } = await supabase.rpc("has_role", {
-      _user_id: userData.user.id, _role: "admin",
+    const { data: hasAdmin } = await supabase.rpc("can_access_module", {
+      _user_id: userData.user.id, _module_id: "newsletter",
     });
 
     if (!hasAdmin) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
+      return new Response(JSON.stringify({ error: "Forbidden — requires the \"newsletter\" module (Users → Role Permissions)" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

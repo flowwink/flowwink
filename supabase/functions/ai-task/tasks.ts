@@ -36,6 +36,10 @@ import { loadPreferenceDistillate } from "../_shared/domains/preference-distilla
 export interface TaskSpec<I = unknown, O = unknown> {
   name: string;
   description: string;
+  /** Owning module (#102): a JWT caller is authorized iff their role is
+   *  granted this module in role_module_access (admins always pass). Required
+   *  so every new task declares who may run it — the matrix is the only dial. */
+  module: string;
   tier: AiTier;
   inputSchema: z.ZodType<I>;
   /** Optional pre-step: load extra context from DB. Returns a partial that
@@ -76,6 +80,7 @@ const scoreCandidateInput = z.object({
 
 const scoreCandidateTask: TaskSpec<z.infer<typeof scoreCandidateInput>, any> = {
   name: "score_candidate",
+  module: "recruitment",
   description:
     "Score a candidate against a job posting. Loads application+job, returns ai_score/breakdown/recommendation, writes back to applications row.",
   tier: "reasoning",
@@ -183,6 +188,7 @@ const SE_ACCOUNT_MAP: Record<string, string> = {
 
 const analyzeReceiptTask: TaskSpec<z.infer<typeof analyzeReceiptInput>, any> = {
   name: "analyze_receipt",
+  module: "expenses",
   description: "Extract structured data from a receipt image (vendor, total, VAT, category).",
   tier: "multimodal",
   inputSchema: analyzeReceiptInput,
@@ -247,6 +253,7 @@ const qualifyLeadInput = z.object({
 
 const qualifyLeadSummaryTask: TaskSpec<z.infer<typeof qualifyLeadInput>> = {
   name: "qualify_lead_summary",
+  module: "leads",
   description: "Generate a 1-2 sentence engagement summary and next-step suggestion for a lead.",
   tier: "fast",
   inputSchema: qualifyLeadInput,
@@ -284,6 +291,7 @@ const generateBlogFromWebinarTask: TaskSpec<
   any
 > = {
   name: "generate_blog_from_webinar",
+  module: "webinars",
   description:
     "Turn a completed webinar into a blog post draft. Loads webinar metadata; if source_text is omitted, the model writes from title + description + agenda + recording_url. Inserts blog_posts row as status=draft.",
   tier: "reasoning",
@@ -370,6 +378,7 @@ const ticketTriageInput = z.object({
 
 const ticketTriageTask: TaskSpec<z.infer<typeof ticketTriageInput>, any> = {
   name: "ticket_triage",
+  module: "tickets",
   description:
     "Triage a single helpdesk ticket: classify priority + category, suggest up to 3 relevant KB articles, write a 1-sentence internal summary. Loads ticket; writes back priority, category and suggested_kb_article_ids.",
   tier: "fast",
@@ -486,6 +495,7 @@ const strList = { type: "array", items: { type: "string" } };
 
 const contentResearchTask: TaskSpec<z.infer<typeof contentResearchInput>, any> = {
   name: "content_research",
+  module: "paidGrowth",
   description:
     "Deep content research for a topic — audience insights, content angles, hooks, competitive landscape, recommended structure, SEO. Returns a structured ContentResearch object.",
   tier: "reasoning",
@@ -630,6 +640,7 @@ const contentProposalInput = z.object({
 
 const contentProposalTask: TaskSpec<z.infer<typeof contentProposalInput>, any> = {
   name: "content_proposal",
+  module: "paidGrowth",
   description:
     "Generate a multi-channel content proposal from a topic — a pillar piece plus channel-adapted variants (blog, newsletter, linkedin, x). Returns pillar_content + channel_variants.",
   tier: "reasoning",
@@ -720,6 +731,7 @@ const seoBriefInput = z.object({
 
 const seoContentBriefTask: TaskSpec<z.infer<typeof seoBriefInput>, any> = {
   name: "seo_content_brief",
+  module: "blog",
   description:
     "SEO content brief for a topic — primary/secondary keywords, search intent, title options, meta description, a heading outline, People-Also-Ask questions, competitor gaps, and a word-count target.",
   tier: "reasoning",
@@ -796,6 +808,7 @@ const socialPostInput = z.object({
 
 const socialPostTask: TaskSpec<z.infer<typeof socialPostInput>, any> = {
   name: "social_post",
+  module: "paidGrowth",
   description:
     "Generate native social media posts (LinkedIn, X) for a topic, optionally from key points. Returns one post per requested platform with copy and hashtags.",
   tier: "reasoning",
@@ -853,6 +866,7 @@ const adCreativeInput = z.object({
 });
 const adCreativeTask: TaskSpec<z.infer<typeof adCreativeInput>, any> = {
   name: "ad_creative",
+  module: "paidGrowth",
   description: "Generate ad creative (headline, body, CTA) for a campaign.",
   tier: "reasoning",
   inputSchema: adCreativeInput,
@@ -900,6 +914,7 @@ const competitorAnalysisInput = z.object({
 });
 const competitorAnalysisTask: TaskSpec<z.infer<typeof competitorAnalysisInput>, any> = {
   name: "competitor_analysis",
+  module: "salesIntelligence",
   description: "Analyze a competitor's website content for positioning and content strategy.",
   tier: "reasoning",
   inputSchema: competitorAnalysisInput,

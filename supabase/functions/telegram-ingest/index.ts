@@ -265,11 +265,12 @@ async function handleSend(req: Request): Promise<Response> {
 
     const { data: userData, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
-    const { data: hasAdmin } = await supabase.rpc("has_role", {
-      _user_id: userData.user.id,
-      _role: "admin",
+    const { data: canAccess } = await supabase.rpc("can_access_module", {
+      _user_id: userData.user.id, _module_id: "liveSupport",
     });
-    if (!hasAdmin) return json({ error: "forbidden" }, 403);
+    // #102: the matrix is the only dial — a role granted the liveSupport module
+    // passes; can_access_module short-circuits to true for admins.
+    if (canAccess !== true) return json({ error: "forbidden — requires the \"liveSupport\" module (Users → Role Permissions)" }, 403);
 
     const body = (await req.json().catch(() => ({}))) as {
       conversation_id?: string; message_id?: string; content?: string;

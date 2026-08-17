@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getServiceClient } from '../_shared/supabase-clients.ts';
-import { requireServiceOrRole } from '../_shared/edge-auth.ts';
+import { requireServiceOrModule } from '../_shared/edge-auth.ts';
 
 /**
  * comms-send — the transactional-comms cluster (edge-surface refactor B2).
@@ -61,8 +61,15 @@ const HANDLERS: Record<string, (req: Request) => Promise<Response>> = {
 };
 
 // Kinds whose standalone function was JWT-gated (verify_jwt=true). They keep
-// equivalent protection via an in-body gate: service key or admin role.
-const GATED = new Set(['invoice_email', 'return_confirmation', 'csat_dispatch']);
+// equivalent protection via an in-body gate — since #102 per the kind's OWNING
+// module (service key, admin, or a role granted the module in
+// role_module_access), so e.g. an accounting-role user can send an invoice
+// email without the admin role. The matrix is the only dial.
+const GATED_MODULE: Record<string, string> = {
+  invoice_email: 'invoicing',
+  return_confirmation: 'returns',
+  csat_dispatch: 'surveys',
+};
 
 // Skill-name → kind, for calls arriving through agent-execute's edge: dispatch.
 const SKILL_TO_KIND: Record<string, string> = {
@@ -94,11 +101,13 @@ serve(async (req) => {
     );
   }
 
-  if (GATED.has(kind)) {
-    const auth = await requireServiceOrRole(req, getServiceClient());
+  if (GATED_MODULE[kind]) {
+    const auth = await requireServiceOrModule(req, getServiceClient(), GATED_MODULE[kind]);
     if (!auth.authorized) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({
+        error: `Forbidden: "${kind}" requires the "${GATED_MODULE[kind]}" module — an admin can grant it to your role under Users → Role Permissions`,
+      }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
   }

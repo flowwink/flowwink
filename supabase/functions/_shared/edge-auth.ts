@@ -60,6 +60,84 @@ export async function requireServiceOrRole(
   return { authorized: false, isService: false, isAdmin: false, userId: null };
 }
 
+/**
+ * Authorize a request as the service role, an admin, or a user whose role is
+ * granted `moduleId` in role_module_access — the matrix as the only dial
+ * (#102). Use for edge functions that back a module surface (send an invoice
+ * email, dispatch a survey, relay a support reply): a role granted the module
+ * in Role Permissions gets the module's buttons, not a 401.
+ */
+export async function requireServiceOrModule(
+  req: Request,
+  supabase: SupabaseClient,
+  moduleId: string,
+): Promise<EdgeAuth> {
+  const token = (req.headers.get("authorization") ?? "")
+    .replace(/^Bearer\s+/i, "")
+    .trim();
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+
+  if (token && serviceKey && token === serviceKey) {
+    return { authorized: true, isService: true, isAdmin: false, userId: null };
+  }
+  if (token && token !== anonKey && token !== publishableKey) {
+    const { data } = await supabase.auth.getUser(token);
+    if (data?.user) {
+      // can_access_module() short-circuits to true for admins.
+      const { data: canAccess } = await supabase.rpc("can_access_module", {
+        _user_id: data.user.id,
+        _module_id: moduleId,
+      });
+      if (canAccess === true) {
+        const { data: hasAdmin } = await supabase.rpc("has_role", {
+          _user_id: data.user.id,
+          _role: "admin",
+        });
+        return { authorized: true, isService: false, isAdmin: hasAdmin === true, userId: data.user.id };
+      }
+    }
+  }
+  return { authorized: false, isService: false, isAdmin: false, userId: null };
+}
+
+/**
+ * Authorize the service role or ANY staff member (a user holding at least one
+ * non-customer role). For module-agnostic utilities with no data access of
+ * their own — e.g. ai-task, a pure text transform (#102 ruling: it reads no
+ * tables, so the module dial has nothing to protect).
+ */
+export async function requireServiceOrStaff(
+  req: Request,
+  supabase: SupabaseClient,
+): Promise<EdgeAuth> {
+  const token = (req.headers.get("authorization") ?? "")
+    .replace(/^Bearer\s+/i, "")
+    .trim();
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+
+  if (token && serviceKey && token === serviceKey) {
+    return { authorized: true, isService: true, isAdmin: false, userId: null };
+  }
+  if (token && token !== anonKey && token !== publishableKey) {
+    const { data } = await supabase.auth.getUser(token);
+    if (data?.user) {
+      const { data: staff } = await supabase.rpc("is_staff", { _user_id: data.user.id });
+      if (staff === true) {
+        const { data: hasAdmin } = await supabase.rpc("has_role", {
+          _user_id: data.user.id,
+          _role: "admin",
+        });
+        return { authorized: true, isService: false, isAdmin: hasAdmin === true, userId: data.user.id };
+      }
+    }
+  }
+  return { authorized: false, isService: false, isAdmin: false, userId: null };
+}
+
 /** Convenience 401 response with CORS headers. */
 export function unauthorized(corsHeaders: Record<string, string>): Response {
   return new Response(JSON.stringify({ error: "Unauthorized" }), {

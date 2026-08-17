@@ -316,9 +316,12 @@ async function handleDiscover(req: Request): Promise<Response> {
   if (!user) return json({ error: 'Unauthorized' }, 401);
 
   const supabase = getServiceClient();
-  const { data: roles } = await supabase
-    .from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin');
-  if (!roles || roles.length === 0) return json({ error: 'Admin access required' }, 403);
+  // #102: the matrix is the only dial — federation is deliberately NOT seeded
+  // into any role's defaults, so this stays admin-only until an operator
+  // grants the module explicitly. can_access_module short-circuits for admins.
+  const { data: canFederate } = await supabase
+    .rpc('can_access_module', { _user_id: user.id, _module_id: 'federation' });
+  if (canFederate !== true) return json({ error: 'Forbidden — requires the "federation" module (Users → Role Permissions)' }, 403);
 
   const body: DiscoverRequest = await req.json();
   const { peer_id, peer_url, action = 'discover' } = body;
@@ -739,9 +742,10 @@ async function handleOutbound(req: Request): Promise<Response> {
     const authClient = getUserClient(`Bearer ${token}`)!;
     const { data: { user } } = await authClient.auth.getUser();
     if (user) {
-      const { data: roles } = await getServiceClient()
-        .from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin');
-      isAuthorized = !!(roles && roles.length > 0);
+      // #102: matrix gate — see the discover endpoint's note above.
+      const { data: canFederate } = await getServiceClient()
+        .rpc('can_access_module', { _user_id: user.id, _module_id: 'federation' });
+      isAuthorized = canFederate === true;
     }
   }
 

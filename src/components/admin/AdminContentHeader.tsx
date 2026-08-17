@@ -25,13 +25,15 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-// Icon registry — maps icon name strings to components
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard, BarChart3, FileText, Users, Settings, BookOpen, Image, Mail,
-  Puzzle, Webhook, UserCheck, Briefcase, Building2, Package, Library, ShoppingCart,
-  CalendarDays, Plug, Bot, Zap, MessageSquare, Headphones, Megaphone, Code2,
-  Video, Target, Rocket, LayoutGrid, Inbox, Menu, UserCircle,
-};
+// Icon registry — resolves the stored lucide icon NAME to its component.
+// The old hand-curated 31-icon map was why some pins had icons and others
+// none: pin a page whose nav icon (Shield, Database, Cable, …) was not in
+// the list and the lookup came back empty. The full lucide namespace covers
+// every icon the navigation can use; FileText is the fallback so a pin is
+// never icon-less even if a stored name goes stale.
+import * as LucideIcons from 'lucide-react';
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> =
+  LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
 
 export function AdminContentHeader() {
   const location = useLocation();
@@ -56,7 +58,7 @@ export function AdminContentHeader() {
       {!isCopilotMode && (
         <div className="flex-1 flex items-center gap-0.5 overflow-x-auto scrollbar-none min-w-0 ml-1">
           {pins.map((pin) => {
-            const Icon = iconMap[pin.icon];
+            const Icon = iconMap[pin.icon] ?? FileText;
             const isActive =
               location.pathname === pin.href ||
               (pin.href !== '/admin' && location.pathname.startsWith(pin.href));

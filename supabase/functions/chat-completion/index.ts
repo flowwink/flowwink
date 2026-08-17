@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getServiceClient, getAnonClient } from '../_shared/supabase-clients.ts';
+import { loadBusinessIdentityBlock } from '../_shared/domains/business-identity-block.ts';
 import { retrieve, renderContext } from '../_shared/retrieval/index.ts';
 import { embedQuery } from '../_shared/retrieval/embedder.ts';
 import { resolveAuthenticatedCustomer, buildCustomerContext, resolveCompanyMembership, buildCompanyContext } from '../_shared/customer-context.ts';
@@ -570,6 +571,14 @@ serve(async (req) => {
 
     // Build system prompt with knowledge base context
     let chatPrompt = settings?.systemPrompt || 'You are a helpful AI assistant.';
+
+    // One identity, many mouths (#101): the same Business Identity block that
+    // grounds every generated campaign, letter and fit analysis grounds the
+    // public chat — facts, claim stance and boundaries come from the identity
+    // and stay current when it changes, so the instance systemPrompt can be
+    // personality alone. Soft-fail: no profile → empty string, chat unchanged.
+    const identityBlock = await loadBusinessIdentityBlock(supabase).catch(() => '');
+    if (identityBlock) chatPrompt += identityBlock;
 
     // Knowledge base restrictions
     if (settings?.allowGeneralKnowledge) {

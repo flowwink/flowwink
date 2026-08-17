@@ -4774,10 +4774,12 @@ async function executeWikiAction(
     // long term shortened to a prefix (compounds share their head word), so
     // the lexical net widens without any intent routing (Law 1: still pure
     // string matching, ranked below by the same scorer).
+    // Prefix capped at 8 chars: Swedish head words are short ("granskning"),
+    // and a 50% prefix of a long compound overshoots straight past them.
     let effectiveTerms = terms;
     if ((data || []).length === 0 && terms.some((t) => t.length >= 6)) {
       const prefixTerms = terms.map((t) =>
-        t.length >= 6 ? t.slice(0, Math.max(4, Math.ceil(t.length * 0.5))) : t);
+        t.length >= 6 ? t.slice(0, Math.min(8, Math.max(4, Math.ceil(t.length * 0.5)))) : t);
       const retry = await runQuery(prefixTerms);
       if (!retry.error && (retry.data || []).length > 0) {
         data = retry.data;

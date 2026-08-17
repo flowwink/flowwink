@@ -21,6 +21,10 @@ export interface CompanyProfile {
   differentiators: string[];
   value_proposition: string;
   icp: string;
+  /** How claims are made — a writing RULE injected into every outward AI surface; it overrides campaign briefs. */
+  claim_stance: string;
+  /** Topics this channel routes to a person instead of answering (legitimate questions, wrong channel). */
+  boundaries: string;
   competitors: string;
   pricing_notes: string;
   industry: string;
@@ -57,6 +61,8 @@ export const defaultProfile: CompanyProfile = {
   differentiators: [],
   value_proposition: "",
   icp: "",
+  claim_stance: "",
+  boundaries: "",
   competitors: "",
   pricing_notes: "",
   industry: "",

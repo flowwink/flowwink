@@ -11,6 +11,9 @@ import { Building2, Save, Loader2, Plus, X, Globe, Sparkles } from "lucide-react
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 
+// NOTE: this component is an ORPHAN — nothing imports it. The live Business
+// Identity editor is src/pages/admin/CompanyInsightsPage.tsx (useCompanyInsights).
+// Do not add fields here; they will render nowhere. Candidate for deletion.
 interface CompanyProfile {
   company_name: string;
   about_us: string;
@@ -23,13 +26,6 @@ interface CompanyProfile {
   // Sales-specific fields
   value_proposition: string;
   icp: string;
-  /** How claims are made, not what is claimed — e.g. "we describe our services
-   * precisely; we never interpret regulations on a customer's behalf". Injected
-   * into every outward AI surface as a writing rule. */
-  claim_stance: string;
-  /** Topics this channel does not answer — routed to a person instead. Not
-   * secrets: legitimate questions where the honest answer is "ask us directly". */
-  boundaries: string;
   competitors: string;
   pricing_notes: string;
   industry: string;
@@ -50,8 +46,6 @@ const defaultProfile: CompanyProfile = {
   differentiators: [],
   value_proposition: "",
   icp: "",
-  claim_stance: "",
-  boundaries: "",
   competitors: "",
   pricing_notes: "",
   industry: "",
@@ -337,37 +331,7 @@ export function CompanyProfileCard() {
             </Field>
           </div>
 
-          <Field
-            label="Claim stance"
-            htmlFor="cp-claim-stance"
-            hint="How claims are made — not what is claimed. Every outward AI surface writes under this rule."
-            value={profile.claim_stance}
-          >
-            <Textarea
-              id="cp-claim-stance"
-              value={profile.claim_stance}
-              onChange={(e) => update("claim_stance", e.target.value)}
-              placeholder={'e.g. "We describe what our services do, precisely enough for the customer and their advisers to assess. We never interpret what regulations require of a specific organization, and we never state or imply that buying us makes anyone compliant."'}
-              className="min-h-[120px] resize-y leading-relaxed"
-            />
-          </Field>
-
-          <Field
-            label="Answered by a person, not here"
-            htmlFor="cp-boundaries"
-            hint="Topics the site, chat and generated copy must route to a human instead of answering. Legitimate questions — wrong channel."
-            value={profile.boundaries}
-          >
-            <Textarea
-              id="cp-boundaries"
-              value={profile.boundaries}
-              onChange={(e) => update("boundaries", e.target.value)}
-              placeholder={'e.g. "Where the network runs and what is built where. How upstream connectivity is arranged. People and ownership. Named competitors. — Say the question is a good one, that it is answered directly rather than through this channel, and point to the contact form."'}
-              className="min-h-[120px] resize-y leading-relaxed"
-            />
-          </Field>
-
-          <Field
+                              <Field
             label="Delivered Value"
             htmlFor="cp-value"
             hint="Concrete, measurable outcomes — the most quoted field in proposals."

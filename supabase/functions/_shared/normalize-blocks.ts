@@ -304,6 +304,7 @@ export function validateBlockContracts(blocks: Record<string, unknown>[]): void 
           `[validate] Block ${block.id} (${block.type}): forbidden fields [${bad.join(', ')}] — marking for removal`,
         );
         block._remove = true;
+        block._remove_reason = `"${block.type}" block: forbidden fields [${bad.join(', ')}]`;
         continue;
       }
     }
@@ -321,20 +322,31 @@ export function validateBlockContracts(blocks: Record<string, unknown>[]): void 
           `[validate] Block ${block.id} (${block.type}): missing required fields [${group.join('|')}] — marking for removal`,
         );
         block._remove = true;
+        // Self-correcting reason (the Tiptap-error pattern): name the block,
+        // the field it needs, and — when the caller plainly used a common
+        // wrong name — what they probably meant. The live miss: a stats block
+        // with `items` was dropped without a word.
+        const hint = String(block.type) === 'stats' && (data as any).items !== undefined
+          ? ' (you sent "items" — the stats block calls this field "stats")'
+          : '';
+        block._remove_reason = `"${block.type}" block: missing required field [${group.join(' or ')}]${hint}`;
         break;
       }
     }
   }
 }
 
-/** Remove all blocks marked with `_remove` in-place. */
-export function stripRemovedBlocks(blocks: Record<string, unknown>[]): void {
-  const removed = blocks.filter((b) => b._remove).length;
-  if (removed === 0) return;
+/** Remove all blocks marked with `_remove` in-place. Returns the reasons, so
+ * callers can refuse-with-detail instead of silently shipping a thinner page. */
+export function stripRemovedBlocks(blocks: Record<string, unknown>[]): string[] {
+  const reasons = blocks.filter((b) => b._remove)
+    .map((b) => String(b._remove_reason ?? `"${b.type}" block: invalid`));
+  if (reasons.length === 0) return [];
   const clean = blocks.filter((b) => !b._remove);
   blocks.length = 0;
   blocks.push(...clean);
-  console.log(`[normalize] Removed ${removed} invalid block(s)`);
+  console.log(`[normalize] Removed ${reasons.length} invalid block(s)`);
+  return reasons;
 }
 
 // ---------------------------------------------------------------------------
@@ -353,7 +365,7 @@ export function stripRemovedBlocks(blocks: Record<string, unknown>[]): void {
 export function normalizeBlocks(
   blocks: unknown[],
   options: { validate?: boolean } = {},
-): void {
+): string[] {
   const { validate = true } = options;
   const typed = blocks as Record<string, unknown>[];
 
@@ -365,8 +377,9 @@ export function normalizeBlocks(
 
   if (validate) {
     validateBlockContracts(typed);
-    stripRemovedBlocks(typed);
+    return stripRemovedBlocks(typed);
   }
+  return [];
 }
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import { useEmployeeSelf } from '@/hooks/useEmployeeSelf';
 import { useIsManager } from '@/hooks/useTeam';
 import { useIsModuleEnabled, useModules } from '@/hooks/useModules';
 import { BuildBadge } from '@/components/BuildBadge';
+import { useAuth } from '@/hooks/useAuth';
 
 // Commerce-scoped portal sections — hidden when the ecommerce module is off
 // (an HR-only site still gets the portal, for employee self-service).
@@ -44,6 +45,12 @@ const profileNav = [{ to: '/account/profile', label: 'Profile', icon: User }];
 
 export default function AccountLayout() {
   const { isLoggedIn, loading, signOut, profile } = useCustomerAuth();
+  // The destination follows the PERSON, not the door (Svante-incident
+  // 2026-08-17): the portal login hardcoded /account while /auth hardcodes
+  // /admin, so a salesperson who happened to log in through the public site
+  // landed among order history. Pure staff (roles but no customer role) are
+  // sent home; someone who is BOTH staff and customer (the B2B seam) stays.
+  const { roles, rolesReady } = useAuth();
   const { isEmployee } = useEmployeeSelf();
   const { isManager } = useIsManager();
   const ecommerceEnabled = useIsModuleEnabled('ecommerce');
@@ -78,6 +85,10 @@ export default function AccountLayout() {
   if (!isLoggedIn) {
     navigate('/account/login?redirect=' + encodeURIComponent(location.pathname));
     return null;
+  }
+
+  if (rolesReady && roles.length > 0 && !roles.includes('customer')) {
+    return <Navigate to="/admin" replace />;
   }
 
   // The portal index is the Orders page; with ecommerce off it isn't in the

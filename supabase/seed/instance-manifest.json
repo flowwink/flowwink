@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260815130000",
-      "migrations_count": 429,
+      "migration_head": "20260817210000",
+      "migrations_count": 430,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1721,6 +1721,10 @@
         {
           "version": "20260815130000",
           "name": "unpublished-vendor-docs-leave-the-index"
+        },
+        {
+          "version": "20260817210000",
+          "name": "marketing-edits-the-website"
         }
       ]
     },

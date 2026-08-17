@@ -16,6 +16,7 @@ import { SalesProfileSetup } from "@/components/admin/sales-intelligence/SalesPr
 import { ResearchHistory } from "@/components/admin/sales-intelligence/ResearchHistory";
 import { SalesIntelligenceReadiness } from "@/components/admin/sales-intelligence/SalesIntelligenceReadiness";
 import { useProspectFit, loadSavedFit } from "@/hooks/useProspectFit";
+import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ResearchResult, FitAnalysisResult } from "@/components/admin/sales-intelligence/types";
 
@@ -29,7 +30,15 @@ export default function SalesIntelligencePage() {
   // Deep-linkable tabs: the Profile page points sellers straight at their
   // sender profile (?tab=profiles), which is otherwise three clicks deep.
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') ?? 'research';
+  // Setup lists platform dependencies (AI provider, ICP, API keys) whose
+  // status is read from admin-only settings and whose fix-links lead to
+  // admin pages. For a non-admin the reads come back empty (RLS), so the tab
+  // reported "AI not connected" about a fully configured instance — the
+  // check's own missing read access presented as fact. Admin-only, honestly.
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
+  const requested = searchParams.get('tab') ?? 'research';
+  const tab = requested === 'setup' && !isAdmin ? 'research' : requested;
 
   const handleResearch = async () => {
     if (!companyName.trim()) {
@@ -102,7 +111,7 @@ export default function SalesIntelligencePage() {
             <TabsTrigger value="research">Research</TabsTrigger>
             <TabsTrigger value="profiles">Sales Profile</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="setup">Setup</TabsTrigger>
+            {isAdmin && <TabsTrigger value="setup">Setup</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="research" className="space-y-4">
@@ -220,9 +229,11 @@ export default function SalesIntelligencePage() {
             <ResearchHistory />
           </TabsContent>
 
-          <TabsContent value="setup" className="space-y-4">
-            <SalesIntelligenceReadiness />
-          </TabsContent>
+          {isAdmin && (
+            <TabsContent value="setup" className="space-y-4">
+              <SalesIntelligenceReadiness />
+            </TabsContent>
+          )}
         </Tabs>
       </AdminPageContainer>
     </AdminLayout>

@@ -301,7 +301,7 @@ Granular block-level operations on pages: add, update, remove, reorder blocks.
   automatically — pass whichever you hold; you never need a lookup call just to
   turn a slug into an id.
 - **block_id**: Required for update/remove.
-- **block_data**: Block object for add/update.
+- **block_data**: The block's DATA FIELDS for add/update (e.g. { title, subtitle, features }). A full block object { id, type, data } is also accepted — the data inside is unwrapped. Update MERGES into existing data field-by-field; send only the fields you change.
 - **position**: Insert position for add.
 - **block_ids**: Ordered array for reorder.
 ### Edge cases

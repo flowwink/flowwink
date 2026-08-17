@@ -3843,8 +3843,24 @@ async function executePagesAction(
         const idx = blocks.findIndex((b: any) => b.id === block_id);
         if (idx === -1) throw new Error(`Block not found: ${block_id}`);
 
-        // Merge first, then validate the merged result
-        const mergedData = { ...blocks[idx].data as Record<string, unknown>, ...block_data };
+        // Merge first, then validate the merged result.
+        // block_data accepts BOTH shapes: a bare data-fields object, or a full
+        // block {id, type, data} — the instructions called it a "Block object",
+        // callers sent exactly that, and the old spread nested it under data.*
+        // while the rendered fields stayed stale (silent corruption, found on
+        // optic 2026-08-17). Unwrap, and scrub the block-shaped junk keys that
+        // shape of corruption left behind.
+        const _isFullBlock = block_data && typeof block_data === 'object'
+          && 'data' in (block_data as any) && typeof (block_data as any).data === 'object';
+        const _incoming = _isFullBlock ? (block_data as any).data : block_data;
+        const mergedData = { ...blocks[idx].data as Record<string, unknown>, ..._incoming };
+        for (const junk of ['id', 'type', 'data'] as const) {
+          const v = (mergedData as any)[junk];
+          if (v !== undefined && (junk === 'data' ? typeof v === 'object' : typeof v === 'string')
+              && !(_incoming && typeof _incoming === 'object' && junk in _incoming)) {
+            delete (mergedData as any)[junk];
+          }
+        }
         const blockType = String(blocks[idx].type);
         const validation = validateBlockData(blockType, mergedData);
         if (!validation.valid) {
@@ -4739,16 +4755,41 @@ async function executeWikiAction(
     const terms = query.split(/\s+/).map((t) => t.trim()).filter((t) => t.length >= 2).slice(0, 8);
     if (terms.length === 0) return { matches: [] };
 
-    let q = supabase.from('wiki_pages').select('slug, title, updated_at, content_md');
-    for (const t of terms) {
-      const safe = sanitizeOrTerm(t);
-      q = q.or(`title.ilike.%${safe}%,content_md.ilike.%${safe}%`);
-    }
-    // Over-fetch: ranking happens here, so the DB limit must not decide winners.
-    const { data, error } = await q.limit(Math.max(limit * 5, 50));
+    const runQuery = async (queryTerms: string[]) => {
+      let q = supabase.from('wiki_pages').select('slug, title, updated_at, content_md');
+      for (const t of queryTerms) {
+        const safe = sanitizeOrTerm(t);
+        q = q.or(`title.ilike.%${safe}%,content_md.ilike.%${safe}%`);
+      }
+      // Over-fetch: ranking happens here, so the DB limit must not decide winners.
+      return q.limit(Math.max(limit * 5, 50));
+    };
+
+    let { data, error } = await runQuery(terms);
     if (error) throw new Error(`search_wiki failed: ${error.message}`);
 
-    const lowerTerms = terms.map((t) => t.toLowerCase());
+    // Swedish-compound fallback: "granskningschecklista" is ONE term but the
+    // page says "Granskning … checklista" — no substring match anywhere, and a
+    // perfectly good query got silence. On zero hits, retry once with each
+    // long term shortened to a prefix (compounds share their head word), so
+    // the lexical net widens without any intent routing (Law 1: still pure
+    // string matching, ranked below by the same scorer).
+    // Prefix capped at 8 chars: Swedish head words are short ("granskning"),
+    // and a 50% prefix of a long compound overshoots straight past them.
+    let effectiveTerms = terms;
+    if ((data || []).length === 0 && terms.some((t) => t.length >= 6)) {
+      const prefixTerms = terms.map((t) =>
+        t.length >= 6 ? t.slice(0, Math.min(8, Math.max(4, Math.ceil(t.length * 0.5)))) : t);
+      const retry = await runQuery(prefixTerms);
+      if (!retry.error && (retry.data || []).length > 0) {
+        data = retry.data;
+        // Score with the terms that actually hit, or the strict AND filter
+        // below would silently discard every fallback row again.
+        effectiveTerms = prefixTerms;
+      }
+    }
+
+    const lowerTerms = effectiveTerms.map((t) => t.toLowerCase());
     const scored = (data || []).map((p: any) => {
       const title = String(p.title || '').toLowerCase();
       const body = String(p.content_md || '').toLowerCase();

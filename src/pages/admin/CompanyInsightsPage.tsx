@@ -374,11 +374,21 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
   );
 }
 
-function FieldArea({ label, value, onChange, placeholder, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
+function FieldArea({ label, value, onChange, placeholder, rows = 3 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs font-medium">{label}</Label>
-      <Textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} />
+      {/* The field grows to fit its content ([field-sizing:content], with rows
+          as the floor and resize-y as the manual override) — a curated profile
+          must never hide its own last line behind a scroll edge. The reader is
+          reviewing text, not peeking at it. */}
+      <Textarea
+        value={value || ""}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className="[field-sizing:content] max-h-96 resize-y leading-relaxed"
+      />
     </div>
   );
 }

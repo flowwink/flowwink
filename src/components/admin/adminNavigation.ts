@@ -156,6 +156,11 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { name: "Tickets", href: "/admin/tickets", icon: Inbox, moduleId: "tickets" },
       { name: "Live Support", href: "/admin/live-support", icon: Headphones, moduleId: "liveSupport" },
+      // Moved out of the adminOnly System group (Svante-incident 2026-08-17):
+      // the group gate ate the matrix grant — sales/marketing were given the
+      // chat module in Role Permissions and never saw the item. Same fix as
+      // Business Identity earlier: the matrix is the only dial.
+      { name: "AI Chat", href: "/admin/chat", icon: MessageSquare, moduleId: "chat" },
       { name: "Voice", href: "/admin/voice", icon: Phone, moduleId: "voice" },
     ],
   },
@@ -286,7 +291,6 @@ export const navigationGroups: NavGroup[] = [
       { name: "Modules", href: "/admin/modules", icon: Puzzle },
       { name: "Integrations", href: "/admin/integrations", icon: Plug },
       { name: "Templates", href: "/admin/templates", icon: LayoutTemplate, moduleId: "templates" },
-      { name: "Chat Module", href: "/admin/chat", icon: MessageSquare, moduleId: "chat" },
       { name: "Developer", href: "/admin/developer", icon: Code2, moduleId: "developer" },
       { name: "AI Usage", href: "/admin/ai-usage", icon: BarChart3 },
       { name: "System", href: "/admin/system", icon: Database },

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 
@@ -30,6 +30,23 @@ export function useBlockEditor<T extends object>({
   onChange,
 }: UseBlockEditorOptions<T>): UseBlockEditorReturn<T> {
   const [data, setData] = useState<T>(initialData);
+
+  // Re-sync when the PARENT hands us new content — e.g. FooterTab mounts with
+  // defaults while its query is in flight, then receives the saved block. The
+  // old one-shot useState froze that first-paint default: the variant selector
+  // showed "full" over a saved "minimal", and applying a variant merged the
+  // preset over frozen defaults, silently reverting the user's edits on the
+  // next Save (Magnus, 2026-08-18). The equality guard keeps the editor's OWN
+  // changes from bouncing back through the parent and resetting the cursor:
+  // when onChange→parent→prop round-trips, the content is identical and we
+  // leave state alone.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  useEffect(() => {
+    if (JSON.stringify(initialData) !== JSON.stringify(dataRef.current)) {
+      setData(initialData);
+    }
+  }, [initialData]);
 
   // Pre-configured DnD sensors used by many block editors
   const dndSensors = useSensors(

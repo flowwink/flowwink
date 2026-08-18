@@ -402,66 +402,6 @@ export default function ChatSettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Lead capture</CardTitle>
-                  <CardDescription>
-                    The small email prompt shown inside the visitor chat. Leave a field
-                    empty to use the built-in English default.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ProvenanceLine>
-                    Stored in the site's visitor-text pack (ui_text) — the same layer
-                    that carries the cookie banner and other non-block texts, so an
-                    agent can translate it too.
-                  </ProvenanceLine>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="leadPrompt">Prompt</Label>
-                      <Input
-                        id="leadPrompt"
-                        value={leadTexts.prompt ?? ''}
-                        placeholder="Want us to follow up? Leave your email."
-                        onChange={(e) => { setLeadTexts({ ...leadTexts, prompt: e.target.value }); setLeadTextsDirty(true); }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="leadSend">Send button</Label>
-                      <Input
-                        id="leadSend"
-                        value={leadTexts.send ?? ''}
-                        placeholder="Send"
-                        onChange={(e) => { setLeadTexts({ ...leadTexts, send: e.target.value }); setLeadTextsDirty(true); }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="leadPlaceholder">Email placeholder</Label>
-                      <Input
-                        id="leadPlaceholder"
-                        value={leadTexts.placeholder ?? ''}
-                        placeholder="you@example.com"
-                        onChange={(e) => { setLeadTexts({ ...leadTexts, placeholder: e.target.value }); setLeadTextsDirty(true); }}
-                      />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="leadThanks">Thank-you message</Label>
-                      <Input
-                        id="leadThanks"
-                        value={leadTexts.thanks ?? ''}
-                        placeholder="Thanks! We'll be in touch."
-                        onChange={(e) => { setLeadTexts({ ...leadTexts, thanks: e.target.value }); setLeadTextsDirty(true); }}
-                      />
-                    </div>
-                  </div>
-                  {leadTextsDirty && (
-                    <Button size="sm" onClick={saveLeadTexts} disabled={updateUiText.isPending}>
-                      {updateUiText.isPending ? 'Saving…' : 'Save lead capture texts'}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
             </TabsContent>
 
             {/* AI Provider settings */}
@@ -940,6 +880,63 @@ export default function ChatSettingsPage() {
                       }
                     />
                   </div>
+
+                  {/* The prompt's texts live WITH the switch that enables it —
+                      stored in the visitor-text pack (ui_text), edited here. */}
+                  {formData.leadCaptureEnabled && (
+                    <div className="space-y-4 p-4 rounded-lg border border-dashed">
+                      <div>
+                        <h4 className="font-medium text-sm">Lead capture texts</h4>
+                        <ProvenanceLine>
+                          Stored in the site's visitor-text pack (ui_text) — empty field
+                          = built-in English default. An agent can translate these too.
+                        </ProvenanceLine>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="leadPrompt">Prompt</Label>
+                          <Input
+                            id="leadPrompt"
+                            value={leadTexts.prompt ?? ''}
+                            placeholder="Want us to follow up? Leave your email."
+                            onChange={(e) => { setLeadTexts({ ...leadTexts, prompt: e.target.value }); setLeadTextsDirty(true); }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="leadSend">Send button</Label>
+                          <Input
+                            id="leadSend"
+                            value={leadTexts.send ?? ''}
+                            placeholder="Send"
+                            onChange={(e) => { setLeadTexts({ ...leadTexts, send: e.target.value }); setLeadTextsDirty(true); }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="leadPlaceholder">Email placeholder</Label>
+                          <Input
+                            id="leadPlaceholder"
+                            value={leadTexts.placeholder ?? ''}
+                            placeholder="you@example.com"
+                            onChange={(e) => { setLeadTexts({ ...leadTexts, placeholder: e.target.value }); setLeadTextsDirty(true); }}
+                          />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="leadThanks">Thank-you message</Label>
+                          <Input
+                            id="leadThanks"
+                            value={leadTexts.thanks ?? ''}
+                            placeholder="Thanks! We'll be in touch."
+                            onChange={(e) => { setLeadTexts({ ...leadTexts, thanks: e.target.value }); setLeadTextsDirty(true); }}
+                          />
+                        </div>
+                      </div>
+                      {leadTextsDirty && (
+                        <Button size="sm" onClick={saveLeadTexts} disabled={updateUiText.isPending}>
+                          {updateUiText.isPending ? 'Saving…' : 'Save texts'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Routing Mode — channel-agnostic policy for web/telegram/voice */}
                   <div className="space-y-2 p-4 rounded-lg border">

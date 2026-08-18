@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { useChatSettings, useUpdateChatSettings, ChatSettings, ChatAiProvider, defaultChatSettings } from '@/hooks/useSiteSettings';
+import { useUiTextSettings, useUpdateUiTextSettings } from '@/hooks/useSiteSettings';
 import { usePages } from '@/hooks/usePages';
 import { useKbArticles, useKbStats } from '@/hooks/useKnowledgeBase';
 import { useChatFeedbackStats, useChatFeedbackList, useKbArticlesNeedingImprovement, exportFeedbackForFineTuning } from '@/hooks/useChatFeedback';
@@ -163,6 +164,37 @@ export default function ChatSettingsPage() {
     },
   });
   const [searchParams, setSearchParams] = useSearchParams();
+  // Lead capture-texterna bor i besökarsträngspaketet (site_settings.ui_text,
+  // läses av useUiText) men REDIGERAS här — där man letar efter chattens
+  // inställningar. Lokalt state seedas när queryn landat (frusna-förstamålnings-
+  // läxan 2026-08-18: initiera aldrig ett formulär från defaults och glöm det).
+  const { data: uiTextMap } = useUiTextSettings();
+  const updateUiText = useUpdateUiTextSettings();
+  const [leadTexts, setLeadTexts] = useState<Record<string, string>>({});
+  const [leadTextsDirty, setLeadTextsDirty] = useState(false);
+  useEffect(() => {
+    if (uiTextMap && !leadTextsDirty) {
+      setLeadTexts({
+        prompt: uiTextMap['chat.leadCapture.prompt'] ?? '',
+        send: uiTextMap['chat.leadCapture.send'] ?? '',
+        placeholder: uiTextMap['chat.leadCapture.placeholder'] ?? '',
+        thanks: uiTextMap['chat.leadCapture.thanks'] ?? '',
+      });
+    }
+  }, [uiTextMap, leadTextsDirty]);
+  const saveLeadTexts = async () => {
+    const patch: Record<string, string> = { ...(uiTextMap ?? {}) };
+    const put = (k: string, v: string) => {
+      if (v.trim()) patch[k] = v.trim();
+      else delete patch[k]; // tomt fält = tillbaka till engelska fallbacken
+    };
+    put('chat.leadCapture.prompt', leadTexts.prompt ?? '');
+    put('chat.leadCapture.send', leadTexts.send ?? '');
+    put('chat.leadCapture.placeholder', leadTexts.placeholder ?? '');
+    put('chat.leadCapture.thanks', leadTexts.thanks ?? '');
+    await updateUiText.mutateAsync(patch);
+    setLeadTextsDirty(false);
+  };
   const activeTab = searchParams.get('tab') || 'general';
 
   const setActiveTab = (tab: string) => {
@@ -368,6 +400,66 @@ export default function ChatSettingsPage() {
                       </Button>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Lead capture</CardTitle>
+                  <CardDescription>
+                    The small email prompt shown inside the visitor chat. Leave a field
+                    empty to use the built-in English default.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ProvenanceLine>
+                    Stored in the site's visitor-text pack (ui_text) — the same layer
+                    that carries the cookie banner and other non-block texts, so an
+                    agent can translate it too.
+                  </ProvenanceLine>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="leadPrompt">Prompt</Label>
+                      <Input
+                        id="leadPrompt"
+                        value={leadTexts.prompt ?? ''}
+                        placeholder="Want us to follow up? Leave your email."
+                        onChange={(e) => { setLeadTexts({ ...leadTexts, prompt: e.target.value }); setLeadTextsDirty(true); }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="leadSend">Send button</Label>
+                      <Input
+                        id="leadSend"
+                        value={leadTexts.send ?? ''}
+                        placeholder="Send"
+                        onChange={(e) => { setLeadTexts({ ...leadTexts, send: e.target.value }); setLeadTextsDirty(true); }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="leadPlaceholder">Email placeholder</Label>
+                      <Input
+                        id="leadPlaceholder"
+                        value={leadTexts.placeholder ?? ''}
+                        placeholder="you@example.com"
+                        onChange={(e) => { setLeadTexts({ ...leadTexts, placeholder: e.target.value }); setLeadTextsDirty(true); }}
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="leadThanks">Thank-you message</Label>
+                      <Input
+                        id="leadThanks"
+                        value={leadTexts.thanks ?? ''}
+                        placeholder="Thanks! We'll be in touch."
+                        onChange={(e) => { setLeadTexts({ ...leadTexts, thanks: e.target.value }); setLeadTextsDirty(true); }}
+                      />
+                    </div>
+                  </div>
+                  {leadTextsDirty && (
+                    <Button size="sm" onClick={saveLeadTexts} disabled={updateUiText.isPending}>
+                      {updateUiText.isPending ? 'Saving…' : 'Save lead capture texts'}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

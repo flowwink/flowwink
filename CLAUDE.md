@@ -343,6 +343,13 @@ supabase db push --project-ref <ref>
 
 ## Deployment
 
+> **Manifest discipline:** any commit touching `supabase/migrations/` or
+> `supabase/seed/` must regenerate `supabase/seed/instance-manifest.json`
+> (`npm run manifest:json`) — CI's freshness guardrail fails otherwise.
+> A pre-commit hook in `.githooks/` does this automatically; enable it with
+> `git config core.hooksPath .githooks` after cloning.
+
+
 Frontend (Vercel/Easypanel) auto-deploys from GitHub push.
 
 Manual steps per Supabase project after migrations or new edge functions:

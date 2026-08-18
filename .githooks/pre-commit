@@ -1,0 +1,10 @@
+#!/bin/sh
+# Regenerate the instance manifest whenever migrations or seed artifacts are
+# staged — the CI guardrail (instance-manifest.guardrails.test.ts) fails the
+# build if the committed manifest lags the tree, and humans forget (three
+# times on 2026-08-18 alone). Machines don't.
+if git diff --cached --name-only | grep -qE '^supabase/(migrations|seed)/'; then
+  echo "[pre-commit] migrations/seeds staged — regenerating instance manifest"
+  npm run --silent manifest:json >/dev/null 2>&1 || exit 0
+  git add supabase/seed/instance-manifest.json
+fi

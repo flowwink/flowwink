@@ -469,6 +469,18 @@ function useUpdateSiteSettings<T>(key: string, successMessage: string) {
 }
 
 
+// UI-text hooks — the flat visitor-string pack read by src/lib/ui-text.tsx.
+// The updater takes the FULL map; callers merge their keys into the current
+// map first so other translations survive (the pack is shared by cookie
+// banner, search empty-states, chat lead capture, …).
+export function useUiTextSettings() {
+  return useSiteSettings<Record<string, string>>('ui_text', {});
+}
+
+export function useUpdateUiTextSettings() {
+  return useUpdateSiteSettings<Record<string, string>>('ui_text', 'Visitor texts updated.');
+}
+
 // SEO hooks
 export function useSeoSettings() {
   return useSiteSettings<SeoSettings>('seo', defaultSeoSettings);

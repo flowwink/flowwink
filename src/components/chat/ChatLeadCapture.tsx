@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
+import { useUiText } from '@/lib/ui-text';
 
 const STORAGE_KEY = 'chat-lead-capture-state';
 
@@ -37,6 +38,7 @@ interface ChatLeadCaptureProps {
  * `capture_chat_lead` RPC (anon-safe SECURITY DEFINER, source 'chat-widget').
  */
 export function ChatLeadCapture({ conversationId, className }: ChatLeadCaptureProps) {
+  const t = useUiText();
   const [hidden, setHidden] = useState(() => readStoredState() !== null);
   const [submitted, setSubmitted] = useState(false);
   const [email, setEmail] = useState('');
@@ -97,7 +99,7 @@ export function ChatLeadCapture({ conversationId, className }: ChatLeadCapturePr
       hideTimerRef.current = window.setTimeout(() => setHidden(true), 4000);
     } catch (err) {
       logger.error('Chat lead capture failed:', err);
-      setError('Something went wrong. Please try again.');
+      setError(t('chat.leadCapture.error', 'Something went wrong. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -108,14 +110,14 @@ export function ChatLeadCapture({ conversationId, className }: ChatLeadCapturePr
       {submitted ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Check className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
-          <span>Thanks! We&apos;ll be in touch.</span>
+          <span>{t('chat.leadCapture.thanks', "Thanks! We'll be in touch.")}</span>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-1">
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
             <p className="text-xs text-muted-foreground flex-1">
-              Want us to follow up? Leave your email.
+              {t('chat.leadCapture.prompt', 'Want us to follow up? Leave your email.')}
             </p>
             <Button
               type="button"
@@ -133,7 +135,7 @@ export function ChatLeadCapture({ conversationId, className }: ChatLeadCapturePr
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('chat.leadCapture.placeholder', 'you@example.com')}
               className="h-8 text-sm"
               aria-label="Your email"
               disabled={isSubmitting}
@@ -142,7 +144,7 @@ export function ChatLeadCapture({ conversationId, className }: ChatLeadCapturePr
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                'Send'
+                t('chat.leadCapture.send', 'Send')
               )}
             </Button>
           </div>

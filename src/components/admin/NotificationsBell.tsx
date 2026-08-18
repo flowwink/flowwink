@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { usePendingApprovalCount } from './PendingApprovalsBadge';
 import { usePausedAgentRunCount } from '@/hooks/useAgentRuns';
 import { useOpenTicketCount } from '@/hooks/useTickets';
+import { useAuth } from '@/hooks/useAuth';
+import { useModuleAccess } from '@/hooks/useRoleModuleAccess';
 
 /**
  * NotificationsBell — aggregates admin-facing "needs attention" signals
@@ -24,9 +26,17 @@ import { useOpenTicketCount } from '@/hooks/useTickets';
  *   - Open tickets (SLA risk)
  */
 export function NotificationsBell() {
+  // Every signal follows the viewer's reach (Svante-fynd 2026-08-18): the
+  // approvals count is actionability-filtered in its hook, paused runs are a
+  // FlowChat/admin concern, and tickets follow the tickets module. A bell
+  // that announces queues you cannot open is noise, not transparency.
+  const { isAdmin } = useAuth();
+  const { canAccess } = useModuleAccess();
   const { data: approvals = 0 } = usePendingApprovalCount();
-  const { data: paused = 0 } = usePausedAgentRunCount();
-  const { data: tickets = 0 } = useOpenTicketCount();
+  const { data: pausedRaw = 0 } = usePausedAgentRunCount();
+  const { data: ticketsRaw = 0 } = useOpenTicketCount();
+  const paused = isAdmin ? pausedRaw : 0;
+  const tickets = canAccess('tickets') ? ticketsRaw : 0;
 
   const total = approvals + paused + tickets;
   const hasWarning = paused > 0 || approvals > 0;

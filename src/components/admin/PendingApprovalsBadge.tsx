@@ -11,18 +11,30 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const POLL_MS = 120_000;
 
 export function usePendingApprovalCount() {
+  // Visibility follows actionability (Svante-fynd 2026-08-18): the badge only
+  // counts requests THIS user can resolve — admin sees all, others see those
+  // whose required_role matches one of their roles. WHO approves what is
+  // business config (approval rules set required_role per rule); the badge
+  // just respects it instead of announcing a queue you cannot touch.
+  const { isAdmin, roles } = useAuth();
   return useQuery({
-    queryKey: ['approvals', 'pending-count'],
+    queryKey: ['approvals', 'pending-count', isAdmin, roles.join(',')],
     refetchInterval: POLL_MS,
     queryFn: async () => {
-      const { count, error } = await supabase
+      let query = supabase
         .from('approval_requests')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'pending');
+      if (!isAdmin) {
+        if (roles.length === 0) return 0;
+        query = query.in('required_role', roles);
+      }
+      const { count, error } = await query;
       if (error) return 0;
       return count ?? 0;
     },

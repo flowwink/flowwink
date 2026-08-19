@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260818110000",
-      "migrations_count": 440,
+      "migration_head": "20260819120000",
+      "migrations_count": 441,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1765,6 +1765,10 @@
         {
           "version": "20260818110000",
           "name": "ui-text-follows-the-website-dial"
+        },
+        {
+          "version": "20260819120000",
+          "name": "pending-op-approval-gate"
         }
       ]
     },
@@ -1775,12 +1779,12 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:4d497dfe370d0e2ceb7cfebb6719ed617a9b6a4e5ed2e2082e89038b964e566a",
+      "shared_hash": "sha256:8641a4728743d1aa7faf3adfbca800cfd577eac4cf8e52980672c9353d711495",
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
         "agent-execute": "sha256:416cf74caacbe98c6737bdf6f38f541e1aef94b3ca5629a279209e1cf9fadb4a",
-        "agent-operate": "sha256:72cdafe207ae2a5630e3263e6c993a55aade47c679f2cc200465cb3a17f30689",
+        "agent-operate": "sha256:75fb1281c6ee8aa748f24c44a0b866686a12cf11df5291d7ff5e6aa59a2c1d2a",
         "ai-task": "sha256:7eca41863874f798eb5dfadf3216302830d807b3265231567ba0284d791fb6cd",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",
         "blog-rss": "sha256:dd57f6386804f1e0a4b8e0db3cdb83abc386c5790a677c7fdfe145067ae51be6",
@@ -1853,7 +1857,7 @@
         "voice-recording": "sha256:41391de110f7f3e138df5c50b1901dd6c7928d2be18ad82fa5e166d48f66cca2",
         "web-scrape": "sha256:f0948362eb60ff2d597de407af0f3eedb3b0f892b75ce4acff960e0b6ebf146f",
         "web-search": "sha256:6002f6b14ad490cfa0b444129694f123fad021050234cc8f87ee04ebb16c5320",
-        "workspace-chat": "sha256:55fc9f79afc6df832ef6d414cbf78e3c282a74d4ef07c90b9a1d00f54338597a"
+        "workspace-chat": "sha256:5a7dfdbadb15d597ffadf2bd31ec765f0fd7ba6dc935f48bfbc6b3a27bc2c853"
       }
     },
     "frontend": {

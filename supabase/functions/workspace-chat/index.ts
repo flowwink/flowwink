@@ -25,6 +25,7 @@ import { logAiUsage } from '../_shared/ai-usage-logger.ts';
 import { knowledgeChunksSource, flowtableSource, type SourceCtx } from '../_shared/retrieval/sources.ts';
 import { scoreSkillsByIntent } from '../_shared/skills/intent-scorer.ts';
 import { isReadSkill, isReadCall, classifyCall, WRITE_REFUSAL, STAGE_NOTICE } from '../_shared/skills/read-surface.ts';
+import { loadBusinessIdentityBlock } from '../_shared/domains/business-identity-block.ts';
 import { embedQuery } from '../_shared/retrieval/embedder.ts';
 
 const corsHeaders = {
@@ -854,12 +855,22 @@ Deno.serve(async (req) => {
       console.error('pre-rank failed (non-fatal):', e);
     }
 
+    // The COMPANY's identity — same grounding as the public chat and the
+    // ReAct engine (one identity, every mouth). Without it, "our products"
+    // resolves to the model's prior about the platform itself.
+    const businessIdentity = await loadBusinessIdentityBlock(supabaseAdmin).catch(() => '');
+
     const systemPrompt = [
       mode === 'strict'
         ? 'You are FlowWink Workspace Chat — strictly grounded in the user\'s workspace data.'
         : 'You are FlowWink Cowork Chat — a co-working assistant for an admin/employee. You combine the user\'s workspace data with your own knowledge (and optionally the web) to give the most useful answer.',
       '',
       mode === 'strict' ? strictRules : coworkRules,
+      '',
+      businessIdentity,
+      businessIdentity
+        ? 'CONTENT GROUNDING RULE: outward-facing content grounds ONLY in the business identity above and in data fetched via skills. The platform and its features are your tools, never the company\'s products.'
+        : '',
       '',
       '--- WORKSPACE CONTEXT ---',
       contextText || '(No data available for the selected sources.)',

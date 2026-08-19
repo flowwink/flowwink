@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, Loader2, ShieldAlert, Play } from 'lucide-react';
-import { callSkill } from '@/lib/call-skill';
 import { supabase } from '@/integrations/supabase/client';
 import type { StagedAction } from '@/hooks/useWorkspaceChat';
 
@@ -33,7 +32,13 @@ export function StagedActionCard({ action, onResolved }: Props) {
   const approve = async () => {
     setBusy('approve');
     try {
-      await callSkill('approve_pending_operation', { p_id: action.operation_id });
+      // Direct RPC, same path as the other approval surfaces — the DB function
+      // carries the gate (creator | approvals module | admin). Going through
+      // the skill layer required the approvals MODULE even for confirming
+      // your own staged action (Svante, 2026-08-19).
+      const { data: apr, error: aprErr } = await supabase.rpc('approve_pending_operation', { p_id: action.operation_id });
+      if (aprErr) throw new Error(aprErr.message);
+      if ((apr as Record<string, unknown>)?.error) throw new Error(String((apr as Record<string, unknown>).error));
       // Re-invoke with the operation id — agent-execute verifies the approval
       // server-side. Direct invoke (not callSkill) so a pending_approval on a
       // double-gated skill surfaces as text instead of a thrown error.
@@ -68,10 +73,12 @@ export function StagedActionCard({ action, onResolved }: Props) {
   const reject = async () => {
     setBusy('reject');
     try {
-      await callSkill('reject_pending_operation', {
+      const { data: rej, error: rejErr } = await supabase.rpc('reject_pending_operation', {
         p_id: action.operation_id,
         p_reason: 'Avvisad i FlowWork',
       });
+      if (rejErr) throw new Error(rejErr.message);
+      if ((rej as Record<string, unknown>)?.error) throw new Error(String((rej as Record<string, unknown>).error));
       onResolved('rejected');
     } catch (e) {
       onResolved('failed', e instanceof Error ? e.message : 'Kunde inte avvisa');

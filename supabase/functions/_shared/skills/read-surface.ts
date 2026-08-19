@@ -43,6 +43,11 @@ const READ_EXTRAS = new Set([
   'budget_vs_actual',
   'consolidation_report',
   'consultant_utilization_report',
+  // Pure schema lookup — returns the block type list and field contracts,
+  // touches no data. It is the one call that makes a block write correct on
+  // the first try, and FlowWork's loop could not reach it (no read_ prefix),
+  // so an employee's page request had to guess field names.
+  'describe_blocks',
   'contract_renewal_check',
   'crm_followup_report',
   'cron_health_report',

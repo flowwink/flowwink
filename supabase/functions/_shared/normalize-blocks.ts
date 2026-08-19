@@ -15,7 +15,8 @@
  * To add nested tiptap handling for a new block: add itemFields to the array field in
  * block-reference.ts and re-run: bun run scripts/sync-block-schema.ts
  */
-import { TIPTAP_NESTED_FIELDS } from './block-schema.ts';
+import { TIPTAP_NESTED_FIELDS, IMPORTABLE_BLOCK_TYPES } from './block-schema.ts';
+import { BLOCK_CREATION_TOOLS, toolNameToBlockType } from './block-tools.ts';
 
 // ---------------------------------------------------------------------------
 // Tiptap helpers
@@ -55,6 +56,77 @@ export function htmlToTiptap(html: string): Record<string, unknown> {
 export function normalizeBlockData(block: Record<string, unknown>): void {
   const data = block.data as Record<string, unknown> | undefined;
   if (!data) return;
+
+  // 0. Field ALIASES — the names models reach for that no renderer reads.
+  // These run FIRST so the validation gate never sees the wrong name (and so
+  // the unknown-field check below judges the corrected shape). Every mapping
+  // below is a name a real agent write used; the renderer's own name wins.
+  //
+  // `heading` → `title`: universal. No block reads `heading`; every block that
+  // has a headline calls it `title`.
+  if (typeof data.heading === 'string' && data.heading.trim() !== '') {
+    if (data.title === undefined || data.title === null || String(data.title).trim() === '') {
+      data.title = data.heading;
+    }
+    delete data.heading; // never renders — keeping it only re-teaches the mistake
+  }
+
+  if (block.type === 'hero') {
+    // HeroBlock reads primaryButton: { text, url }. Agents write the flat
+    // cta-shaped pair (buttonText + buttonLink/buttonUrl) that the cta block
+    // uses — plausible, and silently invisible in the hero.
+    const btnText = data.buttonText;
+    const btnUrl = data.buttonLink ?? data.buttonUrl;
+    if (typeof btnText === 'string' && btnText.trim() !== '' && !data.primaryButton) {
+      data.primaryButton = { text: btnText, url: typeof btnUrl === 'string' ? btnUrl : '' };
+    }
+    delete data.buttonText;
+    delete data.buttonLink;
+    delete data.buttonUrl;
+    // `body` is the text block's word for it; the hero's supporting line is
+    // `subtitle`. (body is also a TIPTAP_FIELD, so an unmapped body would be
+    // converted to a Tiptap doc the hero never renders.)
+    if (data.body !== undefined && (data.subtitle === undefined || data.subtitle === null || String(data.subtitle).trim() === '')) {
+      if (typeof data.body === 'string' && data.body.trim() !== '') {
+        data.subtitle = data.body;
+        delete data.body;
+      }
+    }
+  }
+
+  if (block.type === 'cta') {
+    // CtaBlock reads buttonUrl. `buttonLink` is the most common miss and reads
+    // as a working CTA in the payload while the button links nowhere.
+    if (typeof data.buttonLink === 'string' && data.buttonLink.trim() !== ''
+        && (data.buttonUrl === undefined || data.buttonUrl === null || String(data.buttonUrl).trim() === '')) {
+      data.buttonUrl = data.buttonLink;
+    }
+    delete data.buttonLink;
+  }
+
+  if (block.type === 'two-column') {
+    // leftContent/rightContent match no renderer (see TIPTAP_FIELDS above).
+    // TwoColumnBlock's two-text mode reads leftColumn/rightColumn.
+    for (const [from, to] of [['leftContent', 'leftColumn'], ['rightContent', 'rightColumn']] as const) {
+      if (data[from] !== undefined && (data[to] === undefined || data[to] === null)) {
+        data[to] = typeof data[from] === 'string' ? htmlToTiptap(data[from] as string) : data[from];
+      }
+      delete data[from];
+    }
+  }
+
+  if (block.type === 'text') {
+    // TextBlock renders `content` only. `text` and `body` are what models
+    // reach for; both produced blocks that saved fine and rendered blank.
+    for (const from of ['text', 'body'] as const) {
+      const val = data[from];
+      const contentEmpty = data.content === undefined || data.content === null;
+      if (val !== undefined && contentEmpty) {
+        data.content = typeof val === 'string' ? htmlToTiptap(val) : val;
+      }
+      if (val !== undefined) delete data[from];
+    }
+  }
 
   // 1. Top-level tiptap fields
   for (const field of TIPTAP_FIELDS) {
@@ -413,6 +485,21 @@ export function normalizeBlocks(
 /** Minimal filled example per block type — included in validation errors so the
  *  AI can self-correct on retry without needing to guess the structure. */
 const BLOCK_HINTS: Record<string, Record<string, unknown>> = {
+  // hero/text are the two most-written blocks and had no example at all — the
+  // fallback hint ("check the schema") is exactly the dead end that made agents
+  // re-send buttonText/heading/body a second time.
+  hero: {
+    eyebrow: 'SINCE 1998',
+    title: 'Your headline here',
+    subtitle: 'One supporting line that says what you do.',
+    primaryButton: { text: 'Get started', url: '/contact' },
+  },
+  text: {
+    title: 'Section title',
+    content: { type: 'doc', content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Your paragraph text here.' }] },
+    ]},
+  },
   features: {
     features: [
       { id: 'f1', icon: 'ShieldCheck', title: 'Secure', description: 'Enterprise-grade security' },
@@ -487,6 +574,111 @@ const BLOCK_HINTS: Record<string, Record<string, unknown>> = {
 /** Minimal Tiptap doc — used in error messages when a Tiptap field is wrong. */
 const TIPTAP_HINT = '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Your text here"}]}]}';
 
+// ---------------------------------------------------------------------------
+// Known types & known fields (fail-closed write gate)
+// ---------------------------------------------------------------------------
+
+/**
+ * Block types that RENDER but are deliberately excluded from AI page-IMPORT,
+ * so they are absent from IMPORTABLE_BLOCK_TYPES (block-reference.ts →
+ * getImportableBlockTypes()). They fetch their own data from the DB, which is
+ * why an importer must not invent them — but an agent adding a products or a
+ * kb-hub block to a page is doing something completely legitimate, and the
+ * write gate must not call those types "invented".
+ * Kept in sync with block-reference.ts by
+ * src/lib/__tests__/block-write-safety.guardrails.test.ts.
+ */
+export const DATA_DRIVEN_BLOCK_TYPES = [
+  'products', 'cart', 'featured-product',
+  'kb-featured', 'kb-hub', 'kb-search', 'kb-accordion',
+  'smart-booking', 'handbook', 'consultant-matcher',
+] as const;
+
+/** Every block type BlockRenderer can render — the write gate's allowlist. */
+export const KNOWN_BLOCK_TYPES: readonly string[] = [
+  ...IMPORTABLE_BLOCK_TYPES,
+  ...DATA_DRIVEN_BLOCK_TYPES,
+];
+
+/**
+ * Valid top-level data field names per block type, derived from the generated
+ * BLOCK_CREATION_TOOLS (whose properties ARE the block-reference field list).
+ * Built once, lazily — the tools array is large and most calls never need it.
+ */
+let _blockFieldsCache: Map<string, Set<string>> | null = null;
+function blockFieldMap(): Map<string, Set<string>> {
+  if (_blockFieldsCache) return _blockFieldsCache;
+  const map = new Map<string, Set<string>>();
+  for (const tool of BLOCK_CREATION_TOOLS as readonly any[]) {
+    const type = toolNameToBlockType(tool?.function?.name ?? '');
+    if (!type) continue;
+    map.set(type, new Set(Object.keys(tool?.function?.parameters?.properties ?? {})));
+  }
+  _blockFieldsCache = map;
+  return map;
+}
+
+const TYPE_SYNONYMS: Record<string, string[]> = {
+  // Names real agent writes invented, where the closest valid type shares no
+  // letters with the guess. Suggestion text only — nothing routes on this.
+  faq: ['accordion', 'ai-faq'],
+  faqs: ['accordion', 'ai-faq'],
+  questions: ['accordion', 'ai-faq'],
+  banner: ['hero', 'announcement-bar'],
+  paragraph: ['text'],
+  richtext: ['text'],
+  content: ['text'],
+  video: ['youtube', 'embed'],
+  button: ['cta'],
+  buttons: ['cta', 'quick-links'],
+  columns: ['two-column'],
+  card: ['features', 'bento-grid'],
+  cards: ['features', 'bento-grid'],
+  grid: ['features', 'bento-grid'],
+  services: ['features', 'bento-grid'],
+  clients: ['logos', 'testimonials'],
+  reviews: ['testimonials'],
+  people: ['team'],
+  staff: ['team'],
+  'contact-form': ['contact', 'form'],
+  faqsection: ['accordion', 'ai-faq'],
+};
+
+/**
+ * Suggest the valid types closest to what the caller invented. Deliberately a
+ * crude similarity (substring both ways + word/initialism match), not a
+ * fuzzy-match library: its job is to put the right name in the error text, and
+ * the full type list travels in the hint anyway.
+ */
+export function suggestBlockTypes(invented: string): string[] {
+  const n = String(invented || '').toLowerCase().replace(/[\s_]+/g, '-');
+  const bare = n.replace(/-/g, '');
+  const synonyms = TYPE_SYNONYMS[n] ?? TYPE_SYNONYMS[bare] ?? [];
+  const scored: Array<{ type: string; score: number }> = [];
+  for (const type of KNOWN_BLOCK_TYPES) {
+    const t = type.toLowerCase();
+    const tBare = t.replace(/-/g, '');
+    let score = 0;
+    if (tBare === bare) score = 100;
+    else if (bare.includes(tBare) || tBare.includes(bare)) score = 60 + Math.min(tBare.length, bare.length);
+    else {
+      // shared leading run ("faq" ↔ "ai-faq" is caught above; "testimonial" ↔
+      // "testimonials" and "call-to-action" ↔ "cta" need the word-level pass)
+      const words = n.split('-').filter(Boolean);
+      const tWords = t.split('-').filter(Boolean);
+      const shared = words.filter((w) => tWords.some((tw) => tw.startsWith(w) || w.startsWith(tw)));
+      if (shared.length > 0) score = 20 + shared.length * 5;
+      // initialism: call-to-action → cta
+      const initials = words.map((w) => w[0]).join('');
+      if (initials.length > 1 && initials === tBare) score = 90;
+    }
+    if (score > 0) scored.push({ type, score });
+  }
+  const ranked = scored.sort((a, b) => b.score - a.score || a.type.length - b.type.length)
+    .map((s) => s.type);
+  return [...new Set([...synonyms, ...ranked])].slice(0, 3);
+}
+
 export interface BlockValidationResult {
   valid: boolean;
   errors: string[];
@@ -502,18 +694,62 @@ export interface BlockValidationResult {
  * Returns actionable feedback so FlowPilot can self-correct on retry:
  *   { valid: false, errors: [...], hint: "...", example: {...} }
  *
- * Called by agent-execute before every add/update write.
+ * Called by agent-execute before every add/update write — and ALWAYS AFTER
+ * normalizeBlockData(), so the alias mapping (heading→title, hero buttonText→
+ * primaryButton, raw strings→Tiptap) has already run and the gate judges the
+ * shape that will actually be stored.
+ *
+ * `options.unknownFieldScope` limits the unknown-FIELD check to one object —
+ * the update path passes the caller's incoming fields, because merged data can
+ * legitimately carry fields written before this gate existed, and refusing
+ * those would leave a page permanently un-editable by an agent.
  */
 export function validateBlockData(
   blockType: string,
   blockData: Record<string, unknown>,
+  options: { unknownFieldScope?: Record<string, unknown> } = {},
 ): BlockValidationResult {
   const errors: string[] = [];
 
+  // 0. Unknown block TYPE — fail closed. An invented type used to be written
+  // through untouched: it saved, "succeeded", and rendered as nothing at all
+  // (BlockRenderer has no case for it), so the agent reported a section that
+  // did not exist. Naming the near misses turns the dead end into a retry.
+  if (!KNOWN_BLOCK_TYPES.includes(blockType)) {
+    const suggestions = suggestBlockTypes(blockType);
+    return {
+      valid: false,
+      errors: [
+        `"${blockType}" is not a block type — nothing renders it, so this block would be invisible on the page.`
+        + (suggestions.length ? ` Did you mean: ${suggestions.map((s) => `"${s}"`).join(', ')}?` : ''),
+      ],
+      hint: `Valid block types: ${KNOWN_BLOCK_TYPES.join(', ')}. `
+        + 'Call describe_blocks (optionally with block_type) for each type\'s exact field contract.',
+    };
+  }
+
+  // 0b. Unknown top-level FIELDS on a known type. These used to be written and
+  // silently ignored by the renderer — the call answered "updated" while the
+  // page did not change. Keys starting with "_" are internal plumbing.
+  const validFields = blockFieldMap().get(blockType);
+  if (validFields && validFields.size > 0) {
+    const scope = options.unknownFieldScope ?? blockData;
+    const unknown = Object.keys(scope).filter((k) => !k.startsWith('_') && !validFields.has(k));
+    if (unknown.length > 0) {
+      errors.push(
+        `"${blockType}" block has unknown field(s): ${unknown.join(', ')} — nothing reads them, so they would be stored and never rendered. `
+        + `Valid fields for "${blockType}": ${[...validFields].join(', ')}`,
+      );
+    }
+  }
+
   const contract = BLOCK_CONTRACTS[blockType];
   if (!contract) {
-    // Unknown block type — pass through (normalize handles it)
-    return { valid: true, errors: [] };
+    // Known, renderable type with no required/forbidden contract (e.g. the
+    // data-driven blocks). The unknown-field check above still applies.
+    return errors.length === 0
+      ? { valid: true, errors: [] }
+      : { valid: false, errors, hint: `Check describe_blocks({ block_type: "${blockType}" }) for the exact field contract.` };
   }
 
   // 1. Forbidden fields

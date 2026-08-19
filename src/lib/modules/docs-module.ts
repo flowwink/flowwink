@@ -56,7 +56,7 @@ Always cite results with markdown links to /docs/{category}/{slug}.`,
   {
     name: 'manage_docs_page',
     description:
-      'Author and maintain documentation pages in-app (not via GitHub sync): create, update, delete, or restore a previous version. Use when: writing a new docs page from inside the platform, editing an existing page, toggling a draft public/private, or rolling back to an earlier version. NOT for: public knowledge base Q&A (manage_kb_article); internal wiki/SOPs (manage_wiki_page); marketing pages (manage_pages). Reads go via docs_search. App-authored pages are never overwritten by the GitHub sync (it only touches source=github rows).',
+      'Author and maintain documentation pages in-app (not via GitHub sync): create, update, delete, or restore a previous version. Use when: writing a new docs page from inside the platform, editing an existing page, toggling a draft public/private, or rolling back to an earlier version. NOT for: public knowledge base Q&A (manage_kb_article); internal wiki/SOPs (manage_wiki_page); website/CMS pages — anything on the public site, incl. landing/marketing pages (use manage_page). Reads go via docs_search. App-authored pages are never overwritten by the GitHub sync (it only touches source=github rows).',
     category: 'content',
     handler: 'rpc:manage_docs_page',
     scope: 'internal',

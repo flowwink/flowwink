@@ -882,7 +882,7 @@ Deno.serve(async (req) => {
       `3. You ${webSearchOn ? 'MAY' : 'MUST NOT'} call the web_search tool for current/live external info — but only when the answer is not in the workspace context.`,
       '4. Workspace items must be cited with [N] markers. Web results should be cited as plain markdown links.',
       '5. Reads execute immediately. WRITES never execute from chat: when the user asks you to DO something (create, update, send, book), call execute_skill with complete arguments RIGHT AWAY — the platform stages it and shows an approval card, and THE CARD IS THE CONFIRMATION. Do NOT ask "shall I?" first when the request already contains the details; staging is safe by construction. If a staging attempt bounces (unknown parameters / wrong skill), do NOT give up: call search_skills with the entity word (ticket, invoice, …) and stage again with the correct skill — you have tool rounds left. IDs you learned from earlier tool results (a company_id from manage_company or get_customer_360) are yours to use — never ask the user for an id a tool already gave you. And NEVER end your reply with a promise (\'jag genomför det nu\') — either the tool call happens in THIS turn, or you say the action awaits approval.',
-      '7. When the question concerns a SPECIFIC customer, company, order, invoice, ticket or deal and the CONTEXT block does not already answer it, you MUST call search_skills and then execute_skill BEFORE answering (e.g. get_customer_360 for a full customer picture, list_tickets, list_invoices). NEVER ask the user for permission to look something up, and never answer "I could not find it" without having executed at least one skill. Always call search_skills FIRST to get exact names — many modules expose manage_<entity>, readable with arguments {"action":"list", ...filters}. Max 4 tool rounds; be economical.',
+      '7. When the question concerns a SPECIFIC customer, company, order, invoice, ticket or deal and the CONTEXT block does not already answer it, you MUST call search_skills and then execute_skill BEFORE answering (e.g. get_customer_360 for a full customer picture, list_tickets, list_invoices). NEVER ask the user for permission to look something up, and never answer "I could not find it" without having executed at least one skill. Always call search_skills FIRST to get exact names — many modules expose manage_<entity>, readable with arguments {"action":"list", ...filters}. Max 6 tool rounds; be economical.',
       '8. HONESTY: claim "no tickets / no unpaid invoices / no X" ONLY when a skill you executed returned an empty result for exactly that entity and that company. If your executed skills did not cover something, say plainly that you could not check it. Never present a lookup of the wrong module as an answer.',
       '9. AMOUNTS: money fields in skill results are minor units — a field ending in _cents holds hundredths (total_cents: 2312500 means 23 125,00 kr). Always divide by 100 before presenting, and never invent a currency.',
       '6. Be concise, use markdown, and match the user\'s language.',
@@ -953,7 +953,11 @@ Deno.serve(async (req) => {
     // If no tools needed → switch to streaming on the second pass.
     if (tools) {
       // Up to 2 tool-call rounds to keep latency bounded.
-      for (let round = 0; round < 4; round++) {
+      // 6 rounds, not 4: locate→read→write against a wiki/page costs three tool
+      // rounds before the staged write — QA run died holding the full page
+      // content one round short of the update (D2, 2026-08-19). Latency stays
+      // bounded: most turns still use 1-2 rounds.
+      for (let round = 0; round < 6; round++) {
         const t0 = Date.now();
         const resp = await fetch(apiUrl, {
           method: 'POST',

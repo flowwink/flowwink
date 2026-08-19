@@ -63,9 +63,13 @@ describe('manage_page accepts a slug wherever an id is wanted', () => {
   });
 
   it('resolvePageId itself accepts both shapes', () => {
-    // UUID passes through; anything else is looked up as a slug.
+    // UUID passes through; anything else is looked up as a slug — and the slug
+    // is normalized first: agents say "/blocks" (the URL path) while slugs are
+    // stored bare, and both FlowPilot and FlowWork failed live on the leading
+    // slash (2026-08-19).
     expect(src).toMatch(/const resolvePageId = async \(rawPageId: string\)/);
-    expect(src).toMatch(/\.eq\('slug', rawPageId\)/);
+    expect(src).toMatch(/replace\(\/\^\\\/\+\/, ''\)/);
+    expect(src).toMatch(/\.eq\('slug', slug\)/);
   });
 
   it('the seed teaches the contract instead of leaving agents to guess', () => {

@@ -3573,17 +3573,22 @@ async function executePagesAction(
       return rawPageId;
     }
 
+    // Agents (and humans) say "/blocks" — the URL path — while slugs are stored
+    // bare. Both FlowPilot and FlowWork failed live on the leading slash
+    // (2026-08-19, "Page not found: /blocks"); normalize instead of educating.
+    const slug = rawPageId.trim().replace(/^\/+/, '');
+
     const { data: pageBySlug, error } = await supabase
       .from('pages')
       .select('id')
-      .eq('slug', rawPageId)
+      .eq('slug', slug)
       .is('deleted_at', null)
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();
 
     if (error) throw new Error(`Resolve page failed: ${error.message}`);
-    if (!pageBySlug?.id) throw new Error(`Page not found: ${rawPageId}`);
+    if (!pageBySlug?.id) throw new Error(`Page not found: ${slug}. Use manage_page list to see available slugs.`);
     return pageBySlug.id;
   };
 

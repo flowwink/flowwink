@@ -584,8 +584,22 @@ async function runExecuteSkill(
   delete (args as any)._approved_operation_id;
   delete (args as any).force_staged;
 
+  // Refusals and pre-flight bounces MUST leave a trail. Svante's bento attempt
+  // (2026-08-19) bounced here invisibly — no agent_activity row, no staged op —
+  // and the model's paraphrase ("schema accepted not the structure") was the
+  // only record. Self-report is not evidence; log what was actually sent.
+  const logGateOutcome = (kind: string, errorMessage: string) => {
+    void service.from('agent_activity').insert({
+      agent: 'flowwork', skill_name: name, input: args,
+      status: 'failed', error_message: `[${kind}] ${errorMessage}`.slice(0, 500),
+    });
+  };
+
   const tier = classifyCall(name, args);
-  if (tier === 'deny') return { ok: false, body: { error: WRITE_REFUSAL }, name };
+  if (tier === 'deny') {
+    logGateOutcome('write-refusal', WRITE_REFUSAL);
+    return { ok: false, body: { error: WRITE_REFUSAL }, name };
+  }
 
   // A write must match the skill's parameter contract BEFORE a human is asked
   // to approve it. A model that grabs the wrong skill and invents parameters
@@ -604,6 +618,7 @@ async function runExecuteSkill(
       const valid = new Set(Object.keys(props));
       const unknown = Object.keys(args).filter((k) => !valid.has(k));
       if (unknown.length) {
+        logGateOutcome('preflight-bounce', `unknown parameter(s) ${unknown.join(', ')}`);
         return {
           ok: false,
           name,

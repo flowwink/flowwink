@@ -8,6 +8,7 @@
 // Consolidates reconciliation-auto-match, reconciliation-import-file,
 // reconciliation-import-image, reconciliation-sync-stripe into one Edge Function.
 
+import { isOpenAiReasoningModel } from "../ai-providers.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getServiceClient } from '../supabase-clients.ts';
 import { logAiUsage } from '../ai-usage-logger.ts';
@@ -449,6 +450,9 @@ async function ocrWithOpenAI(dataUrl: string, model: string) {
       ],
       tools: [TOOL_DEF],
       tool_choice: { type: "function", function: { name: "submit_transactions" } },
+      // gpt-5-class models 400 on forced function tools without this; OCR
+      // extraction is mechanical — zero reasoning effort is correct here.
+      ...(isOpenAiReasoningModel(model) ? { reasoning_effort: "none" } : {}),
     }),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);

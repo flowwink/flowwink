@@ -307,6 +307,15 @@ Granular block-level operations on pages: add, update, remove, reorder blocks.
 ### Edge cases
 - block_data must match the ContentBlock schema for the block type.
 - Reorder requires ALL block_ids in the desired order.
+### Hard rules that break silently if guessed (learned from real agent writes)
+- **icon fields are exact lucide-react names in PascalCase**: "Cpu", "Shield",
+  "TrendingUp". Lowercase ("cpu") renders NO icon — the lookup is exact.
+- **Every item in an items/tiers/members array needs a stable string id**
+  ("bento-privat-ai"). Editors key on it; missing ids break later editing.
+- **Send only fields the block's schema declares.** Invented fields (e.g.
+  layout/ctaText on bento-grid) are rejected at write time with the correct
+  example structure in the error — read that hint and resend, do not retry
+  the same shape. Enum-ish numbers are validated too (bento columns: 3 or 4).
 ### Use the blocks' full range — do not compose with the minimum
 Blocks carry far more editorial control than their obvious fields, and pages
 written with only title+content look like the poor cousin of what the renderer

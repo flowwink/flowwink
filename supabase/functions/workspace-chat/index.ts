@@ -21,6 +21,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { getServiceClient, resolveCaller } from '../_shared/supabase-clients.ts';
 import { resolveAiConfig, isAnthropicProvider } from '../_shared/ai-config.ts';
+import { isOpenAiReasoningModel } from '../_shared/ai-providers.ts';
 import { logAiUsage } from '../_shared/ai-usage-logger.ts';
 import { knowledgeChunksSource, flowtableSource, type SourceCtx } from '../_shared/retrieval/sources.ts';
 import { scoreSkillsByIntent } from '../_shared/skills/intent-scorer.ts';
@@ -805,6 +806,12 @@ Deno.serve(async (req) => {
     console.log(`[cowork-chat] context: ${contextMeta.tokens_used}/${contextMeta.tokens_budget} tokens, ${contextMeta.sources_active} sources, truncated=[${contextMeta.sources_truncated.join(',')}]`);
 
     const { apiKey, apiUrl, model, provider } = await resolveAiConfig(supabaseAdmin, 'fast');
+    // Reasoning models (gpt-5.x) reject function tools on /chat/completions
+    // unless reasoning_effort is 'none' — and FlowWork is a real-time surface,
+    // so zero thinking latency is what we want on every pass anyway. Found
+    // live: Svante's FlowWork bento request 400:ade when the map moved to luna.
+    const reasoningParams = provider === 'openai' && isOpenAiReasoningModel(model)
+      ? { reasoning_effort: 'none' } : {};
     if (isAnthropicProvider(apiUrl)) {
       return new Response(JSON.stringify({
         error: 'Anthropic provider not yet supported by Cowork Chat. Switch to OpenAI, Gemini or Local LLM in Integrations.',
@@ -905,7 +912,7 @@ Deno.serve(async (req) => {
         const resp = await fetch(apiUrl, {
           method: 'POST',
           headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: conversation, tools, tool_choice: 'auto' }),
+          body: JSON.stringify({ model, messages: conversation, tools, tool_choice: 'auto', ...reasoningParams }),
         });
         if (!resp.ok) {
           const errText = await resp.text();
@@ -1010,7 +1017,7 @@ Deno.serve(async (req) => {
       const resp = await fetch(apiUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages: conversation }),
+        body: JSON.stringify({ model, messages: conversation, ...reasoningParams }),
       });
       const json = await resp.json();
       const fUsage = json?.usage || {};
@@ -1032,7 +1039,7 @@ Deno.serve(async (req) => {
     const upstream = await fetch(apiUrl, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, stream: true, messages: conversation, stream_options: { include_usage: true } }),
+      body: JSON.stringify({ model, stream: true, messages: conversation, stream_options: { include_usage: true }, ...reasoningParams }),
     });
     if (!upstream.ok || !upstream.body) {
       const errText = await upstream.text();

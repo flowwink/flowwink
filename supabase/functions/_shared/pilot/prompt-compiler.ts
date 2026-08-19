@@ -173,6 +173,15 @@ export function buildSystemPrompt(input: PromptCompilerInput): string {
   // Layer 2: SOUL + IDENTITY (from DB)
   parts.push(soulPrompt);
 
+  // Layer 2b: BUSINESS IDENTITY — the company the agent works FOR, as opposed
+  // to the agent's own persona above. Without it, "our products" resolves to
+  // the model's prior about the PLATFORM (FlowChat created a bento grid
+  // pitching FlowPilot and Webinar Engine as the customer's products).
+  if (input.businessIdentityContext) {
+    parts.push(input.businessIdentityContext);
+    parts.push('CONTENT GROUNDING RULE: when creating or editing outward-facing content (pages, blocks, blog posts, newsletters, campaigns), ground ONLY in the business identity above and in data fetched via skills (products, knowledge base, pages). NEVER invent offerings. The platform and its features (FlowPilot, modules, agents) are the TOOLS you work with — they are never the company\'s products. If you are unsure what the company sells, fetch the product list first.');
+  }
+
   // Layer 3: AGENTS / CORE_INSTRUCTIONS
   if (!input.agents) {
     parts.push(CORE_INSTRUCTIONS);

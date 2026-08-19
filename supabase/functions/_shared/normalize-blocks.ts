@@ -80,6 +80,30 @@ export function normalizeBlockData(block: Record<string, unknown>): void {
     }
   }
 
+  // 3b. bento-grid: agents write plausible-but-wrong shapes (FlowChat on optic
+  // 2026-08-19 — lowercase icons, no item ids, columns 2, invented layout/cta
+  // fields). The renderer looks icons up by EXACT lucide PascalCase name, and
+  // the editor keys items by id, so normalize what is safely mechanical here;
+  // invented fields are rejected by the contract below with a hint instead.
+  if (block.type === 'bento-grid') {
+    if (Array.isArray(data.items)) {
+      data.items = (data.items as Record<string, unknown>[]).map((item, i) => ({
+        ...item,
+        id: item.id || `bento-${Date.now()}-${i}`,
+        // 'cpu' → 'Cpu'. Multi-word lucide names (TrendingUp) can't be derived
+        // from all-lowercase, but single words are the common agent mistake.
+        icon: typeof item.icon === 'string' && item.icon
+          ? (item.icon as string).charAt(0).toUpperCase() + (item.icon as string).slice(1)
+          : item.icon,
+      }));
+    }
+    const cols = Number(data.columns);
+    if (data.columns !== undefined && cols !== 3 && cols !== 4) {
+      console.warn(`[normalize] Block ${block.id} (bento-grid): columns ${data.columns} → 3 (schema allows 3 or 4)`);
+      data.columns = 3;
+    }
+  }
+
   // 4. team: AI returns "image", frontend expects "photo"
   if (block.type === 'team' && Array.isArray(data.members)) {
     data.members = (data.members as Record<string, unknown>[]).map(
@@ -263,7 +287,7 @@ export const BLOCK_CONTRACTS: Record<string, { required: string[][]; forbidden?:
   'announcement-bar': { required: [['message']] },
   'floating-cta':     { required: [['buttonText']] },
   'article-grid':     { required: [] },
-  'bento-grid':       { required: [['items']] },
+  'bento-grid':       { required: [['items']], forbidden: ['layout', 'ctaText', 'ctaLink'] },
   'notification-toast': { required: [['notifications']] },
   // Were only in the test mirror — synced back so the runtime gate matches it.
   popup:              { required: [] },

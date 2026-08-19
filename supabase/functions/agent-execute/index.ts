@@ -4635,7 +4635,7 @@ async function executeKbAction(
   }
 
   if (action === 'create') {
-    const { title, category = 'general', include_in_chat = true, is_featured = false, visibility = 'public' } = args as any;
+    const { title, category = 'general', include_in_chat = true, is_featured = false, visibility = 'public', publish = false } = args as any;
     // Accept content/body as aliases for answer; auto-generate question from title if omitted
     const answer = (args as any).answer ?? (args as any).content ?? (args as any).body;
     const question = (args as any).question || (title ? `What is ${title}?` : '');
@@ -4677,6 +4677,14 @@ async function executeKbAction(
     }
 
     const { answer_text, answer_json } = normalizeKbAnswer(answer);
+    // Draft-by-default is a safe default, but it was also an INVISIBLE one: the
+    // create response said nothing about publication state, so agents reported
+    // "article published" while the row sat unpublished — and the retrieval
+    // indexer (_shared/retrieval/indexer.ts) skips unpublished articles, so the
+    // core promise (ask the chat, get the answer) silently did not hold.
+    // Fixed two ways: an explicit `publish` flag, and a response that always
+    // states is_published plus a note the agent can repeat verbatim.
+    const shouldPublish = publish === true || publish === 'true';
     const { data, error } = await supabase.from('kb_articles').insert({
       title, question,
       answer_text,
@@ -4688,10 +4696,22 @@ async function executeKbAction(
       // whitelists — so without this line an agent could only ever author
       // public articles, and the internal tier would exist for humans only.
       visibility: visibility === 'internal' ? 'internal' : 'public',
-      is_published: false,
+      // NB: kb_articles has NO published_at column (see src/integrations/supabase/types.ts)
+      // — is_published is the only publication state there is.
+      is_published: shouldPublish,
     }).select('id, title, slug, is_published, visibility').single();
     if (error) throw new Error(`Create KB article failed: ${error.message}`);
-    return { article_id: data.id, slug: data.slug, title: data.title, status: 'draft', visibility: data.visibility };
+    return {
+      article_id: data.id,
+      slug: data.slug,
+      title: data.title,
+      status: data.is_published ? 'published' : 'draft',
+      is_published: data.is_published === true,
+      visibility: data.visibility,
+      ...(data.is_published
+        ? {}
+        : { note: 'Saved as DRAFT — not indexed, invisible to visitors and chat. Re-run with publish:true or ask an admin to publish.' }),
+    };
   }
 
   // Resolve article_id from slug OR title if missing — common when an agent
@@ -4752,7 +4772,15 @@ async function executeKbAction(
       .update({ ...updateData, updated_at: new Date().toISOString() })
       .eq('id', article_id).select('id, title, is_published').single();
     if (error) throw new Error(`Update KB article failed: ${error.message}`);
-    return { article_id: data.id, title: data.title, status: 'updated' };
+    return {
+      article_id: data.id,
+      title: data.title,
+      status: 'updated',
+      is_published: data.is_published === true,
+      ...(data.is_published
+        ? {}
+        : { note: 'Article is still a DRAFT — not indexed, invisible to visitors and chat. Run action=publish or ask an admin to publish.' }),
+    };
   }
 
   if (action === 'publish') {
@@ -4891,6 +4919,36 @@ async function executeWikiAction(
 
   const action = String((args as any).action || 'list');
 
+  // Title → slug resolution, shared by get and update. It used to live inline in
+  // `update` only, which meant the read surface was PICKIER than the write
+  // surface that follows it: `get` with a title (or a near-miss slug) answered
+  // {found:false} and nothing else, while `update` happily resolved the same
+  // title. One ladder, both paths.
+  const resolveWikiSlug = async (rawSlug: unknown, rawTitle: unknown): Promise<string> => {
+    const slug = String(rawSlug || '').trim();
+    if (slug) {
+      const { data: bySlug } = await supabase
+        .from('wiki_pages').select('slug').eq('slug', slug).maybeSingle();
+      if (bySlug?.slug) return bySlug.slug;
+    }
+    // Fall through to title (or the slug read AS a title — agents routinely
+    // pass the human name in the slug field).
+    const title = String(rawTitle || slug || '').trim();
+    if (title) {
+      const { data: byTitle } = await supabase
+        .from('wiki_pages').select('slug').ilike('title', title).maybeSingle();
+      if (byTitle?.slug) return byTitle.slug;
+      // Last try: the PascalCase slug the create path would have derived.
+      const derived = toWikiSlug(title);
+      if (derived) {
+        const { data: byDerived } = await supabase
+          .from('wiki_pages').select('slug').eq('slug', derived).maybeSingle();
+        if (byDerived?.slug) return byDerived.slug;
+      }
+    }
+    return '';
+  };
+
   if (action === 'list') {
     const limit = Math.min(Math.max(Number((args as any).limit) || 50, 1), 200);
     const { data, error } = await supabase
@@ -4903,12 +4961,32 @@ async function executeWikiAction(
   }
 
   if (action === 'get') {
-    const slug = String((args as any).slug || '');
-    if (!slug) throw new Error('slug is required');
+    const rawSlug = String((args as any).slug || '');
+    const rawTitle = String((args as any).title || '');
+    if (!rawSlug && !rawTitle) throw new Error('slug (or title) is required');
+    const slug = await resolveWikiSlug(rawSlug, rawTitle);
+    if (!slug) {
+      // A bare {found:false} with status success is the worst of both worlds:
+      // it is not an error the agent must handle, and it carries no next step.
+      return {
+        found: false,
+        slug: rawSlug || undefined,
+        title: rawTitle || undefined,
+        error: `No wiki page matches ${rawSlug ? `slug "${rawSlug}"` : `title "${rawTitle}"`}.`,
+        hint: 'No page with that slug or title. Use action=list or search_wiki to find the right slug.',
+      };
+    }
     const { data, error } = await supabase
       .from('wiki_pages').select('*').eq('slug', slug).maybeSingle();
     if (error) throw new Error(`get wiki failed: ${error.message}`);
-    if (!data) return { found: false, slug };
+    if (!data) {
+      return {
+        found: false,
+        slug,
+        error: `No wiki page with slug "${slug}".`,
+        hint: 'No page with that slug or title. Use action=list or search_wiki to find the right slug.',
+      };
+    }
     return { found: true, ...data };
   }
 
@@ -4931,27 +5009,54 @@ async function executeWikiAction(
   }
 
   if (action === 'update') {
-    let slug = String((args as any).slug || '');
-    // If slug is missing but title is provided, look up the page by title
-    if (!slug && (args as any).title) {
-      const { data: found } = await supabase
-        .from('wiki_pages').select('slug').ilike('title', (args as any).title).maybeSingle();
-      if (found?.slug) slug = found.slug;
+    const rawSlug = String((args as any).slug || '');
+    const slug = await resolveWikiSlug(rawSlug, (args as any).title);
+    if (!slug) {
+      throw new Error(
+        rawSlug
+          ? `No wiki page matches slug "${rawSlug}" (title fallback tried too). Use action=list or search_wiki to find the right slug.`
+          : 'slug is required — pass the wiki page slug, or a title that matches an existing page exactly.',
+      );
     }
-    if (!slug) throw new Error('slug is required — pass the wiki page slug, or a title that matches an existing page exactly');
     const patch: Record<string, unknown> = {};
     if (typeof (args as any).title === 'string') patch.title = (args as any).title;
-    if (typeof (args as any).content_md === 'string') {
+    const appendMd = typeof (args as any).append_md === 'string' ? (args as any).append_md.trim() : '';
+    const hasContentMd = typeof (args as any).content_md === 'string';
+    if (hasContentMd) {
       const md = (args as any).content_md.trim();
       if (!md) throw new Error('content_md cannot be empty — pass the full markdown body or omit the field to keep existing content.');
       patch.content_md = (args as any).content_md;
+    }
+    // Additive edits used to be impossible: update is whole-body replacement, so
+    // "keep everything and add a section" meant the model regenerated the page
+    // from memory — and quietly dropped two sections it had not seen. append_md
+    // reads the stored body and concatenates, so nothing existing can be lost.
+    // The wiki_page_revisions row is written by the trg_wiki_pages_revision
+    // BEFORE UPDATE trigger (20260708070000_wiki-parity-r7.sql), so an append
+    // is captured in history exactly like any other update — no extra write.
+    let appended = false;
+    if (appendMd && !hasContentMd) {
+      const { data: existing, error: readErr } = await supabase
+        .from('wiki_pages').select('content_md').eq('slug', slug).maybeSingle();
+      if (readErr) throw new Error(`update wiki failed: ${readErr.message}`);
+      if (!existing) throw new Error(`No wiki page with slug "${slug}" — use action=list or search_wiki to find the right slug.`);
+      const base = String(existing.content_md || '').replace(/\s+$/, '');
+      patch.content_md = base ? `${base}\n\n${appendMd}` : appendMd;
+      appended = true;
     }
     if (Object.keys(patch).length === 0) throw new Error('nothing to update');
     const { data, error } = await supabase
       .from('wiki_pages').update(patch).eq('slug', slug)
       .select('slug, title, updated_at').single();
     if (error) throw new Error(`update wiki failed: ${error.message}`);
-    return { ...data, url: `/admin/wiki/${data.slug}`, status: 'updated' };
+    return {
+      ...data,
+      url: `/admin/wiki/${data.slug}`,
+      status: 'updated',
+      mode: appended ? 'append' : (hasContentMd ? 'replace' : 'metadata'),
+      ...(appended ? { note: 'Appended to the end of the existing body — nothing existing was replaced.' } : {}),
+      ...(hasContentMd && appendMd ? { note: 'content_md was sent, so the WHOLE body was replaced; append_md was ignored.' } : {}),
+    };
   }
 
   if (action === 'delete') {

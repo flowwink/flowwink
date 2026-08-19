@@ -608,13 +608,21 @@ serve(async (req) => {
       });
     }
 
+    // Who the journal credits. Normally the caller's agent_type — but an
+    // approved staged operation is EXECUTED by whoever clicked approve, while
+    // the work belongs to the agent that proposed it. FlowWork writes were all
+    // landing in agent_activity as 'flowpilot' because the re-invoke carried
+    // the default agent_type; the proposing agent is on the row itself.
+    let effectiveAgent: string = agent_type;
+
     if (approvedOpId) {
       // Verify approval before continuing
       const { data: op } = await supabase
         .from('pending_operations')
-        .select('status, skill_name, expires_at')
+        .select('status, skill_name, expires_at, created_by_agent')
         .eq('id', approvedOpId)
         .maybeSingle();
+      if (op?.created_by_agent) effectiveAgent = op.created_by_agent as string;
       if (!op || op.status !== 'approved' || op.skill_name !== skill.name) {
         return new Response(JSON.stringify({
           error: 'pending operation not approved or skill mismatch',
@@ -1073,7 +1081,9 @@ serve(async (req) => {
     // Determine if the handler actually succeeded
     const handlerFailed = !!(result as any)?.error;
     const activityId = await logActivity(supabase, {
-      agent: agent_type, skill_id: skill.id, skill_name: skill.name,
+      // effectiveAgent, not agent_type: an approved staged write is credited to
+      // the agent that proposed it (see where it is resolved above).
+      agent: effectiveAgent, skill_id: skill.id, skill_name: skill.name,
       input: activityInput, output: result as Record<string, unknown>,
       status: handlerFailed ? 'failed' : 'success', conversation_id,
       duration_ms: Date.now() - startTime,
@@ -3814,8 +3824,21 @@ async function executePagesAction(
         const { block_type, block_data = {}, position } = args as any;
         if (!block_type) throw new Error('block_type is required');
 
-        // Validate before saving — return actionable error so FlowPilot can self-correct
-        const validation = validateBlockData(block_type, block_data as Record<string, unknown>);
+        // NORMALIZE FIRST, then validate — the order matters. Validation used to
+        // run on the raw payload, so the forgiveness normalizeBlockData offers
+        // (raw string → Tiptap, heading → title, hero buttonText → primaryButton)
+        // never got the chance to apply: the call was already refused. Build the
+        // candidate block, normalize it, validate the normalized shape, save that.
+        const newBlock = {
+          id: crypto.randomUUID(),
+          type: block_type,
+          data: block_data,
+          spacing: {},
+          animation: { type: 'fade-up' },
+        };
+        normalizeBlockData(newBlock);
+
+        const validation = validateBlockData(block_type, newBlock.data as Record<string, unknown>);
         if (!validation.valid) {
           return {
             error: `Block validation failed for "${block_type}": ${validation.errors.join('; ')}`,
@@ -3826,14 +3849,6 @@ async function executePagesAction(
           };
         }
 
-        const newBlock = {
-          id: crypto.randomUUID(),
-          type: block_type,
-          data: block_data,
-          spacing: {},
-          animation: { type: 'fade-up' },
-        };
-        normalizeBlockData(newBlock);
         const pos = position !== undefined ? Math.min(position, blocks.length) : blocks.length;
         blocks.splice(pos, 0, newBlock);
         await supabase.from('pages')
@@ -3858,16 +3873,36 @@ async function executePagesAction(
         const _isFullBlock = block_data && typeof block_data === 'object'
           && 'data' in (block_data as any) && typeof (block_data as any).data === 'object';
         const _incoming = _isFullBlock ? (block_data as any).data : block_data;
-        const mergedData = { ...blocks[idx].data as Record<string, unknown>, ..._incoming };
+        const blockType = String(blocks[idx].type);
+
+        // Normalize the INCOMING fields on their own first, so aliases are
+        // mapped to the renderer's names (heading→title, buttonText→
+        // primaryButton) BEFORE they are merged and before the gate judges
+        // them — and so the unknown-field check below sees the corrected keys.
+        const _incomingBlock = { id: block_id, type: blockType, data: { ...(_incoming as Record<string, unknown>) } };
+        normalizeBlockData(_incomingBlock);
+        const _normalizedIncoming = _incomingBlock.data as Record<string, unknown>;
+
+        const mergedData = { ...blocks[idx].data as Record<string, unknown>, ..._normalizedIncoming };
         for (const junk of ['id', 'type', 'data'] as const) {
           const v = (mergedData as any)[junk];
           if (v !== undefined && (junk === 'data' ? typeof v === 'object' : typeof v === 'string')
-              && !(_incoming && typeof _incoming === 'object' && junk in _incoming)) {
+              && !(_normalizedIncoming && typeof _normalizedIncoming === 'object' && junk in _normalizedIncoming)) {
             delete (mergedData as any)[junk];
           }
         }
-        const blockType = String(blocks[idx].type);
-        const validation = validateBlockData(blockType, mergedData);
+
+        // Normalize the merged result too (an existing raw-string field is
+        // fixed here), then validate what will actually be written.
+        const _mergedBlock = { ...blocks[idx], data: mergedData };
+        normalizeBlockData(_mergedBlock);
+
+        // Unknown-field check is scoped to what the CALLER sent: pre-existing
+        // stored fields may predate this gate, and refusing them would make the
+        // block permanently un-editable by an agent.
+        const validation = validateBlockData(blockType, _mergedBlock.data as Record<string, unknown>, {
+          unknownFieldScope: _normalizedIncoming,
+        });
         if (!validation.valid) {
           return {
             error: `Block validation failed for "${blockType}": ${validation.errors.join('; ')}`,
@@ -3879,8 +3914,7 @@ async function executePagesAction(
           };
         }
 
-        blocks[idx] = { ...blocks[idx], data: mergedData };
-        normalizeBlockData(blocks[idx]);
+        blocks[idx] = _mergedBlock;
         await supabase.from('pages')
           .update({ content_json: blocks, updated_at: new Date().toISOString() })
           .eq('id', resolvedPageId);
@@ -3908,8 +3942,24 @@ async function executePagesAction(
       }
 
       if (action === 'reorder') {
-        const { block_ids } = args as any;
-        if (!Array.isArray(block_ids)) throw new Error('block_ids array is required');
+        let { block_ids } = args as any;
+        const { block_id: moveId, position: movePos } = args as any;
+        // Move-one ergonomics: an agent that wants "put the hero first" holds a
+        // block_id and a position, not the page's full id order — and had to
+        // list the page just to restate an order it did not want to change.
+        // Derive the full order here instead of refusing.
+        if (!Array.isArray(block_ids) && moveId && movePos !== undefined && movePos !== null) {
+          const from = blocks.findIndex((b: any) => b.id === moveId);
+          if (from === -1) throw new Error(`Block not found: ${moveId}`);
+          const order = blocks.map((b: any) => b.id);
+          order.splice(from, 1);
+          const to = Math.max(0, Math.min(Number(movePos), order.length));
+          order.splice(to, 0, moveId);
+          block_ids = order;
+        }
+        if (!Array.isArray(block_ids)) {
+          throw new Error('block_ids (ALL ids in desired order) required — or pass block_id + position to move one block.');
+        }
         const reordered: any[] = [];
         for (const bid of block_ids) {
           const block = blocks.find((b: any) => b.id === bid);
@@ -3980,11 +4030,8 @@ async function executePagesAction(
         for (const b of batchBlocks) {
           if (!b.type) { errors.push('Block missing type'); continue; }
           const bData = b.data || {};
-          const validation = validateBlockData(b.type, bData);
-          if (!validation.valid) {
-            errors.push(`${b.type}: ${validation.errors.join('; ')}`);
-            continue;
-          }
+          // Same order as the single-block path: normalize the candidate first,
+          // then validate the normalized shape (see the comment there).
           const newBlock = {
             id: crypto.randomUUID(),
             type: b.type,
@@ -3993,6 +4040,12 @@ async function executePagesAction(
             animation: { type: 'fade-up' },
           };
           normalizeBlockData(newBlock);
+
+          const validation = validateBlockData(b.type, newBlock.data as Record<string, unknown>);
+          if (!validation.valid) {
+            errors.push(`${b.type}: ${validation.errors.join('; ')}${validation.hint ? ` — ${validation.hint}` : ''}`);
+            continue;
+          }
           existingBlocks.push(newBlock);
           addedIds.push(newBlock.id);
         }

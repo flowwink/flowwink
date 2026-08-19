@@ -126,7 +126,7 @@ Per-page summary with images_fixed count and the actual alt strings generated.
   },
   {
     name: 'manage_page',
-    description: 'Full page lifecycle management: list, get, create, update, publish, archive, delete, rollback. Use when: creating a new page, publishing a draft, listing all pages, updating page metadata, archiving old content, creating destination page after migrate_url. NOT for: adding/editing individual blocks (use create_page_block or manage_page_blocks), scraping external sites (use migrate_url).',
+    description: 'Full page lifecycle management for WEBSITE/CMS pages — the pages visitors see on the public site. Use when: creating or editing a website page (landing page, about, services, contact), publishing a draft, listing all pages, updating page metadata, archiving old content, creating destination page after migrate_url. NOT for: adding/editing individual blocks (use create_page_block or manage_page_blocks), scraping external sites (use migrate_url), product documentation pages (manage_docs_page), knowledge base Q&A (manage_kb_article).',
     category: 'content',
     handler: 'module:pages',
     scope: 'internal',
@@ -134,7 +134,7 @@ Per-page summary with images_fixed count and the actual alt strings generated.
       type: 'function',
       function: {
         name: 'manage_page',
-        description: 'Full page lifecycle management: list, get, create, update, publish, archive, delete, rollback. Use when: creating a new page, publishing a draft, listing all pages, updating page metadata, archiving old content, creating destination page after migrate_url. NOT for: adding/editing individual blocks (use create_page_block or manage_page_blocks), scraping external sites (use migrate_url).',
+        description: 'Full page lifecycle management for WEBSITE/CMS pages — the pages visitors see on the public site. Use when: creating or editing a website page (landing page, about, services, contact), publishing a draft, listing all pages, updating page metadata, archiving old content, creating destination page after migrate_url. NOT for: adding/editing individual blocks (use create_page_block or manage_page_blocks), scraping external sites (use migrate_url), product documentation pages (manage_docs_page), knowledge base Q&A (manage_kb_article).',
         parameters: {
           type: 'object',
           properties: {
@@ -188,7 +188,7 @@ Per-page summary with images_fixed count and the actual alt strings generated.
                   },
                   data: {
                     type: 'object',
-                    description: 'Block-specific data. text block: { content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "..." }] }] } }. hero block: { title, subtitle, buttonText, buttonLink }. accordion: { title, items: [{ question, answer }] }. cta: { title, subtitle, buttonText, buttonLink }.',
+                    description: 'Block-specific data — use the block\'s EXACT field names (describe_blocks returns them; unknown fields are rejected). text: { title?, content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "..." }] }] } }. hero: { title, subtitle?, eyebrow?, primaryButton: { text, url } }. accordion: { title?, items: [{ question, answer: <Tiptap doc> }] }. cta: { title, subtitle?, buttonText, buttonUrl }. two-column: { eyebrow?, title?, content: <Tiptap doc>, imageSrc?, ctaText?, ctaUrl? }.',
                     properties: {},
                   },
                 },
@@ -266,7 +266,7 @@ Full page lifecycle management: list, get, create, update, publish, archive, del
             },
             block_data: {
               type: 'object',
-              description: 'Block content data. text: { content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "..." }] }] } }. hero: { title, subtitle, buttonText, buttonLink }. accordion: { title, items: [{ question, answer }] }. cta: { title, subtitle, buttonText, buttonLink }. info-box: { title, content, variant }. two-column: { leftTitle, leftContent, rightTitle, rightContent }.',
+              description: 'Block content data — use the block\'s EXACT field names (describe_blocks returns them; unknown fields are rejected, not silently ignored). text: { title?, content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "..." }] }] } }. hero: { title, subtitle?, eyebrow?, primaryButton: { text, url } }. accordion: { title?, items: [{ question, answer: <Tiptap doc> }] }. cta: { title, subtitle?, buttonText, buttonUrl }. info-box: { title, content: <Tiptap doc>, variant }. two-column: { eyebrow?, title?, content: <Tiptap doc>, imageSrc?, ctaText?, ctaUrl? }.',
               properties: {},
             },
             position: {
@@ -308,6 +308,11 @@ Granular block-level operations on pages: add, update, remove, reorder blocks.
 - block_data must match the ContentBlock schema for the block type.
 - Reorder requires ALL block_ids in the desired order.
 ### Hard rules that break silently if guessed (learned from real agent writes)
+- **Call describe_blocks FIRST when unsure** — it returns the exact type list
+  and the field contract per type. Invented types (e.g. "faq", "call_to_action")
+  and invented fields are REJECTED at write time; guessing costs a whole turn.
+- **bento-grid: give at least one item span "wide" or "large".** All-normal
+  spans defeat the bento layout — it renders as a plain equal-cell grid.
 - **icon fields are exact lucide-react names in PascalCase**: "Cpu", "Shield",
   "TrendingUp". Lowercase ("cpu") renders NO icon — the lookup is exact.
 - **Every item in an items/tiers/members array needs a stable string id**

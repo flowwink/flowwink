@@ -159,8 +159,12 @@ describe('workspace-chat mounts the surface', () => {
       join(__dirname, '../../../supabase/functions/workspace-chat/index.ts'),
       'utf8',
     );
-    // The gate must sit inside the executor, not in the prompt.
-    expect(src).toMatch(/if \(tier === 'deny'\) return \{ ok: false, body: \{ error: WRITE_REFUSAL \}, name \};/);
+    // The gate must sit inside the executor, not in the prompt — and a refusal
+    // must leave a trail (self-report is not evidence; Svante's bento bounce
+    // was invisible until gate outcomes started logging, 2026-08-19).
+    expect(src).toMatch(/if \(tier === 'deny'\) \{/);
+    expect(src).toMatch(/logGateOutcome\('write-refusal', WRITE_REFUSAL\);/);
+    expect(src).toMatch(/return \{ ok: false, body: \{ error: WRITE_REFUSAL \}, name \};/);
     // The activity trail must name the surface, so agent_activity shows WHO acted.
     expect(src).toMatch(/agent_type: 'flowwork'/);
     expect(src).toMatch(/caller_user_id: userId/);

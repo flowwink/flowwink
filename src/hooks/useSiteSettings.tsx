@@ -752,18 +752,25 @@ export function useUpdateAeoSettings() {
 // System AI settings (internal AI tools: text generation, company enrichment, lead qualification, etc.)
 export type SystemAiProvider = 'openai' | 'gemini' | 'anthropic' | 'local';
 
-export type OpenAiModel = 'gpt-4.1' | 'gpt-4.1-mini' | 'gpt-4.1-nano';
-export type GeminiModel = 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-2.0-flash-exp' | 'gemini-1.5-pro' | 'gemini-1.5-flash';
-export type AnthropicModel = 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514' | 'claude-3-5-haiku-20241022';
-
+/**
+ * This settings row IS the platform's AI model map: per provider a fast tier
+ * (`<provider>Model`, used for chat and tool execution) and a reasoning tier
+ * (`<provider>ReasoningModel`). Everything that calls a model — the public
+ * chat included — reads the map; Integrations only holds credentials.
+ *
+ * Model ids are deliberately plain `string`, not a union: the name is passed
+ * straight through to the provider, so a model released tomorrow works without
+ * a catalog update here (the same rule the local LLM always had). The UI keeps
+ * a suggestion list, never a constraint.
+ */
 export interface SystemAiSettings {
   provider: SystemAiProvider;
-  openaiModel: OpenAiModel;
-  openaiReasoningModel: OpenAiModel;
-  geminiModel: GeminiModel;
-  geminiReasoningModel: GeminiModel;
-  anthropicModel: AnthropicModel;
-  anthropicReasoningModel: AnthropicModel;
+  openaiModel: string;
+  openaiReasoningModel: string;
+  geminiModel: string;
+  geminiReasoningModel: string;
+  anthropicModel: string;
+  anthropicReasoningModel: string;
   // Content generation preferences
   defaultTone: 'professional' | 'friendly' | 'formal';
   defaultLanguage: string;

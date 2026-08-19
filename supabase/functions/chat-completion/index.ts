@@ -14,12 +14,13 @@ import {
 import { scheduleAiUsageLog } from "../_shared/ai-usage-logger.ts";
 import {
   type ProviderConfig,
-  tryResolveProvider,
-  resolveProviderWithFallback,
   isOpenAiReasoningModel,
   handleN8nWebhook,
   handleAiError,
 } from "../_shared/ai-providers.ts";
+// AI MODEL MAP: surfaces declare a TIER, the platform map (site_settings
+// key='system_ai') picks the model. Chat is the real-time surface → 'fast'.
+import { resolveAiConfig } from "../_shared/ai-config.ts";
 import {
   extractTextFromTiptap,
   extractTextFromBlock,
@@ -119,6 +120,23 @@ interface ToolCall {
   function: { name: string; arguments: string };
 }
 
+/**
+ * Chat-surface settings (site_settings key='chat').
+ *
+ * MODEL CHOICE IS NOT HERE. Since the AI-model-map refactor, chat declares a
+ * TIER ('fast') and the platform map (site_settings key='system_ai') decides
+ * which model/provider serves it; Integrations only carry credentials. The
+ * model fields below (openaiModel, geminiModel, openaiBaseUrl, localEndpoint,
+ * localModel, *ApiKey) are LEGACY — kept in the type and in the DB row so old
+ * rows/UI don't break, but chat-completion no longer reads them for model
+ * selection. Do not reintroduce reads of them here.
+ *
+ * The two exceptions that ARE still chat-owned:
+ *  - `aiProvider === 'n8n'` — a pipeline REDIRECT (the whole completion leaves
+ *    the platform for a webhook), not a model choice, so it stays on this row.
+ *  - `localSupportsToolCalling` — a capability hint for a self-hosted model,
+ *    used only as a fallback behind integrations.local_llm.config.toolCalling.
+ */
 interface ChatSettings {
   aiProvider: 'openai' | 'gemini' | 'local' | 'n8n';
   openaiApiKey?: string;
@@ -338,10 +356,115 @@ async function executeChatTool(
   }
 }
 
-// Provider resolution + N8N webhook moved to ../_shared/ai-providers.ts:
-//   - ProviderConfig (type)
-//   - tryResolveProvider, resolveProviderWithFallback
-//   - handleN8nWebhook (now requires corsHeaders param)
+// ─── Provider resolution (AI model map) ──────────────────────────────────────
+// The chat surface no longer carries its own model config. It declares a TIER
+// and reads the platform map via resolveAiConfig(); Integrations are credentials
+// only. handleN8nWebhook still lives in ../_shared/ai-providers.ts.
+
+/**
+ * n8n is a pipeline REDIRECT, not a model: the completion leaves the platform
+ * for a webhook, so no tier/model applies and the choice stays on the chat row.
+ * Resolved here (rather than in the shared model layer) because chat is its
+ * only surface.
+ */
+function resolveN8nProvider(
+  settings: ChatSettings | undefined,
+  integrations: any,
+): ProviderConfig | null {
+  const n8nConfig = integrations?.n8n?.config || {};
+  const webhookUrl = settings?.n8nWebhookUrl || n8nConfig?.webhookUrl;
+  if (!webhookUrl) return null;
+  return {
+    apiKey: '', apiUrl: '', model: '',
+    supportsToolCalling: false, isN8n: true, resolvedProvider: 'n8n',
+    n8nConfig: {
+      webhookUrl,
+      webhookType: settings?.n8nWebhookType || n8nConfig?.webhookType || 'chat',
+      apiKey: Deno.env.get('N8N_API_KEY') || n8nConfig?.apiKey,
+    },
+  };
+}
+
+/**
+ * Resolve the provider that will serve this chat turn.
+ *
+ * 1. aiProvider === 'n8n' → webhook passthrough (above).
+ * 2. Otherwise the platform map decides: resolveAiConfig(supabase, 'fast').
+ *
+ * ANTHROPIC EDGE: the tool loop below speaks raw OpenAI SSE — it POSTs
+ * `{model, messages, stream, tools}` to /chat/completions and parses
+ * `choices[].delta.tool_calls` out of the event stream. Anthropic's
+ * /v1/messages uses a different request body AND a different event protocol
+ * (content_block_delta &c.), so an Anthropic config cannot be piped through
+ * this loop — it would 400 upstream, or stream nothing. Rather than fail the
+ * visitor-facing chat when an operator points the map at Anthropic, we
+ * substitute the first OpenAI-COMPATIBLE provider whose key is in env
+ * (OpenAI → Gemini's OpenAI-compat endpoint) and keep the map's model choice
+ * for that provider. Fail forward, not gate (Law 4). If neither key exists we
+ * throw, and the caller turns it into a clear client-facing error — silently
+ * answering from a provider the operator did not configure would be worse.
+ * (When the streaming loop learns Anthropic's protocol, delete this block.)
+ */
+async function resolveChatProvider(
+  supabase: any,
+  settings: ChatSettings | undefined,
+  integrations: any,
+): Promise<ProviderConfig> {
+  if (settings?.aiProvider === 'n8n') {
+    const n8n = resolveN8nProvider(settings, integrations);
+    if (n8n) return n8n;
+    console.warn('[chat] aiProvider=n8n but no webhook URL configured — falling back to the model map.');
+  }
+
+  const ai = await resolveAiConfig(supabase, 'fast');
+
+  if (ai.provider === 'anthropic') {
+    const { data: sysRow } = await supabase
+      .from('site_settings').select('value').eq('key', 'system_ai').maybeSingle();
+    const map = (sysRow?.value || {}) as Record<string, string>;
+
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    if (openaiKey) {
+      console.warn('[chat] Model map resolved to Anthropic; chat streams OpenAI SSE — using OpenAI instead.');
+      return {
+        apiKey: openaiKey,
+        apiUrl: 'https://api.openai.com/v1/chat/completions',
+        model: map.openaiModel || 'gpt-4.1-mini',
+        supportsToolCalling: true, isN8n: false, resolvedProvider: 'openai',
+      };
+    }
+    const geminiKey = Deno.env.get('GEMINI_API_KEY');
+    if (geminiKey) {
+      console.warn('[chat] Model map resolved to Anthropic; chat streams OpenAI SSE — using Gemini instead.');
+      return {
+        apiKey: geminiKey,
+        apiUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+        model: map.geminiModel || 'gemini-2.5-flash',
+        supportsToolCalling: true, isN8n: false, resolvedProvider: 'gemini',
+      };
+    }
+    throw new Error(
+      'Chat requires an OpenAI-compatible streaming provider, but the AI model map resolves to Anthropic ' +
+      'and no OPENAI_API_KEY or GEMINI_API_KEY is available as a fallback. Set one of those keys, or point ' +
+      'Settings → System AI at OpenAI, Gemini or a local OpenAI-compatible LLM.',
+    );
+  }
+
+  // Self-hosted models vary: the integration's own capability flag wins, then
+  // the legacy chat-row hint, else assume no tool calling.
+  const supportsToolCalling = ai.provider === 'local'
+    ? (integrations?.local_llm?.config?.toolCalling ?? settings?.localSupportsToolCalling ?? false)
+    : true;
+
+  return {
+    apiKey: ai.apiKey,
+    apiUrl: ai.apiUrl,
+    model: ai.model,
+    supportsToolCalling,
+    isN8n: false,
+    resolvedProvider: ai.provider,
+  };
+}
 
 // ─── Sentiment prompt builder ────────────────────────────────────────────────
 
@@ -405,6 +528,10 @@ serve(async (req) => {
     // API bill (found when the openaiModel bump to gpt-5.6-luna kept
     // answering as 4.1-mini, 2026-08-19). Payload fills only what the DB
     // does not define.
+    // NB: the model half of that story is now moot — model choice moved to the
+    // system_ai map (see ChatSettings above), so a payload can no longer name a
+    // model at all. The merge still matters for the remaining chat settings
+    // (routing, toggles, n8n redirect), so it stays DB-authoritative.
     const settings = { ...((payloadSettings as any) ?? {}), ...dbChat } as typeof payloadSettings;
     const routingMode: string = dbChat.routingMode || (settings as any)?.routingMode || 'ai_first';
 
@@ -465,8 +592,19 @@ serve(async (req) => {
       .from('site_settings').select('value').eq('key', 'integrations').maybeSingle();
     const integrations = integrationSettings?.value as any;
 
-    // Resolve provider with automatic fallback (no hard "enabled" gates)
-    const provider = resolveProviderWithFallback(settings, integrations);
+    // Resolve provider from the platform AI model map (tier 'fast'), except for
+    // the n8n webhook redirect which stays a chat-surface setting. No hard
+    // "enabled" gates — credentials present means it works (Law 4).
+    let provider: ProviderConfig;
+    try {
+      provider = await resolveChatProvider(supabase, settings, integrations);
+    } catch (e: any) {
+      console.error('[chat] Provider resolution failed:', e?.message || e);
+      return new Response(
+        JSON.stringify({ error: e?.message || 'No AI provider available for chat.' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     // Load context in parallel: workspace files, knowledge base, skills, visitor history
     const shouldLoadKB = settings?.includeContentAsContext || settings?.includeKbArticles;

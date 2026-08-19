@@ -57,6 +57,11 @@ import { useIntegrationStatus } from "@/hooks/useIntegrationStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { callSkill } from '@/lib/call-skill';
 import { ProvenanceLine } from '@/components/ui/provenance-line';
+import {
+  DEFAULT_MODEL_CATALOG,
+  normalizeModelName,
+  type CatalogProvider,
+} from '@/lib/ai-model-catalog';
 
 // Icon mapping
 const iconMap = {
@@ -601,6 +606,92 @@ function OpenAIUsageBadge({ hasKey, budgetUsd, warnAtPct }: { hasKey: boolean; b
 
 
 
+/**
+ * The curated model catalog for a hosted AI provider — availability, not policy.
+ *
+ * This panel answers "which models may this key use". It deliberately does NOT
+ * say which model is used: that is the model map in System Settings → AI. The
+ * split keeps one dial per question (a second "default model" here is exactly
+ * the drift this refactor removed).
+ */
+function ModelCatalogEditor({
+  provider,
+  models,
+  onChange,
+}: {
+  provider: CatalogProvider;
+  models?: string[];
+  onChange: (models: string[]) => void;
+}) {
+  const [draft, setDraft] = useState('');
+  // No stored list yet = the defaults are what is in force; show them so a
+  // removal is an explicit, visible act rather than an invisible one.
+  const current = Array.isArray(models) ? models : DEFAULT_MODEL_CATALOG[provider];
+
+  const add = () => {
+    const name = normalizeModelName(draft);
+    if (!name || current.includes(name)) {
+      setDraft('');
+      return;
+    }
+    onChange([...current, name]);
+    setDraft('');
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={`${provider}-model-add`} className="text-xs">Approved models</Label>
+      <div className="space-y-1">
+        {current.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No models approved yet — add at least one, or System Settings will only offer what is
+            already selected there.
+          </p>
+        )}
+        {current.map((model) => (
+          <div key={model} className="flex items-center justify-between gap-2 rounded-md border px-2 py-1">
+            <code className="text-xs font-mono truncate">{model}</code>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+              onClick={() => onChange(current.filter((m) => m !== model))}
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              <span className="sr-only">Remove {model}</span>
+            </Button>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input
+          id={`${provider}-model-add`}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Add a model name…"
+          className="h-8 text-sm font-mono"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <Button type="button" variant="outline" size="sm" className="h-8" onClick={add} disabled={!draft.trim()}>
+          Add
+        </Button>
+      </div>
+      <ProvenanceLine to="/admin/system#ai" linkLabel="System Settings → AI">
+        This curates which models are available here — which model is USED per tier is set in
+        System Settings → AI.
+      </ProvenanceLine>
+    </div>
+  );
+}
+
 // Integration Configuration Component - no auto-save, uses parent callback directly
 // Exported for tests: the SMTP branch must render without a secret present, which
 // is only observable by rendering it.
@@ -678,22 +769,11 @@ export function IntegrationConfigPanel({
           />
           <p className="text-xs text-muted-foreground">For Azure OpenAI or compatible APIs</p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="openai-model" className="text-xs">Default Model</Label>
-          <Select
-            value={config?.model || 'gpt-4.1-mini'}
-            onValueChange={(value) => handleChange({ model: value })}
-          >
-            <SelectTrigger id="openai-model" className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gpt-4.1">GPT-4.1 (Best quality)</SelectItem>
-              <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini (Recommended)</SelectItem>
-              <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano (Fast & cheap)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <ModelCatalogEditor
+          provider="openai"
+          models={config?.models}
+          onChange={(models) => handleChange({ models })}
+        />
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-2">
             <Label htmlFor="openai-budget" className="text-xs">Monthly budget (USD)</Label>
@@ -729,25 +809,14 @@ export function IntegrationConfigPanel({
     );
   }
 
-  if (integrationKey === 'gemini') {
+  if (integrationKey === 'gemini' || integrationKey === 'anthropic') {
     return (
       <div className="space-y-3 pt-3 border-t">
-        <div className="space-y-2">
-          <Label htmlFor="gemini-model" className="text-xs">Default Model</Label>
-          <Select
-            value={config?.model || 'gemini-2.0-flash-exp'}
-            onValueChange={(value) => handleChange({ model: value })}
-          >
-            <SelectTrigger id="gemini-model" className="h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Recommended)</SelectItem>
-              <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</SelectItem>
-              <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <ModelCatalogEditor
+          provider={integrationKey}
+          models={config?.models}
+          onChange={(models) => handleChange({ models })}
+        />
       </div>
     );
   }

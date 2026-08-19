@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Info, Sparkles, ExternalLink, Server, Eye, Zap, Brain, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Info, Sparkles, ExternalLink, Server, Eye, Zap, Brain, AlertTriangle, Check, ChevronsUpDown } from 'lucide-react';
 import { SystemAiSettings, SystemAiProvider } from '@/hooks/useSiteSettings';
 import { useIsOpenAIConfigured, useIsGeminiConfigured, useIsAnthropicConfigured, useIsLocalLLMConfigured } from '@/hooks/useIntegrationStatus';
 import { useIntegrations } from '@/hooks/useIntegrations';
@@ -44,8 +48,10 @@ const MODEL_PLACEHOLDER: Record<HostedProvider, string> = {
  * catalog in Integrations (availability), never from a hardcoded list here.
  *
  * Free text stays allowed — a name outside the catalog is kept and added to the
- * catalog on save, so a model that ships today is usable today. A native
- * <datalist> keeps this a plain controlled input (no combobox state to freeze).
+ * catalog on save, so a model that ships today is usable today. This is a real
+ * combobox (Popover + Command), not a native <datalist>: datalist filters its
+ * options by the current value as a prefix, so with a value already set the
+ * dropdown looked dead — the whole catalog must be visible on open.
  */
 function ModelField({
   id,
@@ -64,28 +70,67 @@ function ModelField({
   suggestions: string[];
   onChange: (value: string) => void;
 }) {
-  const listId = `${id}-suggestions`;
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const current = normalizeModelName(value ?? '');
   const inCatalog = !current || suggestions.includes(current);
+  const typed = normalizeModelName(query);
+  const options = inCatalog || !current ? suggestions : [...suggestions, current];
+  const pick = (model: string) => {
+    onChange(model);
+    setQuery('');
+    setOpen(false);
+  };
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        list={listId}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="font-mono text-sm"
-        autoComplete="off"
-        spellCheck={false}
-      />
-      <datalist id={listId}>
-        {suggestions.map((model) => (
-          <option key={model} value={model} />
-        ))}
-        {!inCatalog && <option value={current}>(not in catalog)</option>}
-      </datalist>
+      <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setQuery(''); }}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-mono text-sm font-normal"
+          >
+            {current || <span className="text-muted-foreground">{placeholder}</span>}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput
+              placeholder="Search or type a new model name…"
+              value={query}
+              onValueChange={setQuery}
+            />
+            <CommandList>
+              <CommandEmpty>No matching model in the catalog.</CommandEmpty>
+              <CommandGroup>
+                {options.map((model) => (
+                  <CommandItem key={model} value={model} onSelect={() => pick(model)}>
+                    <Check
+                      className={cn('mr-2 h-4 w-4', current === model ? 'opacity-100' : 'opacity-0')}
+                      aria-hidden="true"
+                    />
+                    <span className="font-mono text-sm">{model}</span>
+                    {!suggestions.includes(model) && (
+                      <span className="ml-2 text-xs text-muted-foreground">(not in catalog)</span>
+                    )}
+                  </CommandItem>
+                ))}
+                {typed && !options.includes(typed) && (
+                  <CommandItem value={typed} onSelect={() => pick(typed)}>
+                    <Check className="mr-2 h-4 w-4 opacity-0" aria-hidden="true" />
+                    <span className="font-mono text-sm">{typed}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">Use this name — added to the catalog on save</span>
+                  </CommandItem>
+                )}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
       <p className="text-xs text-muted-foreground">{usage}</p>
       <p className="text-xs text-muted-foreground">
         Pick from the curated list or type a new name — new names are added to the catalog in

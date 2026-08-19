@@ -4,6 +4,7 @@ import { getServiceClient } from '../_shared/supabase-clients.ts';
 import { requireServiceOrRole, unauthorized } from '../_shared/edge-auth.ts';
 import { callAi } from '../_shared/ai-call.ts';
 import { scoreSkillsByIntent, loadRecentUsageCounts } from '../_shared/skills/intent-scorer.ts';
+import { loadBusinessIdentityBlock } from '../_shared/domains/business-identity-block.ts';
 import { SKILL_CATEGORY_MODULES, isCategoryActive, loadActiveModuleIds } from '../_shared/mcp/groups.ts';
 import {
   resolveAiConfig,
@@ -151,11 +152,12 @@ serve(async (req) => {
     const { apiKey, apiUrl, model } = await resolveAiConfig(supabase, 'reasoning');
 
     // Load context in parallel
-    const [{ soul, identity, agents, tools, user, bootstrap }, memoryContext, objectiveContext, cmsSchemaCtx] = await Promise.all([
+    const [{ soul, identity, agents, tools, user, bootstrap }, memoryContext, objectiveContext, cmsSchemaCtx, businessIdentityCtx] = await Promise.all([
       loadWorkspaceFiles(supabase),
       loadMemories(supabase),
       loadObjectives(supabase),
       loadCMSSchema(supabase),
+      loadBusinessIdentityBlock(supabase).catch(() => ''),
     ]);
 
     // Use prompt compiler (OpenClaw Layer 1)
@@ -166,6 +168,7 @@ serve(async (req) => {
       memoryContext,
       objectiveContext,
       cmsSchemaContext: cmsSchemaCtx,
+      businessIdentityContext: businessIdentityCtx,
     });
 
     // Append the FlowChat operator protocol — turns the generic operate-mode prompt

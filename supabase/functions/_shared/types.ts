@@ -21,6 +21,12 @@ export interface PromptCompilerInput {
   siteMaturity?: SiteMaturity;
   customHeartbeatProtocol?: string;
   chatSystemPrompt?: string;
+  /** The COMPANY's Business Identity block (loadBusinessIdentityBlock) — who
+   *  the business is, its offerings, claim posture and boundaries. Injected in
+   *  operate/heartbeat so content creation grounds in the company, never in
+   *  the platform's own features (FlowChat pitched "FlowPilot AI Agent" as an
+   *  Optic product, 2026-08-19). */
+  businessIdentityContext?: string;
   /** Dispatch mode: business skills are reached via search_skills/execute_skill,
    *  not loaded as direct tools. Injects the tool-access instruction so the
    *  operator discovers skills by intent instead of calling unloaded tool names. */

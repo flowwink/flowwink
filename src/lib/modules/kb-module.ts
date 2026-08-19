@@ -40,7 +40,7 @@ const KB_SKILLS: SkillSeed[] = [
   },
   {
     name: 'manage_kb_article',
-    description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support playbooks, objection handling, escalation routines, anything written in the team\'s own voice rather than the customer\'s). ALWAYS pass visibility="internal" when the text says "we/our" about the business, names customers to target, or would embarrass if a prospect read it; the default is public. Use when: creating a new support article; updating an existing KB entry; moving an article between audiences. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
+    description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support playbooks, objection handling, escalation routines, anything written in the team\'s own voice rather than the customer\'s). ALWAYS pass visibility="internal" when the text says "we/our" about the business, names customers to target, or would embarrass if a prospect read it; the default is public. create saves a DRAFT unless you pass publish:true — drafts are NOT indexed and invisible to visitors and the chat, so never report an article as published unless the response says is_published:true. Use when: creating a new support article; updating an existing KB entry; moving an article between audiences. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
     category: 'content',
     handler: 'module:kb',
     scope: 'internal',
@@ -48,7 +48,7 @@ const KB_SKILLS: SkillSeed[] = [
       type: 'function',
       function: {
         name: 'manage_kb_article',
-        description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support playbooks, objection handling, escalation routines, anything written in the team\'s own voice rather than the customer\'s). ALWAYS pass visibility="internal" when the text says "we/our" about the business, names customers to target, or would embarrass if a prospect read it; the default is public. Use when: creating a new support article; updating an existing KB entry; moving an article between audiences. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
+        description: 'Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support playbooks, objection handling, escalation routines, anything written in the team\'s own voice rather than the customer\'s). ALWAYS pass visibility="internal" when the text says "we/our" about the business, names customers to target, or would embarrass if a prospect read it; the default is public. create saves a DRAFT unless you pass publish:true — drafts are NOT indexed and invisible to visitors and the chat, so never report an article as published unless the response says is_published:true. Use when: creating a new support article; updating an existing KB entry; moving an article between audiences. NOT for: analyzing KB gaps (kb_gap_analysis); managing blog posts (manage_blog_posts).',
         parameters: {
           type: 'object',
           properties: {
@@ -93,6 +93,10 @@ const KB_SKILLS: SkillSeed[] = [
               enum: ['public', 'internal'],
               description: 'Who may read it. "public" (default) = visitors and the site chat. "internal" = staff only; visitors never see it and the public chat cannot ground answers in it, but staff-facing agents can. Internal articles keep the full KB shape — categories, search, helpful/needs_improvement.',
             },
+            publish: {
+              type: 'boolean',
+              description: 'Publish immediately. Default false = DRAFT — drafts are NOT indexed and invisible to visitors and the chat.',
+            },
           },
           required: [
             'action',
@@ -118,8 +122,20 @@ internal "How we handle the cost objection". Write both rather than compromising
 one article for two audiences.
 Unpublishing is NOT the same as internal: an unpublished article is gone for
 everyone including staff; an internal one is live for staff.
+### Draft vs published — say it out loud
+**create saves a DRAFT unless you pass \`publish: true\`.** A draft is NOT
+indexed by the retrieval engine: visitors cannot find it, the site chat cannot
+answer from it, and search returns nothing. The create response ALWAYS carries
+\`is_published\`; when it is false it also carries a \`note\`.
+**Never tell the user an article is published, live, or "now answerable by the
+chat" unless the response said \`is_published: true\`.** If it says false,
+report it as a draft and say what is needed: re-run with \`publish: true\`, call
+\`action: 'publish'\`, or ask an admin. Reporting a draft as published is the
+failure this parameter exists to prevent.
 ### Parameters
 - **action**: Required. list, get, create, update, publish, unpublish.
+- **publish**: Boolean, create only. \`true\` = live immediately. Omitted or
+  false = draft (invisible + unindexed).
 - **visibility**: 'public' (default) or 'internal'. Settable on create and update.
 - **title**, **question**: required for create.
 - **answer**: **REQUIRED for create and for any update that changes the body.**

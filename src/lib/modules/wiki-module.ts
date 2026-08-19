@@ -38,7 +38,7 @@ const WIKI_SKILLS: SkillSeed[] = [
   {
     name: 'manage_wiki_page',
     description:
-      'Manage internal wiki pages (intranet): list, get, create, update, delete. Use when: drafting onboarding notes, updating an internal SOP, capturing a process used by support staff, or seeding the intranet with a new topic. NOT for: public knowledge base articles (use manage_kb_article); public website pages (use manage_pages); blog posts (use manage_blog_posts).',
+      'Manage internal wiki pages (intranet): list, get, create, update, delete. update with content_md REPLACES the whole body — for an addition use append_md instead, never regenerate a page you have not read in full. Use when: drafting onboarding notes, updating an internal SOP, capturing a process used by support staff, or seeding the intranet with a new topic. NOT for: public knowledge base articles (use manage_kb_article); public website pages (use manage_pages); blog posts (use manage_blog_posts).',
     category: 'content',
     handler: 'module:wiki',
     scope: 'internal',
@@ -47,7 +47,7 @@ const WIKI_SKILLS: SkillSeed[] = [
       function: {
         name: 'manage_wiki_page',
         description:
-          'Manage internal wiki pages (intranet): list, get, create, update, delete.',
+          'Manage internal wiki pages (intranet): list, get, create, update, delete. On update, content_md replaces the ENTIRE body; append_md adds a section without touching what is already there.',
         parameters: {
           type: 'object',
           properties: {
@@ -67,7 +67,12 @@ const WIKI_SKILLS: SkillSeed[] = [
             content_md: {
               type: 'string',
               description:
-                'REQUIRED for create and for any update that touches the body. Full markdown body of the page — write the actual content, not just a stub or a title placeholder. Use [[WikiWord]] or CamelCase to auto-link to other pages. The server rejects empty strings with an explicit error.',
+                'REQUIRED for create; on update it REPLACES the entire body — everything not re-sent is lost. Full markdown body of the page — write the actual content, not just a stub or a title placeholder. Use [[WikiWord]] or CamelCase to auto-link to other pages. The server rejects empty strings with an explicit error.',
+            },
+            append_md: {
+              type: 'string',
+              description:
+                'Append this markdown as a new section at the end — use for ADDITIVE changes instead of regenerating the whole body; full-body content_md REPLACES everything.',
             },
             limit: {
               type: 'number',
@@ -92,18 +97,35 @@ in the UI auto-creates the page.
 - You're seeding the intranet with a new topic that doesn't belong on the
   public website, blog, or KB.
 
+### Adding to a page vs rewriting it
+\`update\` is **whole-body replacement**: whatever \`content_md\` you send
+becomes the page, and every section you did not re-send is gone. Regenerating
+a body from memory is how sections disappear silently.
+- **Adding** a section, a note, a new step → **\`append_md\`**. The server reads
+  the stored body and concatenates \`\\n\\n\` + your markdown. Nothing existing
+  can be lost, and the revision is recorded exactly like any other update.
+- **Rewriting** the page on purpose → \`content_md\`, and only after an
+  \`action: 'get'\` so you are replacing text you have actually read.
+- Sending both wins for \`content_md\` (full replacement) and the response says so.
+
 ### Parameters
 - **action**: list | get | create | update | delete
-- **slug**: required for get/update/delete; for create it's derived from
-  title if omitted.
+- **slug**: identifies the page for get/update/delete; a **title** works too —
+  get and update resolve slug → exact title → derived PascalCase slug. For
+  create the slug is derived from title if omitted.
 - **title**: required for create.
-- **content_md**: **REQUIRED for create and for any update that changes the body.**
+- **content_md**: **REQUIRED for create; on update it REPLACES the whole body.**
   Pass the full markdown — the server rejects empty strings to prevent
   blank-page artifacts. Use \`[[Slug]]\` or \`CamelCase\` to link.
+- **append_md**: additive alternative to content_md on update — appended as a
+  new section at the end.
 
 ### Edge cases
 - Delete is admin-only (RLS enforced).
-- Slug collisions on create return an error — pick a different title.`,
+- Slug collisions on create return an error — pick a different title.
+- \`get\` with no match returns \`found: false\` **plus** \`error\` and \`hint\` —
+  follow the hint (action=list or search_wiki) instead of concluding the topic
+  is undocumented.`,
   },
   {
     name: 'search_wiki',

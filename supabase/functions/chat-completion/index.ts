@@ -16,6 +16,7 @@ import {
   type ProviderConfig,
   tryResolveProvider,
   resolveProviderWithFallback,
+  isOpenAiReasoningModel,
   handleN8nWebhook,
   handleAiError,
 } from "../_shared/ai-providers.ts";
@@ -758,16 +759,29 @@ serve(async (req) => {
         reqBody.tool_choice = 'auto';
       }
 
+      // Reasoning models (gpt-5.x) reject function tools on /chat/completions
+      // unless reasoning_effort is 'none'. Chat is the real-time surface, so
+      // 'none' is what we want here regardless of tools — luna at zero effort
+      // is still a smarter chat model than 4.1-mini, without thinking latency.
+      if (provider.resolvedProvider === 'openai' && isOpenAiReasoningModel(provider.model)) {
+        reqBody.reasoning_effort = 'none';
+      }
+
       const tIter = Date.now();
       const upstream = await fetch(provider.apiUrl, { method: 'POST', headers, body: JSON.stringify(reqBody) });
       if (!upstream.ok) {
+        // Capture the provider's error body — a bare http_status can't tell
+        // "invalid model name" from "bad param", which is exactly the question
+        // when an admin flips the model (found diagnosing gpt-5.6-luna 400s).
+        let upstreamError = '';
+        try { upstreamError = (await upstream.clone().text()).slice(0, 500); } catch { /* stream may be locked */ }
         scheduleAiUsageLog({
           supabase, source: 'chat-completion', provider: provider.resolvedProvider, model: provider.model,
           promptTokens: 0, completionTokens: 0, totalTokens: 0,
           latencyMs: Date.now() - tIter,
           status: upstream.status === 429 ? 'rate_limited' : 'error',
           conversationId: conversationId || null,
-          metadata: { iteration, http_status: upstream.status, has_tools: tools.length > 0 },
+          metadata: { iteration, http_status: upstream.status, has_tools: tools.length > 0, upstream_error: upstreamError },
         });
         return handleAiError(upstream, corsHeaders);
       }

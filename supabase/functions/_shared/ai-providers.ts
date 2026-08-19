@@ -48,6 +48,18 @@ const GEMINI_MIGRATE: Record<string, string> = {
   'gemini-2.0-flash-exp': 'gemini-2.5-flash', 'gemini-pro': 'gemini-2.5-pro',
 };
 
+/**
+ * gpt-5-class / o-series models are reasoning models: on /v1/chat/completions
+ * they reject function tools unless `reasoning_effort` is 'none' (OpenAI 400s
+ * with "use /v1/responses or set reasoning_effort to 'none'"), and reject
+ * `max_tokens` in favour of `max_completion_tokens`. Callers that attach tools
+ * must gate the param on this check — sending reasoning_effort to a non-
+ * reasoning model (gpt-4.1-*) is its own 400.
+ */
+export function isOpenAiReasoningModel(model: string): boolean {
+  return /^(gpt-5|o[0-9])/.test(model);
+}
+
 /** Try to resolve a specific provider. Returns null if not available (no API key). */
 export function tryResolveProvider(
   provider: string,

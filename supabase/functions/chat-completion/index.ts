@@ -358,7 +358,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, sessionId, settings, customerEmail, customerName, mode, checkinId } = await req.json() as ChatRequest;
+    const { messages, conversationId, sessionId, settings: payloadSettings, customerEmail, customerName, mode, checkinId } = await req.json() as ChatRequest;
 
     // Guard before any messages.filter()/spread below — a caller (e.g. the
     // draft_candidate_outreach skill via edge:chat-completion) that omits
@@ -397,6 +397,14 @@ serve(async (req) => {
     const { data: cs } = await supabase
       .from('site_settings').select('value').eq('key', 'chat').maybeSingle();
     const dbChat = (cs?.value as any) || {};
+    // The DB row is authoritative for ALL chat settings, not just routingMode:
+    // the payload is the widget's stale client cache (5-min), so an admin's
+    // model/provider change would otherwise not apply until every visitor's
+    // cache expired — and a crafted caller could pick its own model on our
+    // API bill (found when the openaiModel bump to gpt-5.6-luna kept
+    // answering as 4.1-mini, 2026-08-19). Payload fills only what the DB
+    // does not define.
+    const settings = { ...((payloadSettings as any) ?? {}), ...dbChat } as typeof payloadSettings;
     const routingMode: string = dbChat.routingMode || (settings as any)?.routingMode || 'ai_first';
 
     // Check if conversation is handled by a live agent

@@ -6,6 +6,7 @@
  */
 
 import { isAnthropicProvider } from './ai-config.ts';
+import { isOpenAiReasoningModel } from './ai-providers.ts';
 
 interface AiCallOptions {
   apiKey: string;
@@ -196,6 +197,13 @@ export async function callAi(options: AiCallOptions): Promise<Response> {
   if (tools?.length) {
     body.tools = tools;
     body.tool_choice = tool_choice || 'auto';
+    // Reasoning models reject function tools on /chat/completions at any
+    // reasoning_effort above 'none' (OpenAI 400: "use /v1/responses or set
+    // reasoning_effort to 'none'"). Tool-less calls keep default effort —
+    // that's where the reasoning tier earns its keep (briefings, distill).
+    if (isOpenAiReasoningModel(model) && apiUrl.includes('api.openai.com')) {
+      body.reasoning_effort = 'none';
+    }
   }
   // Stream passthrough — the option existed in the interface but was never
   // forwarded, so stream:true callers (docs-chat) got a complete JSON body

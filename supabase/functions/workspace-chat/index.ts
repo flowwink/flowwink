@@ -645,6 +645,35 @@ async function runExecuteSkill(
       const resolvedNotes: string[] = [];
       for (const [k, v] of badRefs) {
         const entity = k.slice(0, -3);
+        // Pages have no `name` column and agents address them by URL path —
+        // page_id="/blocks" (FlowWork live, 2026-08-19) died in the generic
+        // name-lookup below. Resolve pages by slug (slash-tolerant), then
+        // title, mirroring agent-execute's own resolvePageId.
+        if (entity === 'page') {
+          const slug = String(v).trim().replace(/^\/+/, '');
+          const { data: bySlug } = await service
+            .from('pages').select('id').eq('slug', slug).is('deleted_at', null).limit(2);
+          let match = bySlug?.length === 1 ? bySlug[0] : null;
+          if (!match) {
+            const { data: byTitle } = await service
+              .from('pages').select('id').ilike('title', slug).is('deleted_at', null).limit(2);
+            match = byTitle?.length === 1 ? byTitle[0] : null;
+          }
+          if (match) {
+            args[k] = match.id;
+            resolvedNotes.push(`${k}: "${v}" → ${match.id}`);
+            continue;
+          }
+          logGateOutcome('ref-bounce', `page_id="${v}" matched no page by slug or title`);
+          return {
+            ok: false,
+            name,
+            body: {
+              error: `Not staged: page_id="${v}" matched no page by slug or title.`,
+              hint: 'Call manage_page list to see available slugs, then stage again with the slug or the page UUID.',
+            },
+          };
+        }
         const table = entity.endsWith('y') ? `${entity.slice(0, -1)}ies` : `${entity}s`;
         try {
           const { data: matches } = await service
@@ -654,6 +683,7 @@ async function runExecuteSkill(
             resolvedNotes.push(`${k}: "${v}" → ${matches[0].id}`);
             continue;
           }
+          logGateOutcome('ref-bounce', `${k}="${v}" ${matches?.length ? 'ambiguous' : 'no match'} in ${table}`);
           return {
             ok: false,
             name,
@@ -663,6 +693,7 @@ async function runExecuteSkill(
             },
           };
         } catch {
+          logGateOutcome('ref-bounce', `${k}="${v}" lookup in ${table} threw`);
           return {
             ok: false,
             name,

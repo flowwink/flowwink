@@ -231,10 +231,12 @@ function WikiPageInner() {
     <AdminLayout>
       <AdminPageContainer>
         <div className="grid grid-cols-12 gap-6">
-          {/* Sidebar — steps aside while WRITING: the moment full width is
-              needed is known (edit mode), so no show/hide buttons to discover
-              or remember. Reading keeps tree + TOC for navigation. */}
-          <aside className={editing ? 'hidden' : 'col-span-12 lg:col-span-3 space-y-3'}>
+          {/* Sidebar — steps aside while WRITING an existing page: the moment
+              full width is needed is known (edit mode), so no show/hide buttons.
+              A NEW page auto-opens in edit mode — hiding the tree there made the
+              whole wiki look empty (/admin/wiki lands on a not-yet-created
+              HomePage, live 2026-08-20), so new-page editing keeps navigation. */}
+          <aside className={editing && page ? 'hidden' : 'col-span-12 lg:col-span-3 space-y-3'}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
@@ -302,7 +304,7 @@ function WikiPageInner() {
           </aside>
 
           {/* Main */}
-          <main className={editing ? 'col-span-12 space-y-4' : 'col-span-12 lg:col-span-9 space-y-4'}>
+          <main className={editing && page ? 'col-span-12 space-y-4' : 'col-span-12 lg:col-span-9 space-y-4'}>
             {trail.length > 0 && (
               <nav className="flex items-center gap-1 text-xs text-muted-foreground">
                 {trail.map((t) => (

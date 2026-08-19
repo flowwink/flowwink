@@ -25,7 +25,18 @@ export interface IntegrationProviderConfig {
   apiKey?: string;  // For integrations where user can set key in UI
   // OpenAI
   baseUrl?: string;
+  /**
+   * Local LLM only: the single model that endpoint serves (endpoint + model are
+   * one credential). Hosted providers do NOT pick a model here — see `models`.
+   */
   model?: string;
+  /**
+   * Curated model catalog for a hosted AI provider: the gross list of model
+   * names this key is approved to use. Availability only — which model is USED
+   * per tier is policy and lives in site_settings.system_ai (the model map).
+   * See src/lib/ai-model-catalog.ts.
+   */
+  models?: string[];
   // Local LLM
   endpoint?: string;
   // N8N
@@ -206,9 +217,11 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     secretName: 'OPENAI_API_KEY',
     docsUrl: 'https://platform.openai.com/api-keys',
     docsLabel: 'Get API key',
+    // No default model here: which model is USED is policy and lives in the
+    // system_ai model map. `config.models` (the approved catalog) is seeded
+    // lazily from src/lib/ai-model-catalog.ts on first edit.
     config: {
       baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4.1-mini',
       monthlyBudgetUsd: 50,
       warnAtPct: 80,
     },
@@ -224,9 +237,6 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     secretName: 'GEMINI_API_KEY',
     docsUrl: 'https://aistudio.google.com/apikey',
     docsLabel: 'Get API key',
-    config: {
-      model: 'gemini-2.0-flash-exp',
-    },
   },
   anthropic: {
 
@@ -239,9 +249,6 @@ export const defaultIntegrationsSettings: IntegrationsSettings = {
     secretName: 'ANTHROPIC_API_KEY',
     docsUrl: 'https://console.anthropic.com/settings/keys',
     docsLabel: 'Get API key',
-    config: {
-      model: 'claude-sonnet-4-6',
-    },
   },
   local_llm: {
 

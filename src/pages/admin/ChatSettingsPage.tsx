@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { useChatSettings, useUpdateChatSettings, ChatSettings, ChatAiProvider, defaultChatSettings } from '@/hooks/useSiteSettings';
-import { useUiTextSettings, useUpdateUiTextSettings } from '@/hooks/useSiteSettings';
+import { useUiTextSettings, useUpdateUiTextSettings, useSystemAiSettings, type SystemAiProvider } from '@/hooks/useSiteSettings';
+import { isCatalogProvider, SYSTEM_AI_MODEL_FIELDS } from '@/lib/ai-model-catalog';
 import { usePages } from '@/hooks/usePages';
 import { useKbArticles, useKbStats } from '@/hooks/useKnowledgeBase';
 import { useChatFeedbackStats, useChatFeedbackList, useKbArticlesNeedingImprovement, exportFeedbackForFineTuning } from '@/hooks/useChatFeedback';
@@ -21,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUnsavedChanges, UnsavedChangesDialog } from '@/hooks/useUnsavedChanges';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useIsOpenAIConfigured, useIsGeminiConfigured } from '@/hooks/useIntegrationStatus';
+import { useIsOpenAIConfigured, useIsGeminiConfigured, useIsAnthropicConfigured, useIsLocalLLMConfigured } from '@/hooks/useIntegrationStatus';
 import { useIntegrations } from '@/hooks/useIntegrations';
 import { useModuleReadiness } from '@/hooks/useModuleReadiness';
 import { useQuery } from '@tanstack/react-query';
@@ -34,59 +35,56 @@ import { VisitorSessionsTab } from '@/components/admin/chat/VisitorSessionsTab';
 import { ProvenanceLine } from '@/components/ui/provenance-line';
 import { useAuth } from '@/hooks/useAuth';
 
+/**
+ * The chat no longer picks a model or a hosted provider — the platform AI map
+ * (site_settings.system_ai) does, and the chat reads its fast tier. What is
+ * still a chat decision is whether to run on the platform AI at all or hand the
+ * conversation to an n8n webhook.
+ */
+const PLATFORM_PROVIDER_LABEL: Record<SystemAiProvider, string> = {
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+  anthropic: 'Anthropic (Claude)',
+  local: 'Local LLM',
+};
+
+type PlatformAi = {
+  provider: SystemAiProvider;
+  label: string;
+  /** The fast-tier model the chat will actually use. */
+  model: string;
+  isConfigured: boolean;
+};
+
 // Component to show which AI provider is currently active
-function ActiveProviderIndicator({ 
-  selectedProvider, 
-  isOpenAIConfigured, 
-  isGeminiConfigured,
-  integrationSettings 
-}: { 
+function ActiveProviderIndicator({
+  selectedProvider,
+  platformAi,
+  integrationSettings
+}: {
   selectedProvider: ChatAiProvider;
-  isOpenAIConfigured: boolean | null;
-  isGeminiConfigured: boolean | null;
+  platformAi: PlatformAi;
   integrationSettings: IntegrationsSettings | undefined;
 }) {
-  const getProviderStatus = () => {
-    switch (selectedProvider) {
-      case 'openai':
-        return {
-          name: 'OpenAI',
-          model: integrationSettings?.openai?.config?.model || 'gpt-4o-mini',
-          isConfigured: isOpenAIConfigured === true,
-          icon: <Cloud className="h-4 w-4" />,
-        };
-      case 'gemini':
-        return {
-          name: 'Google Gemini',
-          model: integrationSettings?.gemini?.config?.model || 'gemini-2.0-flash-exp',
-          isConfigured: isGeminiConfigured === true,
-          icon: <Cloud className="h-4 w-4" />,
-        };
-      case 'local':
-        return {
-          name: 'Local LLM',
-          model: integrationSettings?.local_llm?.config?.model || 'Custom model',
-          isConfigured: integrationSettings?.local_llm?.enabled === true && !!integrationSettings?.local_llm?.config?.endpoint,
-          icon: <Server className="h-4 w-4" />,
-        };
-      case 'n8n':
-        return {
-          name: 'N8N Webhook',
-          model: integrationSettings?.n8n?.config?.webhookType || 'chat',
-          isConfigured: integrationSettings?.n8n?.enabled === true && !!integrationSettings?.n8n?.config?.webhookUrl,
-          icon: <Webhook className="h-4 w-4" />,
-        };
-      default:
-        return {
-          name: 'Unknown',
-          model: '',
-          isConfigured: false,
-          icon: <AlertTriangle className="h-4 w-4" />,
-        };
-    }
-  };
-
-  const status = getProviderStatus();
+  const status = selectedProvider === 'n8n'
+    ? {
+        name: 'n8n webhook',
+        model: integrationSettings?.n8n?.config?.webhookType || 'chat',
+        isConfigured: integrationSettings?.n8n?.enabled === true && !!integrationSettings?.n8n?.config?.webhookUrl,
+        icon: <Webhook className="h-4 w-4" />,
+        settingsTo: '/admin/integrations#automation',
+        detail: `Mode: ${integrationSettings?.n8n?.config?.webhookType || 'chat'}`,
+      }
+    : {
+        name: `Platform AI · ${platformAi.label}`,
+        model: platformAi.model,
+        isConfigured: platformAi.isConfigured,
+        icon: platformAi.provider === 'local' ? <Server className="h-4 w-4" /> : <Cloud className="h-4 w-4" />,
+        settingsTo: '/admin/system#ai',
+        detail: platformAi.model
+          ? `Using ${platformAi.model} — from the platform AI map`
+          : 'No model set in the platform AI map',
+      };
 
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg border ${
@@ -104,8 +102,8 @@ function ActiveProviderIndicator({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className={`text-sm font-medium ${
-            status.isConfigured 
-              ? 'text-green-800 dark:text-green-200' 
+            status.isConfigured
+              ? 'text-green-800 dark:text-green-200'
               : 'text-amber-800 dark:text-amber-200'
           }`}>
             Active Provider: {status.name}
@@ -115,16 +113,16 @@ function ActiveProviderIndicator({
           </Badge>
         </div>
         <p className={`text-xs mt-0.5 ${
-          status.isConfigured 
-            ? 'text-green-600 dark:text-green-400' 
+          status.isConfigured
+            ? 'text-green-600 dark:text-green-400'
             : 'text-amber-600 dark:text-amber-400'
         }`}>
-          {status.isConfigured 
-            ? `Using ${status.model}` 
-            : 'Configure in Integrations to enable chat'}
+          {status.isConfigured
+            ? status.detail
+            : 'Add the credential in Integrations to enable chat'}
         </p>
       </div>
-      <Link to="/admin/integrations#ai">
+      <Link to={status.settingsTo}>
         <Button variant="ghost" size="sm" className="text-xs">
           {status.icon}
           <span className="ml-1.5">Settings</span>
@@ -146,7 +144,38 @@ export default function ChatSettingsPage() {
   const { role } = useAuth();
   const isAdmin = role === 'admin';
   const isGeminiConfigured = useIsGeminiConfigured();
+  const isAnthropicConfigured = useIsAnthropicConfigured();
+  const isLocalLlmConfigured = useIsLocalLLMConfigured();
   const { data: integrationSettings } = useIntegrations();
+  // The model map is READ here, never edited — the chat shows which model it
+  // will run on and links to where that is decided. Read-only means there is no
+  // form state to seed, so no first-paint freeze to guard against.
+  const { data: systemAiSettings } = useSystemAiSettings();
+  const platformAi = useMemo<PlatformAi>(() => {
+    const provider: SystemAiProvider = systemAiSettings?.provider ?? 'openai';
+    const model = isCatalogProvider(provider)
+      ? (systemAiSettings?.[SYSTEM_AI_MODEL_FIELDS[provider].fast] ?? '')
+      : (integrationSettings?.local_llm?.config?.model ?? '');
+    const configuredByProvider: Record<SystemAiProvider, boolean> = {
+      openai: isOpenAIConfigured === true,
+      gemini: isGeminiConfigured === true,
+      anthropic: isAnthropicConfigured === true,
+      local: isLocalLlmConfigured === true,
+    };
+    return {
+      provider,
+      label: PLATFORM_PROVIDER_LABEL[provider],
+      model,
+      isConfigured: configuredByProvider[provider],
+    };
+  }, [
+    systemAiSettings,
+    integrationSettings,
+    isOpenAIConfigured,
+    isGeminiConfigured,
+    isAnthropicConfigured,
+    isLocalLlmConfigured,
+  ]);
   const flowpilotReadiness = useModuleReadiness('chat');
   const flowpilotMissing = flowpilotReadiness.flowPilotEnhancedButMissing || flowpilotReadiness.missingFlowPilot;
   // Available external skills for the allow-list
@@ -250,10 +279,12 @@ export default function ChatSettingsPage() {
           </Button>
         </AdminPageHeader>
 
-        {isAdmin && formData.aiProvider === 'openai' && isOpenAIConfigured === false && (
+        {/* The credential that matters is the one the model map points at, not a
+            provider the chat picked — the chat no longer picks one. */}
+        {isAdmin && formData.aiProvider !== 'n8n' && platformAi.provider === 'openai' && isOpenAIConfigured === false && (
           <IntegrationWarning integration="openai" />
         )}
-        {isAdmin && formData.aiProvider === 'gemini' && isGeminiConfigured === false && (
+        {isAdmin && formData.aiProvider !== 'n8n' && platformAi.provider === 'gemini' && isGeminiConfigured === false && (
           <IntegrationWarning integration="gemini" />
         )}
         {!isAdmin && (
@@ -275,8 +306,7 @@ export default function ChatSettingsPage() {
           <CardContent className="pt-0">
             <ActiveProviderIndicator
               selectedProvider={formData.aiProvider}
-              isOpenAIConfigured={isOpenAIConfigured}
-              isGeminiConfigured={isGeminiConfigured}
+              platformAi={platformAi}
               integrationSettings={integrationSettings}
             />
           </CardContent>
@@ -410,49 +440,28 @@ export default function ChatSettingsPage() {
                 <CardHeader>
                   <CardTitle>AI Provider</CardTitle>
                   <CardDescription>
-                    Choose which AI provider powers your chat. Configure API keys and settings in{' '}
-                    <Link to="/admin/integrations" className="text-primary hover:underline">
-                      Integrations
-                    </Link>.
+                    The chat runs on the platform AI unless you hand it to an n8n workflow.
+                    It no longer picks a model of its own.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid gap-4">
-                    {/* Provider selection */}
+                    {/* Provider selection — two choices, not four. Every legacy
+                        hosted value (openai/gemini/local) IS the platform AI;
+                        saving normalises it to 'openai' so an older server that
+                        still reads this field keeps working. */}
                     <div className="grid grid-cols-2 gap-4">
                       <ProviderCard
-                        provider="openai"
-                        title="OpenAI"
-                        description="GPT-4o, GPT-4o-mini"
+                        title="Platform AI (recommended)"
+                        description="Runs on the platform AI map"
                         icon={<Cloud className="h-5 w-5" />}
-                        badge={isOpenAIConfigured ? undefined : "Setup required"}
+                        badge={platformAi.isConfigured ? undefined : "Setup required"}
                         badgeVariant="secondary"
-                        selected={formData.aiProvider === 'openai'}
+                        selected={formData.aiProvider !== 'n8n'}
                         onClick={() => setFormData({ ...formData, aiProvider: 'openai' })}
                       />
                       <ProviderCard
-                        provider="gemini"
-                        title="Google Gemini"
-                        description="Gemini 2.0, 1.5 Pro"
-                        icon={<Cloud className="h-5 w-5" />}
-                        badge={isGeminiConfigured ? undefined : "Setup required"}
-                        badgeVariant="secondary"
-                        selected={formData.aiProvider === 'gemini'}
-                        onClick={() => setFormData({ ...formData, aiProvider: 'gemini' })}
-                      />
-                      <ProviderCard
-                        provider="local"
-                        title="Local LLM"
-                        description="HIPAA-compliant"
-                        icon={<Server className="h-5 w-5" />}
-                        badge={integrationSettings?.local_llm?.enabled ? undefined : "Setup required"}
-                        badgeVariant="secondary"
-                        selected={formData.aiProvider === 'local'}
-                        onClick={() => setFormData({ ...formData, aiProvider: 'local' })}
-                      />
-                      <ProviderCard
-                        provider="n8n"
-                        title="N8N Webhook"
+                        title="n8n webhook"
                         description="Agentic workflows"
                         icon={<Webhook className="h-5 w-5" />}
                         badge={integrationSettings?.n8n?.enabled ? undefined : "Setup required"}
@@ -464,84 +473,53 @@ export default function ChatSettingsPage() {
 
                     {/* Configuration status */}
                     <div className="pt-4 border-t space-y-4">
-                      {formData.aiProvider === 'openai' && (
-                        isOpenAIConfigured ? (
-                          <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900">
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            <AlertTitle className="text-green-800 dark:text-green-200">OpenAI Ready</AlertTitle>
-                            <AlertDescription className="text-green-700 dark:text-green-300">
-                              Model: {integrationSettings?.openai?.config?.model || 'gpt-4o-mini'}.{' '}
-                              <Link to="/admin/integrations#ai" className="underline">
-                                Change settings
-                              </Link>
-                            </AlertDescription>
-                          </Alert>
-                        ) : (
-                          <Alert>
-                            <XCircle className="h-4 w-4" />
-                            <AlertTitle>OpenAI Not Configured</AlertTitle>
-                            <AlertDescription>
-                              Add your API key in{' '}
-                              <Link to="/admin/integrations#ai" className="text-primary underline">
-                                Integrations → OpenAI
-                              </Link>
-                            </AlertDescription>
-                          </Alert>
-                        )
+                      {formData.aiProvider !== 'n8n' && (
+                        <>
+                          <ProvenanceLine to="/admin/system#ai" linkLabel="System Settings → AI">
+                            Model comes from the platform AI map — currently{' '}
+                            {platformAi.model
+                              ? <span className="font-mono">{platformAi.model}</span>
+                              : 'not set'}{' '}
+                            on {platformAi.label}. Configure in System Settings → AI.
+                          </ProvenanceLine>
+                          {platformAi.isConfigured ? (
+                            <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900">
+                              {platformAi.provider === 'local'
+                                ? <Shield className="h-4 w-4 text-green-600" />
+                                : <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                              <AlertTitle className="text-green-800 dark:text-green-200">
+                                Platform AI ready — {platformAi.label}
+                              </AlertTitle>
+                              <AlertDescription className="text-green-700 dark:text-green-300">
+                                {platformAi.provider === 'local'
+                                  ? `Endpoint: ${integrationSettings?.local_llm?.config?.endpoint || 'Not set'}. Data never leaves your infrastructure.`
+                                  : `Fast-tier model: ${platformAi.model || 'not set'}.`}{' '}
+                                <Link to="/admin/system#ai" className="underline">
+                                  Change the model map
+                                </Link>
+                              </AlertDescription>
+                            </Alert>
+                          ) : (
+                            <Alert>
+                              <XCircle className="h-4 w-4" />
+                              <AlertTitle>{platformAi.label} not configured</AlertTitle>
+                              <AlertDescription>
+                                The model map points at {platformAi.label}, but its credential is
+                                missing. Add it in{' '}
+                                <Link to="/admin/integrations#ai" className="text-primary underline">
+                                  Integrations → AI
+                                </Link>
+                                , or pick another provider in{' '}
+                                <Link to="/admin/system#ai" className="text-primary underline">
+                                  System Settings → AI
+                                </Link>
+                                .
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </>
                       )}
-                      
-                      {formData.aiProvider === 'gemini' && (
-                        isGeminiConfigured ? (
-                          <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900">
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            <AlertTitle className="text-green-800 dark:text-green-200">Gemini Ready</AlertTitle>
-                            <AlertDescription className="text-green-700 dark:text-green-300">
-                              Model: {integrationSettings?.gemini?.config?.model || 'gemini-2.0-flash-exp'}.{' '}
-                              <Link to="/admin/integrations#ai" className="underline">
-                                Change settings
-                              </Link>
-                            </AlertDescription>
-                          </Alert>
-                        ) : (
-                          <Alert>
-                            <XCircle className="h-4 w-4" />
-                            <AlertTitle>Gemini Not Configured</AlertTitle>
-                            <AlertDescription>
-                              Add your API key in{' '}
-                              <Link to="/admin/integrations#ai" className="text-primary underline">
-                                Integrations → Gemini
-                              </Link>
-                            </AlertDescription>
-                          </Alert>
-                        )
-                      )}
-                      
-                      {formData.aiProvider === 'local' && (
-                        integrationSettings?.local_llm?.enabled ? (
-                          <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900">
-                            <Shield className="h-4 w-4 text-green-600" />
-                            <AlertTitle className="text-green-800 dark:text-green-200">Local LLM Ready (HIPAA-compliant)</AlertTitle>
-                            <AlertDescription className="text-green-700 dark:text-green-300">
-                              Endpoint: {integrationSettings?.local_llm?.config?.endpoint || 'Not set'}.{' '}
-                              <Link to="/admin/integrations#ai" className="underline">
-                                Change settings
-                              </Link>
-                            </AlertDescription>
-                          </Alert>
-                        ) : (
-                          <Alert>
-                            <XCircle className="h-4 w-4" />
-                            <AlertTitle>Local LLM Not Configured</AlertTitle>
-                            <AlertDescription>
-                              Configure your endpoint in{' '}
-                              <Link to="/admin/integrations#ai" className="text-primary underline">
-                                Integrations → Local LLM
-                              </Link>
-                            </AlertDescription>
-                          </Alert>
-                        )
-                      )}
-                      
+
                       {formData.aiProvider === 'n8n' && (
                         integrationSettings?.n8n?.enabled ? (
                           <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-900">
@@ -1432,8 +1410,10 @@ export default function ChatSettingsPage() {
                   )}
                 </Card>
 
-                {/* Local AI Tool Calling Support Toggle */}
-                {formData.toolCallingEnabled && formData.aiProvider === 'local' && !flowpilotMissing && (
+                {/* Local AI Tool Calling Support Toggle — relevant when the model
+                    map points at a self-hosted model, which is now what decides
+                    it (the chat no longer selects 'local' itself). */}
+                {formData.toolCallingEnabled && formData.aiProvider !== 'n8n' && platformAi.provider === 'local' && !flowpilotMissing && (
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
@@ -1571,7 +1551,6 @@ export default function ChatSettingsPage() {
 
 // Provider selection card component
 function ProviderCard({
-  provider,
   title,
   description,
   icon,
@@ -1580,7 +1559,6 @@ function ProviderCard({
   selected,
   onClick,
 }: {
-  provider: ChatAiProvider;
   title: string;
   description: string;
   icon: React.ReactNode;

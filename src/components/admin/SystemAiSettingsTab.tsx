@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -6,6 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Info, Sparkles, ExternalLink, Server, Eye, Zap, Brain, AlertTriangle } from 'lucide-react';
 import { SystemAiSettings, SystemAiProvider } from '@/hooks/useSiteSettings';
 import { useIsOpenAIConfigured, useIsGeminiConfigured, useIsAnthropicConfigured, useIsLocalLLMConfigured } from '@/hooks/useIntegrationStatus';
+import { useIntegrations } from '@/hooks/useIntegrations';
+import {
+  getModelCatalog,
+  normalizeModelName,
+  SYSTEM_AI_MODEL_FIELDS,
+  type CatalogProvider,
+} from '@/lib/ai-model-catalog';
+import { ProvenanceLine } from '@/components/ui/provenance-line';
 import { Link } from 'react-router-dom';
 
 interface SystemAiSettingsTabProps {
@@ -21,11 +30,84 @@ const PROVIDER_LABEL: Record<SystemAiProvider, string> = {
   local: 'Local LLM',
 };
 
+/** Hosted providers own two model-map fields; Local LLM has none (see below). */
+type HostedProvider = CatalogProvider;
+
+const MODEL_PLACEHOLDER: Record<HostedProvider, string> = {
+  openai: 'e.g. gpt-4.1-mini',
+  gemini: 'e.g. gemini-2.5-flash',
+  anthropic: 'e.g. claude-sonnet-4-20250514',
+};
+
+/**
+ * Policy field: which model this tier uses. Suggestions come from the curated
+ * catalog in Integrations (availability), never from a hardcoded list here.
+ *
+ * Free text stays allowed — a name outside the catalog is kept and added to the
+ * catalog on save, so a model that ships today is usable today. A native
+ * <datalist> keeps this a plain controlled input (no combobox state to freeze).
+ */
+function ModelField({
+  id,
+  label,
+  usage,
+  value,
+  placeholder,
+  suggestions,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  usage: string;
+  value: string;
+  placeholder: string;
+  suggestions: string[];
+  onChange: (value: string) => void;
+}) {
+  const listId = `${id}-suggestions`;
+  const current = normalizeModelName(value ?? '');
+  const inCatalog = !current || suggestions.includes(current);
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        list={listId}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="font-mono text-sm"
+        autoComplete="off"
+        spellCheck={false}
+      />
+      <datalist id={listId}>
+        {suggestions.map((model) => (
+          <option key={model} value={model} />
+        ))}
+        {!inCatalog && <option value={current}>(not in catalog)</option>}
+      </datalist>
+      <p className="text-xs text-muted-foreground">{usage}</p>
+      <p className="text-xs text-muted-foreground">
+        Pick from the curated list or type a new name — new names are added to the catalog in
+        Integrations. Model names are passed straight to the provider, so new models work as soon
+        as they ship; reasoning-class models (gpt-5.x, o-series) are handled automatically.
+      </p>
+      {!inCatalog && (
+        <ProvenanceLine>
+          <span className="font-mono">{current}</span> is not in the Integrations catalog yet —
+          saving adds it.
+        </ProvenanceLine>
+      )}
+    </div>
+  );
+}
+
 export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps) {
   const openaiEnabled = useIsOpenAIConfigured();
   const geminiEnabled = useIsGeminiConfigured();
   const anthropicEnabled = useIsAnthropicConfigured();
   const localEnabled = useIsLocalLLMConfigured();
+  const { data: integrations } = useIntegrations();
   const hasAnyProvider = openaiEnabled || geminiEnabled || anthropicEnabled || localEnabled;
 
   const enabledByProvider: Record<SystemAiProvider, boolean> = {
@@ -83,6 +165,12 @@ export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps
   const reasoningTier = resolveTier('reasoning');
   const multimodalTier = resolveTier('multimodal');
 
+  // Local LLM configures endpoint + model together in Integrations (they are one
+  // credential); every other provider owns its two model-map fields here.
+  const hostedProvider: HostedProvider | null =
+    data.provider === 'local' ? null : (data.provider as CatalogProvider);
+  const catalog = hostedProvider ? getModelCatalog(integrations, hostedProvider) : [];
+
   const updateField = <K extends keyof SystemAiSettings>(key: K, value: SystemAiSettings[K]) => {
     onChange({ ...data, [key]: value });
   };
@@ -93,9 +181,10 @@ export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps
         <Info className="h-4 w-4" />
         <AlertTitle>What is System AI?</AlertTitle>
         <AlertDescription>
-          System AI powers internal admin tools like text generation (expand, improve, translate), 
-          company enrichment, lead qualification, and content migration. This is separate from the 
-          visitor-facing AI Chat which is configured in Chat Settings.
+          This is the platform's AI model map — the one place a model is chosen. It powers internal
+          tools (text generation, company enrichment, lead qualification, content migration),
+          FlowPilot, and the visitor-facing AI Chat, which reads the fast tier from here.
+          Integrations only holds the credentials.
         </AlertDescription>
       </Alert>
 
@@ -237,138 +326,38 @@ export function SystemAiSettingsTab({ data, onChange }: SystemAiSettingsTabProps
             Model Configuration
           </CardTitle>
           <CardDescription>
-            FlowPilot uses two models: a fast model for real-time chat and tool execution, 
-            and a reasoning model for deep analysis, research, and planning.
+            Two tiers per provider: a fast model for real-time chat and tool execution — used by
+            FlowPilot and by the visitor-facing chat — and a reasoning model for deep analysis,
+            research, and planning.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {data.provider === 'openai' && (
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Chat & Interaction Model</Label>
-                <Select
-                  value={data.openaiModel}
-                  onValueChange={(value: SystemAiSettings['openaiModel']) => updateField('openaiModel', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-5.6-luna">GPT-5.6 Luna</SelectItem>
-                    <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
-                    <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
-                    <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for real-time chat, tool calls, and quick tasks
-                </p>
+          {hostedProvider && (
+            <div className="space-y-4">
+              <div className="grid gap-6 md:grid-cols-2">
+                <ModelField
+                  id={`${hostedProvider}-fast-model`}
+                  label="Chat & Interaction Model"
+                  usage="Used for real-time chat, tool calls, and quick tasks — including the visitor-facing AI chat."
+                  value={data[SYSTEM_AI_MODEL_FIELDS[hostedProvider].fast]}
+                  placeholder={MODEL_PLACEHOLDER[hostedProvider]}
+                  suggestions={catalog}
+                  onChange={(value) => updateField(SYSTEM_AI_MODEL_FIELDS[hostedProvider].fast, value)}
+                />
+                <ModelField
+                  id={`${hostedProvider}-reasoning-model`}
+                  label="Research & Reasoning Model"
+                  usage="Used for objectives, planning, content research, and deep analysis."
+                  value={data[SYSTEM_AI_MODEL_FIELDS[hostedProvider].reasoning]}
+                  placeholder={MODEL_PLACEHOLDER[hostedProvider]}
+                  suggestions={catalog}
+                  onChange={(value) => updateField(SYSTEM_AI_MODEL_FIELDS[hostedProvider].reasoning, value)}
+                />
               </div>
-              <div className="space-y-2">
-                <Label>Research & Reasoning Model</Label>
-                <Select
-                  value={data.openaiReasoningModel}
-                  onValueChange={(value: SystemAiSettings['openaiReasoningModel']) => updateField('openaiReasoningModel', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gpt-5.6-luna">GPT-5.6 Luna</SelectItem>
-                    <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
-                    <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
-                    <SelectItem value="gpt-4.1-nano">GPT-4.1 Nano</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for objectives, planning, content research, and deep analysis
-                </p>
-              </div>
-            </div>
-          )}
-
-          {data.provider === 'gemini' && (
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Chat & Interaction Model</Label>
-                <Select
-                  value={data.geminiModel}
-                  onValueChange={(value: SystemAiSettings['geminiModel']) => updateField('geminiModel', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                    <SelectItem value="gemini-2.0-flash-exp">Gemini 2.0 Flash</SelectItem>
-                    <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for real-time chat, tool calls, and quick tasks
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Research & Reasoning Model</Label>
-                <Select
-                  value={data.geminiReasoningModel}
-                  onValueChange={(value: SystemAiSettings['geminiReasoningModel']) => updateField('geminiReasoningModel', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                    <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                    <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for objectives, planning, content research, and deep analysis
-                </p>
-              </div>
-            </div>
-          )}
-
-          {data.provider === 'anthropic' && (
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Chat & Interaction Model</Label>
-                <Select
-                  value={data.anthropicModel}
-                  onValueChange={(value: SystemAiSettings['anthropicModel']) => updateField('anthropicModel', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
-                    <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for real-time chat, tool calls, and quick tasks
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Research & Reasoning Model</Label>
-                <Select
-                  value={data.anthropicReasoningModel}
-                  onValueChange={(value: SystemAiSettings['anthropicReasoningModel']) => updateField('anthropicReasoningModel', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="claude-opus-4-20250514">Claude Opus 4</SelectItem>
-                    <SelectItem value="claude-sonnet-4-20250514">Claude Sonnet 4</SelectItem>
-                    <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for objectives, planning, content research, and deep analysis
-                </p>
-              </div>
+              <ProvenanceLine to="/admin/integrations#ai" linkLabel="Integrations → AI">
+                Suggestions come from the curated model catalog for {PROVIDER_LABEL[hostedProvider]},
+                which lists what this key may use. What is used per tier is decided here.
+              </ProvenanceLine>
             </div>
           )}
 

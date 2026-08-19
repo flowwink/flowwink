@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,12 @@ import {
   SystemAiSettings,
 } from '@/hooks/useSiteSettings';
 import { useIntegrationStatus } from '@/hooks/useIntegrationStatus';
+import { useIntegrations, useUpdateIntegrations } from '@/hooks/useIntegrations';
+import {
+  addModelsToCatalogPatch,
+  isCatalogProvider,
+  SYSTEM_AI_MODEL_FIELDS,
+} from '@/lib/ai-model-catalog';
 import { SystemAiSettingsTab } from '@/components/admin/SystemAiSettingsTab';
 import { DemoModeCard } from '@/components/admin/DemoModeCard';
 import { ResetSiteDialog } from '@/components/admin/ResetSiteDialog';
@@ -199,11 +205,21 @@ function QuickLinksCard() {
   );
 }
 
+const SYSTEM_TABS = ['overview', 'observability', 'ai', 'demo', 'danger'];
+
 export default function SystemHubPage() {
   const { data: systemAiSettings, isLoading } = useSystemAiSettings();
   const updateSystemAi = useUpdateSystemAiSettings();
+  const { data: integrations } = useIntegrations();
+  const updateIntegrations = useUpdateIntegrations();
   const [systemAiData, setSystemAiData] = useState<SystemAiSettings | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
+
+  // Deep links from other surfaces ("Configure in System Settings → AI") point
+  // at /admin/system#ai — honour the hash so the link lands on the right tab.
+  const { hash } = useLocation();
+  const hashTab = hash.replace('#', '');
+  const initialTab = SYSTEM_TABS.includes(hashTab) ? hashTab : 'overview';
 
   useEffect(() => {
     if (systemAiSettings) setSystemAiData(systemAiSettings);
@@ -217,6 +233,18 @@ export default function SystemHubPage() {
     if (!systemAiData) return;
     try {
       await updateSystemAi.mutateAsync(systemAiData);
+      // Policy may name a model the catalog has not seen (Law 4 — fail forward):
+      // adopt it into the Integrations catalog in the same gesture instead of
+      // rejecting it, so a model released today is usable today. The patch is a
+      // merge — no other key in the provider's config is touched.
+      if (isCatalogProvider(systemAiData.provider)) {
+        const fields = SYSTEM_AI_MODEL_FIELDS[systemAiData.provider];
+        const patch = addModelsToCatalogPatch(integrations, systemAiData.provider, [
+          systemAiData[fields.fast],
+          systemAiData[fields.reasoning],
+        ]);
+        if (patch) await updateIntegrations.mutateAsync(patch);
+      }
       toast.success('AI configuration saved');
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to save');
@@ -231,7 +259,7 @@ export default function SystemHubPage() {
           description="Platform-level configuration, health and operations"
         />
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs defaultValue={initialTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="observability">Observability</TabsTrigger>

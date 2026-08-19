@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260819120000",
-      "migrations_count": 441,
+      "migration_head": "20260819230000",
+      "migrations_count": 442,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1769,6 +1769,10 @@
         {
           "version": "20260819120000",
           "name": "pending-op-approval-gate"
+        },
+        {
+          "version": "20260819230000",
+          "name": "a1b2c3d4-wiki-provenance"
         }
       ]
     },
@@ -1783,7 +1787,7 @@
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:af33292a06c7a843834d27216ab4c7e9654fe87f13f9bd1b82f84b3dc1970fcc",
+        "agent-execute": "sha256:57c1314543acdc811d66a0a770a8e5670042c689e0760e38fa7fc8472c6137ee",
         "agent-operate": "sha256:75fb1281c6ee8aa748f24c44a0b866686a12cf11df5291d7ff5e6aa59a2c1d2a",
         "ai-task": "sha256:7eca41863874f798eb5dfadf3216302830d807b3265231567ba0284d791fb6cd",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

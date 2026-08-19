@@ -10,6 +10,14 @@ interface Props {
   content: string;
   /** Slugs that exist — used to color "missing" links red. */
   knownSlugs: Set<string>;
+  /** slug → page title. Link text shows the real title instead of the raw
+   *  PascalCase slug ("DennaSidaFungerar" read as one word — Magnus-fynd). */
+  titles?: Map<string, string>;
+}
+
+/** "DennaSidaFungerar" → "Denna Sida Fungerar" — fallback when no title known. */
+function humanizeSlug(slug: string): string {
+  return slug.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
 }
 
 const WIKI_LINK_RE = /\[\[([A-Z][A-Za-z0-9]*)\]\]/g;
@@ -53,7 +61,7 @@ function preprocess(md: string): string {
   return lines.join('\n');
 }
 
-export function WikiMarkdown({ content, knownSlugs }: Props) {
+export function WikiMarkdown({ content, knownSlugs, titles }: Props) {
   const processed = preprocess(content || '_This page is empty — double-click to start writing._');
 
   const headingId = (children: React.ReactNode) =>
@@ -71,6 +79,12 @@ export function WikiMarkdown({ content, knownSlugs }: Props) {
       if (href?.startsWith('wiki:')) {
         const slug = href.slice(5);
         const exists = knownSlugs.has(slug);
+        // Auto-generated link text is the raw slug — swap it for the page's
+        // real title (or a spaced fallback). Hand-written [text](wiki:Slug)
+        // keeps its text: only replace when the text IS the slug.
+        const label = String(children) === slug
+          ? (titles?.get(slug) ?? humanizeSlug(slug))
+          : children;
         return (
           <Link
             to={`/admin/wiki/${slug}`}
@@ -81,7 +95,7 @@ export function WikiMarkdown({ content, knownSlugs }: Props) {
             }
             title={exists ? `Open ${slug}` : `Create ${slug}`}
           >
-            {children}
+            {label}
           </Link>
         );
       }

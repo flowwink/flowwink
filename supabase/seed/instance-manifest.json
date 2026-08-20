@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260821000000",
-      "migrations_count": 459,
+      "migration_head": "20260821010000",
+      "migrations_count": 460,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1841,6 +1841,10 @@
         {
           "version": "20260821000000",
           "name": "d8e9f0a1-project-rpcs-follow-the-matrix"
+        },
+        {
+          "version": "20260821010000",
+          "name": "e1f2a3b4-frontend-rpcs-follow-the-matrix"
         }
       ]
     },
@@ -1919,7 +1923,7 @@
         "sitemap": "sha256:57bfd001304645f70cd359850af19f88d6960918f2dbe5795c8dda40f733daf1",
         "stripe-webhook": "sha256:8958c2a437fc3718ba106b4f1c9dbaad1707b9052651045d6f506ebb2c86f5ce",
         "subscription-billing-cron": "sha256:d3a4089951cbc82379b1f667b1d5b98503961e4364ab811617b4c5d5a6036663",
-        "subscriptions": "sha256:2b6b0d3558a15a349328c4636a9873da3f513a954c26c95cee4875cb31edea37",
+        "subscriptions": "sha256:d3ac2a631b793a4507315d92f144c69a3697ffc6a0186b6bbc3d7cda05a46a33",
         "system-integrity-check": "sha256:f90caeeb5634c18d19e681df91c690b5fbee5122fc5b60f8648c96e5cd9ae3cc",
         "telegram-ingest": "sha256:d1a509622d71db0e42a6902da31ce346c3b57471a1350c240c7c5b37a50c9cbc",
         "track-auth-event": "sha256:b4c1796b0a75a20aa7812b9bc1cd8b3779192685fde43b324a06e8cb334bd783",

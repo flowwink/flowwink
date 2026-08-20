@@ -85,7 +85,12 @@ describe('a restocking fee cannot strand a part-paid RMA', () => {
   });
 
   it('keeps the service_role escape so the gateway still works', () => {
-    expect(body).toMatch(/auth\.role\(\) = 'service_role' OR has_role\(auth\.uid\(\), 'admin'\)/);
+    // Rollsvepets tredje varv bytte rollistan mot matrisen (20260821010000).
+    // Det som pinnas här är service_role-undantaget — utan det har gatewayen
+    // ingen auth.uid() och låser sig ute. Ratten bredvid det är numera modulen.
+    expect(body).toMatch(
+      /auth\.role\(\) = 'service_role' OR can_access_module\(auth\.uid\(\),'returns'\)/,
+    );
   });
 });
 
@@ -93,10 +98,12 @@ describe('an expense report moves its lines and its total', () => {
   const submit = latestFunctionBody('submit_expense_report');
   const approve = latestFunctionBody('approve_expense_report');
 
-  it('submit requires the owner or an admin, with the service_role escape', () => {
+  it('submit requires the owner or the expenses module, with the service_role escape', () => {
     expect(submit).toMatch(/auth\.role\(\) = 'service_role'/);
     expect(submit).toMatch(/v_report\.user_id = auth\.uid\(\)/);
-    expect(submit).toMatch(/has_role\(auth\.uid\(\), 'admin'\)/);
+    // Ägarskapsvakten står kvar; admin-listan bredvid den är sedan
+    // 20260821010000 modulratten (can_access_module), inte en rollista.
+    expect(submit).toMatch(/can_access_module\(auth\.uid\(\),'expenses'\)/);
   });
 
   it('submit locks the expenses and recomputes the total', () => {

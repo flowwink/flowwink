@@ -202,7 +202,7 @@ export function WikiTree({ pages, activeSlug }: Props) {
   }
 
   return (
-    <div>
+    <div className="min-w-0 overflow-hidden">
       {pinnedPages.length > 0 && (
         <div className="border-b">
           <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

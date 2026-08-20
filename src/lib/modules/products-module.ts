@@ -402,7 +402,7 @@ Order status for the caller. Identity is enforced by the server, not by you.
   },
   {
     name: 'manage_orders',
-    description: 'Manage orders: list, get details, update status, view stats. Use when: reviewing customer orders; changing fulfillment status; analyzing sales trends. NOT for: checking status by ID (check_order_status); browsing products (browse_products).',
+    description: 'Manage orders: list, get details, move an order along one of its TWO status axes (payment: pending/paid/refunded/cancelled/completed/failed — fulfillment: unfulfilled/picked/packed/shipped/delivered), view stats. The value you pass decides the axis: shipping an order never changes whether it is paid, and paying never changes where the goods are. Pass tracking_number with a shipped update. Use when: reviewing customer orders; advancing fulfillment; recording payment state; analyzing sales trends. NOT for: checking status by ID (check_order_status); browsing products (browse_products); invoicing an order (send_invoice_for_order).',
     category: 'commerce',
     handler: 'module:orders',
     scope: 'internal',
@@ -410,7 +410,7 @@ Order status for the caller. Identity is enforced by the server, not by you.
       type: 'function',
       function: {
         name: 'manage_orders',
-        description: 'Manage orders: list, get details, update status, view stats. Use when: reviewing customer orders; changing fulfillment status; analyzing sales trends. NOT for: checking status by ID (check_order_status); browsing products (browse_products).',
+        description: 'Manage orders: list, get details, move an order along one of its two status axes (payment or fulfillment), view stats. The value decides the axis — a fulfillment value never touches the payment status and vice versa. Use when: reviewing customer orders; advancing fulfillment; recording payment state; analyzing sales trends. NOT for: checking status by ID (check_order_status); browsing products (browse_products).',
         parameters: {
           type: 'object',
           properties: {
@@ -420,6 +420,7 @@ Order status for the caller. Identity is enforced by the server, not by you.
                 'list',
                 'get',
                 'update_status',
+                'timeline',
                 'stats',
               ],
             },
@@ -428,7 +429,18 @@ Order status for the caller. Identity is enforced by the server, not by you.
             },
             status: {
               type: 'string',
+              description: "New status. Payment/lifecycle axis (orders.status): pending, processing, paid, completed, cancelled, refunded, failed. Fulfillment axis (orders.fulfillment_status): unfulfilled, picked, packed, shipped, delivered — these also stamp picked_at/packed_at/shipped_at/delivered_at. Anything else is rejected with the valid values per axis.",
             },
+            fulfillment_status: {
+              type: 'string',
+              description: 'Explicit fulfillment value (alternative to status): unfulfilled, picked, packed, shipped, delivered.',
+            },
+            tracking_number: {
+              type: 'string',
+              description: 'Carrier tracking number — written to orders.tracking_number on the same call (typically with shipped).',
+            },
+            tracking_url: { type: 'string' },
+            fulfillment_notes: { type: 'string', description: 'Internal note stored on the order.' },
             period: {
               type: 'string',
               enum: [
@@ -450,19 +462,30 @@ Order status for the caller. Identity is enforced by the server, not by you.
     },
     instructions: `## manage_orders
 ### What
-Manages e-commerce orders: list, get details, update status, view stats.
+Manages e-commerce orders: list, get details, update either status axis, timeline, stats.
+### The two axes (this is the thing to get right)
+An order answers two independent questions and they live in two columns:
+- **Money — orders.status**: pending → paid → (refunded / cancelled / failed / completed)
+- **Goods — orders.fulfillment_status**: unfulfilled → picked → packed → shipped → delivered
+The VALUE you pass picks the axis. \`status: "delivered"\` moves fulfillment and leaves
+\`paid\` alone; \`status: "paid"\` moves the money axis and leaves the shipment alone.
+Fulfillment values also stamp picked_at / packed_at / shipped_at / delivered_at.
+An unknown value is rejected with the valid list for each axis — do not retry it on the other axis.
 ### When to use
 - Admin asks about orders or order status
-- Order fulfillment workflow
+- Order fulfillment workflow (ship / deliver, with tracking)
 - Business reporting (order stats)
 ### Parameters
-- **action**: Required. list, get, update_status, stats.
-- **order_id**: For get/update_status.
-- **status**: New status for update_status.
+- **action**: Required. list, get, update_status, timeline, stats.
+- **order_id**: For get/update_status/timeline.
+- **status** or **fulfillment_status**: The new value (see the axes above).
+- **tracking_number** / **tracking_url** / **fulfillment_notes**: Written on the same update_status call.
 - **period**: For stats: today, week, month, quarter.
 ### Edge cases
-- Status transitions: pending → processing → shipped → delivered.
-- Stats action returns aggregated revenue and order counts.`,
+- Verbs work as actions: ship, deliver, fulfill (→ shipped), pay, cancel, refund.
+- \`list\` with a fulfillment value filters the fulfillment column, not the payment one.
+- stats counts revenue from the MONEY axis only (status paid|completed).
+- A full refund driven by an RMA is owned by refund_return, not by this skill.`,
   },
   {
     name: 'place_order',
@@ -604,7 +627,7 @@ Checks the current status of an order via the order-status edge function.
   },
   {
     name: 'send_invoice_for_order',
-    description: 'Convert an existing order into a sent invoice and email the customer a link. Closes the quote-to-cash loop. Use when: order is fulfilled or ready to bill, "fakturera order X", "send invoice for order". NOT for: creating manual invoices (use manage_invoice), draft invoices only, or invoicing time entries (use invoice_from_timesheets). Idempotent — reuses existing invoice for the same order.',
+    description: 'Convert an existing order into a sent invoice and email the customer a link. Closes the quote-to-cash loop. Use when: order is fulfilled or ready to bill, "fakturera order X", "send invoice for order". NOT for: creating manual invoices (use manage_invoice), draft invoices only, or invoicing time entries (use invoice_from_timesheets). Idempotent on invoices.order_id — an order that already has an invoice reuses it and reports reused_existing_invoice, so calling twice never creates a second receivable.',
     category: 'commerce',
     handler: 'module:orders',
     scope: 'internal',
@@ -629,7 +652,7 @@ Checks the current status of an order via the order-status edge function.
             },
             tax_rate: {
               type: 'number',
-              description: 'Tax rate as decimal e.g. 0.25 for 25% (default 0.25)',
+              description: "Tax rate as decimal e.g. 0.25 for 25%. Omit it: an order converted from a quote carries the accepted rate on the order (metadata.tax_rate) and it is used automatically; otherwise 0.25.",
             },
             payment_terms: {
               type: 'string',
@@ -647,7 +670,7 @@ Checks the current status of an order via the order-status edge function.
         },
       },
     },
-    instructions: 'Builds an invoice from order_items (qty × price_cents), applies tax_rate (default 0.25), marks status=sent, and emails the customer a link to /functions/v1/generate-invoice-pdf. Idempotent via notes "order:<id>". Use dry_run=true to preview totals before sending. Logs invoice_sent to audit_logs.',
+    instructions: 'Builds an invoice from order_items (qty × price_cents), applies the tax rate (explicit tax_rate → the order\'s own metadata.tax_rate when it came from a quote → 0.25), marks status=sent, and emails the customer a link. IDEMPOTENCY: keyed on the invoices.order_id column — one invoice per order. It used to key on the text "order:<id>" inside invoices.notes, which an edited note silently defeated: the next call issued a SECOND live invoice for an already-paid order. Pre-migration invoices are still found by the old note and are repaired to use the column. The reply carries reused_existing_invoice — if it is true, no new invoice was created and total_cents is the existing document\'s. Use dry_run=true to preview totals (and whether an invoice already exists) before sending. Logs invoice_sent to audit_logs.',
   },
   {
     name: 'fulfill_order_line',

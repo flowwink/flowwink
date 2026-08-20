@@ -4,7 +4,7 @@
   "layers": {
     "schema": {
       "migration_head": "20260820230200",
-      "migrations_count": 454,
+      "migrations_count": 458,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1811,6 +1811,22 @@
           "name": "reorder-reads-the-products-table"
         },
         {
+          "version": "20260820220000",
+          "name": "order-to-cash-links"
+        },
+        {
+          "version": "20260820220001",
+          "name": "recalc-quote-totals-empty"
+        },
+        {
+          "version": "20260820220002",
+          "name": "invoice-dunning-actions"
+        },
+        {
+          "version": "20260820220003",
+          "name": "platform-default-currency"
+        },
+        {
           "version": "20260820230000",
           "name": "commerce-tables-follow-the-matrix"
         },
@@ -1825,7 +1841,7 @@
       ]
     },
     "skills": {
-      "seed_hash": "sha256:f63c9822f95a2b02aac1c7086aa37275f9265db221fc3a05332425b3bb46ae7e",
+      "seed_hash": "sha256:3878649d1e973397dbc9acaf1faf8c0efe791c2eb8f507cf1a037b4528b23cb6",
       "skill_count": 537,
       "module_count": 68
     },
@@ -1835,7 +1851,7 @@
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:136c27c08ca1ea95714c3c4daf6bd52d80cc8c34fa39b76dc2aa8b311f1eb81d",
+        "agent-execute": "sha256:114fd0b1c647439dfd786985472886f89e5dd4622c752818290ca3f1604a6bd7",
         "agent-operate": "sha256:75fb1281c6ee8aa748f24c44a0b866686a12cf11df5291d7ff5e6aa59a2c1d2a",
         "ai-task": "sha256:7eca41863874f798eb5dfadf3216302830d807b3265231567ba0284d791fb6cd",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",
@@ -1899,7 +1915,7 @@
         "sitemap": "sha256:57bfd001304645f70cd359850af19f88d6960918f2dbe5795c8dda40f733daf1",
         "stripe-webhook": "sha256:8958c2a437fc3718ba106b4f1c9dbaad1707b9052651045d6f506ebb2c86f5ce",
         "subscription-billing-cron": "sha256:d3a4089951cbc82379b1f667b1d5b98503961e4364ab811617b4c5d5a6036663",
-        "subscriptions": "sha256:887203a0eb2a2c5fa2f3876abb0d5c7b0614deea1bc585c2e37d215f48c1bc52",
+        "subscriptions": "sha256:2b6b0d3558a15a349328c4636a9873da3f513a954c26c95cee4875cb31edea37",
         "system-integrity-check": "sha256:f90caeeb5634c18d19e681df91c690b5fbee5122fc5b60f8648c96e5cd9ae3cc",
         "telegram-ingest": "sha256:d1a509622d71db0e42a6902da31ce346c3b57471a1350c240c7c5b37a50c9cbc",
         "track-auth-event": "sha256:b4c1796b0a75a20aa7812b9bc1cd8b3779192685fde43b324a06e8cb334bd783",

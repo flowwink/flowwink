@@ -6885,6 +6885,42 @@ async function executeOrdersAction(
   if (skillName === 'manage_orders') {
     let { action = 'list', order_id, status, period = 'month', limit = 20 } = args as any;
 
+    // ── An order has TWO status axes, and they are not interchangeable ───────
+    //
+    // orders.status answers "where is the money" (pending → paid → refunded).
+    // orders.fulfillment_status answers "where are the goods" (unfulfilled →
+    // picked → packed → shipped → delivered), with picked_at/packed_at/
+    // shipped_at/delivered_at as its timeline.
+    //
+    // This handler used to write EVERY value to orders.status: `deliver` on a
+    // paid order overwrote status='paid' with 'delivered', and the money axis
+    // lost the only fact it carried — the order silently stopped counting as
+    // revenue in stats (which filters on status paid|delivered) and read as
+    // unpaid everywhere else. fulfillment_status, the tracking number and the
+    // four timestamps were never written at all, so the fulfillment timeline
+    // was empty for every agent-driven order (QA 2026-08-20).
+    //
+    // Now the VALUE decides the axis. Nothing writes across.
+    const FULFILLMENT_AXIS: Record<string, { at?: string }> = {
+      unfulfilled: {},
+      picked: { at: 'picked_at' },
+      packed: { at: 'packed_at' },
+      shipped: { at: 'shipped_at' },
+      delivered: { at: 'delivered_at' },
+    };
+    // The money/lifecycle axis, matching the admin UI's own vocabulary
+    // (OrdersPage STATUS_LABELS) so agent-set values render with real labels.
+    const PAYMENT_AXIS = new Set(['pending', 'processing', 'paid', 'completed', 'cancelled', 'refunded', 'failed']);
+    // "Fulfilled" is not a stored value anywhere in FlowWink — the UI's
+    // fulfillment vocabulary stops at shipped/delivered. Normalise rather than
+    // write a value that would render as "Unfulfilled" in the badge.
+    const VALUE_SYNONYMS: Record<string, string> = {
+      fulfilled: 'shipped',
+      complete: 'completed',
+      canceled: 'cancelled',
+      paid_in_full: 'paid',
+    };
+
     // ACTION_ALIASES — tolerate natural verbs from MCP clients (Agent Contract Integrity layer 3).
     // Verbs like ship/fulfill/deliver/cancel/refund/pay map to update_status with implied target.
     const ACTION_ALIASES: Record<string, { action: string; status?: string }> = {
@@ -6893,8 +6929,8 @@ async function executeOrdersAction(
       change_status: { action: 'update_status' },
       ship: { action: 'update_status', status: 'shipped' },
       mark_shipped: { action: 'update_status', status: 'shipped' },
-      fulfill: { action: 'update_status', status: 'fulfilled' },
-      mark_fulfilled: { action: 'update_status', status: 'fulfilled' },
+      fulfill: { action: 'update_status', status: 'shipped' },
+      mark_fulfilled: { action: 'update_status', status: 'shipped' },
       deliver: { action: 'update_status', status: 'delivered' },
       mark_delivered: { action: 'update_status', status: 'delivered' },
       pay: { action: 'update_status', status: 'paid' },
@@ -6907,12 +6943,24 @@ async function executeOrdersAction(
       action = alias.action;
       if (alias.status && !status) status = alias.status;
     }
+    // A caller may also name the axis explicitly — fulfillment_status wins over
+    // a generic `status` for the goods axis.
+    const explicitFulfillment = (args as any).fulfillment_status;
+    if (action === 'update_status' && explicitFulfillment && !alias) status = explicitFulfillment;
 
     if (action === 'list') {
       let query = supabase.from('orders')
-        .select('id, status, total_cents, currency, customer_email, customer_name, created_at')
+        .select('id, status, fulfillment_status, total_cents, currency, customer_email, customer_name, created_at')
         .order('created_at', { ascending: false }).limit(limit);
-      if (status) query = query.eq('status', status);
+      // Filter on the axis the value belongs to — asking for 'shipped' orders
+      // must not silently return nothing just because shipping lives on the
+      // other column.
+      if (status) {
+        const v = VALUE_SYNONYMS[String(status).toLowerCase().trim()] ?? String(status).toLowerCase().trim();
+        query = Object.prototype.hasOwnProperty.call(FULFILLMENT_AXIS, v) && !PAYMENT_AXIS.has(v)
+          ? query.eq('fulfillment_status', v)
+          : query.eq('status', v);
+      }
       const { data, error } = await query;
       if (error) throw new Error(`List orders failed: ${error.message}`);
       return { orders: data || [] };
@@ -6929,32 +6977,75 @@ async function executeOrdersAction(
     }
 
     if (action === 'update_status' && order_id && status) {
-      // Capture previous status for the audit timeline
+      const raw = String(status).toLowerCase().trim();
+      const value = VALUE_SYNONYMS[raw] ?? raw;
+      const isFulfillment = Object.prototype.hasOwnProperty.call(FULFILLMENT_AXIS, value);
+      const isPayment = PAYMENT_AXIS.has(value);
+      if (!isFulfillment && !isPayment) {
+        // Say which axis takes what, so the operator self-corrects next turn
+        // instead of guessing a value onto the wrong column.
+        throw new Error(
+          `Unknown order status '${status}'. Payment/lifecycle axis (orders.status): ${[...PAYMENT_AXIS].join(', ')}. ` +
+          `Fulfillment axis (orders.fulfillment_status): ${Object.keys(FULFILLMENT_AXIS).join(', ')}.`,
+        );
+      }
+
+      // Capture BOTH axes for the audit timeline — a fulfillment step must be
+      // readable next to the payment state it did not touch.
       const { data: prev } = await supabase.from('orders')
-        .select('status').eq('id', order_id).single();
+        .select('status, fulfillment_status').eq('id', order_id).single();
+
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (isFulfillment) {
+        updates.fulfillment_status = value;
+        const stamp = FULFILLMENT_AXIS[value].at;
+        if (stamp) updates[stamp] = new Date().toISOString();
+      } else {
+        updates.status = value;
+      }
+      // Fulfillment side-facts, whichever axis moved: these were accepted by the
+      // schema and dropped on the floor by this handler until now.
+      const a = args as any;
+      const tracking = a.tracking_number ?? a.trackingNumber;
+      if (tracking) updates.tracking_number = String(tracking);
+      if (a.tracking_url) updates.tracking_url = String(a.tracking_url);
+      if (a.fulfillment_notes) updates.fulfillment_notes = String(a.fulfillment_notes);
+
       const { data, error } = await supabase.from('orders')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', order_id).select('id, status').single();
+        .update(updates).eq('id', order_id)
+        .select('id, status, fulfillment_status, tracking_number, shipped_at, delivered_at').single();
       if (error) throw new Error(`Update order failed: ${error.message}`);
 
       // Mirror admin-UI audit trail so OrderEventHistory shows agent actions too.
-      const fulfillmentStatuses = new Set(['picked', 'packed', 'shipped', 'delivered']);
-      const auditAction = fulfillmentStatuses.has(status)
-        ? `order.fulfillment.${status}`
-        : `order.status.${status}`;
+      const auditAction = isFulfillment ? `order.fulfillment.${value}` : `order.status.${value}`;
       await supabase.from('audit_logs').insert({
         entity_type: 'order',
         entity_id: order_id,
         action: auditAction,
         metadata: {
-          from: prev?.status ?? null,
-          to: status,
+          axis: isFulfillment ? 'fulfillment' : 'payment',
+          from: isFulfillment ? (prev?.fulfillment_status ?? null) : (prev?.status ?? null),
+          to: value,
+          ...(value !== raw ? { requested: raw } : {}),
+          ...(tracking ? { tracking_number: String(tracking) } : {}),
           source: 'agent',
           skill: 'manage_orders',
         },
       });
 
-      return { order_id: data.id, status: data.status };
+      return {
+        order_id: data.id,
+        axis: isFulfillment ? 'fulfillment' : 'payment',
+        status: data.status,
+        fulfillment_status: data.fulfillment_status,
+        tracking_number: data.tracking_number,
+        shipped_at: data.shipped_at,
+        delivered_at: data.delivered_at,
+        ...(value !== raw ? { normalized_from: raw } : {}),
+        note: isFulfillment
+          ? `Fulfillment moved to '${value}'. The payment axis (orders.status='${data.status}') was deliberately left alone — shipping an order does not change whether it is paid.`
+          : `Payment/lifecycle status set to '${value}'. Fulfillment (orders.fulfillment_status='${data.fulfillment_status}') was left alone.`,
+      };
     }
 
     if (action === 'timeline' && order_id) {
@@ -6977,12 +7068,23 @@ async function executeOrdersAction(
       else since.setHours(0, 0, 0, 0);
 
       const { data } = await supabase.from('orders')
-        .select('id, total_cents, currency, status, created_at')
+        .select('id, total_cents, currency, status, fulfillment_status, created_at')
         .gte('created_at', since.toISOString());
       const orders = data || [];
-      const totalRevenue = orders.filter((o: any) => o.status === 'paid' || o.status === 'delivered')
+      // Revenue is a MONEY-axis question. The old filter included 'delivered',
+      // a fulfillment value that only ever reached orders.status through the
+      // axis bug this handler now prevents — so a correctly-shipped order used
+      // to count as revenue while a correctly-paid one dropped out.
+      const totalRevenue = orders.filter((o: any) => o.status === 'paid' || o.status === 'completed')
         .reduce((sum: number, o: any) => sum + o.total_cents, 0);
-      return { period, total_orders: orders.length, total_revenue_cents: totalRevenue, by_status: groupBy(orders, 'status') };
+      return {
+        period,
+        total_orders: orders.length,
+        total_revenue_cents: totalRevenue,
+        revenue_basis: "orders.status in ('paid','completed')",
+        by_status: groupBy(orders, 'status'),
+        by_fulfillment_status: groupBy(orders, 'fulfillment_status'),
+      };
     }
 
     return { error: `Unknown orders action: ${action}` };
@@ -7687,29 +7789,61 @@ async function executeSendInvoiceForOrder(
     unit_price_cents: it.price_cents,
   }));
   const subtotal = lineItems.reduce((s: number, i: any) => s + i.qty * i.unit_price_cents, 0);
-  const effectiveTaxRate = typeof tax_rate === 'number' ? tax_rate : 0.25;
+  // The caller's rate wins; otherwise the ORDER's own rate — an order converted
+  // from a quote carries the rate the customer actually accepted, so the invoice
+  // lands on the quote's total instead of on a 25 % assumption.
+  const orderTaxRate = Number((order.metadata as any)?.tax_rate);
+  const effectiveTaxRate = typeof tax_rate === 'number'
+    ? tax_rate
+    : (Number.isFinite(orderTaxRate) && orderTaxRate >= 0 ? orderTaxRate : 0.25);
   const taxCents = Math.round(subtotal * effectiveTaxRate);
   const totalCents = subtotal + taxCents;
 
-  // 3. Idempotency — reuse existing invoice for this order if present
-  const { data: existingByMeta } = await supabase
-    .from('invoices')
-    .select('id, invoice_number, status, total_cents')
-    .contains('line_items', [{ order_id: order_id }] as any)
-    .maybeSingle()
-    .then((r: any) => r, () => ({ data: null }));
+  // 3. Idempotency — keyed on the invoices.order_id COLUMN.
+  //
+  // This used to key on invoices.notes containing `order:<uuid>`. Notes are an
+  // ordinary editable field: an operator (or an agent) who rewrote the note
+  // severed the only link between order and invoice, and the very next call to
+  // this skill issued a SECOND live, already-sent invoice for the same order —
+  // a phantom 18 687,50 kr receivable against a customer who had paid in full
+  // (order-to-cash QA 2026-08-20). An idempotency key must live somewhere the
+  // business cannot edit by accident; that is a foreign key, not prose.
+  //
+  // The notes scan survives as a READ-ONLY fallback for invoices created before
+  // the column existed — and when it hits, the row is repaired so the next call
+  // uses the column.
+  let orderIdColumn = true;
+  let existingInvoice: any = null;
+  {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('id, invoice_number, status, total_cents')
+      .eq('order_id', order_id)
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    // Fail forward: an edge deploy can land before its migration. Fall back to
+    // the legacy scan rather than refusing to invoice.
+    if (error && /order_id/i.test(error.message || '')) orderIdColumn = false;
+    else existingInvoice = data ?? null;
+  }
 
-  // Fallback: scan recent invoices with notes referencing the order
-  let existingInvoice = existingByMeta;
   if (!existingInvoice) {
     const { data: byNotes } = await supabase
       .from('invoices')
-      .select('id, invoice_number, status')
+      .select('id, invoice_number, status, total_cents')
       .eq('customer_email', order.customer_email)
       .ilike('notes', `%order:${order_id}%`)
       .limit(1)
       .maybeSingle();
-    existingInvoice = byNotes;
+    if (byNotes) {
+      existingInvoice = byNotes;
+      // Heal the link so this invoice is never found by prose again.
+      if (orderIdColumn && !dry_run) {
+        await supabase.from('invoices').update({ order_id }).eq('id', byNotes.id);
+      }
+    }
   }
 
   // 4. Dry-run preview
@@ -7734,6 +7868,7 @@ async function executeSendInvoiceForOrder(
 
   // 5. Create or reuse invoice
   let invoice = existingInvoice;
+  const reusedExisting = !!existingInvoice;
   if (!invoice) {
     // Use the canonical INV-YYYY-NNNNN series (same as manage_invoice create and
     // quote convert_to_invoice). The old `INV-${count+1}` scheme was doubly wrong:
@@ -7765,7 +7900,9 @@ async function executeSendInvoiceForOrder(
         currency: order.currency || 'SEK',
         due_date: dueDate,
         payment_terms: payment_terms || `Net ${due_days}`,
+        // The note stays for human readability; it is no longer load-bearing.
         notes: `${notes ? notes + '\n' : ''}order:${order_id}`,
+        ...(orderIdColumn ? { order_id } : {}),
         status: 'sent',
         sent_at: new Date().toISOString(),
       })
@@ -7891,9 +8028,14 @@ async function executeSendInvoiceForOrder(
     order_id,
     invoice_id: invoice.id,
     invoice_number: invoice.invoice_number,
-    total_cents: totalCents,
+    // When an invoice already existed, report ITS total — the recomputation
+    // above describes what a new invoice would have said, not what the customer
+    // owes on the document that exists.
+    total_cents: reusedExisting ? (invoice.total_cents ?? totalCents) : totalCents,
     currency: order.currency || 'SEK',
     customer_email: order.customer_email,
+    reused_existing_invoice: reusedExisting,
+    ...(reusedExisting ? { note: `Order ${order_id} was already invoiced as ${invoice.invoice_number} — reused, no second invoice was created.` } : {}),
     email: emailResult,
   };
 }
@@ -9657,19 +9799,79 @@ async function executeDbAction(
         return `QUO-${String(max + 1).padStart(4, '0')}`;
       };
 
+      // Build (and VALIDATE) the quote lines without touching the database.
+      //
+      // Two failures this closes:
+      //
+      //  1. No product resolution. `{product_name: "Consulting", quantity: 10}`
+      //     — the shape place_order has always accepted — produced a line with
+      //     an empty description at 0 kr and reported items_inserted: 1. A quote
+      //     worth nothing that says it worked is worse than an error.
+      //  2. Nothing was checked before the write, so the update action (which
+      //     deletes the old lines first) could delete everything and then fail
+      //     on the new rows. Building first means a bad line throws while the
+      //     old lines are still there.
+      //
+      // Product resolution mirrors place_order: id first, then a name match.
+      // An unknown product is an ERROR — never an empty line.
+      const buildQuoteItemRows = async (quote_id: string, rawItems: unknown): Promise<Record<string, unknown>[]> => {
+        if (!Array.isArray(rawItems) || rawItems.length === 0) return [];
+        const rows: Record<string, unknown>[] = [];
+        for (let idx = 0; idx < rawItems.length; idx++) {
+          const it = (rawItems[idx] ?? {}) as any;
+          const where = `Quote line ${idx + 1}`;
+
+          const productId = it.product_id ?? it.productId ?? null;
+          const productName = it.product_name ?? it.productName ?? null;
+          let product: { id: string; name: string; price_cents: number | null } | null = null;
+          if (productId) {
+            const { data } = await supabase.from('products')
+              .select('id, name, price_cents').eq('id', productId).maybeSingle();
+            if (!data) throw new Error(`${where}: product ${productId} not found. Use browse_products to find the id, or pass description + unit_price_cents for a free-text line.`);
+            product = data as any;
+          } else if (productName) {
+            const { data } = await supabase.from('products')
+              .select('id, name, price_cents').ilike('name', `%${productName}%`).limit(1).maybeSingle();
+            if (!data) throw new Error(`${where}: no product matches '${productName}'. Use browse_products to find the exact name/id, or pass description + unit_price_cents for a free-text line.`);
+            product = data as any;
+          }
+
+          const description = String(it.description ?? it.name ?? product?.name ?? '').trim();
+          const rawPrice = it.unit_price_cents ?? it.unitPriceCents ?? it.price_cents
+            ?? (it.unit_price != null ? Math.round(Number(it.unit_price) * 100) : undefined);
+          const unitPriceCents = rawPrice !== undefined && rawPrice !== null
+            ? Number(rawPrice)
+            : (product ? Number(product.price_cents ?? NaN) : NaN);
+          const quantity = Number(it.quantity ?? it.qty ?? 1);
+
+          if (!description) {
+            throw new Error(`${where}: description is required (or pass product_id / product_name so it can be taken from the product).`);
+          }
+          if (!Number.isFinite(unitPriceCents)) {
+            throw new Error(`${where} ("${description}"): no price. Pass unit_price_cents, or reference a product that has a price.`);
+          }
+          if (!Number.isFinite(quantity) || quantity <= 0) {
+            throw new Error(`${where} ("${description}"): quantity must be a positive number (got ${JSON.stringify(it.quantity ?? it.qty)}).`);
+          }
+
+          rows.push({
+            quote_id,
+            position: typeof it.position === 'number' ? it.position : idx,
+            description,
+            quantity,
+            unit: it.unit ?? null,
+            unit_price_cents: Math.round(unitPriceCents),
+            tax_rate_pct: it.tax_rate_pct ?? 25,
+            discount_pct: it.discount_pct ?? 0,
+            product_id: product?.id ?? null,
+          });
+        }
+        return rows;
+      };
+
       const insertQuoteItems = async (quote_id: string, rawItems: unknown): Promise<number> => {
-        if (!Array.isArray(rawItems) || rawItems.length === 0) return 0;
-        const rows = rawItems.map((it: any, idx: number) => ({
-          quote_id,
-          position: typeof it.position === 'number' ? it.position : idx,
-          description: it.description ?? it.name ?? '',
-          quantity: it.quantity ?? it.qty ?? 1,
-          unit: it.unit ?? null,
-          unit_price_cents: it.unit_price_cents ?? Math.round((it.unit_price ?? 0) * 100),
-          tax_rate_pct: it.tax_rate_pct ?? 25,
-          discount_pct: it.discount_pct ?? 0,
-          product_id: it.product_id ?? null,
-        }));
+        const rows = await buildQuoteItemRows(quote_id, rawItems);
+        if (rows.length === 0) return 0;
         const { error } = await supabase.from('quote_items').insert(rows);
         if (error) throw new Error(`Insert quote_items failed: ${error.message}`);
         return rows.length;
@@ -9744,8 +9946,23 @@ async function executeDbAction(
         }
         let itemsInserted = 0;
         if (items) {
-          await supabase.from('quote_items').delete().eq('quote_id', qid);
-          itemsInserted = await insertQuoteItems(qid, items);
+          // Replace the lines SAFELY: build and validate every new row FIRST,
+          // and only then delete the old ones.
+          //
+          // The old order was delete → insert with no validation and no
+          // transaction: one bad line (a product that doesn't exist, a missing
+          // price) left the quote with zero rows — and, because the totals
+          // trigger refused to write on an empty quote, the OLD total still on
+          // the header. QA saw a 1 868 750 kr quote with nothing in it. Building
+          // first turns that into a plain error with the quote untouched.
+          const rows = await buildQuoteItemRows(qid, items);
+          const { error: delErr } = await supabase.from('quote_items').delete().eq('quote_id', qid);
+          if (delErr) throw new Error(`Replace quote lines failed (old lines kept): ${delErr.message}`);
+          if (rows.length > 0) {
+            const { error: insErr } = await supabase.from('quote_items').insert(rows);
+            if (insErr) throw new Error(`Insert quote_items failed: ${insErr.message}`);
+          }
+          itemsInserted = rows.length;
         }
         return { updated: true, quote_id: qid, items_inserted: itemsInserted };
       }
@@ -9908,7 +10125,111 @@ async function executeDbAction(
         return { converted: true, quote_id: qid, invoice_id: inv.id, invoice_number: inv.invoice_number, total_cents: inv.total_cents };
       }
 
-      throw new Error(`Unknown quotes action: ${action}. Supported: list, get, create, update, add_item, delete, send, request_approval, list_templates, use_template, convert_to_invoice.`);
+      if (action === 'convert_to_order') {
+        // ── Quote → Order: the step the chain was missing ────────────────────
+        //
+        // There was no conversion at all, so an agent asked to turn an accepted
+        // quote into an order rebuilt it by hand from the product catalogue —
+        // and dropped the tax on the way: quote 1 868 750 → order 1 495 000 →
+        // invoice 1 868 750. Three documents for one sale, two different
+        // amounts, and no link between any of them.
+        //
+        // This copies the accepted lines EXACTLY (unit price, quantity, per-line
+        // tax rate) and stamps orders.quote_id, so what the customer accepted is
+        // what gets fulfilled and what gets invoiced.
+        const a = args as any;
+        const qid = a.id || a.quote_id;
+        if (!qid) throw new Error('id (or quote_id) is required');
+        const [quoteRes, itemsRes] = await Promise.all([
+          supabase.from('quotes').select('*').eq('id', qid).maybeSingle(),
+          supabase.from('quote_items').select('*').eq('quote_id', qid).order('position'),
+        ]);
+        if (quoteRes.error || !quoteRes.data) throw new Error(`Quote not found: ${qid}`);
+        const quote = quoteRes.data;
+        const qItems = itemsRes.data || [];
+        if (qItems.length === 0) throw new Error(`Quote ${quote.quote_number || qid} has no line items — nothing to order.`);
+        if (['rejected', 'cancelled', 'expired'].includes(String(quote.status))) {
+          throw new Error(`Quote ${quote.quote_number || qid} is ${quote.status} — it cannot become an order. Revive it (update valid_until / status) or create a new quote.`);
+        }
+        const customerEmail = quote.customer_email;
+        if (!customerEmail) throw new Error(`Quote ${quote.quote_number || qid} has no customer_email — an order needs one.`);
+
+        // Idempotent: one order per quote.
+        const { data: existingOrder, error: existErr } = await supabase.from('orders')
+          .select('id, status, total_cents, currency').eq('quote_id', qid).limit(1).maybeSingle();
+        if (existErr && !/quote_id/i.test(existErr.message || '')) {
+          throw new Error(`Order lookup failed: ${existErr.message}`);
+        }
+        if (existingOrder) {
+          return {
+            converted: false, quote_id: qid, order_id: existingOrder.id,
+            status: existingOrder.status, total_cents: existingOrder.total_cents,
+            note: 'This quote already has an order — reused, no second order was created.',
+          };
+        }
+
+        const subtotal = Number(quote.subtotal_cents) || qItems.reduce(
+          (s: number, it: any) => s + Number(it.line_subtotal_cents ?? 0), 0);
+        const taxCents = Number(quote.tax_cents ?? 0)
+          || qItems.reduce((s: number, it: any) => s + Number(it.line_tax_cents ?? 0), 0);
+        const totalCents = Number(quote.total_cents) || (subtotal + taxCents);
+        // The rate the invoice must use later, derived from what was accepted —
+        // not the platform's 25 % assumption.
+        const effectiveTaxRate = subtotal > 0 ? Number((taxCents / subtotal).toFixed(6)) : 0;
+
+        const orderRow: Record<string, unknown> = {
+          customer_email: customerEmail,
+          customer_name: quote.customer_name || quote.customer_company || customerEmail,
+          currency: quote.currency || undefined,
+          status: 'pending',
+          quote_id: qid,
+          // The order carries the accepted amount INCLUDING tax — the same
+          // number on the quote and, later, on the invoice. The ex-tax basis and
+          // the rate travel in metadata so send_invoice_for_order can rebuild
+          // the invoice without guessing 25 %.
+          total_cents: totalCents,
+          metadata: {
+            source: 'quote_conversion',
+            quote_id: qid,
+            quote_number: quote.quote_number,
+            subtotal_cents: subtotal,
+            tax_cents: taxCents,
+            tax_rate: effectiveTaxRate,
+            total_includes_tax: true,
+          },
+        };
+        if (quote.company_id) orderRow.company_id = quote.company_id;
+        const { data: order, error: orderErr } = await supabase.from('orders')
+          .insert(orderRow).select('id, status, total_cents, currency').single();
+        if (orderErr) throw new Error(`Create order from quote failed: ${orderErr.message}`);
+
+        const orderItems = qItems.map((it: any) => ({
+          order_id: order.id,
+          product_id: it.product_id ?? null,
+          product_name: it.description,
+          quantity: Number(it.quantity) || 1,
+          price_cents: Number(it.unit_price_cents) || 0,
+        }));
+        const { error: oiErr } = await supabase.from('order_items').insert(orderItems);
+        if (oiErr) throw new Error(`Copy quote lines to order failed: ${oiErr.message}`);
+
+        return {
+          converted: true,
+          quote_id: qid,
+          quote_number: quote.quote_number,
+          order_id: order.id,
+          status: order.status,
+          items_copied: orderItems.length,
+          subtotal_cents: subtotal,
+          tax_cents: taxCents,
+          total_cents: order.total_cents,
+          currency: order.currency,
+          tax_rate: effectiveTaxRate,
+          note: `Order carries the accepted total ${totalCents / 100} ${order.currency} (incl. tax ${taxCents / 100}). Invoice it with send_invoice_for_order — it reads the tax rate off the order, so the invoice matches the quote to the öre.`,
+        };
+      }
+
+      throw new Error(`Unknown quotes action: ${action}. Supported: list, get, create, update, add_item, delete, send, request_approval, list_templates, use_template, convert_to_invoice, convert_to_order.`);
     }
 
     case 'expenses': {
@@ -10890,6 +11211,15 @@ async function executeDbAction(
       // Argument-name tolerance: MCP peers commonly send `id` — map to `invoice_id`.
       const inv = args as any;
       if (inv.id !== undefined && inv.invoice_id === undefined) inv.invoice_id = inv.id;
+      // invoice_overdue_check has its own question ("which invoices are past
+      // due?") but no `action` parameter, so it fell through to `list` and
+      // returned the 50 most recent invoices — drafts, paid and cancelled ones
+      // included — as if they were all overdue. It reported 6 overdue invoices
+      // on an instance that had 2 (QA 2026-08-20). This is handler dispatch by
+      // skill name, not intent detection: the skill IS the action.
+      if (skillName === 'invoice_overdue_check' && (args as any).action === undefined) {
+        (args as any).action = 'overdue';
+      }
       const { action = 'list' } = args as any;
 
       // ── helpers ──
@@ -10943,6 +11273,45 @@ async function executeDbAction(
         if (error) throw new Error(`Get invoice failed: ${error.message}`);
         if (!data) return { error: `Invoice ${invoice_id} not found` };
         return { invoice: data };
+      }
+
+      if (action === 'overdue') {
+        // Overdue = ISSUED, UNPAID and PAST DUE. All three conditions, or the
+        // answer is just "here are some invoices".
+        const { auto_flag = true, limit = 200 } = args as any;
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase.from('invoices')
+          .select('id, invoice_number, customer_name, customer_email, status, total_cents, paid_amount_cents, currency, due_date, sent_at')
+          .in('status', ['sent', 'overdue'])
+          .lt('due_date', today)
+          .is('paid_at', null)
+          .order('due_date', { ascending: true })
+          .limit(Math.min(Math.max(Number(limit) || 200, 1), 500));
+        if (error) throw new Error(`Overdue check failed: ${error.message}`);
+        const rows = (data || []).map((r: any) => ({
+          ...r,
+          days_overdue: Math.floor((Date.now() - new Date(r.due_date).getTime()) / 86400000),
+          outstanding_cents: Number(r.total_cents || 0) - Number(r.paid_amount_cents || 0),
+        }));
+        let flagged = 0;
+        if (auto_flag !== false) {
+          const toFlag = rows.filter((r: any) => r.status === 'sent').map((r: any) => r.id);
+          if (toFlag.length > 0) {
+            const { error: fErr } = await supabase.from('invoices')
+              .update({ status: 'overdue', updated_at: new Date().toISOString() })
+              .in('id', toFlag);
+            if (fErr) throw new Error(`Flagging overdue failed: ${fErr.message}`);
+            flagged = toFlag.length;
+          }
+        }
+        return {
+          overdue_count: rows.length,
+          total_outstanding_cents: rows.reduce((s: number, r: any) => s + r.outstanding_cents, 0),
+          currency: rows[0]?.currency ?? null,
+          flagged_overdue: flagged,
+          criteria: "status in ('sent','overdue') AND due_date < today AND paid_at IS NULL",
+          invoices: rows,
+        };
       }
 
       if (action === 'create') {
@@ -11081,7 +11450,7 @@ async function executeDbAction(
         };
       }
 
-      throw new Error(`Unknown invoices action: ${action}. Supported: list, get, create, update, send, mark_paid, cancel. To "delete" an invoice use cancel (audit-preserving).`);
+      throw new Error(`Unknown invoices action: ${action}. Supported: list, get, overdue, create, update, send, mark_paid, cancel. To "delete" an invoice use cancel (audit-preserving).`);
     }
 
     case 'social_posts': {

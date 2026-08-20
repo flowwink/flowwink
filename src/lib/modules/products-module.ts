@@ -96,6 +96,31 @@ Browse products in the catalog (visitor-facing, read-only).
               type: 'number',
               description: 'Product weight in grams. Omit/null = non-shippable (service/digital). A weighted product participates in the checkout shipping calculation.',
             },
+            track_inventory: {
+              type: 'boolean',
+              description: 'Whether stock is counted for this product. Set true at create time for physical goods — a product created without it is untracked and never appears in stock lists, low-stock alerts or the reorder loop.',
+            },
+            stock_quantity: {
+              type: 'number',
+              description: 'Opening on-hand quantity. Only meaningful with track_inventory: true.',
+            },
+            low_stock_threshold: {
+              type: 'number',
+              description: 'Stock level at or below which the product counts as low (default 5). Also the reorder point when no product_stock override exists.',
+            },
+            allow_backorder: {
+              type: 'boolean',
+              description: 'Accept orders beyond the on-hand quantity (default false). With false, an order line larger than the available stock is refused.',
+            },
+            cost_cents: {
+              type: 'number',
+              description: 'Purchase/unit cost in cents. Used for inventory valuation when a receipt carries no PO price.',
+            },
+            barcode: { type: 'string' },
+            category_id: {
+              type: 'string',
+              description: 'product_categories UUID. Drives the costing method used for valuation.',
+            },
           },
           required: [
             'action',
@@ -115,8 +140,12 @@ Manages products in the catalog: create, update, delete, manage variants.
 - **price_cents**: Price in cents (create/update).
 - **description**: Product description.
 - **weight_grams**: Weight in grams (create/update). null/omitted = non-shippable service or digital product; set it for physical goods so checkout can offer weight-based delivery options.
+- **track_inventory / stock_quantity / low_stock_threshold / allow_backorder / cost_cents / barcode / category_id**: accepted on create as well as update — a physical product should be born stocked rather than created and patched.
 ### Edge cases
 - Price is in cents (e.g., 9900 = $99.00 or 99 SEK).
+- track_inventory defaults to false. A product created without it is untracked: it never shows in list_stock, never triggers a low-stock alert and is never a reorder candidate.
+- allow_backorder=false (the default) makes order lines above the on-hand quantity fail with the available number in the error. Set it true to accept backorders — stock_quantity then goes negative, and the negative IS the backorder depth.
+- SKU lives on variants, not products — use manage_variant (p_sku) for it.
 - weight_grams drives shipping at checkout: carts with any weighted product require a delivery address and get carrier options from the shipping_rates weight bands.
 - Use manage_inventory for stock levels.`,
   },
@@ -277,6 +306,10 @@ CRUD over the uoms table (units of measure). Categories live in uom_categories; 
               type: 'number',
               description: 'Low stock threshold (default 5)',
             },
+            reason: {
+              type: 'string',
+              description: 'Why the stock is being corrected (stocktake, breakage, found units…). Recorded on the adjustment stock_move that update_stock writes.',
+            },
           },
           required: [
             'action',
@@ -294,11 +327,13 @@ Manages product inventory: list stock levels, update quantities, check low-stock
 ### Parameters
 - **action**: Required. list_stock, update_stock, low_stock.
 - **product_id**: For update_stock.
-- **quantity**: New stock quantity.
+- **quantity**: New stock quantity. ABSOLUTE, not a delta.
 - **threshold**: Low stock threshold (default 5).
+- **reason**: Why the correction is being made — lands on the adjustment stock_move.
 ### Edge cases
 - low_stock action returns all products below threshold.
-- Stock can go negative if not checked before order.`,
+- update_stock writes an adjustment stock_move for the difference, so a corrected balance always says who moved it and why. Pass **reason**; the fallback is 'manual adjustment via agent'.
+- Stock goes negative only for products with allow_backorder — otherwise an order line above the on-hand quantity is refused outright.`,
   },
   {
     name: 'inventory_report',

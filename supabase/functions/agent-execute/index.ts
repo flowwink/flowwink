@@ -5637,7 +5637,7 @@ async function executeProductsAction(
 
   // manage_inventory
   if (skillName === 'manage_inventory') {
-    const { action = 'list_stock', product_id, quantity, threshold } = args as any;
+    const { action = 'list_stock', product_id, quantity, threshold, reason } = args as any;
 
     if (action === 'list_stock') {
       const { data, error } = await supabase.from('products')
@@ -5649,6 +5649,15 @@ async function executeProductsAction(
     }
 
     if (action === 'update_stock' && product_id) {
+      // update_stock sets an ABSOLUTE quantity. Doing that with a bare UPDATE
+      // left no trace at all: the balance jumped and nothing said who moved it,
+      // when, or why — a stock ledger with a hole in it. Read the old value,
+      // write the new one, and record the difference as an adjustment move.
+      const { data: before, error: beforeErr } = await supabase.from('products')
+        .select('id, name, stock_quantity').eq('id', product_id).maybeSingle();
+      if (beforeErr) throw new Error(`Update stock failed: ${beforeErr.message}`);
+      if (!before) throw new Error(`Product ${product_id} not found`);
+
       const updateData: any = { updated_at: new Date().toISOString() };
       if (quantity !== undefined) updateData.stock_quantity = quantity;
       if (threshold !== undefined) updateData.low_stock_threshold = threshold;
@@ -5656,7 +5665,35 @@ async function executeProductsAction(
         .update(updateData).eq('id', product_id)
         .select('id, name, stock_quantity, low_stock_threshold').single();
       if (error) throw new Error(`Update stock failed: ${error.message}`);
-      return { product_id: data.id, name: data.name, stock_quantity: data.stock_quantity, status: 'updated' };
+
+      let adjustment: number | null = null;
+      if (quantity !== undefined) {
+        adjustment = Number(quantity) - Number(before.stock_quantity ?? 0);
+        if (adjustment !== 0) {
+          const { error: moveErr } = await supabase.from('stock_moves').insert({
+            product_id,
+            quantity: adjustment,
+            move_type: 'adjustment',
+            reference_type: 'manual_adjustment',
+            reference_id: product_id,
+            notes: (typeof reason === 'string' && reason.trim())
+              ? reason.trim()
+              : 'manual adjustment via agent',
+          });
+          // The adjustment is the audit trail — a balance that moved without one
+          // is the bug this fixes, so say so instead of swallowing it.
+          if (moveErr) throw new Error(`Stock adjusted but the audit move failed: ${moveErr.message}`);
+        }
+      }
+
+      return {
+        product_id: data.id,
+        name: data.name,
+        stock_quantity: data.stock_quantity,
+        previous_stock_quantity: before.stock_quantity,
+        adjustment,
+        status: 'updated',
+      };
     }
 
     if (action === 'low_stock_alerts') {
@@ -5698,16 +5735,44 @@ async function executeProductsAction(
   }
 
   if (action === 'create') {
-    const { name, description, price_cents, currency = 'SEK', type = 'one_time', image_url, stripe_price_id, weight_grams } = args as any;
+    const {
+      name, description, price_cents, currency = 'SEK', type = 'one_time',
+      image_url, stripe_price_id, weight_grams,
+      // Inventory fields. Omitting these from the create allowlist meant a
+      // product could never be BORN stocked: an agent had to create it, then
+      // find it again, then update it — and until it did, the product looked
+      // untracked to the storefront, the low-stock alert and the reorder loop.
+      track_inventory, low_stock_threshold, allow_backorder, stock_quantity,
+      barcode, cost_cents, category_id,
+    } = args as any;
     if (!name || price_cents === undefined) throw new Error('name and price_cents required');
-    const { data, error } = await supabase.from('products').insert({
+    const insertData: Record<string, unknown> = {
       name, description, price_cents, currency, type,
       image_url, stripe_price_id, is_active: true,
       // null/undefined = non-shippable service/digital product
       weight_grams: weight_grams ?? null,
-    }).select('id, name, price_cents').single();
+    };
+    // Only send what the caller actually set — the columns carry their own
+    // defaults (track_inventory false, low_stock_threshold 5, allow_backorder
+    // false) and an explicit undefined would fight them.
+    if (track_inventory !== undefined) insertData.track_inventory = track_inventory;
+    if (low_stock_threshold !== undefined) insertData.low_stock_threshold = low_stock_threshold;
+    if (allow_backorder !== undefined) insertData.allow_backorder = allow_backorder;
+    if (stock_quantity !== undefined) insertData.stock_quantity = stock_quantity;
+    if (barcode !== undefined) insertData.barcode = barcode;
+    if (cost_cents !== undefined) insertData.cost_cents = cost_cents;
+    if (category_id !== undefined) insertData.category_id = category_id;
+
+    const { data, error } = await supabase.from('products').insert(insertData)
+      .select('id, name, price_cents, stock_quantity, track_inventory').single();
     if (error) throw new Error(`Create product failed: ${error.message}`);
-    return { product_id: data.id, name: data.name, price_cents: data.price_cents };
+    return {
+      product_id: data.id,
+      name: data.name,
+      price_cents: data.price_cents,
+      stock_quantity: data.stock_quantity,
+      track_inventory: data.track_inventory,
+    };
   }
 
   if (action === 'update') {
@@ -10316,18 +10381,21 @@ async function executeDbAction(
       const { data: gr, error: grErr } = await supabase.from('goods_receipts')
         .insert({
           purchase_order_id,
-          receipt_date: receipt_date || new Date().toISOString().split('T')[0],
+          // The column is received_date, not receipt_date — the old name made
+          // every receipt through this path fail at the header.
+          received_date: receipt_date || new Date().toISOString().split('T')[0],
           notes: notes || null,
         }).select('id').single();
       if (grErr) throw new Error(`Create goods receipt failed: ${grErr.message}`);
 
       // Insert receipt lines, update PO line received quantities, and sync inventory
       for (const rl of receiptLines) {
-        await supabase.from('goods_receipt_lines').insert({
+        const { error: grlErr } = await supabase.from('goods_receipt_lines').insert({
           goods_receipt_id: gr.id,
-          purchase_order_line_id: rl.po_line_id,
+          po_line_id: rl.po_line_id,
           quantity_received: rl.quantity_received,
         });
+        if (grlErr) throw new Error(`Create goods receipt line failed: ${grlErr.message}`);
 
         // Update received_quantity on the PO line
         const { data: poLine } = await supabase.from('purchase_order_lines')
@@ -10337,24 +10405,29 @@ async function executeDbAction(
           .update({ received_quantity: newReceived })
           .eq('id', rl.po_line_id);
 
-        // Auto-sync inventory: create stock move + update product_stock
+        // Auto-sync inventory. This used to gate on a `product_stock` row and
+        // write the on-hand back there — a table that is empty on every
+        // instance, so the gate never opened and the receipt moved no stock.
+        // apply_goods_receipt_stock books the quant AND the
+        // products.stock_quantity mirror, and raises if no warehouse exists
+        // rather than reporting a receipt that went nowhere.
         const productId = rl.product_id || poLine?.product_id;
         if (productId && rl.quantity_received > 0) {
-          const { data: stockRow } = await supabase.from('product_stock')
-            .select('id, quantity_on_hand').eq('product_id', productId).maybeSingle();
-          if (stockRow) {
-            await supabase.from('stock_moves').insert({
-              product_id: productId,
-              quantity: rl.quantity_received,
-              move_type: 'in',
-              reference_type: 'goods_receipt',
-              reference_id: gr.id,
-              notes: `Goods receipt – ${rl.quantity_received} units received`,
-            });
-            await supabase.from('product_stock')
-              .update({ quantity_on_hand: stockRow.quantity_on_hand + rl.quantity_received })
-              .eq('product_id', productId);
-          }
+          const { error: moveErr } = await supabase.from('stock_moves').insert({
+            product_id: productId,
+            quantity: rl.quantity_received,
+            move_type: 'in',
+            reference_type: 'goods_receipt',
+            reference_id: gr.id,
+            notes: `Goods receipt – ${rl.quantity_received} units received`,
+          });
+          if (moveErr) throw new Error(`Stock move failed: ${moveErr.message}`);
+
+          const { error: stockErr } = await supabase.rpc('apply_goods_receipt_stock', {
+            p_product_id: productId,
+            p_quantity: rl.quantity_received,
+          });
+          if (stockErr) throw new Error(`Stock sync failed: ${stockErr.message}`);
         }
       }
 
@@ -10395,13 +10468,19 @@ async function executeDbAction(
       if (skillName === 'purchase_reorder_check') {
         const { threshold_override, auto_create = false } = args as any;
 
-        // 1. Fetch products with stock info
-        const { data: stockRows, error: stockErr } = await supabase.from('product_stock')
+        // 1. Fetch products with stock info.
+        //
+        // On-hand lives on products.stock_quantity — the number the receipt
+        // writes and the order decrements. This used to read `product_stock`
+        // and `continue` on every product without a row there; that table is
+        // empty on every instance, so the loop skipped everything and the skill
+        // answered "All stock levels are healthy." no matter what. product_stock
+        // stays as an optional override for instances that populated it.
+        const { data: stockRows } = await supabase.from('product_stock')
           .select('product_id, quantity_on_hand, reorder_point, reorder_quantity, auto_reorder');
-        if (stockErr) throw new Error(`Stock check failed: ${stockErr.message}`);
 
         const { data: products, error: prodErr } = await supabase.from('products')
-          .select('id, name, price_cents')
+          .select('id, name, price_cents, stock_quantity, low_stock_threshold')
           .eq('track_inventory', true)
           .eq('is_active', true);
         if (prodErr) throw new Error(`Product fetch failed: ${prodErr.message}`);
@@ -10411,16 +10490,16 @@ async function executeDbAction(
 
         for (const p of (products || [])) {
           const stock = stockMap.get(p.id);
-          if (!stock) continue;
-          const threshold = threshold_override ?? stock.reorder_point ?? 5;
-          if (stock.quantity_on_hand <= threshold) {
+          const onHand = stock?.quantity_on_hand ?? p.stock_quantity ?? 0;
+          const threshold = threshold_override ?? stock?.reorder_point ?? p.low_stock_threshold ?? 5;
+          if (onHand <= threshold) {
             lowStock.push({
               product_id: p.id,
               product_name: p.name,
-              current_stock: stock.quantity_on_hand,
+              current_stock: onHand,
               reorder_point: threshold,
-              reorder_quantity: stock.reorder_quantity || Math.max(threshold * 3, 10),
-              auto_reorder: stock.auto_reorder || false,
+              reorder_quantity: stock?.reorder_quantity || Math.max(threshold * 3, 10),
+              auto_reorder: stock?.auto_reorder ?? true,
             });
           }
         }

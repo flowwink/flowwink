@@ -247,7 +247,7 @@ CRUD over the uoms table (units of measure). Categories live in uom_categories; 
   },
   {
     name: 'manage_inventory',
-    description: 'Manage product inventory: list stock, update quantities, set low-stock alerts. Use when: adjusting stock levels; setting up low-stock notifications; auditing inventory counts. NOT for: managing product details (manage_product); browsing products (browse_products).',
+    description: 'Manage product inventory on the e-commerce catalog: list stock, update quantities and thresholds, read low-stock alerts and back-in-stock waitlists. Actions: list_stock, update_stock, low_stock_alerts, back_in_stock_requests. Use when: adjusting stock levels; checking which products are below their reorder threshold; auditing inventory counts. NOT for: managing product details (manage_product); browsing products (browse_products); warehouse-location stock moves (manage_quant, adjust_quant).',
     category: 'commerce',
     handler: 'module:products',
     scope: 'internal',
@@ -255,16 +255,23 @@ CRUD over the uoms table (units of measure). Categories live in uom_categories; 
       type: 'function',
       function: {
         name: 'manage_inventory',
-        description: 'Manage product inventory: list stock, update quantities, set low-stock alerts. Use when: adjusting stock levels; setting up low-stock notifications; auditing inventory counts. NOT for: managing product details (manage_product); browsing products (browse_products).',
+        description: 'Manage product inventory on the e-commerce catalog: list stock, update quantities and thresholds, read low-stock alerts and back-in-stock waitlists. Actions: list_stock, update_stock, low_stock_alerts, back_in_stock_requests. Use when: adjusting stock levels; checking which products are below their reorder threshold; auditing inventory counts. NOT for: managing product details (manage_product); browsing products (browse_products); warehouse-location stock moves (manage_quant, adjust_quant).',
         parameters: {
           type: 'object',
           properties: {
             action: {
               type: 'string',
+              // The handler's ACTUAL branches (agent-execute →
+              // executeProductsAction). This enum used to declare `low_stock`,
+              // which no branch answers to — the skill's own contract sent
+              // agents into "Unknown inventory action". `low_stock` is kept
+              // alive as a handler alias for callers that read the old enum,
+              // but it is no longer advertised.
               enum: [
                 'list_stock',
                 'update_stock',
-                'low_stock',
+                'low_stock_alerts',
+                'back_in_stock_requests',
               ],
             },
             product_id: {
@@ -292,12 +299,13 @@ Manages product inventory: list stock levels, update quantities, check low-stock
 - Automated low-stock alerts
 - After order fulfillment
 ### Parameters
-- **action**: Required. list_stock, update_stock, low_stock.
+- **action**: Required. list_stock, update_stock, low_stock_alerts, back_in_stock_requests.
 - **product_id**: For update_stock.
 - **quantity**: New stock quantity.
 - **threshold**: Low stock threshold (default 5).
 ### Edge cases
-- low_stock action returns all products below threshold.
+- low_stock_alerts returns every tracked, active product at or below its threshold (default 5). The legacy name \`low_stock\` still works as an alias.
+- back_in_stock_requests lists un-notified customer waitlist rows.
 - Stock can go negative if not checked before order.`,
   },
   {
@@ -431,7 +439,7 @@ Manages e-commerce orders: list, get details, update status, view stats.
   },
   {
     name: 'place_order',
-    description: 'Place an order as a customer — resolves products server-side, creates the order + line items. Accepts product_id or product_name per item. Use when: external agent creates an order programmatically, tests the purchase flow. NOT for: managing existing orders (use manage_orders), browsing products (use manage_products), Stripe-hosted storefront checkout (that is the website flow, not this skill).',
+    description: 'Place a NEW customer order in the webshop — resolves products server-side, creates the order + line items. Accepts product_id or product_name per item. Use when: staff registers an order on behalf of a customer (phone, email, counter); an external agent creates an order programmatically; testing the purchase flow. NOT for: managing existing orders (use manage_orders), browsing products (use browse_products), returns/RMAs (use create_return), purchase orders to a vendor (use create_purchase_order), on-site service jobs (use manage_service_order), Stripe-hosted storefront checkout (that is the website flow, not this skill).',
     category: 'commerce',
     handler: 'module:orders',
     scope: 'external',
@@ -439,7 +447,7 @@ Manages e-commerce orders: list, get details, update status, view stats.
       type: 'function',
       function: {
         name: 'place_order',
-        description: 'Place an order via the checkout API with sandbox mode support. Resolves products server-side (by id or name), computes cart weight from products.weight_grams, and auto-selects the cheapest shipping option for the total weight/country when the cart contains weighted products. Use when: external agent tests purchase flow, programmatic order creation, automated testing of checkout pipeline. NOT for: managing existing orders (use manage_orders), browsing products (use browse_products), payment configuration (use site_settings).',
+        description: 'Place a NEW customer order via the checkout API with sandbox mode support. Resolves products server-side (by id or name), computes cart weight from products.weight_grams, and auto-selects the cheapest shipping option for the total weight/country when the cart contains weighted products. Use when: staff registers an order for a customer (phone, email, counter); an external agent creates an order programmatically; automated testing of the checkout pipeline. NOT for: managing existing orders (use manage_orders), browsing products (use browse_products), returns/RMAs (use create_return), purchase orders to a vendor (use create_purchase_order), payment configuration (use manage_site_settings).',
         parameters: {
           type: 'object',
           required: ['items', 'customer_email'],
@@ -612,7 +620,7 @@ Checks the current status of an order via the order-status edge function.
         },
       },
     },
-    instructions: 'Builds an invoice from order_items (qty × price_cents), applies tax_rate (default 0.25), marks status=sent, and emails the customer a link to /functions/v1/generate-invoice-pdf. Idempotent via notes "order:<id>". Use dry_run=true to preview totals before sending. Logs invoice_sent to audit_logs.',
+    instructions: 'Builds an invoice from order_items (qty × price_cents), applies tax_rate (default 0.25), marks status=sent, and emails the customer a link to /functions/v1/generate-invoice-pdf. Idempotent via notes "order:<id>". Use dry_run=true to preview totals before sending. Logs invoice_sent to audit_logs.\n\nREAD THE RESULT, do not assume it: `invoice_created` and `sent` are two different facts. `sent:false` means the EMAIL did not leave — either no email provider is configured (email.simulated) or the outbound allowlist withheld the recipient (email.blocked_by_allowlist). The invoice still exists and is marked sent in the ledger. When sent is false, tell the user the invoice was created but NOT emailed, and say why from the `email` object.',
   },
   {
     name: 'fulfill_order_line',

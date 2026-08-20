@@ -27,7 +27,7 @@ const SKILLS: SkillSeed[] = [
   {
     name: 'create_return',
     description:
-      'Create a new return (RMA) for an order. Use when: customer or support agent requests a return/refund. NOT for: approving (use approve_return) or processing the refund (use refund_return).',
+      'Create a new return (RMA) for an existing order. Use when: creating a return, an RMA or a return authorization for an order; a customer or support agent requests a return, a refund or an exchange of delivered goods. NOT for: approving (use approve_return); processing the refund (use refund_return); purchase orders to a vendor (use create_purchase_order).',
     category: 'commerce',
     handler: 'db:returns',
     scope: 'internal',
@@ -35,7 +35,7 @@ const SKILLS: SkillSeed[] = [
       type: 'function',
       function: {
         name: 'create_return',
-        description: 'Create a draft RMA in requested status',
+        description: 'Create a draft RMA (return authorization) in requested status for an existing customer order. Use when: creating a return, an RMA or a return authorization for an order; a customer requests a refund or exchange of delivered goods.',
         parameters: {
           type: 'object',
           properties: {

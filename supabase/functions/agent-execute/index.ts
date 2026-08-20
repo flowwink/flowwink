@@ -119,6 +119,45 @@ for (const mod of (bundledModuleSkills as { modules: Array<{ moduleId: string; s
   for (const s of mod.skills) SKILL_OWNER_MODULE[s.name] = mod.moduleId;
 }
 
+// ─── Felhemmade skapare: modulen som äger EFFEKTEN, inte den som äger koden ──
+// Matrisens andra svep fann en hel klass av samma bugg: skills som ställer ut en
+// SKARP kundfaktura — fakturanummer ur serien, rader i huvudboken — men som är
+// seedade i den modul vars process råkade utlösa dem. Ägarkartan ovan läser bara
+// var seedet står, så grinden hamnade på fel modul: `sales` har `ecommerce` och
+// kunde därmed skapa en riktig faktura via send_invoice_for_order utan att
+// någonsin ha beviljats `invoicing`. Modulratten var påslagen — men inte den för
+// det som faktiskt hände.
+//
+// Regeln: ett skill auktoriseras av modulen som äger DET SOM BLIR TILL, inte av
+// modulen vars arbetsflöde startade det. Fakturaskapande är `invoicing`, vare sig
+// avsändaren är en butiksorder, ett serviceuppdrag, ett avtal, en kassaförsäljning
+// eller en prenumeration. Åtkomst till källobjektet kräver fortfarande sin egen
+// modul via RLS — överskrivningen LÄGGER TILL ett krav, den byter inte ut ett.
+//
+// Överskrivningen står här och inte i modulseedet med flit: `moduleId` i
+// src/lib/modules/* styr också navigering, katalogisering och sync:skills, och
+// skill:et hör verkligen hemma i sin processmodul. Det är AUKTORISATIONEN som ska
+// följa effekten, inte katalogiseringen.
+//
+// EJ i listan: initiate_company_invoice_payment (companies). Verifierat
+// 2026-08-20 — den SKAPAR ingen faktura. Den slår upp en av det egna företagets
+// redan utställda obetalda fakturor inom company-scope och returnerar
+// betalningslänken (/invoice/<public_token>); ingen state skrivs. Den bär sin egen
+// enforcement via companyScopeGuard(args, 'buyer') på rung 3 och nås genom
+// kundportalens chat-completion-väg med service-nyckeln (isServiceCaller), så
+// modulgrinden nedan gäller den ändå aldrig. Att flytta den till `invoicing` hade
+// varit teater på en yta där den riktiga grinden är företagstillhörighet.
+const SKILL_OWNER_MODULE_OVERRIDES: Record<string, string> = {
+  send_invoice_for_order: 'invoicing',        // seedad i ecommerce (products-module)
+  service_order_to_invoice: 'invoicing',      // seedad i fieldService
+  generate_contract_invoice: 'invoicing',     // seedad i contracts
+  pos_sale_to_invoice: 'invoicing',           // seedad i pos
+  generate_subscription_invoice: 'invoicing', // seedad i subscriptions
+};
+for (const [name, moduleId] of Object.entries(SKILL_OWNER_MODULE_OVERRIDES)) {
+  SKILL_OWNER_MODULE[name] = moduleId;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',

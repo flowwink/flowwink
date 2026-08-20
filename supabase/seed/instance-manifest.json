@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260820120000",
-      "migrations_count": 443,
+      "migration_head": "20260820230200",
+      "migrations_count": 446,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1777,6 +1777,18 @@
         {
           "version": "20260820120000",
           "name": "b7c8d9e0-branding-media-matrix"
+        },
+        {
+          "version": "20260820230000",
+          "name": "commerce-tables-follow-the-matrix"
+        },
+        {
+          "version": "20260820230100",
+          "name": "process-roles-are-structurally-complete"
+        },
+        {
+          "version": "20260820230200",
+          "name": "vendor-invoice-creator-can-be-deleted"
         }
       ]
     },
@@ -1791,7 +1803,7 @@
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:efa8c3c00593e4c3cb6162b034bb7a54dacb1c4a5b20d56c19689f8d8d352a7b",
+        "agent-execute": "sha256:086510ad9025c85067a18fa5d8bbcee88a64bd8bc262c527f69226366de1a373",
         "agent-operate": "sha256:75fb1281c6ee8aa748f24c44a0b866686a12cf11df5291d7ff5e6aa59a2c1d2a",
         "ai-task": "sha256:7eca41863874f798eb5dfadf3216302830d807b3265231567ba0284d791fb6cd",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

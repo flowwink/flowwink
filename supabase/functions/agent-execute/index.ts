@@ -3552,14 +3552,18 @@ async function executeApprovalsAction(
   if (action === 'request') {
     const { entity_type, entity_id, amount_cents, currency = 'SEK', reason, required_role = 'admin', context, rule_id } = a;
     if (!entity_type || !entity_id) throw new Error('entity_type and entity_id are required');
+    // Who asked is half the approval record. It was never written, which is
+    // also why self-approval could not be detected downstream.
+    const requestedBy = typeof a._caller_user_id === 'string' ? a._caller_user_id : null;
     const { data, error } = await supabase.from('approval_requests').insert({
       entity_type, entity_id,
       amount_cents: amount_cents != null ? Number(amount_cents) : null,
       currency, reason: reason ?? null, required_role, context: context ?? {}, rule_id: rule_id ?? null,
+      requested_by: requestedBy,
       status: 'pending',
-    }).select('id, entity_type, entity_id, status, required_role').single();
+    }).select('id, entity_type, entity_id, status, required_role, requested_by').single();
     if (error) throw new Error(`request failed: ${error.message}`);
-    return { request_id: data.id, status: data.status, required_role: data.required_role };
+    return { request_id: data.id, status: data.status, required_role: data.required_role, requested_by: data.requested_by };
   }
 
   if (action === 'list_pending') {
@@ -3582,13 +3586,62 @@ async function executeApprovalsAction(
   if (action === 'approve' || action === 'reject' || action === 'cancel') {
     if (!a.request_id) throw new Error('request_id is required');
     const status = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'cancelled';
+    const callerUserId = typeof a._caller_user_id === 'string' ? a._caller_user_id : null;
+
+    // The row carries the whole policy: which role may decide, and who asked.
+    // Both were written to the table and then never read — the gate rendered in
+    // /admin/approvals was decoration over an update anyone could issue.
+    const { data: reqRow, error: reqErr } = await supabase.from('approval_requests')
+      .select('id, status, required_role, requested_by, entity_type, entity_id')
+      .eq('id', a.request_id).maybeSingle();
+    if (reqErr) throw new Error(`${action} failed: ${reqErr.message}`);
+    if (!reqRow) return { error: `Request ${a.request_id} not found`, status: 'failed' };
+    if (reqRow.status !== 'pending') {
+      return { error: `Request ${a.request_id} is no longer pending (status ${reqRow.status})`, status: 'failed' };
+    }
+
+    if (action !== 'cancel') {
+      if (callerUserId) {
+        // Nobody signs off their own request. This is the whole point of an
+        // approval step; without it the workflow is a two-click self-serve.
+        if (reqRow.requested_by && reqRow.requested_by === callerUserId) {
+          return {
+            error: 'self-approval is not allowed — another approver must review this request',
+            request_id: reqRow.id,
+            required_role: reqRow.required_role,
+            status: 'failed',
+          };
+        }
+
+        const { data: roleRows, error: roleErr } = await supabase.from('user_roles')
+          .select('role').eq('user_id', callerUserId);
+        if (roleErr) throw new Error(`${action} failed: could not read caller roles: ${roleErr.message}`);
+        const callerRoles = (roleRows ?? []).map((r: any) => String(r.role));
+        // Admin is the platform's superuser role and may decide anything;
+        // otherwise the caller must hold exactly the role the request demands.
+        if (!callerRoles.includes(reqRow.required_role) && !callerRoles.includes('admin')) {
+          return {
+            error: `This request requires the '${reqRow.required_role}' role to ${action}. Caller holds: ${callerRoles.length ? callerRoles.join(', ') : 'no roles'}.`,
+            request_id: reqRow.id,
+            required_role: reqRow.required_role,
+            status: 'failed',
+          };
+        }
+      } else {
+        // Service-key call with no caller identity (FlowPilot autonomy, gateway
+        // peers). Deliberately still allowed — an autonomous operator has no
+        // user_roles row to hold — but it is recorded rather than invisible.
+        console.log(`[agent-execute] approvals ${action} without caller identity: request=${reqRow.id} entity=${reqRow.entity_type}:${reqRow.entity_id} required_role=${reqRow.required_role} (service-role decision, resolved_by null)`);
+      }
+    }
+
     const { data, error } = await supabase.from('approval_requests')
-      .update({ status, resolved_at: new Date().toISOString() })
+      .update({ status, resolved_at: new Date().toISOString(), resolved_by: callerUserId })
       .eq('id', a.request_id).eq('status', 'pending')
-      .select('id, status').maybeSingle();
+      .select('id, status, resolved_by').maybeSingle();
     if (error) throw new Error(`${action} failed: ${error.message}`);
     if (!data) return { error: `Request ${a.request_id} not found or no longer pending`, status: 'failed' };
-    return { request_id: data.id, status: data.status };
+    return { request_id: data.id, status: data.status, resolved_by: data.resolved_by };
   }
 
   if (action === 'create_rule') {
@@ -9827,12 +9880,15 @@ async function executeDbAction(
 
       if (action === 'create') {
         let { user_id, expense_date, description: desc, amount_cents, vat_cents, currency, category, vendor, account_code, is_representation, attendees, receipt_url, receipt_data } = args as any;
-        // Agent fallback: if no user_id provided, use the first admin user
+        // An expense is a claim for money owed to a PERSON. The old fallback
+        // picked "the first admin row in user_roles" when no user_id was given,
+        // so every agent-created expense was booked on — and reimbursable to —
+        // whoever happened to sort first. Identity order is now: the explicit
+        // argument, then the authenticated caller, then an honest failure.
+        // Never a stand-in.
+        if (!user_id) user_id = (args as any)._caller_user_id;
         if (!user_id) {
-          const { data: adminRole } = await supabase.from('user_roles')
-            .select('user_id').eq('role', 'admin').limit(1).maybeSingle();
-          user_id = adminRole?.user_id;
-          if (!user_id) throw new Error('user_id is required (no admin user found for agent fallback)');
+          throw new Error('No user identity for this expense — pass user_id (the employee the expense belongs to). There is no default user: booking an expense on the wrong person means reimbursing the wrong person.');
         }
         if (is_representation && (!attendees || attendees.length === 0)) {
           throw new Error('Representation expenses require attendees [{name, company}]');
@@ -12010,6 +12066,28 @@ async function executeGenericCrud(
   fields = { ...reservedExtract, ...mapped };
   if (dropped.length) {
     console.log(`[agent-execute] dropped unsupported columns for ${table}: ${dropped.join(', ')}`);
+  }
+
+  // ── Post-payout immutability: refunded RMAs freeze their lines ─────────────
+  // return_items ARE the arithmetic behind refund_return's ceiling (Σ qty ×
+  // unit_refund_cents − restocking fee). While the RMA is open that is a
+  // working document; once it is 'refunded' the money has left and the lines
+  // are the receipt. manage_return_item happily rewrote and deleted them after
+  // payout, which both falsifies the record and re-opens headroom under the
+  // refund guard. A correction belongs on a new return, not on this one.
+  if (table === 'return_items' && (action === 'update' || action === 'delete') && id) {
+    const { data: lineRow } = await supabase.from('return_items')
+      .select('return_id').eq('id', id).maybeSingle();
+    if (lineRow?.return_id) {
+      const { data: parentReturn } = await supabase.from('returns')
+        .select('status, rma_number').eq('id', lineRow.return_id).maybeSingle();
+      if (parentReturn?.status === 'refunded') {
+        return {
+          error: `Return ${parentReturn.rma_number ?? lineRow.return_id} is already refunded — its lines are the record of a payout that already happened and cannot be ${action === 'delete' ? 'deleted' : 'changed'}. Create a new return for a correction.`,
+          status: 'failed',
+        };
+      }
+    }
   }
 
   const auditEnabled = !!auditCtx && ACCOUNTING_AUDIT_TABLES.has(table);

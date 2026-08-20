@@ -263,7 +263,7 @@ function WikiPageInner() {
                 ⌘K
               </kbd>
             </div>
-            <ScrollArea className="h-[calc(100vh-280px)] rounded-md border">
+            <ScrollArea className="h-[calc(100vh-280px)] rounded-md border [&>[data-radix-scroll-area-viewport]>div]:!block [&>[data-radix-scroll-area-viewport]>div]:!w-full [&>[data-radix-scroll-area-viewport]>div]:!min-w-0">
               {searching2 ? (
                 <div className="p-1">
                   <p className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">

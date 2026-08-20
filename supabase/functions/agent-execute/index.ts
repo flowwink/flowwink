@@ -1093,14 +1093,31 @@ serve(async (req) => {
           // can fix it on the next turn instead of seeing an opaque error.
           if ((rpcErr as any).code === 'PGRST202' || /Could not find the function|schema cache/i.test(rpcErr.message || '')) {
             const sent = Object.keys(rpcArgs);
-            const declared = Object.keys(
-              ((skill as any)?.tool_definition?.function?.parameters?.properties) ?? {},
-            );
-            rpcMsg += ` — the parameter names likely don't match the function signature.`
-              + ` You sent: [${sent.join(', ')}].`
-              + (declared.length
-                  ? ` This skill's declared parameters are: [${declared.join(', ')}]. Use these EXACT names (RPC params are p_-prefixed; do not substitute synonyms).`
-                  : ` Pass the exact p_-prefixed parameter names from this skill's input schema.`);
+            const params = (skill as any)?.tool_definition?.function?.parameters;
+            const declared = Object.keys(params?.properties ?? {});
+            // PGRST202 has TWO causes and they need opposite advice. Wrong
+            // NAMES is the famous one. But an OMITTED required parameter
+            // produces the identical error — and there the name hint actively
+            // misleads: it lists back the names the caller already sent and
+            // tells them to use those exact names, which they did. Check for
+            // the omission first and name it.
+            const requiredList: string[] = Array.isArray(params?.required)
+              ? params.required.map(String) : [];
+            const missing = requiredList.filter((k) => {
+              const v = (args as Record<string, unknown>)[k];
+              return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+            });
+            if (missing.length) {
+              rpcMsg += ` — missing required parameter${missing.length > 1 ? 's' : ''}: [${missing.join(', ')}].`
+                + ` This skill requires [${requiredList.join(', ')}]; you sent [${Object.keys(args).join(', ')}].`
+                + ` Supply the missing value(s) explicitly — do not rely on a default.`;
+            } else {
+              rpcMsg += ` — the parameter names likely don't match the function signature.`
+                + ` You sent: [${sent.join(', ')}].`
+                + (declared.length
+                    ? ` This skill's declared parameters are: [${declared.join(', ')}]. Use these EXACT names (RPC params are p_-prefixed; do not substitute synonyms).`
+                    : ` Pass the exact p_-prefixed parameter names from this skill's input schema.`);
+            }
           }
           result = { error: rpcMsg, status: 'failed' };
         } else {
@@ -5637,7 +5654,13 @@ async function executeProductsAction(
 
   // manage_inventory
   if (skillName === 'manage_inventory') {
-    const { action = 'list_stock', product_id, quantity, threshold, reason } = args as any;
+    const { product_id, quantity, threshold, reason } = args as any;
+    // The tool_definition used to advertise `low_stock`, which no branch here
+    // answers to — the skill's own contract sent every caller that trusted it
+    // into "Unknown inventory action". The enum now names the real branches;
+    // the alias keeps the old contract working for anything that cached it.
+    const rawAction = String((args as any).action ?? 'list_stock');
+    const action = rawAction === 'low_stock' ? 'low_stock_alerts' : rawAction;
 
     if (action === 'list_stock') {
       const { data, error } = await supabase.from('products')
@@ -5717,7 +5740,16 @@ async function executeProductsAction(
       return { requests: data || [] };
     }
 
-    return { error: `Unknown inventory action: ${action}` };
+    // Name what IS valid. "Unknown action: X" tells a caller it was wrong
+    // without telling it what right looks like — a whole extra round to learn
+    // something we already know.
+    return {
+      error: `Unknown inventory action: ${rawAction}`,
+      valid_actions: ['list_stock', 'update_stock', 'low_stock_alerts', 'back_in_stock_requests'],
+      hint: action === 'update_stock'
+        ? 'update_stock also requires product_id.'
+        : 'Pass one of valid_actions as "action". ("low_stock" is accepted as an alias for "low_stock_alerts".)',
+    };
   }
 
   // manage_product — original CRUD
@@ -8023,8 +8055,16 @@ async function executeSendInvoiceForOrder(
     },
   });
 
+  // `sent` is the answer to "did the customer get the invoice", and the router
+  // already worked that out — emailResult.sent is false when no provider is
+  // configured (simulated) or when the allowlist withheld the recipient. The
+  // top-level flag used to be a hardcoded `true` regardless, so a skill that
+  // knew perfectly well the mail had not left still reported that it had. The
+  // invoice creation is reported separately; those are two different facts.
+  const emailSent = (emailResult as { sent?: boolean })?.sent === true;
   return {
-    sent: true,
+    sent: emailSent,
+    invoice_created: true,
     order_id,
     invoice_id: invoice.id,
     invoice_number: invoice.invoice_number,
@@ -8037,6 +8077,9 @@ async function executeSendInvoiceForOrder(
     reused_existing_invoice: reusedExisting,
     ...(reusedExisting ? { note: `Order ${order_id} was already invoiced as ${invoice.invoice_number} — reused, no second invoice was created.` } : {}),
     email: emailResult,
+    ...(emailSent ? {} : {
+      note: 'The invoice exists and is marked sent in the ledger, but the EMAIL did not go out — see `email` for why. Do not tell the user the invoice was emailed.',
+    }),
   };
 }
 

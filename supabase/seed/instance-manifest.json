@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260821000000",
-      "migrations_count": 459,
+      "migration_head": "20260821010000",
+      "migrations_count": 460,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1841,6 +1841,10 @@
         {
           "version": "20260821000000",
           "name": "d8e9f0a1-project-rpcs-follow-the-matrix"
+        },
+        {
+          "version": "20260821010000",
+          "name": "e1f2a3b4-frontend-rpcs-follow-the-matrix"
         }
       ]
     },

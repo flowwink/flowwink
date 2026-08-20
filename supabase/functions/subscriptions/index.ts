@@ -16,7 +16,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getServiceClient, getUserClient, getAnonClient } from '../_shared/supabase-clients.ts';
-import { requireServiceOrRole, unauthorized } from '../_shared/edge-auth.ts';
+import { requireServiceOrRole, requireServiceOrModule, unauthorized } from '../_shared/edge-auth.ts';
 import { getProvider, type SubscriptionProviderId } from "../_shared/subscription-providers.ts";
 
 const corsHeaders = {
@@ -145,9 +145,24 @@ async function handleManage(req: Request, body: Record<string, any>) {
   const user = userData.user;
   if (!user) throw new Error("Not authenticated");
 
-  const { data: roles } = await supabase
-    .from("user_roles").select("role").eq("user_id", user.id);
-  const allowed = (roles ?? []).some((r: any) => ["admin", "approver"].includes(r.role));
+  // Rollsvepet #102, app-lagret — NEKAD BEHÖRIGHET RENDERAD SOM STÄNGD KNAPP.
+  // This gate was a hardcoded ["admin","approver"] list: a shadow matrix beside
+  // role_module_access. The Subscriptions page is nav-gated on moduleId
+  // "subscriptions", so a role granted that module in Role Permissions saw
+  // Cancel / Resume / Change plan and got "Insufficient permissions" on click.
+  // ADDITIVE, like the matrix RLS sweep (20260820230000): the matrix path is
+  // added, the legacy 'approver' path survives untouched — legacy roles hold no
+  // rows in role_module_access, so can_access_module() alone would narrow them.
+  // can_access_module() itself short-circuits to true for admin.
+  const gate = await requireServiceOrModule(req, supabase, "subscriptions");
+  let allowed = gate.authorized;
+  if (!allowed) {
+    const { data: legacy } = await supabase.rpc("has_role", {
+      _user_id: user.id,
+      _role: "approver",
+    });
+    allowed = legacy === true;
+  }
   if (!allowed) throw new Error("Insufficient permissions");
 
   const { data: sub } = await supabase

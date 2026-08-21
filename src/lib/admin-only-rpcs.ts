@@ -37,9 +37,6 @@ export const ADMIN_ONLY_RPCS: Readonly<Record<string, string>> = {
   reset_role_module_access: 'Skriver om matrisen. Får aldrig grindas AV matrisen.',
   reset_all_role_module_access: 'Skriver om matrisen. Får aldrig grindas AV matrisen.',
 
-  // ── Räckvidd över alla moduler ───────────────────────────────────────────
-  global_search: 'Söker tvärs ALLA moduler. En modulgrind vore fel dimension.',
-
   // ── Vakten är inte en rollista — den är dynamisk eller ägarskapsbaserad ──
   // has_role() förekommer i kroppen, men med en VARIABEL roll ur datan
   // (approval-kedjans egna required_role) eller bara som admin-override på en
@@ -51,13 +48,9 @@ export const ADMIN_ONLY_RPCS: Readonly<Record<string, string>> = {
     'Ägarvakt (v_owner = v_uid) med admin-override. Modulgrind vore fel dial.',
   log_indirect_time: 'Vakten släpper redan in varje inloggad (auth.uid() IS NOT NULL).',
 
-  // ── Ägarmodulen saknar matrisratt ────────────────────────────────────────
-  // `email` är core:true i useModules, och RolePermissionsPage listar bara
-  // `!cfg.core`. can_access_module(uid,'email') vore därför admin-only för
-  // alltid — en konvertering hade SNÄVAT dagens vakt (admin|marketing|sales|
-  // support) till admin. ÖPPET: ge email en matrisratt, konvertera sedan.
-  add_email_suppression: 'Ägarmodul `email` är core — ingen matrisratt att peka på ännu.',
-  remove_email_suppression: 'Ägarmodul `email` är core — ingen matrisratt att peka på ännu.',
-  upsert_email_template: 'Ägarmodul `email` är core — ingen matrisratt att peka på ännu.',
-  delete_email_template: 'Ägarmodul `email` är core — ingen matrisratt att peka på ännu.',
+  // ── Destruktiv grind ─────────────────────────────────────────────────────
+  // Suppressions/mall-upsert följer numera matrisratten `email` (roleGatable,
+  // 20260821090000) — men mall-DELETE är destruktivt och förblir admin, samma
+  // klass som deals DELETE.
+  delete_email_template: 'Destruktiv grind — mallradering är admin-only med avsikt.',
 };

@@ -28,6 +28,14 @@ export const ADMIN_ONLY_RPCS: Readonly<Record<string, string>> = {
   reset_module_data: 'Wipe per modul — kräver överblick över alla moduler, inte en.',
   seed_module_demo: 'Skriver demodata över skarpa tabeller.',
   enable_demo_cycle_cron: 'Plattformens cron-schema, inte en modulyta.',
+  // ── Cron-schemaläggning: schemalägger godtycklig net.http_post (SSRF-yta) ──
+  // Fick intern admin-vakt i 20260822040000 (var vaktlös → anon-körbar). Rätt
+  // dimension är admin, inte modul: att schemalägga jobb är en plattforms-
+  // operation, och bootstrap-vägen (module-bootstrap.ts) körs av admin.
+  // Bara flowpilot-cron anropas från frontend (module-bootstrap); de övriga
+  // schemaläggarna körs via service_role från edge och står därför INTE här —
+  // guardrailen listar bara frontend-anropade RPC:er.
+  register_flowpilot_cron: 'Schemalägger cron (net.http_post). Admin, inte modul.',
   disable_demo_cycle_cron: 'Plattformens cron-schema, inte en modulyta.',
   run_period_lock_tests: 'Testhärnesk för periodlåsen — plattformsverktyg.',
   instance_sync_status: 'Driftstatus för instansen (fyra lager). Plattformsyta.',

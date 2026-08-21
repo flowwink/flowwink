@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260822030000",
-      "migrations_count": 470,
+      "migration_head": "20260822050000",
+      "migrations_count": 472,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1885,6 +1885,14 @@
         {
           "version": "20260822030000",
           "name": "c5d6e7f8-anon-leaks-closed"
+        },
+        {
+          "version": "20260822040000",
+          "name": "d6e7f8a9-anon-guards-and-counters"
+        },
+        {
+          "version": "20260822050000",
+          "name": "e7f8a9b0-policy-user-roles-refs-via-definer"
         }
       ]
     },

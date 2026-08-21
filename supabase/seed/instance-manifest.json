@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260821040000",
-      "migrations_count": 462,
+      "migration_head": "20260821050000",
+      "migrations_count": 463,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1853,6 +1853,10 @@
         {
           "version": "20260821040000",
           "name": "a7b8c9d0-newsletter-follows-the-matrix"
+        },
+        {
+          "version": "20260821050000",
+          "name": "b8c9d0e1-rollsvep4-writes-follow-the-matrix"
         }
       ]
     },

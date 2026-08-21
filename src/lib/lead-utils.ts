@@ -208,17 +208,29 @@ export async function createLeadFromForm(options: {
         }
       }
 
+      // Enrichment is best-effort (the capture itself already succeeded), but a
+      // denied write must not be reported back as applied: count the rows and
+      // only merge the fields the database actually accepted.
+      let applied: Record<string, string> = {};
       if (Object.keys(updates).length > 0) {
-        await supabase
+        const { data: enriched, error: enrichError } = await supabase
           .from('leads')
           .update(updates)
-          .eq('id', existingLead.id);
+          .eq('id', existingLead.id)
+          .select('id');
+        if (enrichError) {
+          logger.warn('Lead enrichment update failed:', enrichError);
+        } else if (!enriched?.length) {
+          logger.warn('Lead enrichment update matched 0 rows — no permission, or the contact is gone:', existingLead.id);
+        } else {
+          applied = updates;
+        }
       }
 
       // Trigger AI qualification
       qualifyLead(existingLead.id);
 
-      return { lead: { ...existingLead, ...updates } as unknown as Lead, isNew: false, error: null };
+      return { lead: { ...existingLead, ...applied } as unknown as Lead, isNew: false, error: null };
     }
 
     // Auto-match company by email domain (never auto-create)
@@ -312,12 +324,19 @@ export async function createLeadFromBooking(options: {
         },
       });
 
-      // Update phone if not set
+      // Update phone if not set. Best-effort, but never silent: an RLS-denied
+      // update returns success with 0 rows.
       if (phone && !existingLead.phone) {
-        await supabase
+        const { data: phoneRows, error: phoneError } = await supabase
           .from('leads')
           .update({ phone })
-          .eq('id', existingLead.id);
+          .eq('id', existingLead.id)
+          .select('id');
+        if (phoneError) {
+          logger.warn('Lead phone update failed:', phoneError);
+        } else if (!phoneRows?.length) {
+          logger.warn('Lead phone update matched 0 rows — no permission, or the contact is gone:', existingLead.id);
+        }
       }
 
       // Trigger AI qualification
@@ -408,12 +427,19 @@ export async function createLeadFromWebinar(options: {
         },
       });
 
-      // Update phone if not set
+      // Update phone if not set. Best-effort, but never silent: an RLS-denied
+      // update returns success with 0 rows.
       if (phone && !existingLead.phone) {
-        await supabase
+        const { data: phoneRows, error: phoneError } = await supabase
           .from('leads')
           .update({ phone })
-          .eq('id', existingLead.id);
+          .eq('id', existingLead.id)
+          .select('id');
+        if (phoneError) {
+          logger.warn('Lead phone update failed:', phoneError);
+        } else if (!phoneRows?.length) {
+          logger.warn('Lead phone update matched 0 rows — no permission, or the contact is gone:', existingLead.id);
+        }
       }
 
       return { leadId: existingLead.id, isNew: false, error: null };
@@ -503,10 +529,19 @@ export async function addLeadActivity(options: {
 
     if (activities) {
       const totalScore = activities.reduce((sum, a) => sum + (a.points || 0), 0);
-      await supabase
+      // The activity itself landed, so this stays non-fatal — but a denied score
+      // write returns success with 0 rows and would otherwise leave the score
+      // quietly stale forever.
+      const { data: scored, error: scoreError } = await supabase
         .from('leads')
         .update({ score: totalScore })
-        .eq('id', leadId);
+        .eq('id', leadId)
+        .select('id');
+      if (scoreError) {
+        logger.warn('Lead score update failed:', scoreError);
+      } else if (!scored?.length) {
+        logger.warn('Lead score update matched 0 rows — no permission, or the contact is gone:', leadId);
+      }
     }
 
     return { success: true, error: null };
@@ -538,10 +573,21 @@ export async function updateLeadStatus(
       query = query.eq('status', options.onlyIfCurrentStatus);
     }
 
-    const { error } = await query;
+    const { data, error } = await query.select('id');
     if (error) {
       logger.error('updateLeadStatus error:', error);
       return { success: false, error: error.message };
+    }
+    if (!data?.length) {
+      // With onlyIfCurrentStatus this is the guard doing its job (the contact
+      // had already moved on) — expected, not a failure. Without it, 0 rows
+      // means the write was refused or the contact is gone.
+      if (options?.onlyIfCurrentStatus) {
+        logger.debug('updateLeadStatus: guard did not match, status left untouched:', leadId);
+        return { success: true, error: null };
+      }
+      logger.error('updateLeadStatus matched 0 rows:', leadId);
+      return { success: false, error: 'Nothing was updated — you may not have permission, or the contact is gone.' };
     }
     return { success: true, error: null };
   } catch (error) {

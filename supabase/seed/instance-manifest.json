@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260821050000",
-      "migrations_count": 463,
+      "migration_head": "20260821090000",
+      "migrations_count": 467,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1857,6 +1857,22 @@
         {
           "version": "20260821050000",
           "name": "b8c9d0e1-rollsvep4-writes-follow-the-matrix"
+        },
+        {
+          "version": "20260821060000",
+          "name": "c9d0e1f2-tickets-system-insert-tightened"
+        },
+        {
+          "version": "20260821070000",
+          "name": "d0e1f2a3-leads-system-insert-tightened"
+        },
+        {
+          "version": "20260821080000",
+          "name": "e1f2a3b4-global-search-follows-the-matrix"
+        },
+        {
+          "version": "20260821090000",
+          "name": "f2a3b4c5-email-gets-a-matrix-dial"
         }
       ]
     },

@@ -349,6 +349,7 @@ export function InstanceReadinessChecklist({
   // varje instans, och kortet kunde aldrig försvinna igen — vilket är precis
   // vad som hände på nordbrygg: allt grönt, "This instance is set up", och
   // kortet låg kvar. Kvittot ska bara minnas ARBETE, inte ovisshet.
+  const [receiptAcknowledged, setReceiptAcknowledged] = useState(false);
   const hadWorkRef = useRef(false);
   if (!isLoading && !ready) hadWorkRef.current = true;
   const hadWork = hadWorkRef.current;
@@ -474,7 +475,7 @@ export function InstanceReadinessChecklist({
   // stannar kortet kvar i ett klart-läge tills sidan laddas om — så att sista
   // klicket får ett kvitto. Det är inte en dismiss: nästa laddning är den borta
   // av sig själv, och tas ett värde bort kommer den tillbaka.
-  if (ready && !alwaysShow && !hadWork) return null;
+  if (ready && !alwaysShow && (!hadWork || receiptAcknowledged)) return null;
 
   const advisory = rows.filter((r) => r.status === 'drift' || r.status === 'unverifiable');
 
@@ -508,17 +509,19 @@ export function InstanceReadinessChecklist({
             </CardDescription>
           </div>
           {ready && !alwaysShow && (
-            // En väg framåt, inte en dismiss. Att dölja ett RÖTT kort gömmer
-            // sanning; att gå vidare från ett grönt gömmer ingenting — kortet
-            // är ändå borta vid nästa laddning. Navigeringen avmonterar
-            // dashboarden, så kvitto-refen nollställs på köpet.
-            // Mallgalleriet är nästa steg på riktigt: en färdigprovisionerad
-            // instans har schema, skills och cron — men noll sidor.
-            <Button asChild size="sm">
-              <Link to="/admin/templates">
-                Build your site
-                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-              </Link>
+            // Stänger KVITTOT, inte checklistan — och bara i grönt läge.
+            //
+            // Skillnaden mot en dismiss är strukturell, inte en artighet:
+            // villkoret nedan låter `receiptAcknowledged` betyda något ENDAST
+            // när `ready` är sant. Ett rött kort går alltså inte att stänga,
+            // hur man än klickar. Och ingenting sparas — nästa sidladdning
+            // börjar om, och saknas något igen är kortet tillbaka.
+            //
+            // Ingen "gå vidare"-knapp här med flit: valet mellan mall och tom
+            // sida bor redan längre ned på samma dashboard. Att skicka admin
+            // till mallgalleriet vore att dubblera ett val hen redan har.
+            <Button size="sm" variant="outline" onClick={() => setReceiptAcknowledged(true)}>
+              Close
             </Button>
           )}
           {!ready && (

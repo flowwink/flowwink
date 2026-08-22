@@ -1,3 +1,6 @@
+-- Omkörbarhet: en senare migration döper om parametern till p_agent_id, och
+-- CREATE OR REPLACE kan inte byta parameternamn. Droppa på ARGUMENTTYP först.
+DROP FUNCTION IF EXISTS public.release_agent_conversations(uuid);
 CREATE OR REPLACE FUNCTION public.release_agent_conversations(p_user_id uuid)
 RETURNS TABLE (
   conversation_id uuid,

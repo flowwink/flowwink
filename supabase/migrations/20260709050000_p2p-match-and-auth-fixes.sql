@@ -85,8 +85,12 @@ BEGIN
 END; $function$;
 
 alter table public.vendor_invoices drop constraint if exists vendor_invoices_match_status_check;
-alter table public.vendor_invoices add constraint vendor_invoices_match_status_check
-  check (match_status = any (array['unmatched','matched','partial','variance','over_invoiced','under_invoiced','no_receipt','no_po']::text[]));
+
+DO $idem$ BEGIN
+  alter table public.vendor_invoices add constraint vendor_invoices_match_status_check
+    check (match_status = any (array['unmatched','matched','partial','variance','over_invoiced','under_invoiced','no_receipt','no_po']::text[]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 create or replace function public.hire_candidate_from_application(p_application_id uuid, p_start_date date default null::date, p_employment_type text default 'full_time'::text, p_department text default null::text)
  returns jsonb language plpgsql security definer set search_path to 'public' as $function$

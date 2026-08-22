@@ -52,9 +52,13 @@ CREATE TABLE IF NOT EXISTS public.salary_structure_components (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.salary_structure_components DROP CONSTRAINT IF EXISTS salary_structure_components_type_check;
-ALTER TABLE public.salary_structure_components
-  ADD CONSTRAINT salary_structure_components_type_check
-  CHECK (component_type IN ('salary','bonus','overtime','benefit','deduction'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.salary_structure_components
+    ADD CONSTRAINT salary_structure_components_type_check
+    CHECK (component_type IN ('salary','bonus','overtime','benefit','deduction'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.salary_advances (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -71,16 +75,24 @@ CREATE TABLE IF NOT EXISTS public.salary_advances (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.salary_advances DROP CONSTRAINT IF EXISTS salary_advances_status_check;
-ALTER TABLE public.salary_advances
-  ADD CONSTRAINT salary_advances_status_check
-  CHECK (status IN ('open','repaying','repaid','cancelled'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.salary_advances
+    ADD CONSTRAINT salary_advances_status_check
+    CHECK (status IN ('open','repaying','repaid','cancelled'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS payroll_country text NOT NULL DEFAULT 'SE';
 ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS salary_structure_id uuid REFERENCES public.salary_structures(id) ON DELETE SET NULL;
 ALTER TABLE public.employees DROP CONSTRAINT IF EXISTS employees_payroll_country_fk;
-ALTER TABLE public.employees
-  ADD CONSTRAINT employees_payroll_country_fk FOREIGN KEY (payroll_country)
-  REFERENCES public.payroll_country_profiles(country_code) ON UPDATE CASCADE;
+
+DO $idem$ BEGIN
+  ALTER TABLE public.employees
+    ADD CONSTRAINT employees_payroll_country_fk FOREIGN KEY (payroll_country)
+    REFERENCES public.payroll_country_profiles(country_code) ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.payroll_lines ADD COLUMN IF NOT EXISTS advance_deduction_cents bigint NOT NULL DEFAULT 0;
 ALTER TABLE public.payroll_lines ADD COLUMN IF NOT EXISTS tax_correction_cents bigint NOT NULL DEFAULT 0;

@@ -18,14 +18,22 @@ ALTER TABLE public.calendar_events
   ADD COLUMN IF NOT EXISTS reminder_sent_at timestamptz;
 
 ALTER TABLE public.calendar_events DROP CONSTRAINT IF EXISTS calendar_events_visibility_check;
-ALTER TABLE public.calendar_events
-  ADD CONSTRAINT calendar_events_visibility_check
-  CHECK (visibility = ANY (ARRAY['private'::text, 'team'::text, 'public'::text]));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.calendar_events
+    ADD CONSTRAINT calendar_events_visibility_check
+    CHECK (visibility = ANY (ARRAY['private'::text, 'team'::text, 'public'::text]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.calendar_events DROP CONSTRAINT IF EXISTS calendar_events_reminder_minutes_check;
-ALTER TABLE public.calendar_events
-  ADD CONSTRAINT calendar_events_reminder_minutes_check
-  CHECK (reminder_minutes IS NULL OR (reminder_minutes >= 0 AND reminder_minutes <= 20160));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.calendar_events
+    ADD CONSTRAINT calendar_events_reminder_minutes_check
+    CHECK (reminder_minutes IS NULL OR (reminder_minutes >= 0 AND reminder_minutes <= 20160));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- ── 2. RLS: private events are creator-only (admins still see everything) ────
 DROP POLICY IF EXISTS "Staff view calendar_events" ON public.calendar_events;

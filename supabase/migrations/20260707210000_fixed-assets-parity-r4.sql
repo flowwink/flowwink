@@ -18,14 +18,22 @@ ALTER TABLE public.fixed_assets
   ADD COLUMN IF NOT EXISTS units_depreciated integer NOT NULL DEFAULT 0;
 
 ALTER TABLE public.fixed_assets DROP CONSTRAINT IF EXISTS fixed_assets_no_self_parent;
-ALTER TABLE public.fixed_assets
-  ADD CONSTRAINT fixed_assets_no_self_parent CHECK (parent_asset_id IS NULL OR parent_asset_id <> id);
+
+DO $idem$ BEGIN
+  ALTER TABLE public.fixed_assets
+    ADD CONSTRAINT fixed_assets_no_self_parent CHECK (parent_asset_id IS NULL OR parent_asset_id <> id);
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- Extra depreciation methods
 ALTER TABLE public.fixed_assets DROP CONSTRAINT IF EXISTS fixed_assets_depreciation_method_check;
-ALTER TABLE public.fixed_assets
-  ADD CONSTRAINT fixed_assets_depreciation_method_check
-  CHECK (depreciation_method = ANY (ARRAY['straight_line'::text, 'declining'::text, 'sum_of_years'::text, 'units_of_production'::text]));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.fixed_assets
+    ADD CONSTRAINT fixed_assets_depreciation_method_check
+    CHECK (depreciation_method = ANY (ARRAY['straight_line'::text, 'declining'::text, 'sum_of_years'::text, 'units_of_production'::text]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.depreciation_entries
   ADD COLUMN IF NOT EXISTS is_manual boolean NOT NULL DEFAULT false,

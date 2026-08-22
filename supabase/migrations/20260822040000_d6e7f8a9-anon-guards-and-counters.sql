@@ -810,6 +810,7 @@ REVOKE EXECUTE ON FUNCTION public.webinar_registration_count(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.webinar_registration_count(uuid) TO anon, authenticated, service_role;
 
 DROP POLICY IF EXISTS "Registrants can read own registrations" ON public.webinar_registrations;
+DROP POLICY IF EXISTS "Registrants and staff can read registrations" ON public.webinar_registrations;
 CREATE POLICY "Registrants and staff can read registrations"
   ON public.webinar_registrations
   FOR SELECT

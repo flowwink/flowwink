@@ -20,14 +20,22 @@ ALTER TABLE public.pos_registers
 
 -- Refund payments are negative rows — the old CHECK (amount_cents > 0) blocked them.
 ALTER TABLE public.pos_payments DROP CONSTRAINT IF EXISTS pos_payments_amount_cents_check;
-ALTER TABLE public.pos_payments
-  ADD CONSTRAINT pos_payments_amount_cents_check CHECK (amount_cents <> 0);
+
+DO $idem$ BEGIN
+  ALTER TABLE public.pos_payments
+    ADD CONSTRAINT pos_payments_amount_cents_check CHECK (amount_cents <> 0);
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- Allow partial-refund status on sales
 ALTER TABLE public.pos_sales DROP CONSTRAINT IF EXISTS pos_sales_status_check;
-ALTER TABLE public.pos_sales
-  ADD CONSTRAINT pos_sales_status_check
-  CHECK (status = ANY (ARRAY['completed'::text, 'refunded'::text, 'partially_refunded'::text, 'voided'::text]));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.pos_sales
+    ADD CONSTRAINT pos_sales_status_check
+    CHECK (status = ANY (ARRAY['completed'::text, 'refunded'::text, 'partially_refunded'::text, 'voided'::text]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.pos_tables (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,9 +51,13 @@ CREATE TABLE IF NOT EXISTS public.pos_tables (
 );
 
 ALTER TABLE public.pos_sales DROP CONSTRAINT IF EXISTS pos_sales_table_id_fkey;
-ALTER TABLE public.pos_sales
-  ADD CONSTRAINT pos_sales_table_id_fkey
-  FOREIGN KEY (table_id) REFERENCES public.pos_tables(id) ON DELETE SET NULL;
+
+DO $idem$ BEGIN
+  ALTER TABLE public.pos_sales
+    ADD CONSTRAINT pos_sales_table_id_fkey
+    FOREIGN KEY (table_id) REFERENCES public.pos_tables(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.loyalty_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -27,16 +27,28 @@ CREATE TABLE IF NOT EXISTS public.interviews (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.interviews DROP CONSTRAINT IF EXISTS interviews_kind_check;
-ALTER TABLE public.interviews
-  ADD CONSTRAINT interviews_kind_check
-  CHECK (kind IN ('phone_screen','technical','onsite','culture','final','interview'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.interviews
+    ADD CONSTRAINT interviews_kind_check
+    CHECK (kind IN ('phone_screen','technical','onsite','culture','final','interview'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.interviews DROP CONSTRAINT IF EXISTS interviews_status_check;
-ALTER TABLE public.interviews
-  ADD CONSTRAINT interviews_status_check
-  CHECK (status IN ('scheduled','completed','cancelled','no_show'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.interviews
+    ADD CONSTRAINT interviews_status_check
+    CHECK (status IN ('scheduled','completed','cancelled','no_show'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.interviews DROP CONSTRAINT IF EXISTS interviews_window_check;
-ALTER TABLE public.interviews
-  ADD CONSTRAINT interviews_window_check CHECK (scheduled_end > scheduled_start);
+
+DO $idem$ BEGIN
+  ALTER TABLE public.interviews
+    ADD CONSTRAINT interviews_window_check CHECK (scheduled_end > scheduled_start);
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.candidate_assessments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,9 +69,13 @@ CREATE TABLE IF NOT EXISTS public.candidate_assessments (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.candidate_assessments DROP CONSTRAINT IF EXISTS candidate_assessments_kind_check;
-ALTER TABLE public.candidate_assessments
-  ADD CONSTRAINT candidate_assessments_kind_check
-  CHECK (kind IN ('coding','personality','language','case_study','cognitive','other'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.candidate_assessments
+    ADD CONSTRAINT candidate_assessments_kind_check
+    CHECK (kind IN ('coding','personality','language','case_study','cognitive','other'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.reference_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,9 +93,13 @@ CREATE TABLE IF NOT EXISTS public.reference_checks (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.reference_checks DROP CONSTRAINT IF EXISTS reference_checks_status_check;
-ALTER TABLE public.reference_checks
-  ADD CONSTRAINT reference_checks_status_check
-  CHECK (status IN ('pending','contacted','completed','declined'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.reference_checks
+    ADD CONSTRAINT reference_checks_status_check
+    CHECK (status IN ('pending','contacted','completed','declined'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.job_offers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -99,9 +119,13 @@ CREATE TABLE IF NOT EXISTS public.job_offers (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.job_offers DROP CONSTRAINT IF EXISTS job_offers_status_check;
-ALTER TABLE public.job_offers
-  ADD CONSTRAINT job_offers_status_check
-  CHECK (status IN ('draft','sent','accepted','declined','expired','withdrawn'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.job_offers
+    ADD CONSTRAINT job_offers_status_check
+    CHECK (status IN ('draft','sent','accepted','declined','expired','withdrawn'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 DO $do$
 DECLARE

@@ -27,9 +27,16 @@
 -- (backdated files are silently skipped).
 
 -- ── 1. Chart of accounts: benefit cost account ───────────────────────────────
-INSERT INTO public.chart_of_accounts (account_code, account_name, account_type, account_category, normal_balance, locale)
-VALUES ('7385', 'Kostnader för skattepliktiga förmåner', 'expense', 'Personalkostnader', 'debit', 'se-bas2024')
-ON CONFLICT (account_code) DO NOTHING;
+DO $idem$ BEGIN
+  INSERT INTO public.chart_of_accounts (account_code, account_name, account_type, account_category, normal_balance, locale)
+  VALUES ('7385', 'Kostnader för skattepliktiga förmåner', 'expense', 'Personalkostnader', 'debit', 'se-bas2024')
+  ON CONFLICT (account_code) DO NOTHING;
+EXCEPTION WHEN invalid_column_reference THEN
+  -- Unika nyckeln blev (locale, account_code) i en senare migration. Vid
+  -- omkörning matchar ON CONFLICT (account_code) inget — raderna finns redan.
+  NULL;
+END $idem$;
+
 
 -- ── 2. Run creation v3: net pay excludes non-cash benefits ───────────────────
 CREATE OR REPLACE FUNCTION public.create_payroll_run(p_period_date date)

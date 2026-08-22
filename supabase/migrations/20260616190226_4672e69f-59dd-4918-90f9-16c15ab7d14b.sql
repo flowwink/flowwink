@@ -21,12 +21,14 @@ DROP POLICY IF EXISTS "Authenticated users can update contracts" ON public.contr
 DROP POLICY IF EXISTS "Authenticated users can delete contracts" ON public.contracts;
 DROP POLICY IF EXISTS "Public can view contract by token" ON public.contracts;
 
+DROP POLICY IF EXISTS "Owners or admins can update contracts" ON public.contracts;
 CREATE POLICY "Owners or admins can update contracts"
   ON public.contracts FOR UPDATE
   TO authenticated
   USING (created_by = auth.uid() OR has_role(auth.uid(), 'admin'::app_role))
   WITH CHECK (created_by = auth.uid() OR has_role(auth.uid(), 'admin'::app_role));
 
+DROP POLICY IF EXISTS "Admins can delete contracts" ON public.contracts;
 CREATE POLICY "Admins can delete contracts"
   ON public.contracts FOR DELETE
   TO authenticated
@@ -39,6 +41,7 @@ DROP POLICY IF EXISTS "Public can view quote by token" ON public.quotes;
 DROP POLICY IF EXISTS "Public can insert via valid token" ON public.contract_signatures;
 DROP POLICY IF EXISTS "Authenticated can view contract signatures" ON public.contract_signatures;
 
+DROP POLICY IF EXISTS "Owners or admins can view signatures" ON public.contract_signatures;
 CREATE POLICY "Owners or admins can view signatures"
   ON public.contract_signatures FOR SELECT
   TO authenticated

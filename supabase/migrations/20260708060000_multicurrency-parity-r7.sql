@@ -105,14 +105,26 @@ CREATE TABLE IF NOT EXISTS public.fx_forward_contracts (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.fx_forward_contracts DROP CONSTRAINT IF EXISTS fx_forward_contracts_direction_check;
-ALTER TABLE public.fx_forward_contracts
-  ADD CONSTRAINT fx_forward_contracts_direction_check CHECK (direction IN ('buy','sell'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.fx_forward_contracts
+    ADD CONSTRAINT fx_forward_contracts_direction_check CHECK (direction IN ('buy','sell'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.fx_forward_contracts DROP CONSTRAINT IF EXISTS fx_forward_contracts_status_check;
-ALTER TABLE public.fx_forward_contracts
-  ADD CONSTRAINT fx_forward_contracts_status_check CHECK (status IN ('open','settled','cancelled'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.fx_forward_contracts
+    ADD CONSTRAINT fx_forward_contracts_status_check CHECK (status IN ('open','settled','cancelled'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.fx_forward_contracts DROP CONSTRAINT IF EXISTS fx_forward_contracts_amount_check;
-ALTER TABLE public.fx_forward_contracts
-  ADD CONSTRAINT fx_forward_contracts_amount_check CHECK (amount_cents > 0);
+
+DO $idem$ BEGIN
+  ALTER TABLE public.fx_forward_contracts
+    ADD CONSTRAINT fx_forward_contracts_amount_check CHECK (amount_cents > 0);
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.fx_forward_contracts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage fx forwards" ON public.fx_forward_contracts;

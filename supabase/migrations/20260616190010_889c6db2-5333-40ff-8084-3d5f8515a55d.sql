@@ -1,3 +1,4 @@
+DROP POLICY IF EXISTS "Admins can insert messages in any conversation" ON public.chat_messages;
 CREATE POLICY "Admins can insert messages in any conversation"
 ON public.chat_messages
 FOR INSERT

@@ -492,17 +492,26 @@ function siteUrlRow(input: ReadinessInput['siteUrl']): ReadinessRow {
   };
 
   if (!input.configured) {
+    // Åtgärden måste peka på det som FAKTISKT blockerar. Raden mäter
+    // FlowWink-halvan (site_settings.general.siteUrl, satt i /admin/settings)
+    // men bar tidigare bara en länk till Supabase-halvan — den den uttryckligen
+    // inte kan mäta. En knapp som inte kan lösa sin egen rad är samma fel som
+    // en vakt som inte vaktar; observerat skarpt på nordbrygg 2026-08-22, där
+    // Supabase-halvan var satt medan raden stod kvar på "not done".
+    // Supabase-halvan finns kvar i noten, där den hör hemma: den är ett andra
+    // steg, inte det som gör raden grön.
     return {
       ...base,
       status: 'blocked',
-      detail: `No public site URL is set. Backend links have no absolute address to build from. This instance is being served from ${input.origin}.`,
+      detail: `No public site URL is set in FlowWink. Backend links have no absolute address to build from. This instance is being served from ${input.origin}.`,
+      action: { kind: 'link', to: '/admin/settings', label: 'Set the site URL' },
     };
   }
 
   return {
     ...base,
     status: 'ok',
-    detail: `Public site URL is ${input.configured}.`,
+    detail: `Public site URL is ${input.configured}. The Supabase half stays unverifiable from here — see the note.`,
   };
 }
 

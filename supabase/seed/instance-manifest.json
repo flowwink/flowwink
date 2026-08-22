@@ -2003,11 +2003,11 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:f935e00771cf0bd399ae93404e645ba596ef34e8c5b60712249ab24bf814c196",
+      "shared_hash": "sha256:7d68a40e3ac4b08b9ae730e76180eaf3b9ab42ccda133db2b30a9758c069189e",
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:7a95107977e9994df6ebd4a6057c926a6dac4bf34cc530b139f5010779a26f3e",
+        "agent-execute": "sha256:86584d86ee61f961b12568792d88999af960db70a5073aee2afc54db974ca455",
         "agent-operate": "sha256:1765b70f17a5f0e12a43dc6f50c2247cb15f2f4b82f9cf7204efb657cec1fdcf",
         "ai-task": "sha256:35ae34d3748467b51f716cfef3d80af31b08e92e801905277b8460765b017169",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

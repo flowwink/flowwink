@@ -168,3 +168,32 @@ everything `succeeded`, and `SELECT status_code, count(*) FROM
 net._http_response GROUP BY 1` should show only 200s. A pile of 401s means an
 edge function's `verify_jwt` doesn't match how cron calls it — see
 `supabase/config.toml`, where every function declares it explicitly.
+
+## The branch status field is not evidence
+
+The Supabase GitHub integration keeps a *branch object* per connected project,
+readable through the Management API:
+
+```bash
+curl -s -H "Authorization: Bearer $SBP_TOKEN" \
+  "https://api.supabase.com/v1/projects/<ref>/branches"
+```
+
+Its `status` walks `MIGRATIONS_PASSED` / `MIGRATIONS_FAILED` → `FUNCTIONS_DEPLOYED`,
+and reading it is the fastest way to learn *why* a fresh instance is empty — it
+is how the 2026-08-22 wedge was diagnosed (`MIGRATIONS_FAILED` on a project
+whose ledger claimed 14 rows while the database held 233 tables).
+
+**But the status is a state machine, not a measurement.** Minutes after
+connecting a brand-new project — before any push — the same field read
+`FUNCTIONS_DEPLOYED` while the project had **0 migrations, 0 tables and 0
+edge functions**. A run that did nothing still ends in the terminal state.
+
+So: use `status` to explain a failure, never to confirm a success. Confirm
+success against the objects themselves — the ledger, `information_schema.tables`,
+and `GET /v1/projects/<ref>/functions`. Same rule as everywhere else in this
+repo: the name in the ledger is weak evidence, the object is the strong one.
+
+Connecting the repo does not itself deploy. **A push to the production branch is
+what triggers a run**, so an instance connected but never pushed to sits at zero
+with a green-looking status field.

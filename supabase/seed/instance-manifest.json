@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260822140000",
-      "migrations_count": 481,
+      "migration_head": "20260822150000",
+      "migrations_count": 482,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1929,11 +1929,15 @@
         {
           "version": "20260822140000",
           "name": "the-inspector-decides-and-the-decision-lands"
+        },
+        {
+          "version": "20260822150000",
+          "name": "f8a9b0c1-back-in-stock-grants-join-the-sweep"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:aee01f14ce87fe0af5ec26f6a27ba7801ed572a5026d32e5998bd82a99fd3df2",
+      "seed_hash": "sha256:53cf2a8ff318c04a1d885a03f533c14061d991a77c8eebdd5f42d9746db38084",
       "skill_count": 537,
       "module_count": 68
     },
@@ -1943,7 +1947,7 @@
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:361035eb0c9797084e026880cfa797cb095516020e16c441406039b4ae4274a5",
+        "agent-execute": "sha256:3c55e86992aa1c824092a86c3558d16a4937ad0e4b5cfd39971c6f2e0cde1461",
         "agent-operate": "sha256:75fb1281c6ee8aa748f24c44a0b866686a12cf11df5291d7ff5e6aa59a2c1d2a",
         "ai-task": "sha256:4f3549a12beac9c958dc7b584c91202f67fd5700dad7ac9e512e5483ddfb29c7",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

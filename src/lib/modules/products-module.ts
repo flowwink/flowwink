@@ -609,7 +609,7 @@ Checks the current status of an order via the order-status edge function.
   },
   {
     name: 'cart_recovery_check',
-    description: 'Lists orders with abandoned or incomplete status. Use when: reviewing abandoned carts, recovery campaigns, checking incomplete orders. NOT for: checking specific order status (use check_order).',
+    description: 'Lists orders with abandoned or incomplete status. Use when: reviewing abandoned carts, recovery campaigns, checking incomplete orders. NOT for: checking specific order status (use check_order_status).',
     category: 'crm',
     handler: 'module:orders',
     scope: 'internal',
@@ -628,7 +628,7 @@ Checks the current status of an order via the order-status edge function.
             },
           },
         },
-        description: 'Lists orders with abandoned or incomplete status. Use when: reviewing abandoned carts, recovery campaigns, checking incomplete orders. NOT for: checking specific order status (use check_order).',
+        description: 'Lists orders with abandoned or incomplete status. Use when: reviewing abandoned carts, recovery campaigns, checking incomplete orders. NOT for: checking specific order status (use check_order_status).',
       },
     },
     instructions: 'Identify orders needing follow-up. After listing, create a recovery campaign.',

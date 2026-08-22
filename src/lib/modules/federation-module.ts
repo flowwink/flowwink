@@ -446,7 +446,7 @@ Focus on: Is booking functional? Are there services listed? Any errors?"
   },
   {
     name: 'queue_beta_test',
-    description: 'Queue a test scenario for OpenClaw to execute on next poll. Use when: scheduling tests for asynchronous execution. NOT for: running tests immediately (use openclaw_test).',
+    description: 'Queue a test scenario for OpenClaw to execute on next poll. Use when: scheduling tests for asynchronous execution. NOT for: dispatching a mission for immediate execution (use dispatch_claw_mission).',
     category: 'system',
     handler: 'module:openclaw',
     scope: 'internal',
@@ -476,7 +476,7 @@ Focus on: Is booking functional? Are there services listed? Any errors?"
             },
           },
         },
-        description: 'Queue a test scenario for OpenClaw to execute on next poll. Use when: scheduling tests for asynchronous execution. NOT for: running tests immediately (use openclaw_test).',
+        description: 'Queue a test scenario for OpenClaw to execute on next poll. Use when: scheduling tests for asynchronous execution. NOT for: dispatching a mission for immediate execution (use dispatch_claw_mission).',
       },
     },
     instructions: `# Queue Beta Test

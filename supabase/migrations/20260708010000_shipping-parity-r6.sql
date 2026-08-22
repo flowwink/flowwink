@@ -31,9 +31,13 @@ CREATE TABLE IF NOT EXISTS public.shipping_pickups (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.shipping_pickups DROP CONSTRAINT IF EXISTS shipping_pickups_status_check;
-ALTER TABLE public.shipping_pickups
-  ADD CONSTRAINT shipping_pickups_status_check
-  CHECK (status IN ('requested','confirmed','completed','cancelled'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.shipping_pickups
+    ADD CONSTRAINT shipping_pickups_status_check
+    CHECK (status IN ('requested','confirmed','completed','cancelled'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.shipping_pickups ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage shipping_pickups" ON public.shipping_pickups;
@@ -67,8 +71,12 @@ ALTER TABLE public.shipments
   ADD COLUMN IF NOT EXISTS customs_declared_at timestamptz;
 
 ALTER TABLE public.shipments DROP CONSTRAINT IF EXISTS shipments_kind_check;
-ALTER TABLE public.shipments
-  ADD CONSTRAINT shipments_kind_check CHECK (kind IN ('outbound','return'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.shipments
+    ADD CONSTRAINT shipments_kind_check CHECK (kind IN ('outbound','return'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- Per-country postal-code validation rules (extensible reference data).
 CREATE TABLE IF NOT EXISTS public.postal_code_rules (

@@ -1,6 +1,7 @@
 
 DROP POLICY IF EXISTS "Users can create conversations" ON public.chat_conversations;
 
+DROP POLICY IF EXISTS "Anyone can create conversation" ON public.chat_conversations;
 CREATE POLICY "Anyone can create conversation"
   ON public.chat_conversations
   FOR INSERT

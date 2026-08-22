@@ -25,17 +25,29 @@ ALTER TABLE public.pricelist_items ADD COLUMN IF NOT EXISTS rounding_cents integ
 
 -- Widen the pre-existing "fixed OR discount" rule to admit formula rows.
 ALTER TABLE public.pricelist_items DROP CONSTRAINT IF EXISTS pricelist_items_price_or_discount;
-ALTER TABLE public.pricelist_items
-  ADD CONSTRAINT pricelist_items_price_or_discount
-  CHECK (fixed_price_cents IS NOT NULL OR discount_pct IS NOT NULL OR formula_base IS NOT NULL);
+
+DO $idem$ BEGIN
+  ALTER TABLE public.pricelist_items
+    ADD CONSTRAINT pricelist_items_price_or_discount
+    CHECK (fixed_price_cents IS NOT NULL OR discount_pct IS NOT NULL OR formula_base IS NOT NULL);
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.pricelist_items DROP CONSTRAINT IF EXISTS pricelist_items_formula_base_check;
-ALTER TABLE public.pricelist_items
-  ADD CONSTRAINT pricelist_items_formula_base_check
-  CHECK (formula_base IS NULL OR formula_base IN ('cost','list'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.pricelist_items
+    ADD CONSTRAINT pricelist_items_formula_base_check
+    CHECK (formula_base IS NULL OR formula_base IN ('cost','list'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.pricelist_items DROP CONSTRAINT IF EXISTS pricelist_items_time_window_check;
-ALTER TABLE public.pricelist_items
-  ADD CONSTRAINT pricelist_items_time_window_check
-  CHECK ((time_start IS NULL) = (time_end IS NULL));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.pricelist_items
+    ADD CONSTRAINT pricelist_items_time_window_check
+    CHECK ((time_start IS NULL) = (time_end IS NULL));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- ── 2. Version history ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.pricelist_revisions (

@@ -94,16 +94,19 @@ END $vendor_docs$;
 ALTER TABLE public.documents
   DROP CONSTRAINT IF EXISTS documents_extraction_status_check;
 
-ALTER TABLE public.documents
-  ADD CONSTRAINT documents_extraction_status_check
-  CHECK (extraction_status = ANY (ARRAY[
-    'pending'::text,
-    'processing'::text,
-    'success'::text,
-    'failed'::text,
-    'unsupported'::text,
-    'not_applicable'::text
-  ]));
+DO $idem$ BEGIN
+  ALTER TABLE public.documents
+    ADD CONSTRAINT documents_extraction_status_check
+    CHECK (extraction_status = ANY (ARRAY[
+      'pending'::text,
+      'processing'::text,
+      'success'::text,
+      'failed'::text,
+      'unsupported'::text,
+      'not_applicable'::text
+    ]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- === 20260812180000_leads-score-on-its-own-instance.sql ===
 CREATE OR REPLACE FUNCTION public.trigger_score_visitor_intent()

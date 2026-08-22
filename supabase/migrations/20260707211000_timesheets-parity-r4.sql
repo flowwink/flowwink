@@ -18,14 +18,22 @@ ALTER TABLE public.time_entries
   ADD COLUMN IF NOT EXISTS overtime_hours numeric(6,2) NOT NULL DEFAULT 0;
 
 ALTER TABLE public.time_entries DROP CONSTRAINT IF EXISTS time_entries_approval_status_check;
-ALTER TABLE public.time_entries
-  ADD CONSTRAINT time_entries_approval_status_check
-  CHECK (approval_status = ANY (ARRAY['draft'::text, 'submitted'::text, 'approved'::text, 'rejected'::text]));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.time_entries
+    ADD CONSTRAINT time_entries_approval_status_check
+    CHECK (approval_status = ANY (ARRAY['draft'::text, 'submitted'::text, 'approved'::text, 'rejected'::text]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.time_entries DROP CONSTRAINT IF EXISTS time_entries_category_check;
-ALTER TABLE public.time_entries
-  ADD CONSTRAINT time_entries_category_check
-  CHECK (category = ANY (ARRAY['work'::text, 'pto'::text, 'sick'::text, 'training'::text, 'overhead'::text]));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.time_entries
+    ADD CONSTRAINT time_entries_category_check
+    CHECK (category = ANY (ARRAY['work'::text, 'pto'::text, 'sick'::text, 'training'::text, 'overhead'::text]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 ALTER TABLE public.payroll_lines
   ADD COLUMN IF NOT EXISTS overtime_hours numeric(6,2) NOT NULL DEFAULT 0,

@@ -109,8 +109,12 @@ CREATE TABLE IF NOT EXISTS public.service_credits (
   created_by uuid
 );
 ALTER TABLE public.service_credits DROP CONSTRAINT IF EXISTS service_credits_status_check;
-ALTER TABLE public.service_credits
-  ADD CONSTRAINT service_credits_status_check CHECK (status IN ('accrued','applied','waived'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.service_credits
+    ADD CONSTRAINT service_credits_status_check CHECK (status IN ('accrued','applied','waived'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.service_credits ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage service_credits" ON public.service_credits;
 CREATE POLICY "Admins manage service_credits" ON public.service_credits

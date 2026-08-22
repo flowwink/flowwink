@@ -32,9 +32,13 @@ ALTER TABLE public.service_orders
   ADD COLUMN IF NOT EXISTS parent_order_id uuid REFERENCES public.service_orders(id) ON DELETE SET NULL;
 
 ALTER TABLE public.service_orders DROP CONSTRAINT IF EXISTS service_orders_recurrence_rule_check;
-ALTER TABLE public.service_orders
-  ADD CONSTRAINT service_orders_recurrence_rule_check
-  CHECK (recurrence_rule IS NULL OR recurrence_rule IN ('weekly','biweekly','monthly','quarterly','yearly'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.service_orders
+    ADD CONSTRAINT service_orders_recurrence_rule_check
+    CHECK (recurrence_rule IS NULL OR recurrence_rule IN ('weekly','biweekly','monthly','quarterly','yearly'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE TABLE IF NOT EXISTS public.service_packages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

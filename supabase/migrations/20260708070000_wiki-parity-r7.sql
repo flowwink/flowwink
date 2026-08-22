@@ -13,15 +13,27 @@ ALTER TABLE public.wiki_pages ADD COLUMN IF NOT EXISTS visibility text NOT NULL 
 ALTER TABLE public.wiki_pages ADD COLUMN IF NOT EXISTS editable_by text NOT NULL DEFAULT 'authenticated';
 
 ALTER TABLE public.wiki_pages DROP CONSTRAINT IF EXISTS wiki_pages_visibility_check;
-ALTER TABLE public.wiki_pages
-  ADD CONSTRAINT wiki_pages_visibility_check CHECK (visibility IN ('internal','admin'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.wiki_pages
+    ADD CONSTRAINT wiki_pages_visibility_check CHECK (visibility IN ('internal','admin'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.wiki_pages DROP CONSTRAINT IF EXISTS wiki_pages_editable_by_check;
-ALTER TABLE public.wiki_pages
-  ADD CONSTRAINT wiki_pages_editable_by_check CHECK (editable_by IN ('authenticated','admin'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.wiki_pages
+    ADD CONSTRAINT wiki_pages_editable_by_check CHECK (editable_by IN ('authenticated','admin'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 ALTER TABLE public.wiki_pages DROP CONSTRAINT IF EXISTS wiki_pages_parent_fk;
-ALTER TABLE public.wiki_pages
-  ADD CONSTRAINT wiki_pages_parent_fk FOREIGN KEY (parent_slug)
-  REFERENCES public.wiki_pages(slug) ON DELETE SET NULL ON UPDATE CASCADE;
+
+DO $idem$ BEGIN
+  ALTER TABLE public.wiki_pages
+    ADD CONSTRAINT wiki_pages_parent_fk FOREIGN KEY (parent_slug)
+    REFERENCES public.wiki_pages(slug) ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- ── 2. Version history ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.wiki_page_revisions (

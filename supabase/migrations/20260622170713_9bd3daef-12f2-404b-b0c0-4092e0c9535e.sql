@@ -55,12 +55,14 @@ GRANT ALL ON public.voice_calls TO service_role;
 
 ALTER TABLE public.voice_calls ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins manage all voice calls" ON public.voice_calls;
 CREATE POLICY "Admins manage all voice calls"
   ON public.voice_calls FOR ALL
   TO authenticated
   USING (public.has_role(auth.uid(), 'admin'))
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
 
+DROP POLICY IF EXISTS "Agents read their own calls" ON public.voice_calls;
 CREATE POLICY "Agents read their own calls"
   ON public.voice_calls FOR SELECT
   TO authenticated
@@ -68,6 +70,7 @@ CREATE POLICY "Agents read their own calls"
     agent_id IN (SELECT id FROM public.support_agents WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Agents update their own calls" ON public.voice_calls;
 CREATE POLICY "Agents update their own calls"
   ON public.voice_calls FOR UPDATE
   TO authenticated
@@ -76,6 +79,7 @@ CREATE POLICY "Agents update their own calls"
   );
 
 -- updated_at trigger
+DROP TRIGGER IF EXISTS set_voice_calls_updated_at ON public.voice_calls;
 CREATE TRIGGER set_voice_calls_updated_at
   BEFORE UPDATE ON public.voice_calls
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -90,4 +94,7 @@ ALTER TABLE public.support_agents
   ADD COLUMN IF NOT EXISTS voice_provider TEXT;        -- vilken adapter agenten är registrerad mot
 
 -- Realtime för voice_calls så admin-UI får live missed-call-uppdateringar
-ALTER PUBLICATION supabase_realtime ADD TABLE public.voice_calls;
+DO $idem$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.voice_calls;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;

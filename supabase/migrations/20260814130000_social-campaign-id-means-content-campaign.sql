@@ -13,6 +13,9 @@
 ALTER TABLE public.social_posts
   DROP CONSTRAINT IF EXISTS social_posts_campaign_id_fkey;
 
-ALTER TABLE public.social_posts
-  ADD CONSTRAINT social_posts_campaign_id_fkey
-  FOREIGN KEY (campaign_id) REFERENCES public.content_proposals(id) ON DELETE SET NULL;
+DO $idem$ BEGIN
+  ALTER TABLE public.social_posts
+    ADD CONSTRAINT social_posts_campaign_id_fkey
+    FOREIGN KEY (campaign_id) REFERENCES public.content_proposals(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;

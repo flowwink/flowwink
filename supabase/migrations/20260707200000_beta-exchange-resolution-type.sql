@@ -7,19 +7,22 @@
 ALTER TABLE public.beta_test_exchanges
   DROP CONSTRAINT IF EXISTS beta_test_exchanges_message_type_check;
 
-ALTER TABLE public.beta_test_exchanges
-  ADD CONSTRAINT beta_test_exchanges_message_type_check
-  CHECK (message_type = ANY (ARRAY[
-    'observation'::text,
-    'instruction'::text,
-    'feedback'::text,
-    'learning'::text,
-    'action_request'::text,
-    'action_result'::text,
-    'question'::text,
-    'acknowledgment'::text,
-    'suggestion'::text,
-    'error'::text,
-    'status_update'::text,
-    'resolution'::text
-  ]));
+DO $idem$ BEGIN
+  ALTER TABLE public.beta_test_exchanges
+    ADD CONSTRAINT beta_test_exchanges_message_type_check
+    CHECK (message_type = ANY (ARRAY[
+      'observation'::text,
+      'instruction'::text,
+      'feedback'::text,
+      'learning'::text,
+      'action_request'::text,
+      'action_result'::text,
+      'question'::text,
+      'acknowledgment'::text,
+      'suggestion'::text,
+      'error'::text,
+      'status_update'::text,
+      'resolution'::text
+    ]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;

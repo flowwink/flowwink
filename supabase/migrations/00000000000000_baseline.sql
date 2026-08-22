@@ -91,564 +91,699 @@ CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA "extensions";
 
 
 
-CREATE TYPE "public"."a2a_activity_status" AS ENUM (
-    'success',
-    'error',
-    'pending',
-    'dispatched'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."a2a_activity_status" AS ENUM (
+      'success',
+      'error',
+      'pending',
+      'dispatched'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."a2a_activity_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."a2a_direction" AS ENUM (
-    'inbound',
-    'outbound'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."a2a_direction" AS ENUM (
+      'inbound',
+      'outbound'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."a2a_direction" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."a2a_peer_status" AS ENUM (
-    'active',
-    'paused',
-    'revoked'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."a2a_peer_status" AS ENUM (
+      'active',
+      'paused',
+      'revoked'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."a2a_peer_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."accounting_period_status" AS ENUM (
-    'open',
-    'closed',
-    'locked'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."accounting_period_status" AS ENUM (
+      'open',
+      'closed',
+      'locked'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."accounting_period_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."activity_outcome_status" AS ENUM (
-    'pending',
-    'success',
-    'partial',
-    'no_effect',
-    'negative',
-    'neutral',
-    'too_early'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."activity_outcome_status" AS ENUM (
+      'pending',
+      'success',
+      'partial',
+      'no_effect',
+      'negative',
+      'neutral',
+      'too_early'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."activity_outcome_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."agent_activity_status" AS ENUM (
-    'success',
-    'failed',
-    'pending_approval',
-    'approved',
-    'rejected'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."agent_activity_status" AS ENUM (
+      'success',
+      'failed',
+      'pending_approval',
+      'approved',
+      'rejected'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."agent_activity_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."agent_memory_category" AS ENUM (
-    'preference',
-    'context',
-    'fact',
-    'config',
-    'snapshot'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."agent_memory_category" AS ENUM (
+      'preference',
+      'context',
+      'fact',
+      'config',
+      'snapshot'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."agent_memory_category" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."agent_objective_status" AS ENUM (
-    'active',
-    'completed',
-    'paused',
-    'failed'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."agent_objective_status" AS ENUM (
+      'active',
+      'completed',
+      'paused',
+      'failed'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."agent_objective_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."agent_scope" AS ENUM (
-    'internal',
-    'external',
-    'both'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."agent_scope" AS ENUM (
+      'internal',
+      'external',
+      'both'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."agent_scope" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."agent_skill_category" AS ENUM (
-    'content',
-    'crm',
-    'communication',
-    'automation',
-    'search',
-    'analytics',
-    'system',
-    'commerce',
-    'growth',
-    'testing',
-    'subscriptions'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."agent_skill_category" AS ENUM (
+      'content',
+      'crm',
+      'communication',
+      'automation',
+      'search',
+      'analytics',
+      'system',
+      'commerce',
+      'growth',
+      'testing',
+      'subscriptions'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."agent_skill_category" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."agent_type" AS ENUM (
-    'flowpilot',
-    'chat',
-    'mcp',
-    'cron',
-    'automation',
-    'system'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."agent_type" AS ENUM (
+      'flowpilot',
+      'chat',
+      'mcp',
+      'cron',
+      'automation',
+      'system'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."agent_type" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."app_role" AS ENUM (
-    'writer',
-    'approver',
-    'admin',
-    'customer',
-    'employee',
-    'sales',
-    'hr',
-    'accounting',
-    'support',
-    'warehouse',
-    'marketing',
-    'purchasing',
-    'projects'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."app_role" AS ENUM (
+      'writer',
+      'approver',
+      'admin',
+      'customer',
+      'employee',
+      'sales',
+      'hr',
+      'accounting',
+      'support',
+      'warehouse',
+      'marketing',
+      'purchasing',
+      'projects'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."app_role" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."application_stage" AS ENUM (
-    'applied',
-    'screened',
-    'interview_scheduled',
-    'interviewed',
-    'offer_sent',
-    'hired',
-    'rejected',
-    'withdrawn'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."application_stage" AS ENUM (
+      'applied',
+      'screened',
+      'interview_scheduled',
+      'interviewed',
+      'offer_sent',
+      'hired',
+      'rejected',
+      'withdrawn'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."application_stage" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."approval_decision_kind" AS ENUM (
-    'approve',
-    'reject'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."approval_decision_kind" AS ENUM (
+      'approve',
+      'reject'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."approval_decision_kind" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."approval_status" AS ENUM (
-    'pending',
-    'approved',
-    'rejected',
-    'cancelled'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."approval_status" AS ENUM (
+      'pending',
+      'approved',
+      'rejected',
+      'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."approval_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."automation_trigger_type" AS ENUM (
-    'cron',
-    'event',
-    'signal'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."automation_trigger_type" AS ENUM (
+      'cron',
+      'event',
+      'signal'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."automation_trigger_type" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."churn_reason_category" AS ENUM (
-    'too_expensive',
-    'missing_feature',
-    'switched_competitor',
-    'no_longer_needed',
-    'poor_support',
-    'technical_issues',
-    'temporary_pause',
-    'other'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."churn_reason_category" AS ENUM (
+      'too_expensive',
+      'missing_feature',
+      'switched_competitor',
+      'no_longer_needed',
+      'poor_support',
+      'technical_issues',
+      'temporary_pause',
+      'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."churn_reason_category" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."company_lifecycle_stage" AS ENUM (
-    'prospect',
-    'customer',
-    'churned'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."company_lifecycle_stage" AS ENUM (
+      'prospect',
+      'customer',
+      'churned'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."company_lifecycle_stage" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."connection_direction" AS ENUM (
-    'outbound',
-    'inbound',
-    'bidirectional'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."connection_direction" AS ENUM (
+      'outbound',
+      'inbound',
+      'bidirectional'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."connection_direction" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."connection_transport" AS ENUM (
-    'a2a',
-    'openresponses',
-    'mcp'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."connection_transport" AS ENUM (
+      'a2a',
+      'openresponses',
+      'mcp'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."connection_transport" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."contract_status" AS ENUM (
-    'draft',
-    'pending_signature',
-    'active',
-    'expired',
-    'terminated'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."contract_status" AS ENUM (
+      'draft',
+      'pending_signature',
+      'active',
+      'expired',
+      'terminated'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."contract_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."contract_type" AS ENUM (
-    'service',
-    'nda',
-    'employment',
-    'lease',
-    'other'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."contract_type" AS ENUM (
+      'service',
+      'nda',
+      'employment',
+      'lease',
+      'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."contract_type" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."deal_stage" AS ENUM (
-    'lead',
-    'prospecting',
-    'qualified',
-    'proposal',
-    'negotiation',
-    'closed_won',
-    'closed_lost'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."deal_stage" AS ENUM (
+      'lead',
+      'prospecting',
+      'qualified',
+      'proposal',
+      'negotiation',
+      'closed_won',
+      'closed_lost'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."deal_stage" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."employment_kind" AS ENUM (
-    'full_time',
-    'part_time',
-    'contract',
-    'internship',
-    'temporary'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."employment_kind" AS ENUM (
+      'full_time',
+      'part_time',
+      'contract',
+      'internship',
+      'temporary'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."employment_kind" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."invoice_status" AS ENUM (
-    'draft',
-    'sent',
-    'paid',
-    'cancelled',
-    'overdue'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."invoice_status" AS ENUM (
+      'draft',
+      'sent',
+      'paid',
+      'cancelled',
+      'overdue'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."invoice_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."job_posting_status" AS ENUM (
-    'draft',
-    'published',
-    'closed',
-    'archived'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."job_posting_status" AS ENUM (
+      'draft',
+      'published',
+      'closed',
+      'archived'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."job_posting_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."lead_status" AS ENUM (
-    'lead',
-    'opportunity',
-    'customer',
-    'lost'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."lead_status" AS ENUM (
+      'lead',
+      'opportunity',
+      'customer',
+      'lost'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."lead_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."mo_status" AS ENUM (
-    'draft',
-    'planned',
-    'confirmed',
-    'in_progress',
-    'done',
-    'cancelled'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."mo_status" AS ENUM (
+      'draft',
+      'planned',
+      'confirmed',
+      'in_progress',
+      'done',
+      'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."mo_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."page_status" AS ENUM (
-    'draft',
-    'reviewing',
-    'published',
-    'archived'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."page_status" AS ENUM (
+      'draft',
+      'reviewing',
+      'published',
+      'archived'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."page_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."peer_transport" AS ENUM (
-    'a2a',
-    'openresponses',
-    'mcp_inbound'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."peer_transport" AS ENUM (
+      'a2a',
+      'openresponses',
+      'mcp_inbound'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."peer_transport" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."product_type" AS ENUM (
-    'one_time',
-    'recurring'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."product_type" AS ENUM (
+      'one_time',
+      'recurring'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."product_type" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."project_task_priority" AS ENUM (
-    'low',
-    'medium',
-    'high',
-    'urgent'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."project_task_priority" AS ENUM (
+      'low',
+      'medium',
+      'high',
+      'urgent'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."project_task_priority" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."project_task_status" AS ENUM (
-    'todo',
-    'in_progress',
-    'review',
-    'done'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."project_task_status" AS ENUM (
+      'todo',
+      'in_progress',
+      'review',
+      'done'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."project_task_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."purchase_order_status" AS ENUM (
-    'draft',
-    'sent',
-    'confirmed',
-    'partially_received',
-    'received',
-    'cancelled'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."purchase_order_status" AS ENUM (
+      'draft',
+      'sent',
+      'confirmed',
+      'partially_received',
+      'received',
+      'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."purchase_order_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."quote_status" AS ENUM (
-    'draft',
-    'sent',
-    'accepted',
-    'rejected',
-    'expired',
-    'pending_approval',
-    'viewed',
-    'cancelled'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."quote_status" AS ENUM (
+      'draft',
+      'sent',
+      'accepted',
+      'rejected',
+      'expired',
+      'pending_approval',
+      'viewed',
+      'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."quote_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."renewal_type" AS ENUM (
-    'none',
-    'auto',
-    'manual'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."renewal_type" AS ENUM (
+      'none',
+      'auto',
+      'manual'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."renewal_type" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."rfq_bid_status" AS ENUM (
-    'pending',
-    'submitted',
-    'awarded',
-    'rejected',
-    'withdrawn'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."rfq_bid_status" AS ENUM (
+      'pending',
+      'submitted',
+      'awarded',
+      'rejected',
+      'withdrawn'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."rfq_bid_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."rfq_status" AS ENUM (
-    'draft',
-    'sent',
-    'bidding',
-    'closed',
-    'awarded',
-    'cancelled'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."rfq_status" AS ENUM (
+      'draft',
+      'sent',
+      'bidding',
+      'closed',
+      'awarded',
+      'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."rfq_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."skill_origin" AS ENUM (
-    'bundled',
-    'managed',
-    'agent',
-    'user',
-    'a2a'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."skill_origin" AS ENUM (
+      'bundled',
+      'managed',
+      'agent',
+      'user',
+      'a2a'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."skill_origin" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."skill_trust_level" AS ENUM (
-    'auto',
-    'notify',
-    'approve'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."skill_trust_level" AS ENUM (
+      'auto',
+      'notify',
+      'approve'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."skill_trust_level" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."subscription_status" AS ENUM (
-    'trialing',
-    'active',
-    'past_due',
-    'canceled',
-    'paused',
-    'incomplete',
-    'incomplete_expired',
-    'unpaid'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."subscription_status" AS ENUM (
+      'trialing',
+      'active',
+      'past_due',
+      'canceled',
+      'paused',
+      'incomplete',
+      'incomplete_expired',
+      'unpaid'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."subscription_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."ticket_category" AS ENUM (
-    'bug',
-    'feature',
-    'question',
-    'billing',
-    'other'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."ticket_category" AS ENUM (
+      'bug',
+      'feature',
+      'question',
+      'billing',
+      'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."ticket_category" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."ticket_priority" AS ENUM (
-    'low',
-    'medium',
-    'high',
-    'urgent'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."ticket_priority" AS ENUM (
+      'low',
+      'medium',
+      'high',
+      'urgent'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."ticket_priority" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."ticket_status" AS ENUM (
-    'new',
-    'open',
-    'in_progress',
-    'waiting',
-    'resolved',
-    'closed'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."ticket_status" AS ENUM (
+      'new',
+      'open',
+      'in_progress',
+      'waiting',
+      'resolved',
+      'closed'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."ticket_status" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."webhook_event" AS ENUM (
-    'page.published',
-    'page.updated',
-    'page.deleted',
-    'blog_post.published',
-    'blog_post.updated',
-    'blog_post.deleted',
-    'form.submitted',
-    'newsletter.subscribed',
-    'newsletter.unsubscribed',
-    'booking.submitted',
-    'order.created',
-    'order.paid',
-    'order.cancelled',
-    'order.refunded',
-    'product.created',
-    'product.updated',
-    'product.deleted',
-    'booking.confirmed',
-    'booking.cancelled',
-    'deal.created',
-    'deal.updated',
-    'deal.stage_changed',
-    'deal.won',
-    'deal.lost',
-    'company.created',
-    'company.updated',
-    'media.uploaded',
-    'media.deleted',
-    'global_block.updated',
-    'kb_article.published',
-    'kb_article.updated'
-);
+DO $idem$ BEGIN
+  CREATE TYPE "public"."webhook_event" AS ENUM (
+      'page.published',
+      'page.updated',
+      'page.deleted',
+      'blog_post.published',
+      'blog_post.updated',
+      'blog_post.deleted',
+      'form.submitted',
+      'newsletter.subscribed',
+      'newsletter.unsubscribed',
+      'booking.submitted',
+      'order.created',
+      'order.paid',
+      'order.cancelled',
+      'order.refunded',
+      'product.created',
+      'product.updated',
+      'product.deleted',
+      'booking.confirmed',
+      'booking.cancelled',
+      'deal.created',
+      'deal.updated',
+      'deal.stage_changed',
+      'deal.won',
+      'deal.lost',
+      'company.created',
+      'company.updated',
+      'media.uploaded',
+      'media.deleted',
+      'global_block.updated',
+      'kb_article.published',
+      'kb_article.updated'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 ALTER TYPE "public"."webhook_event" OWNER TO "postgres";
@@ -16755,3079 +16890,3377 @@ ALTER TABLE "public"."wishlist_items" OWNER TO "postgres";
 
 ALTER TABLE ONLY "public"."demo_run_items" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."demo_run_items_id_seq"'::"regclass");
 
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."a2a_activity"
+      ADD CONSTRAINT "a2a_activity_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."a2a_peers"
+      ADD CONSTRAINT "a2a_peers_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_corrections"
+      ADD CONSTRAINT "accounting_corrections_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_periods"
+      ADD CONSTRAINT "accounting_periods_fiscal_year_period_month_key" UNIQUE ("fiscal_year", "period_month");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_periods"
+      ADD CONSTRAINT "accounting_periods_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_templates"
+      ADD CONSTRAINT "accounting_templates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."activities"
+      ADD CONSTRAINT "activities_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."ad_campaigns"
+      ADD CONSTRAINT "ad_campaigns_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."ad_creatives"
+      ADD CONSTRAINT "ad_creatives_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."addresses"
+      ADD CONSTRAINT "addresses_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_activity"
+      ADD CONSTRAINT "agent_activity_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_audit_trail"
+      ADD CONSTRAINT "agent_audit_trail_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_automations"
+      ADD CONSTRAINT "agent_automations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_events"
+      ADD CONSTRAINT "agent_events_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_locks"
+      ADD CONSTRAINT "agent_locks_pkey" PRIMARY KEY ("lane");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_memory"
+      ADD CONSTRAINT "agent_memory_key_unique" UNIQUE ("key");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_memory"
+      ADD CONSTRAINT "agent_memory_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_objective_activities"
+      ADD CONSTRAINT "agent_objective_activities_pkey" PRIMARY KEY ("objective_id", "activity_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_objectives"
+      ADD CONSTRAINT "agent_objectives_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_skill_packs"
+      ADD CONSTRAINT "agent_skill_packs_name_key" UNIQUE ("name");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_skill_packs"
+      ADD CONSTRAINT "agent_skill_packs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_skills"
+      ADD CONSTRAINT "agent_skills_name_key" UNIQUE ("name");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_skills"
+      ADD CONSTRAINT "agent_skills_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_workflows"
+      ADD CONSTRAINT "agent_workflows_name_key" UNIQUE ("name");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_workflows"
+      ADD CONSTRAINT "agent_workflows_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."ai_usage_logs"
+      ADD CONSTRAINT "ai_usage_logs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_accounts"
+      ADD CONSTRAINT "analytic_accounts_code_key" UNIQUE ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_accounts"
+      ADD CONSTRAINT "analytic_accounts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_lines"
+      ADD CONSTRAINT "analytic_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."api_keys"
+      ADD CONSTRAINT "api_keys_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."application_stages"
+      ADD CONSTRAINT "application_stages_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."applications"
+      ADD CONSTRAINT "applications_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."approval_decisions"
+      ADD CONSTRAINT "approval_decisions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."approval_requests"
+      ADD CONSTRAINT "approval_requests_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."approval_rules"
+      ADD CONSTRAINT "approval_rules_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."attendance_entries"
+      ADD CONSTRAINT "attendance_entries_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."audit_logs"
+      ADD CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."auth_events"
+      ADD CONSTRAINT "auth_events_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."autonomy_test_runs"
+      ADD CONSTRAINT "autonomy_test_runs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."back_in_stock_requests"
+      ADD CONSTRAINT "back_in_stock_requests_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."back_in_stock_requests"
+      ADD CONSTRAINT "back_in_stock_requests_product_id_email_key" UNIQUE ("product_id", "email");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bank_accounts"
+      ADD CONSTRAINT "bank_accounts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bank_import_batches"
+      ADD CONSTRAINT "bank_import_batches_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bank_transactions"
+      ADD CONSTRAINT "bank_transactions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bank_transactions"
+      ADD CONSTRAINT "bank_transactions_source_external_id_key" UNIQUE ("source", "external_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."beta_test_exchanges"
+      ADD CONSTRAINT "beta_test_exchanges_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."beta_test_findings"
+      ADD CONSTRAINT "beta_test_findings_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."beta_test_sessions"
+      ADD CONSTRAINT "beta_test_sessions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_categories"
+      ADD CONSTRAINT "blog_categories_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_categories"
+      ADD CONSTRAINT "blog_categories_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_post_categories"
+      ADD CONSTRAINT "blog_post_categories_pkey" PRIMARY KEY ("post_id", "category_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_post_tags"
+      ADD CONSTRAINT "blog_post_tags_pkey" PRIMARY KEY ("post_id", "tag_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_posts"
+      ADD CONSTRAINT "blog_posts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_posts"
+      ADD CONSTRAINT "blog_posts_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_tags"
+      ADD CONSTRAINT "blog_tags_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_tags"
+      ADD CONSTRAINT "blog_tags_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_headers"
+      ADD CONSTRAINT "bom_headers_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_headers"
+      ADD CONSTRAINT "bom_headers_product_id_version_key" UNIQUE ("product_id", "version");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_lines"
+      ADD CONSTRAINT "bom_lines_bom_id_component_product_id_key" UNIQUE ("bom_id", "component_product_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_lines"
+      ADD CONSTRAINT "bom_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_availability"
+      ADD CONSTRAINT "booking_availability_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_blocked_dates"
+      ADD CONSTRAINT "booking_blocked_dates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_services"
+      ADD CONSTRAINT "booking_services_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bookings"
+      ADD CONSTRAINT "bookings_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bootstrap_runs"
+      ADD CONSTRAINT "bootstrap_runs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."candidate_notes"
+      ADD CONSTRAINT "candidate_notes_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."carriers"
+      ADD CONSTRAINT "carriers_code_key" UNIQUE ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."carriers"
+      ADD CONSTRAINT "carriers_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."certifications"
+      ADD CONSTRAINT "certifications_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chart_of_accounts"
+      ADD CONSTRAINT "chart_of_accounts_account_code_key" UNIQUE ("account_code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chart_of_accounts"
+      ADD CONSTRAINT "chart_of_accounts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_conversations"
+      ADD CONSTRAINT "chat_conversations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_feedback"
+      ADD CONSTRAINT "chat_feedback_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_messages"
+      ADD CONSTRAINT "chat_messages_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."companies"
+      ADD CONSTRAINT "companies_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."consultant_checkin_log"
+      ADD CONSTRAINT "consultant_checkin_log_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."consultant_profiles"
+      ADD CONSTRAINT "consultant_profiles_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."content_proposals"
+      ADD CONSTRAINT "content_proposals_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."content_research"
+      ADD CONSTRAINT "content_research_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_documents"
+      ADD CONSTRAINT "contract_documents_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_signatures"
+      ADD CONSTRAINT "contract_signatures_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_templates"
+      ADD CONSTRAINT "contract_templates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_versions"
+      ADD CONSTRAINT "contract_versions_contract_id_version_number_key" UNIQUE ("contract_id", "version_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_versions"
+      ADD CONSTRAINT "contract_versions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contracts"
+      ADD CONSTRAINT "contracts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."crm_tasks"
+      ADD CONSTRAINT "crm_tasks_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."currencies"
+      ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."customer_addresses"
+      ADD CONSTRAINT "customer_addresses_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."deal_activities"
+      ADD CONSTRAINT "deal_activities_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."deals"
+      ADD CONSTRAINT "deals_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."demo_run_items"
+      ADD CONSTRAINT "demo_run_items_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."demo_runs"
+      ADD CONSTRAINT "demo_runs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."depreciation_entries"
+      ADD CONSTRAINT "depreciation_entries_asset_id_period_date_key" UNIQUE ("asset_id", "period_date");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."depreciation_entries"
+      ADD CONSTRAINT "depreciation_entries_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."docs_pages"
+      ADD CONSTRAINT "docs_pages_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."docs_pages"
+      ADD CONSTRAINT "docs_pages_repo_path_key" UNIQUE ("repo_owner", "repo_name", "file_path");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."documents"
+      ADD CONSTRAINT "documents_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."dunning_actions"
+      ADD CONSTRAINT "dunning_actions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."dunning_sequences"
+      ADD CONSTRAINT "dunning_sequences_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employee_documents"
+      ADD CONSTRAINT "employee_documents_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employee_skills"
+      ADD CONSTRAINT "employee_skills_employee_id_skill_id_key" UNIQUE ("employee_id", "skill_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employee_skills"
+      ADD CONSTRAINT "employee_skills_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employees"
+      ADD CONSTRAINT "employees_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employment_contract_templates"
+      ADD CONSTRAINT "employment_contract_templates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employment_contracts"
+      ADD CONSTRAINT "employment_contracts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."entity_followers"
+      ADD CONSTRAINT "entity_followers_entity_type_entity_id_user_id_key" UNIQUE ("entity_type", "entity_id", "user_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."entity_followers"
+      ADD CONSTRAINT "entity_followers_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."entity_tags"
+      ADD CONSTRAINT "entity_tags_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."entity_tags"
+      ADD CONSTRAINT "entity_tags_tag_id_entity_type_entity_id_key" UNIQUE ("tag_id", "entity_type", "entity_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."exchange_rates"
+      ADD CONSTRAINT "exchange_rates_base_currency_quote_currency_rate_date_key" UNIQUE ("base_currency", "quote_currency", "rate_date");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."exchange_rates"
+      ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_attachments"
+      ADD CONSTRAINT "expense_attachments_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_payments"
+      ADD CONSTRAINT "expense_payments_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_reports"
+      ADD CONSTRAINT "expense_reports_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_reports"
+      ADD CONSTRAINT "expense_reports_user_id_period_key" UNIQUE ("user_id", "period");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expenses"
+      ADD CONSTRAINT "expenses_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_connections"
+      ADD CONSTRAINT "federation_connections_peer_id_direction_transport_key" UNIQUE ("peer_id", "direction", "transport");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_connections"
+      ADD CONSTRAINT "federation_connections_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_peer_missions"
+      ADD CONSTRAINT "federation_peer_missions_peer_id_key" UNIQUE ("peer_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_peer_missions"
+      ADD CONSTRAINT "federation_peer_missions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."feedback"
+      ADD CONSTRAINT "feedback_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."fixed_assets"
+      ADD CONSTRAINT "fixed_assets_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."flowpilot_briefings"
+      ADD CONSTRAINT "flowpilot_briefings_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."form_submissions"
+      ADD CONSTRAINT "form_submissions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."global_blocks"
+      ADD CONSTRAINT "global_blocks_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."global_blocks"
+      ADD CONSTRAINT "global_blocks_slot_key" UNIQUE ("slot");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."goods_receipt_lines"
+      ADD CONSTRAINT "goods_receipt_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."goods_receipts"
+      ADD CONSTRAINT "goods_receipts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."handbook_chapters"
+      ADD CONSTRAINT "handbook_chapters_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."handbook_chapters"
+      ADD CONSTRAINT "handbook_chapters_repo_owner_repo_name_file_path_key" UNIQUE ("repo_owner", "repo_name", "file_path");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."installed_template"
+      ADD CONSTRAINT "installed_template_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."invoices"
+      ADD CONSTRAINT "invoices_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."invoices"
+      ADD CONSTRAINT "invoices_public_token_key" UNIQUE ("public_token");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."job_postings"
+      ADD CONSTRAINT "job_postings_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."job_postings"
+      ADD CONSTRAINT "job_postings_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entries"
+      ADD CONSTRAINT "journal_entries_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_line_taxes"
+      ADD CONSTRAINT "journal_entry_line_taxes_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_lines"
+      ADD CONSTRAINT "journal_entry_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journals"
+      ADD CONSTRAINT "journals_code_key" UNIQUE ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journals"
+      ADD CONSTRAINT "journals_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_articles"
+      ADD CONSTRAINT "kb_articles_category_id_slug_key" UNIQUE ("category_id", "slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_articles"
+      ADD CONSTRAINT "kb_articles_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_categories"
+      ADD CONSTRAINT "kb_categories_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_categories"
+      ADD CONSTRAINT "kb_categories_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."lead_activities"
+      ADD CONSTRAINT "lead_activities_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leads"
+      ADD CONSTRAINT "leads_email_unique" UNIQUE ("email");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leads"
+      ADD CONSTRAINT "leads_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leave_allocations"
+      ADD CONSTRAINT "leave_allocations_employee_id_leave_type_year_key" UNIQUE ("employee_id", "leave_type", "year");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leave_allocations"
+      ADD CONSTRAINT "leave_allocations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leave_requests"
+      ADD CONSTRAINT "leave_requests_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."manufacturing_orders"
+      ADD CONSTRAINT "manufacturing_orders_mo_number_key" UNIQUE ("mo_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."manufacturing_orders"
+      ADD CONSTRAINT "manufacturing_orders_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."mo_components"
+      ADD CONSTRAINT "mo_components_mo_id_component_product_id_key" UNIQUE ("mo_id", "component_product_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."mo_components"
+      ADD CONSTRAINT "mo_components_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_email_opens"
+      ADD CONSTRAINT "newsletter_email_opens_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_email_opens"
+      ADD CONSTRAINT "newsletter_email_opens_tracking_id_key" UNIQUE ("tracking_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_link_clicks"
+      ADD CONSTRAINT "newsletter_link_clicks_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_subscribers"
+      ADD CONSTRAINT "newsletter_subscribers_email_key" UNIQUE ("email");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_subscribers"
+      ADD CONSTRAINT "newsletter_subscribers_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletters"
+      ADD CONSTRAINT "newsletters_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."onboarding_checklists"
+      ADD CONSTRAINT "onboarding_checklists_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."onboarding_templates"
+      ADD CONSTRAINT "onboarding_templates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."one_on_ones"
+      ADD CONSTRAINT "one_on_ones_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."opening_balances"
+      ADD CONSTRAINT "opening_balances_account_code_locale_fiscal_year_key" UNIQUE ("account_code", "locale", "fiscal_year");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."opening_balances"
+      ADD CONSTRAINT "opening_balances_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."order_items"
+      ADD CONSTRAINT "order_items_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."orders"
+      ADD CONSTRAINT "orders_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."orders"
+      ADD CONSTRAINT "orders_stripe_checkout_id_key" UNIQUE ("stripe_checkout_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."outbound_communications"
+      ADD CONSTRAINT "outbound_communications_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."page_versions"
+      ADD CONSTRAINT "page_versions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."page_views"
+      ADD CONSTRAINT "page_views_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pages"
+      ADD CONSTRAINT "pages_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payment_reconciliations"
+      ADD CONSTRAINT "payment_reconciliations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_components"
+      ADD CONSTRAINT "payroll_components_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_export_lines"
+      ADD CONSTRAINT "payroll_export_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_exports"
+      ADD CONSTRAINT "payroll_exports_period_year_period_month_key" UNIQUE ("period_year", "period_month");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_exports"
+      ADD CONSTRAINT "payroll_exports_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_lines"
+      ADD CONSTRAINT "payroll_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_lines"
+      ADD CONSTRAINT "payroll_lines_run_id_employee_id_key" UNIQUE ("run_id", "employee_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_runs"
+      ADD CONSTRAINT "payroll_runs_period_date_key" UNIQUE ("period_date");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_runs"
+      ADD CONSTRAINT "payroll_runs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."peer_invitations"
+      ADD CONSTRAINT "peer_invitations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pending_operations"
+      ADD CONSTRAINT "pending_operations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."performance_goals"
+      ADD CONSTRAINT "performance_goals_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."performance_reviews"
+      ADD CONSTRAINT "performance_reviews_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_lines"
+      ADD CONSTRAINT "picking_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_orders"
+      ADD CONSTRAINT "picking_orders_picking_number_key" UNIQUE ("picking_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_orders"
+      ADD CONSTRAINT "picking_orders_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."platform_test_runs"
+      ADD CONSTRAINT "platform_test_runs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_payments"
+      ADD CONSTRAINT "pos_payments_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_registers"
+      ADD CONSTRAINT "pos_registers_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sale_lines"
+      ADD CONSTRAINT "pos_sale_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sales"
+      ADD CONSTRAINT "pos_sales_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sales"
+      ADD CONSTRAINT "pos_sales_receipt_number_key" UNIQUE ("receipt_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sessions"
+      ADD CONSTRAINT "pos_sessions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pricelist_items"
+      ADD CONSTRAINT "pricelist_items_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pricelists"
+      ADD CONSTRAINT "pricelists_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."procurement_suggestions"
+      ADD CONSTRAINT "procurement_suggestions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."product_categories"
+      ADD CONSTRAINT "product_categories_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."product_categories"
+      ADD CONSTRAINT "product_categories_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."product_stock"
+      ADD CONSTRAINT "product_stock_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."product_stock"
+      ADD CONSTRAINT "product_stock_product_id_key" UNIQUE ("product_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."products"
+      ADD CONSTRAINT "products_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."profiles"
+      ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_members"
+      ADD CONSTRAINT "project_members_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_members"
+      ADD CONSTRAINT "project_members_project_id_user_id_key" UNIQUE ("project_id", "user_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_tasks"
+      ADD CONSTRAINT "project_tasks_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."projects"
+      ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_order_lines"
+      ADD CONSTRAINT "purchase_order_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_orders"
+      ADD CONSTRAINT "purchase_orders_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_orders"
+      ADD CONSTRAINT "purchase_orders_po_number_key" UNIQUE ("po_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_items"
+      ADD CONSTRAINT "quote_items_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_signatures"
+      ADD CONSTRAINT "quote_signatures_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_templates"
+      ADD CONSTRAINT "quote_templates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_versions"
+      ADD CONSTRAINT "quote_versions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_versions"
+      ADD CONSTRAINT "quote_versions_quote_id_version_number_key" UNIQUE ("quote_id", "version_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reconciliation_matches"
+      ADD CONSTRAINT "reconciliation_matches_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reorder_rules"
+      ADD CONSTRAINT "reorder_rules_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reorder_rules"
+      ADD CONSTRAINT "reorder_rules_product_id_location_id_key" UNIQUE ("product_id", "location_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."return_items"
+      ADD CONSTRAINT "return_items_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."returns"
+      ADD CONSTRAINT "returns_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."returns"
+      ADD CONSTRAINT "returns_rma_number_key" UNIQUE ("rma_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_bids"
+      ADD CONSTRAINT "rfq_bids_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_bids"
+      ADD CONSTRAINT "rfq_bids_rfq_id_vendor_id_key" UNIQUE ("rfq_id", "vendor_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_lines"
+      ADD CONSTRAINT "rfq_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfqs"
+      ADD CONSTRAINT "rfqs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfqs"
+      ADD CONSTRAINT "rfqs_rfq_number_key" UNIQUE ("rfq_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."river_posts"
+      ADD CONSTRAINT "river_posts_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."river_reactions"
+      ADD CONSTRAINT "river_reactions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."river_reactions"
+      ADD CONSTRAINT "river_reactions_post_id_user_id_emoji_key" UNIQUE ("post_id", "user_id", "emoji");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."role_module_access_defaults"
+      ADD CONSTRAINT "role_module_access_defaults_pkey" PRIMARY KEY ("role", "module_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."role_module_access"
+      ADD CONSTRAINT "role_module_access_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."role_module_access"
+      ADD CONSTRAINT "role_module_access_role_module_id_key" UNIQUE ("role", "module_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."sales_intelligence_profiles"
+      ADD CONSTRAINT "sales_intelligence_profiles_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."sales_intelligence_profiles"
+      ADD CONSTRAINT "sales_intelligence_profiles_type_user_id_key" UNIQUE ("type", "user_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."saved_views"
+      ADD CONSTRAINT "saved_views_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_order_lines"
+      ADD CONSTRAINT "service_order_lines_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_orders"
+      ADD CONSTRAINT "service_orders_order_number_key" UNIQUE ("order_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_orders"
+      ADD CONSTRAINT "service_orders_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_visits"
+      ADD CONSTRAINT "service_visits_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."shipments"
+      ADD CONSTRAINT "shipments_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."site_settings"
+      ADD CONSTRAINT "site_settings_key_key" UNIQUE ("key");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."site_settings"
+      ADD CONSTRAINT "site_settings_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."skills_catalog"
+      ADD CONSTRAINT "skills_catalog_name_key" UNIQUE ("name");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."skills_catalog"
+      ADD CONSTRAINT "skills_catalog_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."sla_policies"
+      ADD CONSTRAINT "sla_policies_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."sla_violations"
+      ADD CONSTRAINT "sla_violations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_locations"
+      ADD CONSTRAINT "stock_locations_code_key" UNIQUE ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_locations"
+      ADD CONSTRAINT "stock_locations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_lots"
+      ADD CONSTRAINT "stock_lots_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_lots"
+      ADD CONSTRAINT "stock_lots_product_id_lot_number_key" UNIQUE ("product_id", "lot_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_moves"
+      ADD CONSTRAINT "stock_moves_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_quants"
+      ADD CONSTRAINT "stock_quants_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_quants"
+      ADD CONSTRAINT "stock_quants_product_id_location_id_lot_id_key" UNIQUE ("product_id", "location_id", "lot_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_reservations"
+      ADD CONSTRAINT "stock_reservations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_churn_reasons"
+      ADD CONSTRAINT "subscription_churn_reasons_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_events"
+      ADD CONSTRAINT "subscription_events_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_winback_campaigns"
+      ADD CONSTRAINT "subscription_winback_campaigns_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_winback_sends"
+      ADD CONSTRAINT "subscription_winback_sends_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscriptions"
+      ADD CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_agents"
+      ADD CONSTRAINT "support_agents_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_agents"
+      ADD CONSTRAINT "support_agents_user_id_key" UNIQUE ("user_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_escalations"
+      ADD CONSTRAINT "support_escalations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_campaigns"
+      ADD CONSTRAINT "survey_campaigns_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_responses"
+      ADD CONSTRAINT "survey_responses_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_sends"
+      ADD CONSTRAINT "survey_sends_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_sends"
+      ADD CONSTRAINT "survey_sends_token_key" UNIQUE ("token");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_templates"
+      ADD CONSTRAINT "survey_templates_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tags"
+      ADD CONSTRAINT "tags_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tags"
+      ADD CONSTRAINT "tags_slug_key" UNIQUE ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_code_grids"
+      ADD CONSTRAINT "tax_code_grids_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_code_grids"
+      ADD CONSTRAINT "tax_code_grids_tax_code_id_tax_grid_id_applies_to_key" UNIQUE ("tax_code_id", "tax_grid_id", "applies_to");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_codes"
+      ADD CONSTRAINT "tax_codes_code_key" UNIQUE ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_codes"
+      ADD CONSTRAINT "tax_codes_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_grids"
+      ADD CONSTRAINT "tax_grids_code_key" UNIQUE ("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_grids"
+      ADD CONSTRAINT "tax_grids_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."ticket_comments"
+      ADD CONSTRAINT "ticket_comments_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tickets"
+      ADD CONSTRAINT "tickets_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."time_entries"
+      ADD CONSTRAINT "time_entries_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."timesheet_period_locks"
+      ADD CONSTRAINT "timesheet_period_locks_fiscal_year_period_month_key" UNIQUE ("fiscal_year", "period_month");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."timesheet_period_locks"
+      ADD CONSTRAINT "timesheet_period_locks_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tolerance_policies"
+      ADD CONSTRAINT "tolerance_policies_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."user_roles"
+      ADD CONSTRAINT "user_roles_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."user_roles"
+      ADD CONSTRAINT "user_roles_user_id_role_key" UNIQUE ("user_id", "role");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vacation_policies"
+      ADD CONSTRAINT "vacation_policies_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_invoices"
+      ADD CONSTRAINT "vendor_invoices_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_invoices"
+      ADD CONSTRAINT "vendor_invoices_vendor_id_invoice_number_key" UNIQUE ("vendor_id", "invoice_number");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_products"
+      ADD CONSTRAINT "vendor_products_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendors"
+      ADD CONSTRAINT "vendors_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webhook_logs"
+      ADD CONSTRAINT "webhook_logs_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webhooks"
+      ADD CONSTRAINT "webhooks_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webinar_registrations"
+      ADD CONSTRAINT "webinar_registrations_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webinar_registrations"
+      ADD CONSTRAINT "webinar_registrations_webinar_id_email_key" UNIQUE ("webinar_id", "email");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webinars"
+      ADD CONSTRAINT "webinars_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wiki_pages"
+      ADD CONSTRAINT "wiki_pages_pkey" PRIMARY KEY ("slug");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wishlist_items"
+      ADD CONSTRAINT "wishlist_items_pkey" PRIMARY KEY ("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wishlist_items"
+      ADD CONSTRAINT "wishlist_items_user_id_product_id_key" UNIQUE ("user_id", "product_id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS "a2a_peers_api_key_id_unique" ON "public"."a2a_peers" USING "btree" ("api_key_id") WHERE ("api_key_id" IS NOT NULL);
+
+
+
+CREATE INDEX IF NOT EXISTS "agent_memory_embedding_idx" ON "public"."agent_memory" USING "ivfflat" ("embedding" "extensions"."vector_cosine_ops") WITH ("lists"='20');
+
+
+
+CREATE INDEX IF NOT EXISTS "ai_usage_logs_created_at_idx" ON "public"."ai_usage_logs" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "ai_usage_logs_model_idx" ON "public"."ai_usage_logs" USING "btree" ("model");
+
+
+
+CREATE INDEX IF NOT EXISTS "ai_usage_logs_source_idx" ON "public"."ai_usage_logs" USING "btree" ("source");
+
+
+
+CREATE INDEX IF NOT EXISTS "ai_usage_logs_status_idx" ON "public"."ai_usage_logs" USING "btree" ("status");
+
+
+
+CREATE INDEX IF NOT EXISTS "auth_events_created_at_idx" ON "public"."auth_events" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "auth_events_event_type_idx" ON "public"."auth_events" USING "btree" ("event_type");
+
+
+
+CREATE INDEX IF NOT EXISTS "auth_events_user_id_idx" ON "public"."auth_events" USING "btree" ("user_id");
+
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS "bank_accounts_one_default" ON "public"."bank_accounts" USING "btree" ("is_default") WHERE (("is_default" = true) AND ("archived" = false));
+
+
+
+CREATE INDEX IF NOT EXISTS "bank_transactions_bank_account_idx" ON "public"."bank_transactions" USING "btree" ("bank_account_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "consultant_profiles_embedding_idx" ON "public"."consultant_profiles" USING "hnsw" ("embedding" "extensions"."vector_cosine_ops");
+
+
+
+CREATE INDEX IF NOT EXISTS "consultant_profiles_embedding_status_idx" ON "public"."consultant_profiles" USING "btree" ("embedding_status") WHERE ("embedding_status" = 'stale'::"text");
+
+
+
+CREATE INDEX IF NOT EXISTS "consultant_profiles_search_tsv_idx" ON "public"."consultant_profiles" USING "gin" ("search_tsv");
+
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS "currencies_one_base" ON "public"."currencies" USING "btree" ("is_base") WHERE ("is_base" = true);
+
+
+
+CREATE INDEX IF NOT EXISTS "depreciation_entries_period" ON "public"."depreciation_entries" USING "btree" ("period_date" DESC);
+
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS "employees_user_id_unique" ON "public"."employees" USING "btree" ("user_id") WHERE ("user_id" IS NOT NULL);
+
+
+
+CREATE INDEX IF NOT EXISTS "exchange_rates_lookup" ON "public"."exchange_rates" USING "btree" ("base_currency", "quote_currency", "rate_date" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_a2a_peers_invited_by" ON "public"."a2a_peers" USING "btree" ("invited_by_peer_id") WHERE ("invited_by_peer_id" IS NOT NULL);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_accounting_periods_status" ON "public"."accounting_periods" USING "btree" ("status");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_accounting_periods_year_month" ON "public"."accounting_periods" USING "btree" ("fiscal_year", "period_month");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_accounting_templates_keywords" ON "public"."accounting_templates" USING "gin" ("keywords");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_activities_assigned_open" ON "public"."activities" USING "btree" ("assigned_to", "due_at") WHERE ("done_at" IS NULL);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_activities_entity" ON "public"."activities" USING "btree" ("entity_type", "entity_id", "created_at" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_addresses_owner" ON "public"."addresses" USING "btree" ("owner_type", "owner_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_activity_agent" ON "public"."agent_activity" USING "btree" ("agent", "created_at" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_activity_approval_request" ON "public"."agent_activity" USING "btree" ("approval_request_id") WHERE ("approval_request_id" IS NOT NULL);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_activity_status" ON "public"."agent_activity" USING "btree" ("status") WHERE ("status" = 'pending_approval'::"public"."agent_activity_status");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_automations_executor_enabled" ON "public"."agent_automations" USING "btree" ("executor", "enabled") WHERE ("enabled" = true);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_events_name" ON "public"."agent_events" USING "btree" ("event_name", "created_at" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_events_unprocessed" ON "public"."agent_events" USING "btree" ("created_at") WHERE ("processed_at" IS NULL);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_memory_category" ON "public"."agent_memory" USING "btree" ("category");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_memory_key" ON "public"."agent_memory" USING "btree" ("key");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_memory_key_trgm" ON "public"."agent_memory" USING "gin" ("key" "public"."gin_trgm_ops");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_memory_value_trgm" ON "public"."agent_memory" USING "gin" ((("value")::"text") "public"."gin_trgm_ops");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_skills_category" ON "public"."agent_skills" USING "btree" ("category") WHERE ("enabled" = true);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_agent_skills_scope" ON "public"."agent_skills" USING "btree" ("scope") WHERE ("enabled" = true);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_analytic_accounts_project" ON "public"."analytic_accounts" USING "btree" ("project_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_analytic_accounts_type" ON "public"."analytic_accounts" USING "btree" ("account_type") WHERE "is_active";
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_analytic_lines_account" ON "public"."analytic_lines" USING "btree" ("analytic_account_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_analytic_lines_date" ON "public"."analytic_lines" USING "btree" ("entry_date");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_analytic_lines_entry" ON "public"."analytic_lines" USING "btree" ("journal_entry_id");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_application_stages_app" ON "public"."application_stages" USING "btree" ("application_id", "created_at" DESC);
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_applications_email" ON "public"."applications" USING "btree" ("candidate_email");
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_applications_employee_id" ON "public"."applications" USING "btree" ("employee_id");
+
 
 
-ALTER TABLE ONLY "public"."a2a_activity"
-    ADD CONSTRAINT "a2a_activity_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_applications_job" ON "public"."applications" USING "btree" ("job_posting_id");
 
 
 
-ALTER TABLE ONLY "public"."a2a_peers"
-    ADD CONSTRAINT "a2a_peers_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_applications_score" ON "public"."applications" USING "btree" ("ai_score" DESC NULLS LAST);
 
 
 
-ALTER TABLE ONLY "public"."accounting_corrections"
-    ADD CONSTRAINT "accounting_corrections_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_applications_stage" ON "public"."applications" USING "btree" ("stage");
 
 
 
-ALTER TABLE ONLY "public"."accounting_periods"
-    ADD CONSTRAINT "accounting_periods_fiscal_year_period_month_key" UNIQUE ("fiscal_year", "period_month");
+CREATE INDEX IF NOT EXISTS "idx_approval_decisions_request" ON "public"."approval_decisions" USING "btree" ("request_id");
 
 
 
-ALTER TABLE ONLY "public"."accounting_periods"
-    ADD CONSTRAINT "accounting_periods_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_approval_requests_entity" ON "public"."approval_requests" USING "btree" ("entity_type", "entity_id");
 
 
 
-ALTER TABLE ONLY "public"."accounting_templates"
-    ADD CONSTRAINT "accounting_templates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_approval_requests_requested_by" ON "public"."approval_requests" USING "btree" ("requested_by");
 
 
 
-ALTER TABLE ONLY "public"."activities"
-    ADD CONSTRAINT "activities_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_approval_requests_status" ON "public"."approval_requests" USING "btree" ("status", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."ad_campaigns"
-    ADD CONSTRAINT "ad_campaigns_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_approval_rules_entity" ON "public"."approval_rules" USING "btree" ("entity_type", "is_active", "priority");
 
 
 
-ALTER TABLE ONLY "public"."ad_creatives"
-    ADD CONSTRAINT "ad_creatives_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_attendance_emp_date" ON "public"."attendance_entries" USING "btree" ("employee_id", "clock_in" DESC);
 
 
 
-ALTER TABLE ONLY "public"."addresses"
-    ADD CONSTRAINT "addresses_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_attendance_open" ON "public"."attendance_entries" USING "btree" ("employee_id") WHERE ("clock_out" IS NULL);
 
 
 
-ALTER TABLE ONLY "public"."agent_activity"
-    ADD CONSTRAINT "agent_activity_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_audit_logs_action_created" ON "public"."audit_logs" USING "btree" ("action", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."agent_audit_trail"
-    ADD CONSTRAINT "agent_audit_trail_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_audit_trail_actor" ON "public"."agent_audit_trail" USING "btree" ("agent_type", "occurred_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."agent_automations"
-    ADD CONSTRAINT "agent_automations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_audit_trail_entity" ON "public"."agent_audit_trail" USING "btree" ("table_name", "entity_id");
 
 
 
-ALTER TABLE ONLY "public"."agent_events"
-    ADD CONSTRAINT "agent_events_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_audit_trail_retention" ON "public"."agent_audit_trail" USING "btree" ("retention_until") WHERE ("retention_until" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."agent_locks"
-    ADD CONSTRAINT "agent_locks_pkey" PRIMARY KEY ("lane");
+CREATE INDEX IF NOT EXISTS "idx_audit_trail_table_time" ON "public"."agent_audit_trail" USING "btree" ("table_name", "occurred_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."agent_memory"
-    ADD CONSTRAINT "agent_memory_key_unique" UNIQUE ("key");
+CREATE INDEX IF NOT EXISTS "idx_autonomy_test_runs_created_at" ON "public"."autonomy_test_runs" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."agent_memory"
-    ADD CONSTRAINT "agent_memory_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_back_in_stock_not_notified" ON "public"."back_in_stock_requests" USING "btree" ("product_id") WHERE ("notified_at" IS NULL);
 
 
 
-ALTER TABLE ONLY "public"."agent_objective_activities"
-    ADD CONSTRAINT "agent_objective_activities_pkey" PRIMARY KEY ("objective_id", "activity_id");
+CREATE INDEX IF NOT EXISTS "idx_back_in_stock_product_id" ON "public"."back_in_stock_requests" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."agent_objectives"
-    ADD CONSTRAINT "agent_objectives_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_bank_tx_date" ON "public"."bank_transactions" USING "btree" ("transaction_date" DESC);
 
 
 
-ALTER TABLE ONLY "public"."agent_skill_packs"
-    ADD CONSTRAINT "agent_skill_packs_name_key" UNIQUE ("name");
+CREATE INDEX IF NOT EXISTS "idx_bank_tx_reference" ON "public"."bank_transactions" USING "btree" ("reference");
 
 
 
-ALTER TABLE ONLY "public"."agent_skill_packs"
-    ADD CONSTRAINT "agent_skill_packs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_bank_tx_status" ON "public"."bank_transactions" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."agent_skills"
-    ADD CONSTRAINT "agent_skills_name_key" UNIQUE ("name");
+CREATE INDEX IF NOT EXISTS "idx_beta_findings_reported_by" ON "public"."beta_test_findings" USING "btree" ("reported_by");
 
 
 
-ALTER TABLE ONLY "public"."agent_skills"
-    ADD CONSTRAINT "agent_skills_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_blog_categories_slug" ON "public"."blog_categories" USING "btree" ("slug");
 
 
 
-ALTER TABLE ONLY "public"."agent_workflows"
-    ADD CONSTRAINT "agent_workflows_name_key" UNIQUE ("name");
+CREATE INDEX IF NOT EXISTS "idx_blog_posts_author" ON "public"."blog_posts" USING "btree" ("author_id");
 
 
 
-ALTER TABLE ONLY "public"."agent_workflows"
-    ADD CONSTRAINT "agent_workflows_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_blog_posts_published_at" ON "public"."blog_posts" USING "btree" ("published_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."ai_usage_logs"
-    ADD CONSTRAINT "ai_usage_logs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_blog_posts_search" ON "public"."blog_posts" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("slug", ''::"text")) || ' '::"text") || COALESCE("excerpt", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."analytic_accounts"
-    ADD CONSTRAINT "analytic_accounts_code_key" UNIQUE ("code");
+CREATE INDEX IF NOT EXISTS "idx_blog_posts_slug" ON "public"."blog_posts" USING "btree" ("slug");
 
 
 
-ALTER TABLE ONLY "public"."analytic_accounts"
-    ADD CONSTRAINT "analytic_accounts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_blog_posts_status" ON "public"."blog_posts" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."analytic_lines"
-    ADD CONSTRAINT "analytic_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_blog_tags_slug" ON "public"."blog_tags" USING "btree" ("slug");
 
 
 
-ALTER TABLE ONLY "public"."api_keys"
-    ADD CONSTRAINT "api_keys_pkey" PRIMARY KEY ("id");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_bom_headers_one_active" ON "public"."bom_headers" USING "btree" ("product_id") WHERE ("is_active" = true);
 
 
 
-ALTER TABLE ONLY "public"."application_stages"
-    ADD CONSTRAINT "application_stages_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_bom_headers_product" ON "public"."bom_headers" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."applications"
-    ADD CONSTRAINT "applications_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_bom_lines_bom" ON "public"."bom_lines" USING "btree" ("bom_id");
 
 
 
-ALTER TABLE ONLY "public"."approval_decisions"
-    ADD CONSTRAINT "approval_decisions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_bom_lines_component" ON "public"."bom_lines" USING "btree" ("component_product_id");
 
 
 
-ALTER TABLE ONLY "public"."approval_requests"
-    ADD CONSTRAINT "approval_requests_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_bootstrap_runs_module_created" ON "public"."bootstrap_runs" USING "btree" ("module_id", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."approval_rules"
-    ADD CONSTRAINT "approval_rules_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_briefings_created" ON "public"."flowpilot_briefings" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."attendance_entries"
-    ADD CONSTRAINT "attendance_entries_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_briefings_unread" ON "public"."flowpilot_briefings" USING "btree" ("read_at") WHERE ("read_at" IS NULL);
 
 
 
-ALTER TABLE ONLY "public"."audit_logs"
-    ADD CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_candidate_notes_app" ON "public"."candidate_notes" USING "btree" ("application_id", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."auth_events"
-    ADD CONSTRAINT "auth_events_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_certifications_emp" ON "public"."certifications" USING "btree" ("employee_id");
 
 
 
-ALTER TABLE ONLY "public"."autonomy_test_runs"
-    ADD CONSTRAINT "autonomy_test_runs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_certifications_expires" ON "public"."certifications" USING "btree" ("expires_at") WHERE ("expires_at" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."back_in_stock_requests"
-    ADD CONSTRAINT "back_in_stock_requests_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_conversations_agent" ON "public"."chat_conversations" USING "btree" ("assigned_agent_id");
 
 
 
-ALTER TABLE ONLY "public"."back_in_stock_requests"
-    ADD CONSTRAINT "back_in_stock_requests_product_id_email_key" UNIQUE ("product_id", "email");
+CREATE INDEX IF NOT EXISTS "idx_chat_conversations_scope_user" ON "public"."chat_conversations" USING "btree" ("scope", "user_id");
 
 
 
-ALTER TABLE ONLY "public"."bank_accounts"
-    ADD CONSTRAINT "bank_accounts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_conversations_session_id" ON "public"."chat_conversations" USING "btree" ("session_id");
 
 
 
-ALTER TABLE ONLY "public"."bank_import_batches"
-    ADD CONSTRAINT "bank_import_batches_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_conversations_status" ON "public"."chat_conversations" USING "btree" ("conversation_status");
 
 
 
-ALTER TABLE ONLY "public"."bank_transactions"
-    ADD CONSTRAINT "bank_transactions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_conversations_user_id" ON "public"."chat_conversations" USING "btree" ("user_id");
 
 
 
-ALTER TABLE ONLY "public"."bank_transactions"
-    ADD CONSTRAINT "bank_transactions_source_external_id_key" UNIQUE ("source", "external_id");
+CREATE INDEX IF NOT EXISTS "idx_chat_feedback_created_at" ON "public"."chat_feedback" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."beta_test_exchanges"
-    ADD CONSTRAINT "beta_test_exchanges_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_feedback_rating" ON "public"."chat_feedback" USING "btree" ("rating");
 
 
 
-ALTER TABLE ONLY "public"."beta_test_findings"
-    ADD CONSTRAINT "beta_test_findings_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_messages_conversation_id" ON "public"."chat_messages" USING "btree" ("conversation_id");
 
 
 
-ALTER TABLE ONLY "public"."beta_test_sessions"
-    ADD CONSTRAINT "beta_test_sessions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_chat_messages_created_at" ON "public"."chat_messages" USING "btree" ("created_at");
 
 
 
-ALTER TABLE ONLY "public"."blog_categories"
-    ADD CONSTRAINT "blog_categories_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_churn_reasons_created" ON "public"."subscription_churn_reasons" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."blog_categories"
-    ADD CONSTRAINT "blog_categories_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_churn_reasons_reason" ON "public"."subscription_churn_reasons" USING "btree" ("reason");
 
 
 
-ALTER TABLE ONLY "public"."blog_post_categories"
-    ADD CONSTRAINT "blog_post_categories_pkey" PRIMARY KEY ("post_id", "category_id");
+CREATE INDEX IF NOT EXISTS "idx_churn_reasons_sub" ON "public"."subscription_churn_reasons" USING "btree" ("subscription_id");
 
 
 
-ALTER TABLE ONLY "public"."blog_post_tags"
-    ADD CONSTRAINT "blog_post_tags_pkey" PRIMARY KEY ("post_id", "tag_id");
+CREATE INDEX IF NOT EXISTS "idx_companies_lifecycle_stage" ON "public"."companies" USING "btree" ("lifecycle_stage");
 
 
 
-ALTER TABLE ONLY "public"."blog_posts"
-    ADD CONSTRAINT "blog_posts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_companies_name" ON "public"."companies" USING "btree" ("name");
 
 
 
-ALTER TABLE ONLY "public"."blog_posts"
-    ADD CONSTRAINT "blog_posts_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_companies_search" ON "public"."companies" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("domain", ''::"text")) || ' '::"text") || COALESCE("industry", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."blog_tags"
-    ADD CONSTRAINT "blog_tags_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_consultant_checkin_log_profile_created" ON "public"."consultant_checkin_log" USING "btree" ("profile_id", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."blog_tags"
-    ADD CONSTRAINT "blog_tags_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_content_proposals_created_at" ON "public"."content_proposals" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."bom_headers"
-    ADD CONSTRAINT "bom_headers_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_content_proposals_created_by" ON "public"."content_proposals" USING "btree" ("created_by");
 
 
 
-ALTER TABLE ONLY "public"."bom_headers"
-    ADD CONSTRAINT "bom_headers_product_id_version_key" UNIQUE ("product_id", "version");
+CREATE INDEX IF NOT EXISTS "idx_content_proposals_scheduled_for" ON "public"."content_proposals" USING "btree" ("scheduled_for");
 
 
 
-ALTER TABLE ONLY "public"."bom_lines"
-    ADD CONSTRAINT "bom_lines_bom_id_component_product_id_key" UNIQUE ("bom_id", "component_product_id");
+CREATE INDEX IF NOT EXISTS "idx_content_proposals_status" ON "public"."content_proposals" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."bom_lines"
-    ADD CONSTRAINT "bom_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_content_research_created_at" ON "public"."content_research" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."booking_availability"
-    ADD CONSTRAINT "booking_availability_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_content_research_topic" ON "public"."content_research" USING "gin" ("to_tsvector"('"english"'::"regconfig", "topic"));
 
 
 
-ALTER TABLE ONLY "public"."booking_blocked_dates"
-    ADD CONSTRAINT "booking_blocked_dates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contract_documents_contract_id" ON "public"."contract_documents" USING "btree" ("contract_id");
 
 
 
-ALTER TABLE ONLY "public"."booking_services"
-    ADD CONSTRAINT "booking_services_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contract_signatures_contract_id" ON "public"."contract_signatures" USING "btree" ("contract_id");
 
 
 
-ALTER TABLE ONLY "public"."bookings"
-    ADD CONSTRAINT "bookings_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contract_templates_type_lang" ON "public"."contract_templates" USING "btree" ("contract_type", "language") WHERE "is_active";
 
 
 
-ALTER TABLE ONLY "public"."bootstrap_runs"
-    ADD CONSTRAINT "bootstrap_runs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contract_versions_contract_id" ON "public"."contract_versions" USING "btree" ("contract_id");
 
 
 
-ALTER TABLE ONLY "public"."candidate_notes"
-    ADD CONSTRAINT "candidate_notes_pkey" PRIMARY KEY ("id");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_contracts_accept_token_unique" ON "public"."contracts" USING "btree" ("accept_token") WHERE ("accept_token" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."carriers"
-    ADD CONSTRAINT "carriers_code_key" UNIQUE ("code");
+CREATE INDEX IF NOT EXISTS "idx_contracts_body_markdown_trgm" ON "public"."contracts" USING "gin" ("body_markdown" "public"."gin_trgm_ops");
 
 
 
-ALTER TABLE ONLY "public"."carriers"
-    ADD CONSTRAINT "carriers_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contracts_counterparty_trgm" ON "public"."contracts" USING "gin" ("counterparty_name" "public"."gin_trgm_ops");
 
 
 
-ALTER TABLE ONLY "public"."certifications"
-    ADD CONSTRAINT "certifications_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contracts_created_by" ON "public"."contracts" USING "btree" ("created_by");
 
 
 
-ALTER TABLE ONLY "public"."chart_of_accounts"
-    ADD CONSTRAINT "chart_of_accounts_account_code_key" UNIQUE ("account_code");
+CREATE INDEX IF NOT EXISTS "idx_contracts_end_date" ON "public"."contracts" USING "btree" ("end_date");
 
 
 
-ALTER TABLE ONLY "public"."chart_of_accounts"
-    ADD CONSTRAINT "chart_of_accounts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contracts_search" ON "public"."contracts" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("counterparty_name", ''::"text")) || ' '::"text") || COALESCE("counterparty_email", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."chat_conversations"
-    ADD CONSTRAINT "chat_conversations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contracts_status" ON "public"."contracts" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."chat_feedback"
-    ADD CONSTRAINT "chat_feedback_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contracts_template_id" ON "public"."contracts" USING "btree" ("template_id") WHERE ("template_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."chat_messages"
-    ADD CONSTRAINT "chat_messages_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_contracts_title_trgm" ON "public"."contracts" USING "gin" ("title" "public"."gin_trgm_ops");
 
 
 
-ALTER TABLE ONLY "public"."companies"
-    ADD CONSTRAINT "companies_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_corrections_pattern" ON "public"."accounting_corrections" USING "gin" ("to_tsvector"('"simple"'::"regconfig", COALESCE("description_pattern", ''::"text")));
 
 
 
-ALTER TABLE ONLY "public"."consultant_checkin_log"
-    ADD CONSTRAINT "consultant_checkin_log_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_corrections_vendor" ON "public"."accounting_corrections" USING "btree" ("vendor_id");
 
 
 
-ALTER TABLE ONLY "public"."consultant_profiles"
-    ADD CONSTRAINT "consultant_profiles_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_crm_tasks_deal_id" ON "public"."crm_tasks" USING "btree" ("deal_id");
 
 
 
-ALTER TABLE ONLY "public"."content_proposals"
-    ADD CONSTRAINT "content_proposals_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_crm_tasks_due_date" ON "public"."crm_tasks" USING "btree" ("due_date") WHERE ("completed_at" IS NULL);
 
 
 
-ALTER TABLE ONLY "public"."content_research"
-    ADD CONSTRAINT "content_research_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_crm_tasks_lead_id" ON "public"."crm_tasks" USING "btree" ("lead_id");
 
 
 
-ALTER TABLE ONLY "public"."contract_documents"
-    ADD CONSTRAINT "contract_documents_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_deal_activities_created_at" ON "public"."deal_activities" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."contract_signatures"
-    ADD CONSTRAINT "contract_signatures_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_deal_activities_deal_id" ON "public"."deal_activities" USING "btree" ("deal_id");
 
 
 
-ALTER TABLE ONLY "public"."contract_templates"
-    ADD CONSTRAINT "contract_templates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_deals_lead_id" ON "public"."deals" USING "btree" ("lead_id");
 
 
 
-ALTER TABLE ONLY "public"."contract_versions"
-    ADD CONSTRAINT "contract_versions_contract_id_version_number_key" UNIQUE ("contract_id", "version_number");
+CREATE INDEX IF NOT EXISTS "idx_deals_search" ON "public"."deals" USING "gin" ("to_tsvector"('"simple"'::"regconfig", COALESCE("notes", ''::"text")));
 
 
 
-ALTER TABLE ONLY "public"."contract_versions"
-    ADD CONSTRAINT "contract_versions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_deals_stage" ON "public"."deals" USING "btree" ("stage");
 
 
 
-ALTER TABLE ONLY "public"."contracts"
-    ADD CONSTRAINT "contracts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_demo_run_items_run" ON "public"."demo_run_items" USING "btree" ("run_id");
 
 
 
-ALTER TABLE ONLY "public"."crm_tasks"
-    ADD CONSTRAINT "crm_tasks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_demo_run_items_table" ON "public"."demo_run_items" USING "btree" ("table_name");
 
 
 
-ALTER TABLE ONLY "public"."currencies"
-    ADD CONSTRAINT "currencies_pkey" PRIMARY KEY ("code");
+CREATE INDEX IF NOT EXISTS "idx_docs_pages_category" ON "public"."docs_pages" USING "btree" ("category");
 
 
 
-ALTER TABLE ONLY "public"."customer_addresses"
-    ADD CONSTRAINT "customer_addresses_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_docs_pages_slug" ON "public"."docs_pages" USING "btree" ("category", "slug");
 
 
 
-ALTER TABLE ONLY "public"."deal_activities"
-    ADD CONSTRAINT "deal_activities_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_documents_category" ON "public"."documents" USING "btree" ("category");
 
 
 
-ALTER TABLE ONLY "public"."deals"
-    ADD CONSTRAINT "deals_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_documents_extraction_status" ON "public"."documents" USING "btree" ("extraction_status");
 
 
 
-ALTER TABLE ONLY "public"."demo_run_items"
-    ADD CONSTRAINT "demo_run_items_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_documents_folder" ON "public"."documents" USING "btree" ("folder");
 
 
 
-ALTER TABLE ONLY "public"."demo_runs"
-    ADD CONSTRAINT "demo_runs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_documents_related" ON "public"."documents" USING "btree" ("related_entity_type", "related_entity_id");
 
 
 
-ALTER TABLE ONLY "public"."depreciation_entries"
-    ADD CONSTRAINT "depreciation_entries_asset_id_period_date_key" UNIQUE ("asset_id", "period_date");
+CREATE INDEX IF NOT EXISTS "idx_documents_search" ON "public"."documents" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("file_name", ''::"text")) || ' '::"text") || COALESCE("description", ''::"text")) || ' '::"text") || COALESCE("content_md", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."depreciation_entries"
-    ADD CONSTRAINT "depreciation_entries_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_documents_source" ON "public"."documents" USING "btree" ("source");
 
 
 
-ALTER TABLE ONLY "public"."docs_pages"
-    ADD CONSTRAINT "docs_pages_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_documents_uploaded_by" ON "public"."documents" USING "btree" ("uploaded_by");
 
 
 
-ALTER TABLE ONLY "public"."docs_pages"
-    ADD CONSTRAINT "docs_pages_repo_path_key" UNIQUE ("repo_owner", "repo_name", "file_path");
+CREATE INDEX IF NOT EXISTS "idx_dunning_actions_sequence" ON "public"."dunning_actions" USING "btree" ("sequence_id", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."documents"
-    ADD CONSTRAINT "documents_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_dunning_actions_type" ON "public"."dunning_actions" USING "btree" ("action_type");
 
 
 
-ALTER TABLE ONLY "public"."dunning_actions"
-    ADD CONSTRAINT "dunning_actions_pkey" PRIMARY KEY ("id");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_dunning_sequences_active_unique" ON "public"."dunning_sequences" USING "btree" ("subscription_id") WHERE ("status" = 'active'::"text");
 
 
 
-ALTER TABLE ONLY "public"."dunning_sequences"
-    ADD CONSTRAINT "dunning_sequences_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_dunning_sequences_next_action" ON "public"."dunning_sequences" USING "btree" ("next_action_at") WHERE ("status" = 'active'::"text");
 
 
 
-ALTER TABLE ONLY "public"."employee_documents"
-    ADD CONSTRAINT "employee_documents_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_dunning_sequences_status" ON "public"."dunning_sequences" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."employee_skills"
-    ADD CONSTRAINT "employee_skills_employee_id_skill_id_key" UNIQUE ("employee_id", "skill_id");
+CREATE INDEX IF NOT EXISTS "idx_dunning_sequences_subscription" ON "public"."dunning_sequences" USING "btree" ("subscription_id");
 
 
 
-ALTER TABLE ONLY "public"."employee_skills"
-    ADD CONSTRAINT "employee_skills_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_employee_skills_emp" ON "public"."employee_skills" USING "btree" ("employee_id");
 
 
 
-ALTER TABLE ONLY "public"."employees"
-    ADD CONSTRAINT "employees_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_employees_manager_id" ON "public"."employees" USING "btree" ("manager_id");
 
 
 
-ALTER TABLE ONLY "public"."employment_contract_templates"
-    ADD CONSTRAINT "employment_contract_templates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_employees_search" ON "public"."employees" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("email", ''::"text")) || ' '::"text") || COALESCE("title", ''::"text")) || ' '::"text") || COALESCE("department", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."employment_contracts"
-    ADD CONSTRAINT "employment_contracts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_employment_contracts_employee" ON "public"."employment_contracts" USING "btree" ("employee_id");
 
 
 
-ALTER TABLE ONLY "public"."entity_followers"
-    ADD CONSTRAINT "entity_followers_entity_type_entity_id_user_id_key" UNIQUE ("entity_type", "entity_id", "user_id");
+CREATE INDEX IF NOT EXISTS "idx_employment_contracts_status" ON "public"."employment_contracts" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."entity_followers"
-    ADD CONSTRAINT "entity_followers_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_entity_followers_entity" ON "public"."entity_followers" USING "btree" ("entity_type", "entity_id");
 
 
 
-ALTER TABLE ONLY "public"."entity_tags"
-    ADD CONSTRAINT "entity_tags_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_entity_followers_user" ON "public"."entity_followers" USING "btree" ("user_id");
 
 
 
-ALTER TABLE ONLY "public"."entity_tags"
-    ADD CONSTRAINT "entity_tags_tag_id_entity_type_entity_id_key" UNIQUE ("tag_id", "entity_type", "entity_id");
+CREATE INDEX IF NOT EXISTS "idx_entity_tags_entity" ON "public"."entity_tags" USING "btree" ("entity_type", "entity_id");
 
 
 
-ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_base_currency_quote_currency_rate_date_key" UNIQUE ("base_currency", "quote_currency", "rate_date");
+CREATE INDEX IF NOT EXISTS "idx_entity_tags_tag" ON "public"."entity_tags" USING "btree" ("tag_id");
 
 
 
-ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_expense_attachments_expense" ON "public"."expense_attachments" USING "btree" ("expense_id");
 
 
 
-ALTER TABLE ONLY "public"."expense_attachments"
-    ADD CONSTRAINT "expense_attachments_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_expense_payments_report" ON "public"."expense_payments" USING "btree" ("report_id");
 
 
 
-ALTER TABLE ONLY "public"."expense_payments"
-    ADD CONSTRAINT "expense_payments_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_expense_payments_user" ON "public"."expense_payments" USING "btree" ("user_id");
 
 
 
-ALTER TABLE ONLY "public"."expense_reports"
-    ADD CONSTRAINT "expense_reports_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_expense_reports_user_period" ON "public"."expense_reports" USING "btree" ("user_id", "period");
 
 
 
-ALTER TABLE ONLY "public"."expense_reports"
-    ADD CONSTRAINT "expense_reports_user_id_period_key" UNIQUE ("user_id", "period");
+CREATE INDEX IF NOT EXISTS "idx_expenses_payroll_export" ON "public"."expenses" USING "btree" ("payroll_export_id");
 
 
 
-ALTER TABLE ONLY "public"."expenses"
-    ADD CONSTRAINT "expenses_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_expenses_report_id" ON "public"."expenses" USING "btree" ("report_id");
 
 
 
-ALTER TABLE ONLY "public"."federation_connections"
-    ADD CONSTRAINT "federation_connections_peer_id_direction_transport_key" UNIQUE ("peer_id", "direction", "transport");
+CREATE INDEX IF NOT EXISTS "idx_expenses_status" ON "public"."expenses" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."federation_connections"
-    ADD CONSTRAINT "federation_connections_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_expenses_user_id" ON "public"."expenses" USING "btree" ("user_id");
 
 
 
-ALTER TABLE ONLY "public"."federation_peer_missions"
-    ADD CONSTRAINT "federation_peer_missions_peer_id_key" UNIQUE ("peer_id");
+CREATE INDEX IF NOT EXISTS "idx_fed_conn_apikey" ON "public"."federation_connections" USING "btree" ("api_key_id") WHERE ("api_key_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."federation_peer_missions"
-    ADD CONSTRAINT "federation_peer_missions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_fed_conn_peer" ON "public"."federation_connections" USING "btree" ("peer_id");
 
 
 
-ALTER TABLE ONLY "public"."feedback"
-    ADD CONSTRAINT "feedback_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_federation_peer_missions_peer_id" ON "public"."federation_peer_missions" USING "btree" ("peer_id");
 
 
 
-ALTER TABLE ONLY "public"."fixed_assets"
-    ADD CONSTRAINT "fixed_assets_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_feedback_receiver" ON "public"."feedback" USING "btree" ("receiver_id", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."flowpilot_briefings"
-    ADD CONSTRAINT "flowpilot_briefings_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_form_submissions_block_id" ON "public"."form_submissions" USING "btree" ("block_id");
 
 
 
-ALTER TABLE ONLY "public"."form_submissions"
-    ADD CONSTRAINT "form_submissions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_form_submissions_created_at" ON "public"."form_submissions" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."global_blocks"
-    ADD CONSTRAINT "global_blocks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_form_submissions_page_id" ON "public"."form_submissions" USING "btree" ("page_id");
 
 
 
-ALTER TABLE ONLY "public"."global_blocks"
-    ADD CONSTRAINT "global_blocks_slot_key" UNIQUE ("slot");
+CREATE INDEX IF NOT EXISTS "idx_invoices_deal_id" ON "public"."invoices" USING "btree" ("deal_id");
 
 
 
-ALTER TABLE ONLY "public"."goods_receipt_lines"
-    ADD CONSTRAINT "goods_receipt_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_invoices_project" ON "public"."invoices" USING "btree" ("project_id");
 
 
 
-ALTER TABLE ONLY "public"."goods_receipts"
-    ADD CONSTRAINT "goods_receipts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_invoices_public_token" ON "public"."invoices" USING "btree" ("public_token");
 
 
 
-ALTER TABLE ONLY "public"."handbook_chapters"
-    ADD CONSTRAINT "handbook_chapters_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_invoices_search" ON "public"."invoices" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("invoice_number", ''::"text") || ' '::"text") || COALESCE("customer_email", ''::"text")) || ' '::"text") || COALESCE("customer_name", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."handbook_chapters"
-    ADD CONSTRAINT "handbook_chapters_repo_owner_repo_name_file_path_key" UNIQUE ("repo_owner", "repo_name", "file_path");
+CREATE INDEX IF NOT EXISTS "idx_invoices_status" ON "public"."invoices" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."installed_template"
-    ADD CONSTRAINT "installed_template_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_jel_tax_code" ON "public"."journal_entry_lines" USING "btree" ("tax_code_id");
 
 
 
-ALTER TABLE ONLY "public"."invoices"
-    ADD CONSTRAINT "invoices_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_jelt_code" ON "public"."journal_entry_line_taxes" USING "btree" ("tax_code_id");
 
 
 
-ALTER TABLE ONLY "public"."invoices"
-    ADD CONSTRAINT "invoices_public_token_key" UNIQUE ("public_token");
+CREATE INDEX IF NOT EXISTS "idx_jelt_grid" ON "public"."journal_entry_line_taxes" USING "btree" ("tax_grid_id");
 
 
 
-ALTER TABLE ONLY "public"."job_postings"
-    ADD CONSTRAINT "job_postings_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_jelt_line" ON "public"."journal_entry_line_taxes" USING "btree" ("journal_entry_line_id");
 
 
 
-ALTER TABLE ONLY "public"."job_postings"
-    ADD CONSTRAINT "job_postings_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_job_postings_slug" ON "public"."job_postings" USING "btree" ("slug");
 
 
 
-ALTER TABLE ONLY "public"."journal_entries"
-    ADD CONSTRAINT "journal_entries_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_job_postings_status" ON "public"."job_postings" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."journal_entry_line_taxes"
-    ADD CONSTRAINT "journal_entry_line_taxes_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_journal_entries_date" ON "public"."journal_entries" USING "btree" ("entry_date");
 
 
 
-ALTER TABLE ONLY "public"."journal_entry_lines"
-    ADD CONSTRAINT "journal_entry_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_journal_entries_journal_id" ON "public"."journal_entries" USING "btree" ("journal_id");
 
 
 
-ALTER TABLE ONLY "public"."journals"
-    ADD CONSTRAINT "journals_code_key" UNIQUE ("code");
+CREATE INDEX IF NOT EXISTS "idx_journal_entries_status" ON "public"."journal_entries" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."journals"
-    ADD CONSTRAINT "journals_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_journal_entries_template_id" ON "public"."journal_entries" USING "btree" ("template_id");
 
 
 
-ALTER TABLE ONLY "public"."kb_articles"
-    ADD CONSTRAINT "kb_articles_category_id_slug_key" UNIQUE ("category_id", "slug");
+CREATE INDEX IF NOT EXISTS "idx_journal_entries_vendor_id" ON "public"."journal_entries" USING "btree" ("vendor_id");
 
 
 
-ALTER TABLE ONLY "public"."kb_articles"
-    ADD CONSTRAINT "kb_articles_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_journal_entry_lines_account" ON "public"."journal_entry_lines" USING "btree" ("account_code");
 
 
 
-ALTER TABLE ONLY "public"."kb_categories"
-    ADD CONSTRAINT "kb_categories_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_journal_entry_lines_entry" ON "public"."journal_entry_lines" USING "btree" ("journal_entry_id");
 
 
 
-ALTER TABLE ONLY "public"."kb_categories"
-    ADD CONSTRAINT "kb_categories_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_kb_articles_category" ON "public"."kb_articles" USING "btree" ("category_id");
 
 
 
-ALTER TABLE ONLY "public"."lead_activities"
-    ADD CONSTRAINT "lead_activities_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_kb_articles_chat" ON "public"."kb_articles" USING "btree" ("include_in_chat") WHERE ("include_in_chat" = true);
 
 
 
-ALTER TABLE ONLY "public"."leads"
-    ADD CONSTRAINT "leads_email_unique" UNIQUE ("email");
+CREATE INDEX IF NOT EXISTS "idx_kb_articles_needs_improvement" ON "public"."kb_articles" USING "btree" ("needs_improvement") WHERE ("needs_improvement" = true);
 
 
 
-ALTER TABLE ONLY "public"."leads"
-    ADD CONSTRAINT "leads_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_kb_articles_published" ON "public"."kb_articles" USING "btree" ("is_published");
 
 
 
-ALTER TABLE ONLY "public"."leave_allocations"
-    ADD CONSTRAINT "leave_allocations_employee_id_leave_type_year_key" UNIQUE ("employee_id", "leave_type", "year");
+CREATE INDEX IF NOT EXISTS "idx_kb_articles_search" ON "public"."kb_articles" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("question", ''::"text")) || ' '::"text") || COALESCE("answer_text", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."leave_allocations"
-    ADD CONSTRAINT "leave_allocations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_kb_categories_active" ON "public"."kb_categories" USING "btree" ("is_active");
 
 
 
-ALTER TABLE ONLY "public"."leave_requests"
-    ADD CONSTRAINT "leave_requests_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_kb_categories_parent" ON "public"."kb_categories" USING "btree" ("parent_id");
 
 
 
-ALTER TABLE ONLY "public"."manufacturing_orders"
-    ADD CONSTRAINT "manufacturing_orders_mo_number_key" UNIQUE ("mo_number");
+CREATE INDEX IF NOT EXISTS "idx_lead_activities_created_at" ON "public"."lead_activities" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."manufacturing_orders"
-    ADD CONSTRAINT "manufacturing_orders_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_lead_activities_lead_id" ON "public"."lead_activities" USING "btree" ("lead_id");
 
 
 
-ALTER TABLE ONLY "public"."mo_components"
-    ADD CONSTRAINT "mo_components_mo_id_component_product_id_key" UNIQUE ("mo_id", "component_product_id");
+CREATE INDEX IF NOT EXISTS "idx_lead_activities_type" ON "public"."lead_activities" USING "btree" ("type");
 
 
 
-ALTER TABLE ONLY "public"."mo_components"
-    ADD CONSTRAINT "mo_components_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leads_company_id" ON "public"."leads" USING "btree" ("company_id");
 
 
 
-ALTER TABLE ONLY "public"."newsletter_email_opens"
-    ADD CONSTRAINT "newsletter_email_opens_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leads_email" ON "public"."leads" USING "btree" ("email");
 
 
 
-ALTER TABLE ONLY "public"."newsletter_email_opens"
-    ADD CONSTRAINT "newsletter_email_opens_tracking_id_key" UNIQUE ("tracking_id");
+CREATE INDEX IF NOT EXISTS "idx_leads_needs_review" ON "public"."leads" USING "btree" ("needs_review") WHERE ("needs_review" = true);
 
 
 
-ALTER TABLE ONLY "public"."newsletter_link_clicks"
-    ADD CONSTRAINT "newsletter_link_clicks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leads_score" ON "public"."leads" USING "btree" ("score" DESC);
 
 
 
-ALTER TABLE ONLY "public"."newsletter_subscribers"
-    ADD CONSTRAINT "newsletter_subscribers_email_key" UNIQUE ("email");
+CREATE INDEX IF NOT EXISTS "idx_leads_search" ON "public"."leads" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("email", ''::"text")) || ' '::"text") || COALESCE("phone", ''::"text")) || ' '::"text") || COALESCE("ai_summary", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."newsletter_subscribers"
-    ADD CONSTRAINT "newsletter_subscribers_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leads_status" ON "public"."leads" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."newsletters"
-    ADD CONSTRAINT "newsletters_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leave_allocations_employee" ON "public"."leave_allocations" USING "btree" ("employee_id");
 
 
 
-ALTER TABLE ONLY "public"."onboarding_checklists"
-    ADD CONSTRAINT "onboarding_checklists_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leave_allocations_year" ON "public"."leave_allocations" USING "btree" ("year");
 
 
 
-ALTER TABLE ONLY "public"."onboarding_templates"
-    ADD CONSTRAINT "onboarding_templates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_leave_requests_payroll_export" ON "public"."leave_requests" USING "btree" ("payroll_export_id");
 
 
 
-ALTER TABLE ONLY "public"."one_on_ones"
-    ADD CONSTRAINT "one_on_ones_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_mo_components_mo" ON "public"."mo_components" USING "btree" ("mo_id");
 
 
 
-ALTER TABLE ONLY "public"."opening_balances"
-    ADD CONSTRAINT "opening_balances_account_code_locale_fiscal_year_key" UNIQUE ("account_code", "locale", "fiscal_year");
+CREATE INDEX IF NOT EXISTS "idx_mo_due_date" ON "public"."manufacturing_orders" USING "btree" ("due_date");
 
 
 
-ALTER TABLE ONLY "public"."opening_balances"
-    ADD CONSTRAINT "opening_balances_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_mo_product" ON "public"."manufacturing_orders" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_mo_source" ON "public"."manufacturing_orders" USING "btree" ("source_type", "source_id");
 
 
 
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_mo_status" ON "public"."manufacturing_orders" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_stripe_checkout_id_key" UNIQUE ("stripe_checkout_id");
+CREATE INDEX IF NOT EXISTS "idx_newsletter_clicks_link" ON "public"."newsletter_link_clicks" USING "btree" ("link_id");
 
 
 
-ALTER TABLE ONLY "public"."outbound_communications"
-    ADD CONSTRAINT "outbound_communications_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletter_clicks_newsletter" ON "public"."newsletter_link_clicks" USING "btree" ("newsletter_id");
 
 
 
-ALTER TABLE ONLY "public"."page_versions"
-    ADD CONSTRAINT "page_versions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletter_opens_newsletter" ON "public"."newsletter_email_opens" USING "btree" ("newsletter_id");
 
 
 
-ALTER TABLE ONLY "public"."page_views"
-    ADD CONSTRAINT "page_views_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletter_opens_tracking" ON "public"."newsletter_email_opens" USING "btree" ("tracking_id");
 
 
 
-ALTER TABLE ONLY "public"."pages"
-    ADD CONSTRAINT "pages_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletter_subscribers_email" ON "public"."newsletter_subscribers" USING "btree" ("email");
 
 
 
-ALTER TABLE ONLY "public"."payment_reconciliations"
-    ADD CONSTRAINT "payment_reconciliations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletter_subscribers_status" ON "public"."newsletter_subscribers" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."payroll_components"
-    ADD CONSTRAINT "payroll_components_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletters_scheduled_at" ON "public"."newsletters" USING "btree" ("scheduled_at");
 
 
 
-ALTER TABLE ONLY "public"."payroll_export_lines"
-    ADD CONSTRAINT "payroll_export_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_newsletters_status" ON "public"."newsletters" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."payroll_exports"
-    ADD CONSTRAINT "payroll_exports_period_year_period_month_key" UNIQUE ("period_year", "period_month");
+CREATE INDEX IF NOT EXISTS "idx_one_on_ones_employee" ON "public"."one_on_ones" USING "btree" ("employee_id", "scheduled_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."payroll_exports"
-    ADD CONSTRAINT "payroll_exports_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_one_on_ones_manager" ON "public"."one_on_ones" USING "btree" ("manager_id", "scheduled_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."payroll_lines"
-    ADD CONSTRAINT "payroll_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_order_items_order_id" ON "public"."order_items" USING "btree" ("order_id");
 
 
 
-ALTER TABLE ONLY "public"."payroll_lines"
-    ADD CONSTRAINT "payroll_lines_run_id_employee_id_key" UNIQUE ("run_id", "employee_id");
+CREATE INDEX IF NOT EXISTS "idx_orders_company_id" ON "public"."orders" USING "btree" ("company_id");
 
 
 
-ALTER TABLE ONLY "public"."payroll_runs"
-    ADD CONSTRAINT "payroll_runs_period_date_key" UNIQUE ("period_date");
+CREATE INDEX IF NOT EXISTS "idx_orders_created_at" ON "public"."orders" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."payroll_runs"
-    ADD CONSTRAINT "payroll_runs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_orders_customer_email" ON "public"."orders" USING "btree" ("customer_email");
 
 
 
-ALTER TABLE ONLY "public"."peer_invitations"
-    ADD CONSTRAINT "peer_invitations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_orders_customer_email_lower" ON "public"."orders" USING "btree" ("lower"("customer_email"));
 
 
 
-ALTER TABLE ONLY "public"."pending_operations"
-    ADD CONSTRAINT "pending_operations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_orders_search" ON "public"."orders" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("customer_email", ''::"text") || ' '::"text") || COALESCE("customer_name", ''::"text")) || ' '::"text") || COALESCE("tracking_number", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."performance_goals"
-    ADD CONSTRAINT "performance_goals_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_orders_status" ON "public"."orders" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."performance_reviews"
-    ADD CONSTRAINT "performance_reviews_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_outbound_comm_channel_status" ON "public"."outbound_communications" USING "btree" ("channel", "status");
 
 
 
-ALTER TABLE ONLY "public"."picking_lines"
-    ADD CONSTRAINT "picking_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_outbound_comm_created" ON "public"."outbound_communications" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."picking_orders"
-    ADD CONSTRAINT "picking_orders_picking_number_key" UNIQUE ("picking_number");
+CREATE INDEX IF NOT EXISTS "idx_outbound_comm_recipient" ON "public"."outbound_communications" USING "btree" ("recipient");
 
 
 
-ALTER TABLE ONLY "public"."picking_orders"
-    ADD CONSTRAINT "picking_orders_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_page_views_created_at" ON "public"."page_views" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."platform_test_runs"
-    ADD CONSTRAINT "platform_test_runs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_page_views_page_id" ON "public"."page_views" USING "btree" ("page_id");
 
 
 
-ALTER TABLE ONLY "public"."pos_payments"
-    ADD CONSTRAINT "pos_payments_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_page_views_page_slug" ON "public"."page_views" USING "btree" ("page_slug");
 
 
 
-ALTER TABLE ONLY "public"."pos_registers"
-    ADD CONSTRAINT "pos_registers_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_page_views_visitor_id" ON "public"."page_views" USING "btree" ("visitor_id");
 
 
 
-ALTER TABLE ONLY "public"."pos_sale_lines"
-    ADD CONSTRAINT "pos_sale_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pages_deleted_at" ON "public"."pages" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NULL);
 
 
 
-ALTER TABLE ONLY "public"."pos_sales"
-    ADD CONSTRAINT "pos_sales_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pages_scheduled_at" ON "public"."pages" USING "btree" ("scheduled_at") WHERE (("scheduled_at" IS NOT NULL) AND ("status" = 'reviewing'::"public"."page_status"));
 
 
 
-ALTER TABLE ONLY "public"."pos_sales"
-    ADD CONSTRAINT "pos_sales_receipt_number_key" UNIQUE ("receipt_number");
+CREATE INDEX IF NOT EXISTS "idx_pages_search" ON "public"."pages" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("slug", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."pos_sessions"
-    ADD CONSTRAINT "pos_sessions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_payrec_invoice" ON "public"."payment_reconciliations" USING "btree" ("invoice_id");
 
 
 
-ALTER TABLE ONLY "public"."pricelist_items"
-    ADD CONSTRAINT "pricelist_items_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_payrec_status" ON "public"."payment_reconciliations" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."pricelists"
-    ADD CONSTRAINT "pricelists_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_payroll_components_employee" ON "public"."payroll_components" USING "btree" ("employee_id") WHERE "active";
 
 
 
-ALTER TABLE ONLY "public"."procurement_suggestions"
-    ADD CONSTRAINT "procurement_suggestions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_payroll_export_lines_employee" ON "public"."payroll_export_lines" USING "btree" ("employee_id");
 
 
 
-ALTER TABLE ONLY "public"."product_categories"
-    ADD CONSTRAINT "product_categories_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_payroll_export_lines_export" ON "public"."payroll_export_lines" USING "btree" ("export_id");
 
 
 
-ALTER TABLE ONLY "public"."product_categories"
-    ADD CONSTRAINT "product_categories_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_payroll_lines_employee" ON "public"."payroll_lines" USING "btree" ("employee_id");
 
 
 
-ALTER TABLE ONLY "public"."product_stock"
-    ADD CONSTRAINT "product_stock_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_payroll_lines_run" ON "public"."payroll_lines" USING "btree" ("run_id");
 
 
 
-ALTER TABLE ONLY "public"."product_stock"
-    ADD CONSTRAINT "product_stock_product_id_key" UNIQUE ("product_id");
+CREATE INDEX IF NOT EXISTS "idx_peer_invitations_invitee" ON "public"."peer_invitations" USING "btree" ("invitee_peer_id");
 
 
 
-ALTER TABLE ONLY "public"."products"
-    ADD CONSTRAINT "products_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_peer_invitations_inviter" ON "public"."peer_invitations" USING "btree" ("inviter_peer_id");
 
 
 
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pending_ops_skill" ON "public"."pending_operations" USING "btree" ("skill_name");
 
 
 
-ALTER TABLE ONLY "public"."project_members"
-    ADD CONSTRAINT "project_members_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pending_ops_status" ON "public"."pending_operations" USING "btree" ("status", "created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."project_members"
-    ADD CONSTRAINT "project_members_project_id_user_id_key" UNIQUE ("project_id", "user_id");
+CREATE INDEX IF NOT EXISTS "idx_perf_goals_employee" ON "public"."performance_goals" USING "btree" ("employee_id", "status");
 
 
 
-ALTER TABLE ONLY "public"."project_tasks"
-    ADD CONSTRAINT "project_tasks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_perf_reviews_employee" ON "public"."performance_reviews" USING "btree" ("employee_id", "period_end" DESC);
 
 
 
-ALTER TABLE ONLY "public"."projects"
-    ADD CONSTRAINT "projects_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_picking_lines_order" ON "public"."picking_lines" USING "btree" ("picking_order_id");
 
 
 
-ALTER TABLE ONLY "public"."purchase_order_lines"
-    ADD CONSTRAINT "purchase_order_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_picking_lines_product" ON "public"."picking_lines" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."purchase_orders"
-    ADD CONSTRAINT "purchase_orders_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_picking_lines_status" ON "public"."picking_lines" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."purchase_orders"
-    ADD CONSTRAINT "purchase_orders_po_number_key" UNIQUE ("po_number");
+CREATE INDEX IF NOT EXISTS "idx_picking_orders_assigned" ON "public"."picking_orders" USING "btree" ("assigned_to");
 
 
 
-ALTER TABLE ONLY "public"."quote_items"
-    ADD CONSTRAINT "quote_items_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_picking_orders_order" ON "public"."picking_orders" USING "btree" ("order_id");
 
 
 
-ALTER TABLE ONLY "public"."quote_signatures"
-    ADD CONSTRAINT "quote_signatures_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_picking_orders_status" ON "public"."picking_orders" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."quote_templates"
-    ADD CONSTRAINT "quote_templates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_platform_test_runs_started" ON "public"."platform_test_runs" USING "btree" ("started_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."quote_versions"
-    ADD CONSTRAINT "quote_versions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_platform_test_runs_suite_started" ON "public"."platform_test_runs" USING "btree" ("suite_id", "started_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."quote_versions"
-    ADD CONSTRAINT "quote_versions_quote_id_version_number_key" UNIQUE ("quote_id", "version_number");
+CREATE INDEX IF NOT EXISTS "idx_pos_payments_method" ON "public"."pos_payments" USING "btree" ("method");
 
 
 
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pos_payments_sale" ON "public"."pos_payments" USING "btree" ("sale_id");
 
 
 
-ALTER TABLE ONLY "public"."reconciliation_matches"
-    ADD CONSTRAINT "reconciliation_matches_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sale_lines_sale" ON "public"."pos_sale_lines" USING "btree" ("sale_id");
 
 
 
-ALTER TABLE ONLY "public"."reorder_rules"
-    ADD CONSTRAINT "reorder_rules_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sales_created" ON "public"."pos_sales" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."reorder_rules"
-    ADD CONSTRAINT "reorder_rules_product_id_location_id_key" UNIQUE ("product_id", "location_id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sales_register" ON "public"."pos_sales" USING "btree" ("register_id");
 
 
 
-ALTER TABLE ONLY "public"."return_items"
-    ADD CONSTRAINT "return_items_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sales_session" ON "public"."pos_sales" USING "btree" ("session_id");
 
 
 
-ALTER TABLE ONLY "public"."returns"
-    ADD CONSTRAINT "returns_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sales_status" ON "public"."pos_sales" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."returns"
-    ADD CONSTRAINT "returns_rma_number_key" UNIQUE ("rma_number");
+CREATE INDEX IF NOT EXISTS "idx_pos_sessions_cashier" ON "public"."pos_sessions" USING "btree" ("cashier_id");
 
 
 
-ALTER TABLE ONLY "public"."rfq_bids"
-    ADD CONSTRAINT "rfq_bids_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sessions_register" ON "public"."pos_sessions" USING "btree" ("register_id");
 
 
 
-ALTER TABLE ONLY "public"."rfq_bids"
-    ADD CONSTRAINT "rfq_bids_rfq_id_vendor_id_key" UNIQUE ("rfq_id", "vendor_id");
+CREATE INDEX IF NOT EXISTS "idx_pos_sessions_status" ON "public"."pos_sessions" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."rfq_lines"
-    ADD CONSTRAINT "rfq_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_proc_sugg_product" ON "public"."procurement_suggestions" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."rfqs"
-    ADD CONSTRAINT "rfqs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_proc_sugg_status" ON "public"."procurement_suggestions" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."rfqs"
-    ADD CONSTRAINT "rfqs_rfq_number_key" UNIQUE ("rfq_number");
+CREATE INDEX IF NOT EXISTS "idx_product_stock_product" ON "public"."product_stock" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."river_posts"
-    ADD CONSTRAINT "river_posts_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_products_available_in_pos" ON "public"."products" USING "btree" ("available_in_pos") WHERE ("available_in_pos" = true);
 
 
 
-ALTER TABLE ONLY "public"."river_reactions"
-    ADD CONSTRAINT "river_reactions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_products_barcode" ON "public"."products" USING "btree" ("barcode") WHERE ("barcode" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."river_reactions"
-    ADD CONSTRAINT "river_reactions_post_id_user_id_emoji_key" UNIQUE ("post_id", "user_id", "emoji");
+CREATE INDEX IF NOT EXISTS "idx_products_is_active" ON "public"."products" USING "btree" ("is_active");
 
 
 
-ALTER TABLE ONLY "public"."role_module_access_defaults"
-    ADD CONSTRAINT "role_module_access_defaults_pkey" PRIMARY KEY ("role", "module_id");
+CREATE INDEX IF NOT EXISTS "idx_products_search" ON "public"."products" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("description", ''::"text")) || ' '::"text") || COALESCE("barcode", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."role_module_access"
-    ADD CONSTRAINT "role_module_access_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_project_tasks_assigned_to" ON "public"."project_tasks" USING "btree" ("assigned_to");
 
 
 
-ALTER TABLE ONLY "public"."role_module_access"
-    ADD CONSTRAINT "role_module_access_role_module_id_key" UNIQUE ("role", "module_id");
+CREATE INDEX IF NOT EXISTS "idx_project_tasks_project_id" ON "public"."project_tasks" USING "btree" ("project_id");
 
 
 
-ALTER TABLE ONLY "public"."sales_intelligence_profiles"
-    ADD CONSTRAINT "sales_intelligence_profiles_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_project_tasks_status" ON "public"."project_tasks" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."sales_intelligence_profiles"
-    ADD CONSTRAINT "sales_intelligence_profiles_type_user_id_key" UNIQUE ("type", "user_id");
+CREATE INDEX IF NOT EXISTS "idx_projects_search" ON "public"."projects" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("client_name", ''::"text")) || ' '::"text") || COALESCE("description", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."saved_views"
-    ADD CONSTRAINT "saved_views_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_quote_items_quote" ON "public"."quote_items" USING "btree" ("quote_id");
 
 
 
-ALTER TABLE ONLY "public"."service_order_lines"
-    ADD CONSTRAINT "service_order_lines_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_quote_signatures_quote" ON "public"."quote_signatures" USING "btree" ("quote_id");
 
 
 
-ALTER TABLE ONLY "public"."service_orders"
-    ADD CONSTRAINT "service_orders_order_number_key" UNIQUE ("order_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_quotes_accept_token_unique" ON "public"."quotes" USING "btree" ("accept_token") WHERE ("accept_token" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."service_orders"
-    ADD CONSTRAINT "service_orders_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_quotes_lead" ON "public"."quotes" USING "btree" ("lead_id") WHERE ("lead_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."service_visits"
-    ADD CONSTRAINT "service_visits_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_quotes_search" ON "public"."quotes" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("quote_number", ''::"text") || ' '::"text") || COALESCE("title", ''::"text")) || ' '::"text") || COALESCE("customer_name", ''::"text")) || ' '::"text") || COALESCE("customer_email", ''::"text"))));
 
 
 
-ALTER TABLE ONLY "public"."shipments"
-    ADD CONSTRAINT "shipments_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_quotes_status" ON "public"."quotes" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."site_settings"
-    ADD CONSTRAINT "site_settings_key_key" UNIQUE ("key");
+CREATE INDEX IF NOT EXISTS "idx_recmatch_reconciliation" ON "public"."reconciliation_matches" USING "btree" ("reconciliation_id");
 
 
 
-ALTER TABLE ONLY "public"."site_settings"
-    ADD CONSTRAINT "site_settings_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_recon_match_bank_tx" ON "public"."reconciliation_matches" USING "btree" ("bank_transaction_id");
 
 
 
-ALTER TABLE ONLY "public"."skills_catalog"
-    ADD CONSTRAINT "skills_catalog_name_key" UNIQUE ("name");
+CREATE INDEX IF NOT EXISTS "idx_recon_match_entity" ON "public"."reconciliation_matches" USING "btree" ("entity_type", "entity_id");
 
 
 
-ALTER TABLE ONLY "public"."skills_catalog"
-    ADD CONSTRAINT "skills_catalog_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_reorder_rules_active" ON "public"."reorder_rules" USING "btree" ("is_active") WHERE "is_active";
 
 
 
-ALTER TABLE ONLY "public"."sla_policies"
-    ADD CONSTRAINT "sla_policies_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_reorder_rules_product" ON "public"."reorder_rules" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."sla_violations"
-    ADD CONSTRAINT "sla_violations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_rfq_bids_rfq" ON "public"."rfq_bids" USING "btree" ("rfq_id");
 
 
 
-ALTER TABLE ONLY "public"."stock_locations"
-    ADD CONSTRAINT "stock_locations_code_key" UNIQUE ("code");
+CREATE INDEX IF NOT EXISTS "idx_rfq_bids_vendor" ON "public"."rfq_bids" USING "btree" ("vendor_id");
 
 
 
-ALTER TABLE ONLY "public"."stock_locations"
-    ADD CONSTRAINT "stock_locations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_rfq_lines_rfq" ON "public"."rfq_lines" USING "btree" ("rfq_id");
 
 
 
-ALTER TABLE ONLY "public"."stock_lots"
-    ADD CONSTRAINT "stock_lots_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_role_module_access_module" ON "public"."role_module_access" USING "btree" ("module_id");
 
 
 
-ALTER TABLE ONLY "public"."stock_lots"
-    ADD CONSTRAINT "stock_lots_product_id_lot_number_key" UNIQUE ("product_id", "lot_number");
+CREATE INDEX IF NOT EXISTS "idx_role_module_access_role" ON "public"."role_module_access" USING "btree" ("role");
 
 
 
-ALTER TABLE ONLY "public"."stock_moves"
-    ADD CONSTRAINT "stock_moves_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_saved_views_scope_user" ON "public"."saved_views" USING "btree" ("scope", "user_id");
 
 
 
-ALTER TABLE ONLY "public"."stock_quants"
-    ADD CONSTRAINT "stock_quants_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_service_order_lines_order" ON "public"."service_order_lines" USING "btree" ("service_order_id");
 
 
 
-ALTER TABLE ONLY "public"."stock_quants"
-    ADD CONSTRAINT "stock_quants_product_id_location_id_lot_id_key" UNIQUE ("product_id", "location_id", "lot_id");
+CREATE INDEX IF NOT EXISTS "idx_service_orders_assigned" ON "public"."service_orders" USING "btree" ("assigned_to");
 
 
 
-ALTER TABLE ONLY "public"."stock_reservations"
-    ADD CONSTRAINT "stock_reservations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_service_orders_scheduled" ON "public"."service_orders" USING "btree" ("scheduled_start");
 
 
 
-ALTER TABLE ONLY "public"."subscription_churn_reasons"
-    ADD CONSTRAINT "subscription_churn_reasons_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_service_orders_status" ON "public"."service_orders" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."subscription_events"
-    ADD CONSTRAINT "subscription_events_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_service_visits_order" ON "public"."service_visits" USING "btree" ("service_order_id");
 
 
 
-ALTER TABLE ONLY "public"."subscription_winback_campaigns"
-    ADD CONSTRAINT "subscription_winback_campaigns_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_service_visits_start" ON "public"."service_visits" USING "btree" ("scheduled_start");
 
 
 
-ALTER TABLE ONLY "public"."subscription_winback_sends"
-    ADD CONSTRAINT "subscription_winback_sends_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_service_visits_tech" ON "public"."service_visits" USING "btree" ("technician_id");
 
 
 
-ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_sla_policies_entity" ON "public"."sla_policies" USING "btree" ("entity_type");
 
 
 
-ALTER TABLE ONLY "public"."support_agents"
-    ADD CONSTRAINT "support_agents_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_sla_violations_created" ON "public"."sla_violations" USING "btree" ("created_at" DESC);
 
 
 
-ALTER TABLE ONLY "public"."support_agents"
-    ADD CONSTRAINT "support_agents_user_id_key" UNIQUE ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_sla_violations_entity" ON "public"."sla_violations" USING "btree" ("entity_type", "entity_id");
 
 
 
-ALTER TABLE ONLY "public"."support_escalations"
-    ADD CONSTRAINT "support_escalations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_sla_violations_policy" ON "public"."sla_violations" USING "btree" ("policy_id");
 
 
 
-ALTER TABLE ONLY "public"."survey_campaigns"
-    ADD CONSTRAINT "survey_campaigns_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_locations_parent" ON "public"."stock_locations" USING "btree" ("parent_id");
 
 
 
-ALTER TABLE ONLY "public"."survey_responses"
-    ADD CONSTRAINT "survey_responses_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_locations_type" ON "public"."stock_locations" USING "btree" ("location_type");
 
 
 
-ALTER TABLE ONLY "public"."survey_sends"
-    ADD CONSTRAINT "survey_sends_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_lots_expiry" ON "public"."stock_lots" USING "btree" ("expiry_date") WHERE ("expiry_date" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."survey_sends"
-    ADD CONSTRAINT "survey_sends_token_key" UNIQUE ("token");
+CREATE INDEX IF NOT EXISTS "idx_stock_lots_product" ON "public"."stock_lots" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."survey_templates"
-    ADD CONSTRAINT "survey_templates_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_moves_from_loc" ON "public"."stock_moves" USING "btree" ("from_location_id") WHERE ("from_location_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."tags"
-    ADD CONSTRAINT "tags_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_moves_mo" ON "public"."stock_moves" USING "btree" ("mo_id") WHERE ("mo_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."tags"
-    ADD CONSTRAINT "tags_slug_key" UNIQUE ("slug");
+CREATE INDEX IF NOT EXISTS "idx_stock_moves_product" ON "public"."stock_moves" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."tax_code_grids"
-    ADD CONSTRAINT "tax_code_grids_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_moves_to_loc" ON "public"."stock_moves" USING "btree" ("to_location_id") WHERE ("to_location_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."tax_code_grids"
-    ADD CONSTRAINT "tax_code_grids_tax_code_id_tax_grid_id_applies_to_key" UNIQUE ("tax_code_id", "tax_grid_id", "applies_to");
+CREATE INDEX IF NOT EXISTS "idx_stock_moves_type" ON "public"."stock_moves" USING "btree" ("move_type");
 
 
 
-ALTER TABLE ONLY "public"."tax_codes"
-    ADD CONSTRAINT "tax_codes_code_key" UNIQUE ("code");
+CREATE INDEX IF NOT EXISTS "idx_stock_quants_location" ON "public"."stock_quants" USING "btree" ("location_id");
 
 
 
-ALTER TABLE ONLY "public"."tax_codes"
-    ADD CONSTRAINT "tax_codes_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_quants_product" ON "public"."stock_quants" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."tax_grids"
-    ADD CONSTRAINT "tax_grids_code_key" UNIQUE ("code");
+CREATE INDEX IF NOT EXISTS "idx_stock_reservations_product" ON "public"."stock_reservations" USING "btree" ("product_id");
 
 
 
-ALTER TABLE ONLY "public"."tax_grids"
-    ADD CONSTRAINT "tax_grids_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_reservations_ref" ON "public"."stock_reservations" USING "btree" ("reference_type", "reference_id") WHERE ("reference_id" IS NOT NULL);
 
 
 
-ALTER TABLE ONLY "public"."ticket_comments"
-    ADD CONSTRAINT "ticket_comments_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_stock_reservations_state" ON "public"."stock_reservations" USING "btree" ("state");
 
 
 
-ALTER TABLE ONLY "public"."tickets"
-    ADD CONSTRAINT "tickets_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_subscriptions_at_risk" ON "public"."subscriptions" USING "btree" ("at_risk") WHERE ("at_risk" = true);
 
 
 
-ALTER TABLE ONLY "public"."time_entries"
-    ADD CONSTRAINT "time_entries_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_subscriptions_next_invoice" ON "public"."subscriptions" USING "btree" ("next_invoice_date") WHERE (("provider" = 'manual'::"text") AND ("status" = 'active'::"public"."subscription_status"));
 
 
 
-ALTER TABLE ONLY "public"."timesheet_period_locks"
-    ADD CONSTRAINT "timesheet_period_locks_fiscal_year_period_month_key" UNIQUE ("fiscal_year", "period_month");
+CREATE INDEX IF NOT EXISTS "idx_subscriptions_period_end" ON "public"."subscriptions" USING "btree" ("current_period_end");
 
 
 
-ALTER TABLE ONLY "public"."timesheet_period_locks"
-    ADD CONSTRAINT "timesheet_period_locks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_support_agents_status" ON "public"."support_agents" USING "btree" ("status");
 
 
 
-ALTER TABLE ONLY "public"."tolerance_policies"
-    ADD CONSTRAINT "tolerance_policies_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_support_agents_user_id" ON "public"."support_agents" USING "btree" ("user_id");
 
 
 
-ALTER TABLE ONLY "public"."user_roles"
-    ADD CONSTRAINT "user_roles_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_support_escalations_conversation" ON "public"."support_escalations" USING "btree" ("conversation_id");
 
 
 
-ALTER TABLE ONLY "public"."user_roles"
-    ADD CONSTRAINT "user_roles_user_id_role_key" UNIQUE ("user_id", "role");
+CREATE INDEX IF NOT EXISTS "idx_support_escalations_resolved" ON "public"."support_escalations" USING "btree" ("resolved_at") WHERE ("resolved_at" IS NULL);
 
 
 
-ALTER TABLE ONLY "public"."vacation_policies"
-    ADD CONSTRAINT "vacation_policies_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_survey_responses_campaign" ON "public"."survey_responses" USING "btree" ("campaign_id");
 
 
 
-ALTER TABLE ONLY "public"."vendor_invoices"
-    ADD CONSTRAINT "vendor_invoices_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_survey_responses_lead" ON "public"."survey_responses" USING "btree" ("lead_id");
 
 
 
-ALTER TABLE ONLY "public"."vendor_invoices"
-    ADD CONSTRAINT "vendor_invoices_vendor_id_invoice_number_key" UNIQUE ("vendor_id", "invoice_number");
+CREATE INDEX IF NOT EXISTS "idx_survey_responses_score" ON "public"."survey_responses" USING "btree" ("score");
 
 
 
-ALTER TABLE ONLY "public"."vendor_products"
-    ADD CONSTRAINT "vendor_products_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_survey_sends_campaign" ON "public"."survey_sends" USING "btree" ("campaign_id");
 
 
 
-ALTER TABLE ONLY "public"."vendors"
-    ADD CONSTRAINT "vendors_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_survey_sends_email" ON "public"."survey_sends" USING "btree" ("recipient_email");
 
 
 
-ALTER TABLE ONLY "public"."webhook_logs"
-    ADD CONSTRAINT "webhook_logs_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_survey_sends_lead" ON "public"."survey_sends" USING "btree" ("lead_id");
 
 
 
-ALTER TABLE ONLY "public"."webhooks"
-    ADD CONSTRAINT "webhooks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_survey_sends_token" ON "public"."survey_sends" USING "btree" ("token");
 
 
 
-ALTER TABLE ONLY "public"."webinar_registrations"
-    ADD CONSTRAINT "webinar_registrations_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_tags_scope" ON "public"."tags" USING "btree" ("scope");
 
 
 
-ALTER TABLE ONLY "public"."webinar_registrations"
-    ADD CONSTRAINT "webinar_registrations_webinar_id_email_key" UNIQUE ("webinar_id", "email");
+CREATE INDEX IF NOT EXISTS "idx_tax_codes_active" ON "public"."tax_codes" USING "btree" ("is_active");
 
 
 
-ALTER TABLE ONLY "public"."webinars"
-    ADD CONSTRAINT "webinars_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_tax_codes_locale" ON "public"."tax_codes" USING "btree" ("locale");
 
 
 
-ALTER TABLE ONLY "public"."wiki_pages"
-    ADD CONSTRAINT "wiki_pages_pkey" PRIMARY KEY ("slug");
+CREATE INDEX IF NOT EXISTS "idx_ticket_comments_ticket_id" ON "public"."ticket_comments" USING "btree" ("ticket_id");
 
 
 
-ALTER TABLE ONLY "public"."wishlist_items"
-    ADD CONSTRAINT "wishlist_items_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_tickets_assigned_to" ON "public"."tickets" USING "btree" ("assigned_to");
 
 
 
-ALTER TABLE ONLY "public"."wishlist_items"
-    ADD CONSTRAINT "wishlist_items_user_id_product_id_key" UNIQUE ("user_id", "product_id");
+CREATE INDEX IF NOT EXISTS "idx_tickets_company_id" ON "public"."tickets" USING "btree" ("company_id");
 
 
 
-CREATE UNIQUE INDEX "a2a_peers_api_key_id_unique" ON "public"."a2a_peers" USING "btree" ("api_key_id") WHERE ("api_key_id" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_tickets_created_at" ON "public"."tickets" USING "btree" ("created_at" DESC);
 
 
 
-CREATE INDEX "agent_memory_embedding_idx" ON "public"."agent_memory" USING "ivfflat" ("embedding" "extensions"."vector_cosine_ops") WITH ("lists"='20');
+CREATE INDEX IF NOT EXISTS "idx_tickets_lead_id" ON "public"."tickets" USING "btree" ("lead_id");
 
 
 
-CREATE INDEX "ai_usage_logs_created_at_idx" ON "public"."ai_usage_logs" USING "btree" ("created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_tickets_priority" ON "public"."tickets" USING "btree" ("priority");
 
 
 
-CREATE INDEX "ai_usage_logs_model_idx" ON "public"."ai_usage_logs" USING "btree" ("model");
+CREATE INDEX IF NOT EXISTS "idx_tickets_search" ON "public"."tickets" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("subject", ''::"text") || ' '::"text") || COALESCE("description", ''::"text")) || ' '::"text") || COALESCE("contact_email", ''::"text")) || ' '::"text") || COALESCE("contact_name", ''::"text"))));
 
 
 
-CREATE INDEX "ai_usage_logs_source_idx" ON "public"."ai_usage_logs" USING "btree" ("source");
+CREATE INDEX IF NOT EXISTS "idx_tickets_status" ON "public"."tickets" USING "btree" ("status");
 
 
 
-CREATE INDEX "ai_usage_logs_status_idx" ON "public"."ai_usage_logs" USING "btree" ("status");
+CREATE INDEX IF NOT EXISTS "idx_time_entries_employee_id" ON "public"."time_entries" USING "btree" ("employee_id");
 
 
 
-CREATE INDEX "auth_events_created_at_idx" ON "public"."auth_events" USING "btree" ("created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_time_entries_project" ON "public"."time_entries" USING "btree" ("project_id");
 
 
 
-CREATE INDEX "auth_events_event_type_idx" ON "public"."auth_events" USING "btree" ("event_type");
+CREATE INDEX IF NOT EXISTS "idx_time_entries_task_id" ON "public"."time_entries" USING "btree" ("task_id");
 
 
 
-CREATE INDEX "auth_events_user_id_idx" ON "public"."auth_events" USING "btree" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_time_entries_user_date" ON "public"."time_entries" USING "btree" ("user_id", "entry_date");
 
 
 
-CREATE UNIQUE INDEX "bank_accounts_one_default" ON "public"."bank_accounts" USING "btree" ("is_default") WHERE (("is_default" = true) AND ("archived" = false));
+CREATE INDEX IF NOT EXISTS "idx_vacation_policies_active" ON "public"."vacation_policies" USING "btree" ("is_active", "priority" DESC);
 
 
 
-CREATE INDEX "bank_transactions_bank_account_idx" ON "public"."bank_transactions" USING "btree" ("bank_account_id");
+CREATE INDEX IF NOT EXISTS "idx_vendor_invoices_po" ON "public"."vendor_invoices" USING "btree" ("purchase_order_id");
 
 
 
-CREATE INDEX "consultant_profiles_embedding_idx" ON "public"."consultant_profiles" USING "hnsw" ("embedding" "extensions"."vector_cosine_ops");
+CREATE INDEX IF NOT EXISTS "idx_vendor_invoices_status" ON "public"."vendor_invoices" USING "btree" ("status");
 
 
 
-CREATE INDEX "consultant_profiles_embedding_status_idx" ON "public"."consultant_profiles" USING "btree" ("embedding_status") WHERE ("embedding_status" = 'stale'::"text");
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_vendor_products_preferred" ON "public"."vendor_products" USING "btree" ("product_id") WHERE ("is_preferred" = true);
 
 
 
-CREATE INDEX "consultant_profiles_search_tsv_idx" ON "public"."consultant_profiles" USING "gin" ("search_tsv");
+CREATE INDEX IF NOT EXISTS "idx_vendors_search" ON "public"."vendors" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("email", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
 
 
 
-CREATE UNIQUE INDEX "currencies_one_base" ON "public"."currencies" USING "btree" ("is_base") WHERE ("is_base" = true);
+CREATE INDEX IF NOT EXISTS "idx_voucher_lookup" ON "public"."journal_entries" USING "btree" ("voucher_year", "voucher_series", "voucher_number");
 
 
 
-CREATE INDEX "depreciation_entries_period" ON "public"."depreciation_entries" USING "btree" ("period_date" DESC);
+CREATE INDEX IF NOT EXISTS "idx_webhook_logs_created_at" ON "public"."webhook_logs" USING "btree" ("created_at" DESC);
 
 
 
-CREATE UNIQUE INDEX "employees_user_id_unique" ON "public"."employees" USING "btree" ("user_id") WHERE ("user_id" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_webhook_logs_webhook_id" ON "public"."webhook_logs" USING "btree" ("webhook_id");
 
 
 
-CREATE INDEX "exchange_rates_lookup" ON "public"."exchange_rates" USING "btree" ("base_currency", "quote_currency", "rate_date" DESC);
+CREATE INDEX IF NOT EXISTS "idx_webhooks_events" ON "public"."webhooks" USING "gin" ("events");
 
 
 
-CREATE INDEX "idx_a2a_peers_invited_by" ON "public"."a2a_peers" USING "btree" ("invited_by_peer_id") WHERE ("invited_by_peer_id" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_webhooks_is_active" ON "public"."webhooks" USING "btree" ("is_active");
 
 
 
-CREATE INDEX "idx_accounting_periods_status" ON "public"."accounting_periods" USING "btree" ("status");
+CREATE INDEX IF NOT EXISTS "idx_webinar_registrations_email" ON "public"."webinar_registrations" USING "btree" ("email");
 
 
 
-CREATE INDEX "idx_accounting_periods_year_month" ON "public"."accounting_periods" USING "btree" ("fiscal_year", "period_month");
+CREATE INDEX IF NOT EXISTS "idx_webinar_registrations_lead_id" ON "public"."webinar_registrations" USING "btree" ("lead_id");
 
 
 
-CREATE INDEX "idx_accounting_templates_keywords" ON "public"."accounting_templates" USING "gin" ("keywords");
+CREATE INDEX IF NOT EXISTS "idx_webinar_registrations_webinar" ON "public"."webinar_registrations" USING "btree" ("webinar_id");
 
 
 
-CREATE INDEX "idx_activities_assigned_open" ON "public"."activities" USING "btree" ("assigned_to", "due_at") WHERE ("done_at" IS NULL);
+CREATE INDEX IF NOT EXISTS "idx_webinar_registrations_webinar_id" ON "public"."webinar_registrations" USING "btree" ("webinar_id");
 
 
 
-CREATE INDEX "idx_activities_entity" ON "public"."activities" USING "btree" ("entity_type", "entity_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_webinars_date" ON "public"."webinars" USING "btree" ("date");
 
 
 
-CREATE INDEX "idx_addresses_owner" ON "public"."addresses" USING "btree" ("owner_type", "owner_id");
+CREATE INDEX IF NOT EXISTS "idx_webinars_status" ON "public"."webinars" USING "btree" ("status");
 
 
 
-CREATE INDEX "idx_agent_activity_agent" ON "public"."agent_activity" USING "btree" ("agent", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_wiki_pages_updated_at" ON "public"."wiki_pages" USING "btree" ("updated_at" DESC);
 
 
 
-CREATE INDEX "idx_agent_activity_approval_request" ON "public"."agent_activity" USING "btree" ("approval_request_id") WHERE ("approval_request_id" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_winback_sends_campaign" ON "public"."subscription_winback_sends" USING "btree" ("campaign_id");
 
 
 
-CREATE INDEX "idx_agent_activity_status" ON "public"."agent_activity" USING "btree" ("status") WHERE ("status" = 'pending_approval'::"public"."agent_activity_status");
+CREATE INDEX IF NOT EXISTS "idx_winback_sends_email" ON "public"."subscription_winback_sends" USING "btree" ("customer_email");
 
 
 
-CREATE INDEX "idx_agent_automations_executor_enabled" ON "public"."agent_automations" USING "btree" ("executor", "enabled") WHERE ("enabled" = true);
+CREATE INDEX IF NOT EXISTS "idx_winback_sends_status" ON "public"."subscription_winback_sends" USING "btree" ("status");
 
 
 
-CREATE INDEX "idx_agent_events_name" ON "public"."agent_events" USING "btree" ("event_name", "created_at" DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS "pages_slug_unique_active" ON "public"."pages" USING "btree" ("slug") WHERE ("deleted_at" IS NULL);
 
 
 
-CREATE INDEX "idx_agent_events_unprocessed" ON "public"."agent_events" USING "btree" ("created_at") WHERE ("processed_at" IS NULL);
+CREATE INDEX IF NOT EXISTS "pricelist_items_pricelist_idx" ON "public"."pricelist_items" USING "btree" ("pricelist_id");
 
 
 
-CREATE INDEX "idx_agent_memory_category" ON "public"."agent_memory" USING "btree" ("category");
+CREATE INDEX IF NOT EXISTS "pricelist_items_product_idx" ON "public"."pricelist_items" USING "btree" ("product_id") WHERE ("product_id" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_agent_memory_key" ON "public"."agent_memory" USING "btree" ("key");
+CREATE INDEX IF NOT EXISTS "pricelists_active_idx" ON "public"."pricelists" USING "btree" ("is_active", "priority");
 
 
 
-CREATE INDEX "idx_agent_memory_key_trgm" ON "public"."agent_memory" USING "gin" ("key" "public"."gin_trgm_ops");
+CREATE INDEX IF NOT EXISTS "pricelists_company_idx" ON "public"."pricelists" USING "btree" ("company_id") WHERE ("company_id" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_agent_memory_value_trgm" ON "public"."agent_memory" USING "gin" ((("value")::"text") "public"."gin_trgm_ops");
+CREATE INDEX IF NOT EXISTS "pricelists_lead_idx" ON "public"."pricelists" USING "btree" ("lead_id") WHERE ("lead_id" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_agent_skills_category" ON "public"."agent_skills" USING "btree" ("category") WHERE ("enabled" = true);
+CREATE INDEX IF NOT EXISTS "return_items_return_idx" ON "public"."return_items" USING "btree" ("return_id");
 
 
 
-CREATE INDEX "idx_agent_skills_scope" ON "public"."agent_skills" USING "btree" ("scope") WHERE ("enabled" = true);
+CREATE INDEX IF NOT EXISTS "returns_order_idx" ON "public"."returns" USING "btree" ("order_id");
 
 
 
-CREATE INDEX "idx_analytic_accounts_project" ON "public"."analytic_accounts" USING "btree" ("project_id");
+CREATE INDEX IF NOT EXISTS "returns_status_idx" ON "public"."returns" USING "btree" ("status");
 
 
 
-CREATE INDEX "idx_analytic_accounts_type" ON "public"."analytic_accounts" USING "btree" ("account_type") WHERE "is_active";
+CREATE INDEX IF NOT EXISTS "river_posts_author_idx" ON "public"."river_posts" USING "btree" ("author_id");
 
 
 
-CREATE INDEX "idx_analytic_lines_account" ON "public"."analytic_lines" USING "btree" ("analytic_account_id");
+CREATE INDEX IF NOT EXISTS "river_posts_created_idx" ON "public"."river_posts" USING "btree" ("created_at" DESC);
 
 
 
-CREATE INDEX "idx_analytic_lines_date" ON "public"."analytic_lines" USING "btree" ("entry_date");
+CREATE INDEX IF NOT EXISTS "river_posts_parent_idx" ON "public"."river_posts" USING "btree" ("parent_id");
 
 
 
-CREATE INDEX "idx_analytic_lines_entry" ON "public"."analytic_lines" USING "btree" ("journal_entry_id");
+CREATE INDEX IF NOT EXISTS "river_reactions_post_idx" ON "public"."river_reactions" USING "btree" ("post_id");
 
 
 
-CREATE INDEX "idx_application_stages_app" ON "public"."application_stages" USING "btree" ("application_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "shipments_order_idx" ON "public"."shipments" USING "btree" ("order_id");
 
 
 
-CREATE INDEX "idx_applications_email" ON "public"."applications" USING "btree" ("candidate_email");
+CREATE INDEX IF NOT EXISTS "subscription_events_created_at_idx" ON "public"."subscription_events" USING "btree" ("created_at" DESC);
 
 
 
-CREATE INDEX "idx_applications_employee_id" ON "public"."applications" USING "btree" ("employee_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "subscription_events_provider_event_key" ON "public"."subscription_events" USING "btree" ("provider", "provider_event_id") WHERE ("provider_event_id" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_applications_job" ON "public"."applications" USING "btree" ("job_posting_id");
+CREATE INDEX IF NOT EXISTS "subscription_events_subscription_id_idx" ON "public"."subscription_events" USING "btree" ("subscription_id");
 
 
 
-CREATE INDEX "idx_applications_score" ON "public"."applications" USING "btree" ("ai_score" DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS "subscriptions_customer_email_idx" ON "public"."subscriptions" USING "btree" ("customer_email");
 
 
 
-CREATE INDEX "idx_applications_stage" ON "public"."applications" USING "btree" ("stage");
+CREATE UNIQUE INDEX IF NOT EXISTS "subscriptions_provider_sub_id_key" ON "public"."subscriptions" USING "btree" ("provider", "provider_subscription_id") WHERE ("provider_subscription_id" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_approval_decisions_request" ON "public"."approval_decisions" USING "btree" ("request_id");
+CREATE INDEX IF NOT EXISTS "subscriptions_status_idx" ON "public"."subscriptions" USING "btree" ("status");
 
 
 
-CREATE INDEX "idx_approval_requests_entity" ON "public"."approval_requests" USING "btree" ("entity_type", "entity_id");
+CREATE INDEX IF NOT EXISTS "subscriptions_user_id_idx" ON "public"."subscriptions" USING "btree" ("user_id");
 
 
 
-CREATE INDEX "idx_approval_requests_requested_by" ON "public"."approval_requests" USING "btree" ("requested_by");
+CREATE UNIQUE INDEX IF NOT EXISTS "uniq_products_barcode" ON "public"."products" USING "btree" ("barcode") WHERE ("barcode" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_approval_requests_status" ON "public"."approval_requests" USING "btree" ("status", "created_at" DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_voucher_series_year_number" ON "public"."journal_entries" USING "btree" ("voucher_series", "voucher_year", "voucher_number") WHERE (("voucher_series" IS NOT NULL) AND ("voucher_number" IS NOT NULL));
 
 
 
-CREATE INDEX "idx_approval_rules_entity" ON "public"."approval_rules" USING "btree" ("entity_type", "is_active", "priority");
-
-
-
-CREATE INDEX "idx_attendance_emp_date" ON "public"."attendance_entries" USING "btree" ("employee_id", "clock_in" DESC);
-
-
-
-CREATE INDEX "idx_attendance_open" ON "public"."attendance_entries" USING "btree" ("employee_id") WHERE ("clock_out" IS NULL);
-
-
-
-CREATE INDEX "idx_audit_logs_action_created" ON "public"."audit_logs" USING "btree" ("action", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_audit_trail_actor" ON "public"."agent_audit_trail" USING "btree" ("agent_type", "occurred_at" DESC);
-
-
-
-CREATE INDEX "idx_audit_trail_entity" ON "public"."agent_audit_trail" USING "btree" ("table_name", "entity_id");
-
-
-
-CREATE INDEX "idx_audit_trail_retention" ON "public"."agent_audit_trail" USING "btree" ("retention_until") WHERE ("retention_until" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_audit_trail_table_time" ON "public"."agent_audit_trail" USING "btree" ("table_name", "occurred_at" DESC);
-
-
-
-CREATE INDEX "idx_autonomy_test_runs_created_at" ON "public"."autonomy_test_runs" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_back_in_stock_not_notified" ON "public"."back_in_stock_requests" USING "btree" ("product_id") WHERE ("notified_at" IS NULL);
-
-
-
-CREATE INDEX "idx_back_in_stock_product_id" ON "public"."back_in_stock_requests" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_bank_tx_date" ON "public"."bank_transactions" USING "btree" ("transaction_date" DESC);
-
-
-
-CREATE INDEX "idx_bank_tx_reference" ON "public"."bank_transactions" USING "btree" ("reference");
-
-
-
-CREATE INDEX "idx_bank_tx_status" ON "public"."bank_transactions" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_beta_findings_reported_by" ON "public"."beta_test_findings" USING "btree" ("reported_by");
-
-
-
-CREATE INDEX "idx_blog_categories_slug" ON "public"."blog_categories" USING "btree" ("slug");
-
-
-
-CREATE INDEX "idx_blog_posts_author" ON "public"."blog_posts" USING "btree" ("author_id");
-
-
-
-CREATE INDEX "idx_blog_posts_published_at" ON "public"."blog_posts" USING "btree" ("published_at" DESC);
-
-
-
-CREATE INDEX "idx_blog_posts_search" ON "public"."blog_posts" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("slug", ''::"text")) || ' '::"text") || COALESCE("excerpt", ''::"text"))));
-
-
-
-CREATE INDEX "idx_blog_posts_slug" ON "public"."blog_posts" USING "btree" ("slug");
-
-
-
-CREATE INDEX "idx_blog_posts_status" ON "public"."blog_posts" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_blog_tags_slug" ON "public"."blog_tags" USING "btree" ("slug");
-
-
-
-CREATE UNIQUE INDEX "idx_bom_headers_one_active" ON "public"."bom_headers" USING "btree" ("product_id") WHERE ("is_active" = true);
-
-
-
-CREATE INDEX "idx_bom_headers_product" ON "public"."bom_headers" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_bom_lines_bom" ON "public"."bom_lines" USING "btree" ("bom_id");
-
-
-
-CREATE INDEX "idx_bom_lines_component" ON "public"."bom_lines" USING "btree" ("component_product_id");
-
-
-
-CREATE INDEX "idx_bootstrap_runs_module_created" ON "public"."bootstrap_runs" USING "btree" ("module_id", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_briefings_created" ON "public"."flowpilot_briefings" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_briefings_unread" ON "public"."flowpilot_briefings" USING "btree" ("read_at") WHERE ("read_at" IS NULL);
-
-
-
-CREATE INDEX "idx_candidate_notes_app" ON "public"."candidate_notes" USING "btree" ("application_id", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_certifications_emp" ON "public"."certifications" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_certifications_expires" ON "public"."certifications" USING "btree" ("expires_at") WHERE ("expires_at" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_chat_conversations_agent" ON "public"."chat_conversations" USING "btree" ("assigned_agent_id");
-
-
-
-CREATE INDEX "idx_chat_conversations_scope_user" ON "public"."chat_conversations" USING "btree" ("scope", "user_id");
-
-
-
-CREATE INDEX "idx_chat_conversations_session_id" ON "public"."chat_conversations" USING "btree" ("session_id");
-
-
-
-CREATE INDEX "idx_chat_conversations_status" ON "public"."chat_conversations" USING "btree" ("conversation_status");
-
-
-
-CREATE INDEX "idx_chat_conversations_user_id" ON "public"."chat_conversations" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "idx_chat_feedback_created_at" ON "public"."chat_feedback" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_chat_feedback_rating" ON "public"."chat_feedback" USING "btree" ("rating");
-
-
-
-CREATE INDEX "idx_chat_messages_conversation_id" ON "public"."chat_messages" USING "btree" ("conversation_id");
-
-
-
-CREATE INDEX "idx_chat_messages_created_at" ON "public"."chat_messages" USING "btree" ("created_at");
-
-
-
-CREATE INDEX "idx_churn_reasons_created" ON "public"."subscription_churn_reasons" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_churn_reasons_reason" ON "public"."subscription_churn_reasons" USING "btree" ("reason");
-
-
-
-CREATE INDEX "idx_churn_reasons_sub" ON "public"."subscription_churn_reasons" USING "btree" ("subscription_id");
-
-
-
-CREATE INDEX "idx_companies_lifecycle_stage" ON "public"."companies" USING "btree" ("lifecycle_stage");
-
-
-
-CREATE INDEX "idx_companies_name" ON "public"."companies" USING "btree" ("name");
-
-
-
-CREATE INDEX "idx_companies_search" ON "public"."companies" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("domain", ''::"text")) || ' '::"text") || COALESCE("industry", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
-
-
-
-CREATE INDEX "idx_consultant_checkin_log_profile_created" ON "public"."consultant_checkin_log" USING "btree" ("profile_id", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_content_proposals_created_at" ON "public"."content_proposals" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_content_proposals_created_by" ON "public"."content_proposals" USING "btree" ("created_by");
-
-
-
-CREATE INDEX "idx_content_proposals_scheduled_for" ON "public"."content_proposals" USING "btree" ("scheduled_for");
-
-
-
-CREATE INDEX "idx_content_proposals_status" ON "public"."content_proposals" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_content_research_created_at" ON "public"."content_research" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_content_research_topic" ON "public"."content_research" USING "gin" ("to_tsvector"('"english"'::"regconfig", "topic"));
-
-
-
-CREATE INDEX "idx_contract_documents_contract_id" ON "public"."contract_documents" USING "btree" ("contract_id");
-
-
-
-CREATE INDEX "idx_contract_signatures_contract_id" ON "public"."contract_signatures" USING "btree" ("contract_id");
-
-
-
-CREATE INDEX "idx_contract_templates_type_lang" ON "public"."contract_templates" USING "btree" ("contract_type", "language") WHERE "is_active";
-
-
-
-CREATE INDEX "idx_contract_versions_contract_id" ON "public"."contract_versions" USING "btree" ("contract_id");
-
-
-
-CREATE UNIQUE INDEX "idx_contracts_accept_token_unique" ON "public"."contracts" USING "btree" ("accept_token") WHERE ("accept_token" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_contracts_body_markdown_trgm" ON "public"."contracts" USING "gin" ("body_markdown" "public"."gin_trgm_ops");
-
-
-
-CREATE INDEX "idx_contracts_counterparty_trgm" ON "public"."contracts" USING "gin" ("counterparty_name" "public"."gin_trgm_ops");
-
-
-
-CREATE INDEX "idx_contracts_created_by" ON "public"."contracts" USING "btree" ("created_by");
-
-
-
-CREATE INDEX "idx_contracts_end_date" ON "public"."contracts" USING "btree" ("end_date");
-
-
-
-CREATE INDEX "idx_contracts_search" ON "public"."contracts" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("counterparty_name", ''::"text")) || ' '::"text") || COALESCE("counterparty_email", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
-
-
-
-CREATE INDEX "idx_contracts_status" ON "public"."contracts" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_contracts_template_id" ON "public"."contracts" USING "btree" ("template_id") WHERE ("template_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_contracts_title_trgm" ON "public"."contracts" USING "gin" ("title" "public"."gin_trgm_ops");
-
-
-
-CREATE INDEX "idx_corrections_pattern" ON "public"."accounting_corrections" USING "gin" ("to_tsvector"('"simple"'::"regconfig", COALESCE("description_pattern", ''::"text")));
-
-
-
-CREATE INDEX "idx_corrections_vendor" ON "public"."accounting_corrections" USING "btree" ("vendor_id");
-
-
-
-CREATE INDEX "idx_crm_tasks_deal_id" ON "public"."crm_tasks" USING "btree" ("deal_id");
-
-
-
-CREATE INDEX "idx_crm_tasks_due_date" ON "public"."crm_tasks" USING "btree" ("due_date") WHERE ("completed_at" IS NULL);
-
-
-
-CREATE INDEX "idx_crm_tasks_lead_id" ON "public"."crm_tasks" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_deal_activities_created_at" ON "public"."deal_activities" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_deal_activities_deal_id" ON "public"."deal_activities" USING "btree" ("deal_id");
-
-
-
-CREATE INDEX "idx_deals_lead_id" ON "public"."deals" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_deals_search" ON "public"."deals" USING "gin" ("to_tsvector"('"simple"'::"regconfig", COALESCE("notes", ''::"text")));
-
-
-
-CREATE INDEX "idx_deals_stage" ON "public"."deals" USING "btree" ("stage");
-
-
-
-CREATE INDEX "idx_demo_run_items_run" ON "public"."demo_run_items" USING "btree" ("run_id");
-
-
-
-CREATE INDEX "idx_demo_run_items_table" ON "public"."demo_run_items" USING "btree" ("table_name");
-
-
-
-CREATE INDEX "idx_docs_pages_category" ON "public"."docs_pages" USING "btree" ("category");
-
-
-
-CREATE INDEX "idx_docs_pages_slug" ON "public"."docs_pages" USING "btree" ("category", "slug");
-
-
-
-CREATE INDEX "idx_documents_category" ON "public"."documents" USING "btree" ("category");
-
-
-
-CREATE INDEX "idx_documents_extraction_status" ON "public"."documents" USING "btree" ("extraction_status");
-
-
-
-CREATE INDEX "idx_documents_folder" ON "public"."documents" USING "btree" ("folder");
-
-
-
-CREATE INDEX "idx_documents_related" ON "public"."documents" USING "btree" ("related_entity_type", "related_entity_id");
-
-
-
-CREATE INDEX "idx_documents_search" ON "public"."documents" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("file_name", ''::"text")) || ' '::"text") || COALESCE("description", ''::"text")) || ' '::"text") || COALESCE("content_md", ''::"text"))));
-
-
-
-CREATE INDEX "idx_documents_source" ON "public"."documents" USING "btree" ("source");
-
-
-
-CREATE INDEX "idx_documents_uploaded_by" ON "public"."documents" USING "btree" ("uploaded_by");
-
-
-
-CREATE INDEX "idx_dunning_actions_sequence" ON "public"."dunning_actions" USING "btree" ("sequence_id", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_dunning_actions_type" ON "public"."dunning_actions" USING "btree" ("action_type");
-
-
-
-CREATE UNIQUE INDEX "idx_dunning_sequences_active_unique" ON "public"."dunning_sequences" USING "btree" ("subscription_id") WHERE ("status" = 'active'::"text");
-
-
-
-CREATE INDEX "idx_dunning_sequences_next_action" ON "public"."dunning_sequences" USING "btree" ("next_action_at") WHERE ("status" = 'active'::"text");
-
-
-
-CREATE INDEX "idx_dunning_sequences_status" ON "public"."dunning_sequences" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_dunning_sequences_subscription" ON "public"."dunning_sequences" USING "btree" ("subscription_id");
-
-
-
-CREATE INDEX "idx_employee_skills_emp" ON "public"."employee_skills" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_employees_manager_id" ON "public"."employees" USING "btree" ("manager_id");
-
-
-
-CREATE INDEX "idx_employees_search" ON "public"."employees" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("email", ''::"text")) || ' '::"text") || COALESCE("title", ''::"text")) || ' '::"text") || COALESCE("department", ''::"text"))));
-
-
-
-CREATE INDEX "idx_employment_contracts_employee" ON "public"."employment_contracts" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_employment_contracts_status" ON "public"."employment_contracts" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_entity_followers_entity" ON "public"."entity_followers" USING "btree" ("entity_type", "entity_id");
-
-
-
-CREATE INDEX "idx_entity_followers_user" ON "public"."entity_followers" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "idx_entity_tags_entity" ON "public"."entity_tags" USING "btree" ("entity_type", "entity_id");
-
-
-
-CREATE INDEX "idx_entity_tags_tag" ON "public"."entity_tags" USING "btree" ("tag_id");
-
-
-
-CREATE INDEX "idx_expense_attachments_expense" ON "public"."expense_attachments" USING "btree" ("expense_id");
-
-
-
-CREATE INDEX "idx_expense_payments_report" ON "public"."expense_payments" USING "btree" ("report_id");
-
-
-
-CREATE INDEX "idx_expense_payments_user" ON "public"."expense_payments" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "idx_expense_reports_user_period" ON "public"."expense_reports" USING "btree" ("user_id", "period");
-
-
-
-CREATE INDEX "idx_expenses_payroll_export" ON "public"."expenses" USING "btree" ("payroll_export_id");
-
-
-
-CREATE INDEX "idx_expenses_report_id" ON "public"."expenses" USING "btree" ("report_id");
-
-
-
-CREATE INDEX "idx_expenses_status" ON "public"."expenses" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_expenses_user_id" ON "public"."expenses" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "idx_fed_conn_apikey" ON "public"."federation_connections" USING "btree" ("api_key_id") WHERE ("api_key_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_fed_conn_peer" ON "public"."federation_connections" USING "btree" ("peer_id");
-
-
-
-CREATE INDEX "idx_federation_peer_missions_peer_id" ON "public"."federation_peer_missions" USING "btree" ("peer_id");
-
-
-
-CREATE INDEX "idx_feedback_receiver" ON "public"."feedback" USING "btree" ("receiver_id", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_form_submissions_block_id" ON "public"."form_submissions" USING "btree" ("block_id");
-
-
-
-CREATE INDEX "idx_form_submissions_created_at" ON "public"."form_submissions" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_form_submissions_page_id" ON "public"."form_submissions" USING "btree" ("page_id");
-
-
-
-CREATE INDEX "idx_invoices_deal_id" ON "public"."invoices" USING "btree" ("deal_id");
-
-
-
-CREATE INDEX "idx_invoices_project" ON "public"."invoices" USING "btree" ("project_id");
-
-
-
-CREATE INDEX "idx_invoices_public_token" ON "public"."invoices" USING "btree" ("public_token");
-
-
-
-CREATE INDEX "idx_invoices_search" ON "public"."invoices" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("invoice_number", ''::"text") || ' '::"text") || COALESCE("customer_email", ''::"text")) || ' '::"text") || COALESCE("customer_name", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
-
-
-
-CREATE INDEX "idx_invoices_status" ON "public"."invoices" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_jel_tax_code" ON "public"."journal_entry_lines" USING "btree" ("tax_code_id");
-
-
-
-CREATE INDEX "idx_jelt_code" ON "public"."journal_entry_line_taxes" USING "btree" ("tax_code_id");
-
-
-
-CREATE INDEX "idx_jelt_grid" ON "public"."journal_entry_line_taxes" USING "btree" ("tax_grid_id");
-
-
-
-CREATE INDEX "idx_jelt_line" ON "public"."journal_entry_line_taxes" USING "btree" ("journal_entry_line_id");
-
-
-
-CREATE INDEX "idx_job_postings_slug" ON "public"."job_postings" USING "btree" ("slug");
-
-
-
-CREATE INDEX "idx_job_postings_status" ON "public"."job_postings" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_journal_entries_date" ON "public"."journal_entries" USING "btree" ("entry_date");
-
-
-
-CREATE INDEX "idx_journal_entries_journal_id" ON "public"."journal_entries" USING "btree" ("journal_id");
-
-
-
-CREATE INDEX "idx_journal_entries_status" ON "public"."journal_entries" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_journal_entries_template_id" ON "public"."journal_entries" USING "btree" ("template_id");
-
-
-
-CREATE INDEX "idx_journal_entries_vendor_id" ON "public"."journal_entries" USING "btree" ("vendor_id");
-
-
-
-CREATE INDEX "idx_journal_entry_lines_account" ON "public"."journal_entry_lines" USING "btree" ("account_code");
-
-
-
-CREATE INDEX "idx_journal_entry_lines_entry" ON "public"."journal_entry_lines" USING "btree" ("journal_entry_id");
-
-
-
-CREATE INDEX "idx_kb_articles_category" ON "public"."kb_articles" USING "btree" ("category_id");
-
-
-
-CREATE INDEX "idx_kb_articles_chat" ON "public"."kb_articles" USING "btree" ("include_in_chat") WHERE ("include_in_chat" = true);
-
-
-
-CREATE INDEX "idx_kb_articles_needs_improvement" ON "public"."kb_articles" USING "btree" ("needs_improvement") WHERE ("needs_improvement" = true);
-
-
-
-CREATE INDEX "idx_kb_articles_published" ON "public"."kb_articles" USING "btree" ("is_published");
-
-
-
-CREATE INDEX "idx_kb_articles_search" ON "public"."kb_articles" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("question", ''::"text")) || ' '::"text") || COALESCE("answer_text", ''::"text"))));
-
-
-
-CREATE INDEX "idx_kb_categories_active" ON "public"."kb_categories" USING "btree" ("is_active");
-
-
-
-CREATE INDEX "idx_kb_categories_parent" ON "public"."kb_categories" USING "btree" ("parent_id");
-
-
-
-CREATE INDEX "idx_lead_activities_created_at" ON "public"."lead_activities" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_lead_activities_lead_id" ON "public"."lead_activities" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_lead_activities_type" ON "public"."lead_activities" USING "btree" ("type");
-
-
-
-CREATE INDEX "idx_leads_company_id" ON "public"."leads" USING "btree" ("company_id");
-
-
-
-CREATE INDEX "idx_leads_email" ON "public"."leads" USING "btree" ("email");
-
-
-
-CREATE INDEX "idx_leads_needs_review" ON "public"."leads" USING "btree" ("needs_review") WHERE ("needs_review" = true);
-
-
-
-CREATE INDEX "idx_leads_score" ON "public"."leads" USING "btree" ("score" DESC);
-
-
-
-CREATE INDEX "idx_leads_search" ON "public"."leads" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("email", ''::"text")) || ' '::"text") || COALESCE("phone", ''::"text")) || ' '::"text") || COALESCE("ai_summary", ''::"text"))));
-
-
-
-CREATE INDEX "idx_leads_status" ON "public"."leads" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_leave_allocations_employee" ON "public"."leave_allocations" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_leave_allocations_year" ON "public"."leave_allocations" USING "btree" ("year");
-
-
-
-CREATE INDEX "idx_leave_requests_payroll_export" ON "public"."leave_requests" USING "btree" ("payroll_export_id");
-
-
-
-CREATE INDEX "idx_mo_components_mo" ON "public"."mo_components" USING "btree" ("mo_id");
-
-
-
-CREATE INDEX "idx_mo_due_date" ON "public"."manufacturing_orders" USING "btree" ("due_date");
-
-
-
-CREATE INDEX "idx_mo_product" ON "public"."manufacturing_orders" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_mo_source" ON "public"."manufacturing_orders" USING "btree" ("source_type", "source_id");
-
-
-
-CREATE INDEX "idx_mo_status" ON "public"."manufacturing_orders" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_newsletter_clicks_link" ON "public"."newsletter_link_clicks" USING "btree" ("link_id");
-
-
-
-CREATE INDEX "idx_newsletter_clicks_newsletter" ON "public"."newsletter_link_clicks" USING "btree" ("newsletter_id");
-
-
-
-CREATE INDEX "idx_newsletter_opens_newsletter" ON "public"."newsletter_email_opens" USING "btree" ("newsletter_id");
-
-
-
-CREATE INDEX "idx_newsletter_opens_tracking" ON "public"."newsletter_email_opens" USING "btree" ("tracking_id");
-
-
-
-CREATE INDEX "idx_newsletter_subscribers_email" ON "public"."newsletter_subscribers" USING "btree" ("email");
-
-
-
-CREATE INDEX "idx_newsletter_subscribers_status" ON "public"."newsletter_subscribers" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_newsletters_scheduled_at" ON "public"."newsletters" USING "btree" ("scheduled_at");
-
-
-
-CREATE INDEX "idx_newsletters_status" ON "public"."newsletters" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_one_on_ones_employee" ON "public"."one_on_ones" USING "btree" ("employee_id", "scheduled_at" DESC);
-
-
-
-CREATE INDEX "idx_one_on_ones_manager" ON "public"."one_on_ones" USING "btree" ("manager_id", "scheduled_at" DESC);
-
-
-
-CREATE INDEX "idx_order_items_order_id" ON "public"."order_items" USING "btree" ("order_id");
-
-
-
-CREATE INDEX "idx_orders_company_id" ON "public"."orders" USING "btree" ("company_id");
-
-
-
-CREATE INDEX "idx_orders_created_at" ON "public"."orders" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_orders_customer_email" ON "public"."orders" USING "btree" ("customer_email");
-
-
-
-CREATE INDEX "idx_orders_customer_email_lower" ON "public"."orders" USING "btree" ("lower"("customer_email"));
-
-
-
-CREATE INDEX "idx_orders_search" ON "public"."orders" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("customer_email", ''::"text") || ' '::"text") || COALESCE("customer_name", ''::"text")) || ' '::"text") || COALESCE("tracking_number", ''::"text"))));
-
-
-
-CREATE INDEX "idx_orders_status" ON "public"."orders" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_outbound_comm_channel_status" ON "public"."outbound_communications" USING "btree" ("channel", "status");
-
-
-
-CREATE INDEX "idx_outbound_comm_created" ON "public"."outbound_communications" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_outbound_comm_recipient" ON "public"."outbound_communications" USING "btree" ("recipient");
-
-
-
-CREATE INDEX "idx_page_views_created_at" ON "public"."page_views" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_page_views_page_id" ON "public"."page_views" USING "btree" ("page_id");
-
-
-
-CREATE INDEX "idx_page_views_page_slug" ON "public"."page_views" USING "btree" ("page_slug");
-
-
-
-CREATE INDEX "idx_page_views_visitor_id" ON "public"."page_views" USING "btree" ("visitor_id");
-
-
-
-CREATE INDEX "idx_pages_deleted_at" ON "public"."pages" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NULL);
-
-
-
-CREATE INDEX "idx_pages_scheduled_at" ON "public"."pages" USING "btree" ("scheduled_at") WHERE (("scheduled_at" IS NOT NULL) AND ("status" = 'reviewing'::"public"."page_status"));
-
-
-
-CREATE INDEX "idx_pages_search" ON "public"."pages" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("slug", ''::"text"))));
-
-
-
-CREATE INDEX "idx_payrec_invoice" ON "public"."payment_reconciliations" USING "btree" ("invoice_id");
-
-
-
-CREATE INDEX "idx_payrec_status" ON "public"."payment_reconciliations" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_payroll_components_employee" ON "public"."payroll_components" USING "btree" ("employee_id") WHERE "active";
-
-
-
-CREATE INDEX "idx_payroll_export_lines_employee" ON "public"."payroll_export_lines" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_payroll_export_lines_export" ON "public"."payroll_export_lines" USING "btree" ("export_id");
-
-
-
-CREATE INDEX "idx_payroll_lines_employee" ON "public"."payroll_lines" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_payroll_lines_run" ON "public"."payroll_lines" USING "btree" ("run_id");
-
-
-
-CREATE INDEX "idx_peer_invitations_invitee" ON "public"."peer_invitations" USING "btree" ("invitee_peer_id");
-
-
-
-CREATE INDEX "idx_peer_invitations_inviter" ON "public"."peer_invitations" USING "btree" ("inviter_peer_id");
-
-
-
-CREATE INDEX "idx_pending_ops_skill" ON "public"."pending_operations" USING "btree" ("skill_name");
-
-
-
-CREATE INDEX "idx_pending_ops_status" ON "public"."pending_operations" USING "btree" ("status", "created_at" DESC);
-
-
-
-CREATE INDEX "idx_perf_goals_employee" ON "public"."performance_goals" USING "btree" ("employee_id", "status");
-
-
-
-CREATE INDEX "idx_perf_reviews_employee" ON "public"."performance_reviews" USING "btree" ("employee_id", "period_end" DESC);
-
-
-
-CREATE INDEX "idx_picking_lines_order" ON "public"."picking_lines" USING "btree" ("picking_order_id");
-
-
-
-CREATE INDEX "idx_picking_lines_product" ON "public"."picking_lines" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_picking_lines_status" ON "public"."picking_lines" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_picking_orders_assigned" ON "public"."picking_orders" USING "btree" ("assigned_to");
-
-
-
-CREATE INDEX "idx_picking_orders_order" ON "public"."picking_orders" USING "btree" ("order_id");
-
-
-
-CREATE INDEX "idx_picking_orders_status" ON "public"."picking_orders" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_platform_test_runs_started" ON "public"."platform_test_runs" USING "btree" ("started_at" DESC);
-
-
-
-CREATE INDEX "idx_platform_test_runs_suite_started" ON "public"."platform_test_runs" USING "btree" ("suite_id", "started_at" DESC);
-
-
-
-CREATE INDEX "idx_pos_payments_method" ON "public"."pos_payments" USING "btree" ("method");
-
-
-
-CREATE INDEX "idx_pos_payments_sale" ON "public"."pos_payments" USING "btree" ("sale_id");
-
-
-
-CREATE INDEX "idx_pos_sale_lines_sale" ON "public"."pos_sale_lines" USING "btree" ("sale_id");
-
-
-
-CREATE INDEX "idx_pos_sales_created" ON "public"."pos_sales" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_pos_sales_register" ON "public"."pos_sales" USING "btree" ("register_id");
-
-
-
-CREATE INDEX "idx_pos_sales_session" ON "public"."pos_sales" USING "btree" ("session_id");
-
-
-
-CREATE INDEX "idx_pos_sales_status" ON "public"."pos_sales" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_pos_sessions_cashier" ON "public"."pos_sessions" USING "btree" ("cashier_id");
-
-
-
-CREATE INDEX "idx_pos_sessions_register" ON "public"."pos_sessions" USING "btree" ("register_id");
-
-
-
-CREATE INDEX "idx_pos_sessions_status" ON "public"."pos_sessions" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_proc_sugg_product" ON "public"."procurement_suggestions" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_proc_sugg_status" ON "public"."procurement_suggestions" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_product_stock_product" ON "public"."product_stock" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_products_available_in_pos" ON "public"."products" USING "btree" ("available_in_pos") WHERE ("available_in_pos" = true);
-
-
-
-CREATE INDEX "idx_products_barcode" ON "public"."products" USING "btree" ("barcode") WHERE ("barcode" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_products_is_active" ON "public"."products" USING "btree" ("is_active");
-
-
-
-CREATE INDEX "idx_products_search" ON "public"."products" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("description", ''::"text")) || ' '::"text") || COALESCE("barcode", ''::"text"))));
-
-
-
-CREATE INDEX "idx_project_tasks_assigned_to" ON "public"."project_tasks" USING "btree" ("assigned_to");
-
-
-
-CREATE INDEX "idx_project_tasks_project_id" ON "public"."project_tasks" USING "btree" ("project_id");
-
-
-
-CREATE INDEX "idx_project_tasks_status" ON "public"."project_tasks" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_projects_search" ON "public"."projects" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("client_name", ''::"text")) || ' '::"text") || COALESCE("description", ''::"text"))));
-
-
-
-CREATE INDEX "idx_quote_items_quote" ON "public"."quote_items" USING "btree" ("quote_id");
-
-
-
-CREATE INDEX "idx_quote_signatures_quote" ON "public"."quote_signatures" USING "btree" ("quote_id");
-
-
-
-CREATE UNIQUE INDEX "idx_quotes_accept_token_unique" ON "public"."quotes" USING "btree" ("accept_token") WHERE ("accept_token" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_quotes_lead" ON "public"."quotes" USING "btree" ("lead_id") WHERE ("lead_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_quotes_search" ON "public"."quotes" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("quote_number", ''::"text") || ' '::"text") || COALESCE("title", ''::"text")) || ' '::"text") || COALESCE("customer_name", ''::"text")) || ' '::"text") || COALESCE("customer_email", ''::"text"))));
-
-
-
-CREATE INDEX "idx_quotes_status" ON "public"."quotes" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_recmatch_reconciliation" ON "public"."reconciliation_matches" USING "btree" ("reconciliation_id");
-
-
-
-CREATE INDEX "idx_recon_match_bank_tx" ON "public"."reconciliation_matches" USING "btree" ("bank_transaction_id");
-
-
-
-CREATE INDEX "idx_recon_match_entity" ON "public"."reconciliation_matches" USING "btree" ("entity_type", "entity_id");
-
-
-
-CREATE INDEX "idx_reorder_rules_active" ON "public"."reorder_rules" USING "btree" ("is_active") WHERE "is_active";
-
-
-
-CREATE INDEX "idx_reorder_rules_product" ON "public"."reorder_rules" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_rfq_bids_rfq" ON "public"."rfq_bids" USING "btree" ("rfq_id");
-
-
-
-CREATE INDEX "idx_rfq_bids_vendor" ON "public"."rfq_bids" USING "btree" ("vendor_id");
-
-
-
-CREATE INDEX "idx_rfq_lines_rfq" ON "public"."rfq_lines" USING "btree" ("rfq_id");
-
-
-
-CREATE INDEX "idx_role_module_access_module" ON "public"."role_module_access" USING "btree" ("module_id");
-
-
-
-CREATE INDEX "idx_role_module_access_role" ON "public"."role_module_access" USING "btree" ("role");
-
-
-
-CREATE INDEX "idx_saved_views_scope_user" ON "public"."saved_views" USING "btree" ("scope", "user_id");
-
-
-
-CREATE INDEX "idx_service_order_lines_order" ON "public"."service_order_lines" USING "btree" ("service_order_id");
-
-
-
-CREATE INDEX "idx_service_orders_assigned" ON "public"."service_orders" USING "btree" ("assigned_to");
-
-
-
-CREATE INDEX "idx_service_orders_scheduled" ON "public"."service_orders" USING "btree" ("scheduled_start");
-
-
-
-CREATE INDEX "idx_service_orders_status" ON "public"."service_orders" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_service_visits_order" ON "public"."service_visits" USING "btree" ("service_order_id");
-
-
-
-CREATE INDEX "idx_service_visits_start" ON "public"."service_visits" USING "btree" ("scheduled_start");
-
-
-
-CREATE INDEX "idx_service_visits_tech" ON "public"."service_visits" USING "btree" ("technician_id");
-
-
-
-CREATE INDEX "idx_sla_policies_entity" ON "public"."sla_policies" USING "btree" ("entity_type");
-
-
-
-CREATE INDEX "idx_sla_violations_created" ON "public"."sla_violations" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_sla_violations_entity" ON "public"."sla_violations" USING "btree" ("entity_type", "entity_id");
-
-
-
-CREATE INDEX "idx_sla_violations_policy" ON "public"."sla_violations" USING "btree" ("policy_id");
-
-
-
-CREATE INDEX "idx_stock_locations_parent" ON "public"."stock_locations" USING "btree" ("parent_id");
-
-
-
-CREATE INDEX "idx_stock_locations_type" ON "public"."stock_locations" USING "btree" ("location_type");
-
-
-
-CREATE INDEX "idx_stock_lots_expiry" ON "public"."stock_lots" USING "btree" ("expiry_date") WHERE ("expiry_date" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_stock_lots_product" ON "public"."stock_lots" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_stock_moves_from_loc" ON "public"."stock_moves" USING "btree" ("from_location_id") WHERE ("from_location_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_stock_moves_mo" ON "public"."stock_moves" USING "btree" ("mo_id") WHERE ("mo_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_stock_moves_product" ON "public"."stock_moves" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_stock_moves_to_loc" ON "public"."stock_moves" USING "btree" ("to_location_id") WHERE ("to_location_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_stock_moves_type" ON "public"."stock_moves" USING "btree" ("move_type");
-
-
-
-CREATE INDEX "idx_stock_quants_location" ON "public"."stock_quants" USING "btree" ("location_id");
-
-
-
-CREATE INDEX "idx_stock_quants_product" ON "public"."stock_quants" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_stock_reservations_product" ON "public"."stock_reservations" USING "btree" ("product_id");
-
-
-
-CREATE INDEX "idx_stock_reservations_ref" ON "public"."stock_reservations" USING "btree" ("reference_type", "reference_id") WHERE ("reference_id" IS NOT NULL);
-
-
-
-CREATE INDEX "idx_stock_reservations_state" ON "public"."stock_reservations" USING "btree" ("state");
-
-
-
-CREATE INDEX "idx_subscriptions_at_risk" ON "public"."subscriptions" USING "btree" ("at_risk") WHERE ("at_risk" = true);
-
-
-
-CREATE INDEX "idx_subscriptions_next_invoice" ON "public"."subscriptions" USING "btree" ("next_invoice_date") WHERE (("provider" = 'manual'::"text") AND ("status" = 'active'::"public"."subscription_status"));
-
-
-
-CREATE INDEX "idx_subscriptions_period_end" ON "public"."subscriptions" USING "btree" ("current_period_end");
-
-
-
-CREATE INDEX "idx_support_agents_status" ON "public"."support_agents" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_support_agents_user_id" ON "public"."support_agents" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "idx_support_escalations_conversation" ON "public"."support_escalations" USING "btree" ("conversation_id");
-
-
-
-CREATE INDEX "idx_support_escalations_resolved" ON "public"."support_escalations" USING "btree" ("resolved_at") WHERE ("resolved_at" IS NULL);
-
-
-
-CREATE INDEX "idx_survey_responses_campaign" ON "public"."survey_responses" USING "btree" ("campaign_id");
-
-
-
-CREATE INDEX "idx_survey_responses_lead" ON "public"."survey_responses" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_survey_responses_score" ON "public"."survey_responses" USING "btree" ("score");
-
-
-
-CREATE INDEX "idx_survey_sends_campaign" ON "public"."survey_sends" USING "btree" ("campaign_id");
-
-
-
-CREATE INDEX "idx_survey_sends_email" ON "public"."survey_sends" USING "btree" ("recipient_email");
-
-
-
-CREATE INDEX "idx_survey_sends_lead" ON "public"."survey_sends" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_survey_sends_token" ON "public"."survey_sends" USING "btree" ("token");
-
-
-
-CREATE INDEX "idx_tags_scope" ON "public"."tags" USING "btree" ("scope");
-
-
-
-CREATE INDEX "idx_tax_codes_active" ON "public"."tax_codes" USING "btree" ("is_active");
-
-
-
-CREATE INDEX "idx_tax_codes_locale" ON "public"."tax_codes" USING "btree" ("locale");
-
-
-
-CREATE INDEX "idx_ticket_comments_ticket_id" ON "public"."ticket_comments" USING "btree" ("ticket_id");
-
-
-
-CREATE INDEX "idx_tickets_assigned_to" ON "public"."tickets" USING "btree" ("assigned_to");
-
-
-
-CREATE INDEX "idx_tickets_company_id" ON "public"."tickets" USING "btree" ("company_id");
-
-
-
-CREATE INDEX "idx_tickets_created_at" ON "public"."tickets" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_tickets_lead_id" ON "public"."tickets" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_tickets_priority" ON "public"."tickets" USING "btree" ("priority");
-
-
-
-CREATE INDEX "idx_tickets_search" ON "public"."tickets" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((((COALESCE("subject", ''::"text") || ' '::"text") || COALESCE("description", ''::"text")) || ' '::"text") || COALESCE("contact_email", ''::"text")) || ' '::"text") || COALESCE("contact_name", ''::"text"))));
-
-
-
-CREATE INDEX "idx_tickets_status" ON "public"."tickets" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_time_entries_employee_id" ON "public"."time_entries" USING "btree" ("employee_id");
-
-
-
-CREATE INDEX "idx_time_entries_project" ON "public"."time_entries" USING "btree" ("project_id");
-
-
-
-CREATE INDEX "idx_time_entries_task_id" ON "public"."time_entries" USING "btree" ("task_id");
-
-
-
-CREATE INDEX "idx_time_entries_user_date" ON "public"."time_entries" USING "btree" ("user_id", "entry_date");
-
-
-
-CREATE INDEX "idx_vacation_policies_active" ON "public"."vacation_policies" USING "btree" ("is_active", "priority" DESC);
-
-
-
-CREATE INDEX "idx_vendor_invoices_po" ON "public"."vendor_invoices" USING "btree" ("purchase_order_id");
-
-
-
-CREATE INDEX "idx_vendor_invoices_status" ON "public"."vendor_invoices" USING "btree" ("status");
-
-
-
-CREATE UNIQUE INDEX "idx_vendor_products_preferred" ON "public"."vendor_products" USING "btree" ("product_id") WHERE ("is_preferred" = true);
-
-
-
-CREATE INDEX "idx_vendors_search" ON "public"."vendors" USING "gin" ("to_tsvector"('"simple"'::"regconfig", ((((COALESCE("name", ''::"text") || ' '::"text") || COALESCE("email", ''::"text")) || ' '::"text") || COALESCE("notes", ''::"text"))));
-
-
-
-CREATE INDEX "idx_voucher_lookup" ON "public"."journal_entries" USING "btree" ("voucher_year", "voucher_series", "voucher_number");
-
-
-
-CREATE INDEX "idx_webhook_logs_created_at" ON "public"."webhook_logs" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "idx_webhook_logs_webhook_id" ON "public"."webhook_logs" USING "btree" ("webhook_id");
-
-
-
-CREATE INDEX "idx_webhooks_events" ON "public"."webhooks" USING "gin" ("events");
-
-
-
-CREATE INDEX "idx_webhooks_is_active" ON "public"."webhooks" USING "btree" ("is_active");
-
-
-
-CREATE INDEX "idx_webinar_registrations_email" ON "public"."webinar_registrations" USING "btree" ("email");
-
-
-
-CREATE INDEX "idx_webinar_registrations_lead_id" ON "public"."webinar_registrations" USING "btree" ("lead_id");
-
-
-
-CREATE INDEX "idx_webinar_registrations_webinar" ON "public"."webinar_registrations" USING "btree" ("webinar_id");
-
-
-
-CREATE INDEX "idx_webinar_registrations_webinar_id" ON "public"."webinar_registrations" USING "btree" ("webinar_id");
-
-
-
-CREATE INDEX "idx_webinars_date" ON "public"."webinars" USING "btree" ("date");
-
-
-
-CREATE INDEX "idx_webinars_status" ON "public"."webinars" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_wiki_pages_updated_at" ON "public"."wiki_pages" USING "btree" ("updated_at" DESC);
-
-
-
-CREATE INDEX "idx_winback_sends_campaign" ON "public"."subscription_winback_sends" USING "btree" ("campaign_id");
-
-
-
-CREATE INDEX "idx_winback_sends_email" ON "public"."subscription_winback_sends" USING "btree" ("customer_email");
-
-
-
-CREATE INDEX "idx_winback_sends_status" ON "public"."subscription_winback_sends" USING "btree" ("status");
-
-
-
-CREATE UNIQUE INDEX "pages_slug_unique_active" ON "public"."pages" USING "btree" ("slug") WHERE ("deleted_at" IS NULL);
-
-
-
-CREATE INDEX "pricelist_items_pricelist_idx" ON "public"."pricelist_items" USING "btree" ("pricelist_id");
-
-
-
-CREATE INDEX "pricelist_items_product_idx" ON "public"."pricelist_items" USING "btree" ("product_id") WHERE ("product_id" IS NOT NULL);
-
-
-
-CREATE INDEX "pricelists_active_idx" ON "public"."pricelists" USING "btree" ("is_active", "priority");
-
-
-
-CREATE INDEX "pricelists_company_idx" ON "public"."pricelists" USING "btree" ("company_id") WHERE ("company_id" IS NOT NULL);
-
-
-
-CREATE INDEX "pricelists_lead_idx" ON "public"."pricelists" USING "btree" ("lead_id") WHERE ("lead_id" IS NOT NULL);
-
-
-
-CREATE INDEX "return_items_return_idx" ON "public"."return_items" USING "btree" ("return_id");
-
-
-
-CREATE INDEX "returns_order_idx" ON "public"."returns" USING "btree" ("order_id");
-
-
-
-CREATE INDEX "returns_status_idx" ON "public"."returns" USING "btree" ("status");
-
-
-
-CREATE INDEX "river_posts_author_idx" ON "public"."river_posts" USING "btree" ("author_id");
-
-
-
-CREATE INDEX "river_posts_created_idx" ON "public"."river_posts" USING "btree" ("created_at" DESC);
-
-
-
-CREATE INDEX "river_posts_parent_idx" ON "public"."river_posts" USING "btree" ("parent_id");
-
-
-
-CREATE INDEX "river_reactions_post_idx" ON "public"."river_reactions" USING "btree" ("post_id");
-
-
-
-CREATE INDEX "shipments_order_idx" ON "public"."shipments" USING "btree" ("order_id");
-
-
-
-CREATE INDEX "subscription_events_created_at_idx" ON "public"."subscription_events" USING "btree" ("created_at" DESC);
-
-
-
-CREATE UNIQUE INDEX "subscription_events_provider_event_key" ON "public"."subscription_events" USING "btree" ("provider", "provider_event_id") WHERE ("provider_event_id" IS NOT NULL);
-
-
-
-CREATE INDEX "subscription_events_subscription_id_idx" ON "public"."subscription_events" USING "btree" ("subscription_id");
-
-
-
-CREATE INDEX "subscriptions_customer_email_idx" ON "public"."subscriptions" USING "btree" ("customer_email");
-
-
-
-CREATE UNIQUE INDEX "subscriptions_provider_sub_id_key" ON "public"."subscriptions" USING "btree" ("provider", "provider_subscription_id") WHERE ("provider_subscription_id" IS NOT NULL);
-
-
-
-CREATE INDEX "subscriptions_status_idx" ON "public"."subscriptions" USING "btree" ("status");
-
-
-
-CREATE INDEX "subscriptions_user_id_idx" ON "public"."subscriptions" USING "btree" ("user_id");
-
-
-
-CREATE UNIQUE INDEX "uniq_products_barcode" ON "public"."products" USING "btree" ("barcode") WHERE ("barcode" IS NOT NULL);
-
-
-
-CREATE UNIQUE INDEX "uq_voucher_series_year_number" ON "public"."journal_entries" USING "btree" ("voucher_series", "voucher_year", "voucher_number") WHERE (("voucher_series" IS NOT NULL) AND ("voucher_number" IS NOT NULL));
-
-
-
-CREATE UNIQUE INDEX "vendor_products_vendor_product_tier_key" ON "public"."vendor_products" USING "btree" ("vendor_id", "product_id", "price_tier_min_qty");
+CREATE UNIQUE INDEX IF NOT EXISTS "vendor_products_vendor_product_tier_key" ON "public"."vendor_products" USING "btree" ("vendor_id", "product_id", "price_tier_min_qty");
 
 
 
@@ -20533,2898 +20966,3539 @@ CREATE OR REPLACE TRIGGER "update_winback_campaigns_updated_at" BEFORE UPDATE ON
 
 CREATE OR REPLACE TRIGGER "validate_fulfillment_status_trigger" BEFORE UPDATE ON "public"."orders" FOR EACH ROW EXECUTE FUNCTION "public"."validate_fulfillment_status"();
 
-
-
-ALTER TABLE ONLY "public"."a2a_activity"
-    ADD CONSTRAINT "a2a_activity_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."a2a_peers"
-    ADD CONSTRAINT "a2a_peers_api_key_id_fkey" FOREIGN KEY ("api_key_id") REFERENCES "public"."api_keys"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."a2a_peers"
-    ADD CONSTRAINT "a2a_peers_invited_by_peer_id_fkey" FOREIGN KEY ("invited_by_peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."accounting_corrections"
-    ADD CONSTRAINT "accounting_corrections_corrected_by_fkey" FOREIGN KEY ("corrected_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."accounting_corrections"
-    ADD CONSTRAINT "accounting_corrections_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."accounting_corrections"
-    ADD CONSTRAINT "accounting_corrections_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."accounting_periods"
-    ADD CONSTRAINT "accounting_periods_closed_by_fkey" FOREIGN KEY ("closed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."accounting_periods"
-    ADD CONSTRAINT "accounting_periods_reopened_by_fkey" FOREIGN KEY ("reopened_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."ad_creatives"
-    ADD CONSTRAINT "ad_creatives_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."ad_campaigns"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."agent_activity"
-    ADD CONSTRAINT "agent_activity_approval_request_id_fkey" FOREIGN KEY ("approval_request_id") REFERENCES "public"."approval_requests"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."agent_activity"
-    ADD CONSTRAINT "agent_activity_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."agent_skills"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."agent_automations"
-    ADD CONSTRAINT "agent_automations_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."agent_skills"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."agent_objective_activities"
-    ADD CONSTRAINT "agent_objective_activities_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "public"."agent_activity"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."agent_objective_activities"
-    ADD CONSTRAINT "agent_objective_activities_objective_id_fkey" FOREIGN KEY ("objective_id") REFERENCES "public"."agent_objectives"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."analytic_accounts"
-    ADD CONSTRAINT "analytic_accounts_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."analytic_accounts"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."analytic_accounts"
-    ADD CONSTRAINT "analytic_accounts_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."analytic_lines"
-    ADD CONSTRAINT "analytic_lines_analytic_account_id_fkey" FOREIGN KEY ("analytic_account_id") REFERENCES "public"."analytic_accounts"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."analytic_lines"
-    ADD CONSTRAINT "analytic_lines_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."analytic_lines"
-    ADD CONSTRAINT "analytic_lines_journal_entry_line_id_fkey" FOREIGN KEY ("journal_entry_line_id") REFERENCES "public"."journal_entry_lines"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."api_keys"
-    ADD CONSTRAINT "api_keys_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."application_stages"
-    ADD CONSTRAINT "application_stages_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."applications"
-    ADD CONSTRAINT "applications_assigned_recruiter_id_fkey" FOREIGN KEY ("assigned_recruiter_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."applications"
-    ADD CONSTRAINT "applications_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."applications"
-    ADD CONSTRAINT "applications_job_posting_id_fkey" FOREIGN KEY ("job_posting_id") REFERENCES "public"."job_postings"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."approval_decisions"
-    ADD CONSTRAINT "approval_decisions_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "public"."approval_requests"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."approval_requests"
-    ADD CONSTRAINT "approval_requests_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "public"."approval_rules"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."attendance_entries"
-    ADD CONSTRAINT "attendance_entries_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."audit_logs"
-    ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."auth_events"
-    ADD CONSTRAINT "auth_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."back_in_stock_requests"
-    ADD CONSTRAINT "back_in_stock_requests_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."bank_transactions"
-    ADD CONSTRAINT "bank_transactions_bank_account_id_fkey" FOREIGN KEY ("bank_account_id") REFERENCES "public"."bank_accounts"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."bank_transactions"
-    ADD CONSTRAINT "bank_transactions_batch_id_fkey" FOREIGN KEY ("batch_id") REFERENCES "public"."bank_import_batches"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."beta_test_exchanges"
-    ADD CONSTRAINT "beta_test_exchanges_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."beta_test_sessions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."beta_test_findings"
-    ADD CONSTRAINT "beta_test_findings_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."beta_test_sessions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."beta_test_sessions"
-    ADD CONSTRAINT "beta_test_sessions_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."blog_categories"
-    ADD CONSTRAINT "blog_categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."blog_categories"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."blog_post_categories"
-    ADD CONSTRAINT "blog_post_categories_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."blog_categories"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."blog_post_categories"
-    ADD CONSTRAINT "blog_post_categories_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."blog_posts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."blog_post_tags"
-    ADD CONSTRAINT "blog_post_tags_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."blog_posts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."blog_post_tags"
-    ADD CONSTRAINT "blog_post_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "public"."blog_tags"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."blog_posts"
-    ADD CONSTRAINT "blog_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."blog_posts"
-    ADD CONSTRAINT "blog_posts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."blog_posts"
-    ADD CONSTRAINT "blog_posts_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."blog_posts"
-    ADD CONSTRAINT "blog_posts_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."bom_headers"
-    ADD CONSTRAINT "bom_headers_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."bom_lines"
-    ADD CONSTRAINT "bom_lines_bom_id_fkey" FOREIGN KEY ("bom_id") REFERENCES "public"."bom_headers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."bom_lines"
-    ADD CONSTRAINT "bom_lines_component_product_id_fkey" FOREIGN KEY ("component_product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."booking_availability"
-    ADD CONSTRAINT "booking_availability_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."booking_services"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."booking_blocked_dates"
-    ADD CONSTRAINT "booking_blocked_dates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."booking_services"
-    ADD CONSTRAINT "booking_services_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."booking_services"
-    ADD CONSTRAINT "booking_services_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."bookings"
-    ADD CONSTRAINT "bookings_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."booking_services"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."candidate_notes"
-    ADD CONSTRAINT "candidate_notes_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."certifications"
-    ADD CONSTRAINT "certifications_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."chat_conversations"
-    ADD CONSTRAINT "chat_conversations_assigned_agent_id_fkey" FOREIGN KEY ("assigned_agent_id") REFERENCES "public"."support_agents"("id");
-
-
-
-ALTER TABLE ONLY "public"."chat_conversations"
-    ADD CONSTRAINT "chat_conversations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."chat_feedback"
-    ADD CONSTRAINT "chat_feedback_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."chat_conversations"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."chat_feedback"
-    ADD CONSTRAINT "chat_feedback_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."chat_messages"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."chat_messages"
-    ADD CONSTRAINT "chat_messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."chat_conversations"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."companies"
-    ADD CONSTRAINT "companies_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."consultant_checkin_log"
-    ADD CONSTRAINT "consultant_checkin_log_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."consultant_profiles"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."content_proposals"
-    ADD CONSTRAINT "content_proposals_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."content_proposals"
-    ADD CONSTRAINT "content_proposals_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."content_research"
-    ADD CONSTRAINT "content_research_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."contract_documents"
-    ADD CONSTRAINT "contract_documents_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."contracts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."contract_documents"
-    ADD CONSTRAINT "contract_documents_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."contract_signatures"
-    ADD CONSTRAINT "contract_signatures_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."contracts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."contract_versions"
-    ADD CONSTRAINT "contract_versions_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."contracts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."contract_versions"
-    ADD CONSTRAINT "contract_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."contracts"
-    ADD CONSTRAINT "contracts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."contracts"
-    ADD CONSTRAINT "contracts_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."contract_templates"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."crm_tasks"
-    ADD CONSTRAINT "crm_tasks_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."crm_tasks"
-    ADD CONSTRAINT "crm_tasks_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."customer_addresses"
-    ADD CONSTRAINT "customer_addresses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."deal_activities"
-    ADD CONSTRAINT "deal_activities_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."deal_activities"
-    ADD CONSTRAINT "deal_activities_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."deals"
-    ADD CONSTRAINT "deals_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."deals"
-    ADD CONSTRAINT "deals_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."demo_run_items"
-    ADD CONSTRAINT "demo_run_items_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "public"."demo_runs"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."depreciation_entries"
-    ADD CONSTRAINT "depreciation_entries_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."fixed_assets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."dunning_actions"
-    ADD CONSTRAINT "dunning_actions_sequence_id_fkey" FOREIGN KEY ("sequence_id") REFERENCES "public"."dunning_sequences"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."dunning_sequences"
-    ADD CONSTRAINT "dunning_sequences_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."employee_documents"
-    ADD CONSTRAINT "employee_documents_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."employee_skills"
-    ADD CONSTRAINT "employee_skills_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."employee_skills"
-    ADD CONSTRAINT "employee_skills_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."skills_catalog"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."employees"
-    ADD CONSTRAINT "employees_manager_id_fkey" FOREIGN KEY ("manager_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."employees"
-    ADD CONSTRAINT "employees_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."employment_contracts"
-    ADD CONSTRAINT "employment_contracts_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."employment_contracts"
-    ADD CONSTRAINT "employment_contracts_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."employment_contract_templates"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."entity_tags"
-    ADD CONSTRAINT "entity_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "public"."tags"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_base_currency_fkey" FOREIGN KEY ("base_currency") REFERENCES "public"."currencies"("code");
-
-
-
-ALTER TABLE ONLY "public"."exchange_rates"
-    ADD CONSTRAINT "exchange_rates_quote_currency_fkey" FOREIGN KEY ("quote_currency") REFERENCES "public"."currencies"("code");
-
-
-
-ALTER TABLE ONLY "public"."expense_attachments"
-    ADD CONSTRAINT "expense_attachments_expense_id_fkey" FOREIGN KEY ("expense_id") REFERENCES "public"."expenses"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."expense_payments"
-    ADD CONSTRAINT "expense_payments_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id");
-
-
-
-ALTER TABLE ONLY "public"."expense_payments"
-    ADD CONSTRAINT "expense_payments_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."expense_reports"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."expense_reports"
-    ADD CONSTRAINT "expense_reports_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id");
-
-
-
-ALTER TABLE ONLY "public"."expenses"
-    ADD CONSTRAINT "expenses_payroll_export_id_fkey" FOREIGN KEY ("payroll_export_id") REFERENCES "public"."payroll_exports"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."expenses"
-    ADD CONSTRAINT "expenses_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."expense_reports"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."federation_connections"
-    ADD CONSTRAINT "federation_connections_api_key_id_fkey" FOREIGN KEY ("api_key_id") REFERENCES "public"."api_keys"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."federation_connections"
-    ADD CONSTRAINT "federation_connections_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."federation_peer_missions"
-    ADD CONSTRAINT "federation_peer_missions_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."feedback"
-    ADD CONSTRAINT "feedback_giver_id_fkey" FOREIGN KEY ("giver_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."feedback"
-    ADD CONSTRAINT "feedback_receiver_id_fkey" FOREIGN KEY ("receiver_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."form_submissions"
-    ADD CONSTRAINT "form_submissions_page_id_fkey" FOREIGN KEY ("page_id") REFERENCES "public"."pages"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."global_blocks"
-    ADD CONSTRAINT "global_blocks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."global_blocks"
-    ADD CONSTRAINT "global_blocks_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."goods_receipt_lines"
-    ADD CONSTRAINT "goods_receipt_lines_goods_receipt_id_fkey" FOREIGN KEY ("goods_receipt_id") REFERENCES "public"."goods_receipts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."goods_receipt_lines"
-    ADD CONSTRAINT "goods_receipt_lines_po_line_id_fkey" FOREIGN KEY ("po_line_id") REFERENCES "public"."purchase_order_lines"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."goods_receipts"
-    ADD CONSTRAINT "goods_receipts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."goods_receipts"
-    ADD CONSTRAINT "goods_receipts_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "public"."purchase_orders"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."invoices"
-    ADD CONSTRAINT "invoices_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."invoices"
-    ADD CONSTRAINT "invoices_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."invoices"
-    ADD CONSTRAINT "invoices_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."invoices"
-    ADD CONSTRAINT "invoices_reconciliation_id_fkey" FOREIGN KEY ("reconciliation_id") REFERENCES "public"."payment_reconciliations"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."job_postings"
-    ADD CONSTRAINT "job_postings_hiring_manager_id_fkey" FOREIGN KEY ("hiring_manager_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."journal_entries"
-    ADD CONSTRAINT "journal_entries_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."journal_entries"
-    ADD CONSTRAINT "journal_entries_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."journal_entries"
-    ADD CONSTRAINT "journal_entries_journal_id_fkey" FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id");
-
-
-
-ALTER TABLE ONLY "public"."journal_entries"
-    ADD CONSTRAINT "journal_entries_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."accounting_templates"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."journal_entries"
-    ADD CONSTRAINT "journal_entries_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."journal_entry_line_taxes"
-    ADD CONSTRAINT "journal_entry_line_taxes_journal_entry_line_id_fkey" FOREIGN KEY ("journal_entry_line_id") REFERENCES "public"."journal_entry_lines"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."journal_entry_line_taxes"
-    ADD CONSTRAINT "journal_entry_line_taxes_tax_code_id_fkey" FOREIGN KEY ("tax_code_id") REFERENCES "public"."tax_codes"("id");
-
-
-
-ALTER TABLE ONLY "public"."journal_entry_line_taxes"
-    ADD CONSTRAINT "journal_entry_line_taxes_tax_grid_id_fkey" FOREIGN KEY ("tax_grid_id") REFERENCES "public"."tax_grids"("id");
-
-
-
-ALTER TABLE ONLY "public"."journal_entry_lines"
-    ADD CONSTRAINT "journal_entry_lines_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."journal_entry_lines"
-    ADD CONSTRAINT "journal_entry_lines_tax_code_id_fkey" FOREIGN KEY ("tax_code_id") REFERENCES "public"."tax_codes"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."kb_articles"
-    ADD CONSTRAINT "kb_articles_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."kb_categories"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."kb_articles"
-    ADD CONSTRAINT "kb_articles_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."kb_articles"
-    ADD CONSTRAINT "kb_articles_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."kb_categories"
-    ADD CONSTRAINT "kb_categories_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."kb_categories"
-    ADD CONSTRAINT "kb_categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."kb_categories"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."kb_categories"
-    ADD CONSTRAINT "kb_categories_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."lead_activities"
-    ADD CONSTRAINT "lead_activities_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."leads"
-    ADD CONSTRAINT "leads_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "public"."profiles"("id");
-
-
-
-ALTER TABLE ONLY "public"."leads"
-    ADD CONSTRAINT "leads_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."leave_allocations"
-    ADD CONSTRAINT "leave_allocations_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."leave_requests"
-    ADD CONSTRAINT "leave_requests_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."leave_requests"
-    ADD CONSTRAINT "leave_requests_payroll_export_id_fkey" FOREIGN KEY ("payroll_export_id") REFERENCES "public"."payroll_exports"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."manufacturing_orders"
-    ADD CONSTRAINT "manufacturing_orders_bom_id_fkey" FOREIGN KEY ("bom_id") REFERENCES "public"."bom_headers"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."manufacturing_orders"
-    ADD CONSTRAINT "manufacturing_orders_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."mo_components"
-    ADD CONSTRAINT "mo_components_component_product_id_fkey" FOREIGN KEY ("component_product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."mo_components"
-    ADD CONSTRAINT "mo_components_mo_id_fkey" FOREIGN KEY ("mo_id") REFERENCES "public"."manufacturing_orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."newsletter_email_opens"
-    ADD CONSTRAINT "newsletter_email_opens_newsletter_id_fkey" FOREIGN KEY ("newsletter_id") REFERENCES "public"."newsletters"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."newsletter_link_clicks"
-    ADD CONSTRAINT "newsletter_link_clicks_newsletter_id_fkey" FOREIGN KEY ("newsletter_id") REFERENCES "public"."newsletters"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."newsletters"
-    ADD CONSTRAINT "newsletters_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."onboarding_checklists"
-    ADD CONSTRAINT "onboarding_checklists_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."one_on_ones"
-    ADD CONSTRAINT "one_on_ones_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."one_on_ones"
-    ADD CONSTRAINT "one_on_ones_manager_id_fkey" FOREIGN KEY ("manager_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."page_versions"
-    ADD CONSTRAINT "page_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."page_versions"
-    ADD CONSTRAINT "page_versions_page_id_fkey" FOREIGN KEY ("page_id") REFERENCES "public"."pages"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."page_views"
-    ADD CONSTRAINT "page_views_page_id_fkey" FOREIGN KEY ("page_id") REFERENCES "public"."pages"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pages"
-    ADD CONSTRAINT "pages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pages"
-    ADD CONSTRAINT "pages_deleted_by_fkey" FOREIGN KEY ("deleted_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pages"
-    ADD CONSTRAINT "pages_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."payment_reconciliations"
-    ADD CONSTRAINT "payment_reconciliations_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."payment_reconciliations"
-    ADD CONSTRAINT "payment_reconciliations_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."payment_reconciliations"
-    ADD CONSTRAINT "payment_reconciliations_reversal_journal_entry_id_fkey" FOREIGN KEY ("reversal_journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."payroll_components"
-    ADD CONSTRAINT "payroll_components_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."payroll_export_lines"
-    ADD CONSTRAINT "payroll_export_lines_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."payroll_export_lines"
-    ADD CONSTRAINT "payroll_export_lines_export_id_fkey" FOREIGN KEY ("export_id") REFERENCES "public"."payroll_exports"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."payroll_lines"
-    ADD CONSTRAINT "payroll_lines_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id");
-
-
-
-ALTER TABLE ONLY "public"."payroll_lines"
-    ADD CONSTRAINT "payroll_lines_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "public"."payroll_runs"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."payroll_runs"
-    ADD CONSTRAINT "payroll_runs_approval_journal_id_fkey" FOREIGN KEY ("approval_journal_id") REFERENCES "public"."journal_entries"("id");
-
-
-
-ALTER TABLE ONLY "public"."payroll_runs"
-    ADD CONSTRAINT "payroll_runs_payment_journal_id_fkey" FOREIGN KEY ("payment_journal_id") REFERENCES "public"."journal_entries"("id");
-
-
-
-ALTER TABLE ONLY "public"."peer_invitations"
-    ADD CONSTRAINT "peer_invitations_invitee_peer_id_fkey" FOREIGN KEY ("invitee_peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."peer_invitations"
-    ADD CONSTRAINT "peer_invitations_inviter_peer_id_fkey" FOREIGN KEY ("inviter_peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pending_operations"
-    ADD CONSTRAINT "pending_operations_created_by_user_id_fkey" FOREIGN KEY ("created_by_user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pending_operations"
-    ADD CONSTRAINT "pending_operations_reviewed_by_fkey" FOREIGN KEY ("reviewed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pending_operations"
-    ADD CONSTRAINT "pending_operations_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."agent_skills"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."performance_goals"
-    ADD CONSTRAINT "performance_goals_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."performance_reviews"
-    ADD CONSTRAINT "performance_reviews_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."performance_reviews"
-    ADD CONSTRAINT "performance_reviews_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."picking_lines"
-    ADD CONSTRAINT "picking_lines_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."picking_lines"
-    ADD CONSTRAINT "picking_lines_picking_order_id_fkey" FOREIGN KEY ("picking_order_id") REFERENCES "public"."picking_orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."picking_lines"
-    ADD CONSTRAINT "picking_lines_reservation_id_fkey" FOREIGN KEY ("reservation_id") REFERENCES "public"."stock_reservations"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."picking_orders"
-    ADD CONSTRAINT "picking_orders_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "public"."stock_locations"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."pos_payments"
-    ADD CONSTRAINT "pos_payments_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."pos_sales"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pos_sale_lines"
-    ADD CONSTRAINT "pos_sale_lines_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."pos_sales"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pos_sales"
-    ADD CONSTRAINT "pos_sales_cashier_id_fkey" FOREIGN KEY ("cashier_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pos_sales"
-    ADD CONSTRAINT "pos_sales_refund_of_fkey" FOREIGN KEY ("refund_of") REFERENCES "public"."pos_sales"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pos_sales"
-    ADD CONSTRAINT "pos_sales_register_id_fkey" FOREIGN KEY ("register_id") REFERENCES "public"."pos_registers"("id");
-
-
-
-ALTER TABLE ONLY "public"."pos_sales"
-    ADD CONSTRAINT "pos_sales_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."pos_sessions"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pos_sessions"
-    ADD CONSTRAINT "pos_sessions_cashier_id_fkey" FOREIGN KEY ("cashier_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."pos_sessions"
-    ADD CONSTRAINT "pos_sessions_register_id_fkey" FOREIGN KEY ("register_id") REFERENCES "public"."pos_registers"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pricelist_items"
-    ADD CONSTRAINT "pricelist_items_pricelist_id_fkey" FOREIGN KEY ("pricelist_id") REFERENCES "public"."pricelists"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pricelist_items"
-    ADD CONSTRAINT "pricelist_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pricelists"
-    ADD CONSTRAINT "pricelists_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pricelists"
-    ADD CONSTRAINT "pricelists_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."procurement_suggestions"
-    ADD CONSTRAINT "procurement_suggestions_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."procurement_suggestions"
-    ADD CONSTRAINT "procurement_suggestions_preferred_vendor_id_fkey" FOREIGN KEY ("preferred_vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."procurement_suggestions"
-    ADD CONSTRAINT "procurement_suggestions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."product_stock"
-    ADD CONSTRAINT "product_stock_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."products"
-    ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."product_categories"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."products"
-    ADD CONSTRAINT "products_pos_category_id_fkey" FOREIGN KEY ("pos_category_id") REFERENCES "public"."product_categories"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."project_members"
-    ADD CONSTRAINT "project_members_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."project_members"
-    ADD CONSTRAINT "project_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."project_members"
-    ADD CONSTRAINT "project_members_user_id_profiles_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."project_tasks"
-    ADD CONSTRAINT "project_tasks_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."project_tasks"
-    ADD CONSTRAINT "project_tasks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id");
-
-
-
-ALTER TABLE ONLY "public"."project_tasks"
-    ADD CONSTRAINT "project_tasks_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."projects"
-    ADD CONSTRAINT "projects_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."purchase_order_lines"
-    ADD CONSTRAINT "purchase_order_lines_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."purchase_order_lines"
-    ADD CONSTRAINT "purchase_order_lines_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "public"."purchase_orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."purchase_orders"
-    ADD CONSTRAINT "purchase_orders_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."purchase_orders"
-    ADD CONSTRAINT "purchase_orders_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."quote_items"
-    ADD CONSTRAINT "quote_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quote_items"
-    ADD CONSTRAINT "quote_items_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."quote_signatures"
-    ADD CONSTRAINT "quote_signatures_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."quote_templates"
-    ADD CONSTRAINT "quote_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quote_versions"
-    ADD CONSTRAINT "quote_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quote_versions"
-    ADD CONSTRAINT "quote_versions_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_approval_request_id_fkey" FOREIGN KEY ("approval_request_id") REFERENCES "public"."approval_requests"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."quotes"
-    ADD CONSTRAINT "quotes_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."quote_templates"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."reconciliation_matches"
-    ADD CONSTRAINT "reconciliation_matches_bank_transaction_id_fkey" FOREIGN KEY ("bank_transaction_id") REFERENCES "public"."bank_transactions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."reconciliation_matches"
-    ADD CONSTRAINT "reconciliation_matches_reconciliation_id_fkey" FOREIGN KEY ("reconciliation_id") REFERENCES "public"."payment_reconciliations"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."reorder_rules"
-    ADD CONSTRAINT "reorder_rules_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."reorder_rules"
-    ADD CONSTRAINT "reorder_rules_preferred_vendor_id_fkey" FOREIGN KEY ("preferred_vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."reorder_rules"
-    ADD CONSTRAINT "reorder_rules_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."return_items"
-    ADD CONSTRAINT "return_items_order_item_id_fkey" FOREIGN KEY ("order_item_id") REFERENCES "public"."order_items"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."return_items"
-    ADD CONSTRAINT "return_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."return_items"
-    ADD CONSTRAINT "return_items_return_id_fkey" FOREIGN KEY ("return_id") REFERENCES "public"."returns"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."returns"
-    ADD CONSTRAINT "returns_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."rfq_bids"
-    ADD CONSTRAINT "rfq_bids_rfq_id_fkey" FOREIGN KEY ("rfq_id") REFERENCES "public"."rfqs"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."rfq_bids"
-    ADD CONSTRAINT "rfq_bids_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."rfq_lines"
-    ADD CONSTRAINT "rfq_lines_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."rfq_lines"
-    ADD CONSTRAINT "rfq_lines_rfq_id_fkey" FOREIGN KEY ("rfq_id") REFERENCES "public"."rfqs"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."rfqs"
-    ADD CONSTRAINT "rfqs_awarded_po_id_fkey" FOREIGN KEY ("awarded_po_id") REFERENCES "public"."purchase_orders"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."rfqs"
-    ADD CONSTRAINT "rfqs_awarded_vendor_id_fkey" FOREIGN KEY ("awarded_vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."rfqs"
-    ADD CONSTRAINT "rfqs_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."river_posts"
-    ADD CONSTRAINT "river_posts_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."river_posts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."river_reactions"
-    ADD CONSTRAINT "river_reactions_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."river_posts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."sales_intelligence_profiles"
-    ADD CONSTRAINT "sales_intelligence_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."service_order_lines"
-    ADD CONSTRAINT "service_order_lines_service_order_id_fkey" FOREIGN KEY ("service_order_id") REFERENCES "public"."service_orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."service_orders"
-    ADD CONSTRAINT "service_orders_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."service_orders"
-    ADD CONSTRAINT "service_orders_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."service_visits"
-    ADD CONSTRAINT "service_visits_service_order_id_fkey" FOREIGN KEY ("service_order_id") REFERENCES "public"."service_orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."service_visits"
-    ADD CONSTRAINT "service_visits_technician_id_fkey" FOREIGN KEY ("technician_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."shipments"
-    ADD CONSTRAINT "shipments_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id");
-
-
-
-ALTER TABLE ONLY "public"."shipments"
-    ADD CONSTRAINT "shipments_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."site_settings"
-    ADD CONSTRAINT "site_settings_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."sla_violations"
-    ADD CONSTRAINT "sla_violations_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "public"."sla_policies"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."stock_locations"
-    ADD CONSTRAINT "stock_locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."stock_locations"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_lots"
-    ADD CONSTRAINT "stock_lots_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."stock_moves"
-    ADD CONSTRAINT "stock_moves_from_location_id_fkey" FOREIGN KEY ("from_location_id") REFERENCES "public"."stock_locations"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_moves"
-    ADD CONSTRAINT "stock_moves_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_moves"
-    ADD CONSTRAINT "stock_moves_mo_id_fkey" FOREIGN KEY ("mo_id") REFERENCES "public"."manufacturing_orders"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_moves"
-    ADD CONSTRAINT "stock_moves_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."stock_moves"
-    ADD CONSTRAINT "stock_moves_to_location_id_fkey" FOREIGN KEY ("to_location_id") REFERENCES "public"."stock_locations"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_quants"
-    ADD CONSTRAINT "stock_quants_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."stock_quants"
-    ADD CONSTRAINT "stock_quants_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_quants"
-    ADD CONSTRAINT "stock_quants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."stock_reservations"
-    ADD CONSTRAINT "stock_reservations_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."stock_reservations"
-    ADD CONSTRAINT "stock_reservations_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."stock_reservations"
-    ADD CONSTRAINT "stock_reservations_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."subscription_churn_reasons"
-    ADD CONSTRAINT "subscription_churn_reasons_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."subscription_events"
-    ADD CONSTRAINT "subscription_events_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."subscription_winback_sends"
-    ADD CONSTRAINT "subscription_winback_sends_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."subscription_winback_campaigns"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."subscription_winback_sends"
-    ADD CONSTRAINT "subscription_winback_sends_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_last_invoice_id_fkey" FOREIGN KEY ("last_invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."support_agents"
-    ADD CONSTRAINT "support_agents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."support_escalations"
-    ADD CONSTRAINT "support_escalations_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."chat_conversations"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."support_escalations"
-    ADD CONSTRAINT "support_escalations_form_submission_id_fkey" FOREIGN KEY ("form_submission_id") REFERENCES "public"."form_submissions"("id");
-
-
-
-ALTER TABLE ONLY "public"."support_escalations"
-    ADD CONSTRAINT "support_escalations_resolved_by_fkey" FOREIGN KEY ("resolved_by") REFERENCES "public"."profiles"("id");
-
-
-
-ALTER TABLE ONLY "public"."survey_campaigns"
-    ADD CONSTRAINT "survey_campaigns_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."survey_templates"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."survey_responses"
-    ADD CONSTRAINT "survey_responses_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."survey_campaigns"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."survey_responses"
-    ADD CONSTRAINT "survey_responses_send_id_fkey" FOREIGN KEY ("send_id") REFERENCES "public"."survey_sends"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."survey_responses"
-    ADD CONSTRAINT "survey_responses_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."survey_templates"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."survey_sends"
-    ADD CONSTRAINT "survey_sends_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."survey_campaigns"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."tax_code_grids"
-    ADD CONSTRAINT "tax_code_grids_tax_code_id_fkey" FOREIGN KEY ("tax_code_id") REFERENCES "public"."tax_codes"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."tax_code_grids"
-    ADD CONSTRAINT "tax_code_grids_tax_grid_id_fkey" FOREIGN KEY ("tax_grid_id") REFERENCES "public"."tax_grids"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."ticket_comments"
-    ADD CONSTRAINT "ticket_comments_ticket_id_fkey" FOREIGN KEY ("ticket_id") REFERENCES "public"."tickets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."tickets"
-    ADD CONSTRAINT "tickets_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."tickets"
-    ADD CONSTRAINT "tickets_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."time_entries"
-    ADD CONSTRAINT "time_entries_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."time_entries"
-    ADD CONSTRAINT "time_entries_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."time_entries"
-    ADD CONSTRAINT "time_entries_task_id_fkey" FOREIGN KEY ("task_id") REFERENCES "public"."project_tasks"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."user_roles"
-    ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."vendor_invoices"
-    ADD CONSTRAINT "vendor_invoices_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."vendor_invoices"
-    ADD CONSTRAINT "vendor_invoices_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."vendor_invoices"
-    ADD CONSTRAINT "vendor_invoices_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "public"."purchase_orders"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."vendor_invoices"
-    ADD CONSTRAINT "vendor_invoices_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE RESTRICT;
-
-
-
-ALTER TABLE ONLY "public"."vendor_products"
-    ADD CONSTRAINT "vendor_products_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."vendor_products"
-    ADD CONSTRAINT "vendor_products_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."vendors"
-    ADD CONSTRAINT "vendors_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."vendors"
-    ADD CONSTRAINT "vendors_last_used_template_id_fkey" FOREIGN KEY ("last_used_template_id") REFERENCES "public"."accounting_templates"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."webhook_logs"
-    ADD CONSTRAINT "webhook_logs_webhook_id_fkey" FOREIGN KEY ("webhook_id") REFERENCES "public"."webhooks"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."webhooks"
-    ADD CONSTRAINT "webhooks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."webinar_registrations"
-    ADD CONSTRAINT "webinar_registrations_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."webinar_registrations"
-    ADD CONSTRAINT "webinar_registrations_webinar_id_fkey" FOREIGN KEY ("webinar_id") REFERENCES "public"."webinars"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."webinars"
-    ADD CONSTRAINT "webinars_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."wiki_pages"
-    ADD CONSTRAINT "wiki_pages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."wiki_pages"
-    ADD CONSTRAINT "wiki_pages_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."wishlist_items"
-    ADD CONSTRAINT "wishlist_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."wishlist_items"
-    ADD CONSTRAINT "wishlist_items_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."a2a_activity"
+      ADD CONSTRAINT "a2a_activity_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."a2a_peers"
+      ADD CONSTRAINT "a2a_peers_api_key_id_fkey" FOREIGN KEY ("api_key_id") REFERENCES "public"."api_keys"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."a2a_peers"
+      ADD CONSTRAINT "a2a_peers_invited_by_peer_id_fkey" FOREIGN KEY ("invited_by_peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_corrections"
+      ADD CONSTRAINT "accounting_corrections_corrected_by_fkey" FOREIGN KEY ("corrected_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_corrections"
+      ADD CONSTRAINT "accounting_corrections_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_corrections"
+      ADD CONSTRAINT "accounting_corrections_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_periods"
+      ADD CONSTRAINT "accounting_periods_closed_by_fkey" FOREIGN KEY ("closed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."accounting_periods"
+      ADD CONSTRAINT "accounting_periods_reopened_by_fkey" FOREIGN KEY ("reopened_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."ad_creatives"
+      ADD CONSTRAINT "ad_creatives_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."ad_campaigns"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_activity"
+      ADD CONSTRAINT "agent_activity_approval_request_id_fkey" FOREIGN KEY ("approval_request_id") REFERENCES "public"."approval_requests"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_activity"
+      ADD CONSTRAINT "agent_activity_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."agent_skills"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_automations"
+      ADD CONSTRAINT "agent_automations_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."agent_skills"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_objective_activities"
+      ADD CONSTRAINT "agent_objective_activities_activity_id_fkey" FOREIGN KEY ("activity_id") REFERENCES "public"."agent_activity"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."agent_objective_activities"
+      ADD CONSTRAINT "agent_objective_activities_objective_id_fkey" FOREIGN KEY ("objective_id") REFERENCES "public"."agent_objectives"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_accounts"
+      ADD CONSTRAINT "analytic_accounts_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."analytic_accounts"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_accounts"
+      ADD CONSTRAINT "analytic_accounts_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_lines"
+      ADD CONSTRAINT "analytic_lines_analytic_account_id_fkey" FOREIGN KEY ("analytic_account_id") REFERENCES "public"."analytic_accounts"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_lines"
+      ADD CONSTRAINT "analytic_lines_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."analytic_lines"
+      ADD CONSTRAINT "analytic_lines_journal_entry_line_id_fkey" FOREIGN KEY ("journal_entry_line_id") REFERENCES "public"."journal_entry_lines"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."api_keys"
+      ADD CONSTRAINT "api_keys_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."application_stages"
+      ADD CONSTRAINT "application_stages_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."applications"
+      ADD CONSTRAINT "applications_assigned_recruiter_id_fkey" FOREIGN KEY ("assigned_recruiter_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."applications"
+      ADD CONSTRAINT "applications_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."applications"
+      ADD CONSTRAINT "applications_job_posting_id_fkey" FOREIGN KEY ("job_posting_id") REFERENCES "public"."job_postings"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."approval_decisions"
+      ADD CONSTRAINT "approval_decisions_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "public"."approval_requests"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."approval_requests"
+      ADD CONSTRAINT "approval_requests_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "public"."approval_rules"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."attendance_entries"
+      ADD CONSTRAINT "attendance_entries_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."audit_logs"
+      ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."auth_events"
+      ADD CONSTRAINT "auth_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."back_in_stock_requests"
+      ADD CONSTRAINT "back_in_stock_requests_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bank_transactions"
+      ADD CONSTRAINT "bank_transactions_bank_account_id_fkey" FOREIGN KEY ("bank_account_id") REFERENCES "public"."bank_accounts"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bank_transactions"
+      ADD CONSTRAINT "bank_transactions_batch_id_fkey" FOREIGN KEY ("batch_id") REFERENCES "public"."bank_import_batches"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."beta_test_exchanges"
+      ADD CONSTRAINT "beta_test_exchanges_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."beta_test_sessions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."beta_test_findings"
+      ADD CONSTRAINT "beta_test_findings_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."beta_test_sessions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."beta_test_sessions"
+      ADD CONSTRAINT "beta_test_sessions_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_categories"
+      ADD CONSTRAINT "blog_categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."blog_categories"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_post_categories"
+      ADD CONSTRAINT "blog_post_categories_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."blog_categories"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_post_categories"
+      ADD CONSTRAINT "blog_post_categories_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."blog_posts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_post_tags"
+      ADD CONSTRAINT "blog_post_tags_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."blog_posts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_post_tags"
+      ADD CONSTRAINT "blog_post_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "public"."blog_tags"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_posts"
+      ADD CONSTRAINT "blog_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_posts"
+      ADD CONSTRAINT "blog_posts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_posts"
+      ADD CONSTRAINT "blog_posts_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."blog_posts"
+      ADD CONSTRAINT "blog_posts_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_headers"
+      ADD CONSTRAINT "bom_headers_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_lines"
+      ADD CONSTRAINT "bom_lines_bom_id_fkey" FOREIGN KEY ("bom_id") REFERENCES "public"."bom_headers"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bom_lines"
+      ADD CONSTRAINT "bom_lines_component_product_id_fkey" FOREIGN KEY ("component_product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_availability"
+      ADD CONSTRAINT "booking_availability_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."booking_services"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_blocked_dates"
+      ADD CONSTRAINT "booking_blocked_dates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_services"
+      ADD CONSTRAINT "booking_services_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."booking_services"
+      ADD CONSTRAINT "booking_services_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."bookings"
+      ADD CONSTRAINT "bookings_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "public"."booking_services"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."candidate_notes"
+      ADD CONSTRAINT "candidate_notes_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "public"."applications"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."certifications"
+      ADD CONSTRAINT "certifications_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_conversations"
+      ADD CONSTRAINT "chat_conversations_assigned_agent_id_fkey" FOREIGN KEY ("assigned_agent_id") REFERENCES "public"."support_agents"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_conversations"
+      ADD CONSTRAINT "chat_conversations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_feedback"
+      ADD CONSTRAINT "chat_feedback_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."chat_conversations"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_feedback"
+      ADD CONSTRAINT "chat_feedback_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."chat_messages"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."chat_messages"
+      ADD CONSTRAINT "chat_messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."chat_conversations"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."companies"
+      ADD CONSTRAINT "companies_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."consultant_checkin_log"
+      ADD CONSTRAINT "consultant_checkin_log_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."consultant_profiles"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."content_proposals"
+      ADD CONSTRAINT "content_proposals_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."content_proposals"
+      ADD CONSTRAINT "content_proposals_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."content_research"
+      ADD CONSTRAINT "content_research_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_documents"
+      ADD CONSTRAINT "contract_documents_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."contracts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_documents"
+      ADD CONSTRAINT "contract_documents_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_signatures"
+      ADD CONSTRAINT "contract_signatures_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."contracts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_versions"
+      ADD CONSTRAINT "contract_versions_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."contracts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contract_versions"
+      ADD CONSTRAINT "contract_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contracts"
+      ADD CONSTRAINT "contracts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."contracts"
+      ADD CONSTRAINT "contracts_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."contract_templates"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."crm_tasks"
+      ADD CONSTRAINT "crm_tasks_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."crm_tasks"
+      ADD CONSTRAINT "crm_tasks_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."customer_addresses"
+      ADD CONSTRAINT "customer_addresses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."deal_activities"
+      ADD CONSTRAINT "deal_activities_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."deal_activities"
+      ADD CONSTRAINT "deal_activities_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."deals"
+      ADD CONSTRAINT "deals_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."deals"
+      ADD CONSTRAINT "deals_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."demo_run_items"
+      ADD CONSTRAINT "demo_run_items_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "public"."demo_runs"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."depreciation_entries"
+      ADD CONSTRAINT "depreciation_entries_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."fixed_assets"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."dunning_actions"
+      ADD CONSTRAINT "dunning_actions_sequence_id_fkey" FOREIGN KEY ("sequence_id") REFERENCES "public"."dunning_sequences"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."dunning_sequences"
+      ADD CONSTRAINT "dunning_sequences_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employee_documents"
+      ADD CONSTRAINT "employee_documents_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employee_skills"
+      ADD CONSTRAINT "employee_skills_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employee_skills"
+      ADD CONSTRAINT "employee_skills_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."skills_catalog"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employees"
+      ADD CONSTRAINT "employees_manager_id_fkey" FOREIGN KEY ("manager_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employees"
+      ADD CONSTRAINT "employees_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employment_contracts"
+      ADD CONSTRAINT "employment_contracts_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."employment_contracts"
+      ADD CONSTRAINT "employment_contracts_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."employment_contract_templates"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."entity_tags"
+      ADD CONSTRAINT "entity_tags_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "public"."tags"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."exchange_rates"
+      ADD CONSTRAINT "exchange_rates_base_currency_fkey" FOREIGN KEY ("base_currency") REFERENCES "public"."currencies"("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."exchange_rates"
+      ADD CONSTRAINT "exchange_rates_quote_currency_fkey" FOREIGN KEY ("quote_currency") REFERENCES "public"."currencies"("code");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_attachments"
+      ADD CONSTRAINT "expense_attachments_expense_id_fkey" FOREIGN KEY ("expense_id") REFERENCES "public"."expenses"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_payments"
+      ADD CONSTRAINT "expense_payments_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_payments"
+      ADD CONSTRAINT "expense_payments_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."expense_reports"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expense_reports"
+      ADD CONSTRAINT "expense_reports_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expenses"
+      ADD CONSTRAINT "expenses_payroll_export_id_fkey" FOREIGN KEY ("payroll_export_id") REFERENCES "public"."payroll_exports"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."expenses"
+      ADD CONSTRAINT "expenses_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."expense_reports"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_connections"
+      ADD CONSTRAINT "federation_connections_api_key_id_fkey" FOREIGN KEY ("api_key_id") REFERENCES "public"."api_keys"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_connections"
+      ADD CONSTRAINT "federation_connections_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."federation_peer_missions"
+      ADD CONSTRAINT "federation_peer_missions_peer_id_fkey" FOREIGN KEY ("peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."feedback"
+      ADD CONSTRAINT "feedback_giver_id_fkey" FOREIGN KEY ("giver_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."feedback"
+      ADD CONSTRAINT "feedback_receiver_id_fkey" FOREIGN KEY ("receiver_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."form_submissions"
+      ADD CONSTRAINT "form_submissions_page_id_fkey" FOREIGN KEY ("page_id") REFERENCES "public"."pages"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."global_blocks"
+      ADD CONSTRAINT "global_blocks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."global_blocks"
+      ADD CONSTRAINT "global_blocks_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."goods_receipt_lines"
+      ADD CONSTRAINT "goods_receipt_lines_goods_receipt_id_fkey" FOREIGN KEY ("goods_receipt_id") REFERENCES "public"."goods_receipts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."goods_receipt_lines"
+      ADD CONSTRAINT "goods_receipt_lines_po_line_id_fkey" FOREIGN KEY ("po_line_id") REFERENCES "public"."purchase_order_lines"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."goods_receipts"
+      ADD CONSTRAINT "goods_receipts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."goods_receipts"
+      ADD CONSTRAINT "goods_receipts_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "public"."purchase_orders"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."invoices"
+      ADD CONSTRAINT "invoices_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."invoices"
+      ADD CONSTRAINT "invoices_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."invoices"
+      ADD CONSTRAINT "invoices_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."invoices"
+      ADD CONSTRAINT "invoices_reconciliation_id_fkey" FOREIGN KEY ("reconciliation_id") REFERENCES "public"."payment_reconciliations"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."job_postings"
+      ADD CONSTRAINT "job_postings_hiring_manager_id_fkey" FOREIGN KEY ("hiring_manager_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entries"
+      ADD CONSTRAINT "journal_entries_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entries"
+      ADD CONSTRAINT "journal_entries_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entries"
+      ADD CONSTRAINT "journal_entries_journal_id_fkey" FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entries"
+      ADD CONSTRAINT "journal_entries_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."accounting_templates"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entries"
+      ADD CONSTRAINT "journal_entries_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_line_taxes"
+      ADD CONSTRAINT "journal_entry_line_taxes_journal_entry_line_id_fkey" FOREIGN KEY ("journal_entry_line_id") REFERENCES "public"."journal_entry_lines"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_line_taxes"
+      ADD CONSTRAINT "journal_entry_line_taxes_tax_code_id_fkey" FOREIGN KEY ("tax_code_id") REFERENCES "public"."tax_codes"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_line_taxes"
+      ADD CONSTRAINT "journal_entry_line_taxes_tax_grid_id_fkey" FOREIGN KEY ("tax_grid_id") REFERENCES "public"."tax_grids"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_lines"
+      ADD CONSTRAINT "journal_entry_lines_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."journal_entry_lines"
+      ADD CONSTRAINT "journal_entry_lines_tax_code_id_fkey" FOREIGN KEY ("tax_code_id") REFERENCES "public"."tax_codes"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_articles"
+      ADD CONSTRAINT "kb_articles_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."kb_categories"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_articles"
+      ADD CONSTRAINT "kb_articles_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_articles"
+      ADD CONSTRAINT "kb_articles_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_categories"
+      ADD CONSTRAINT "kb_categories_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_categories"
+      ADD CONSTRAINT "kb_categories_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."kb_categories"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."kb_categories"
+      ADD CONSTRAINT "kb_categories_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."lead_activities"
+      ADD CONSTRAINT "lead_activities_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leads"
+      ADD CONSTRAINT "leads_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "public"."profiles"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leads"
+      ADD CONSTRAINT "leads_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leave_allocations"
+      ADD CONSTRAINT "leave_allocations_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leave_requests"
+      ADD CONSTRAINT "leave_requests_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."leave_requests"
+      ADD CONSTRAINT "leave_requests_payroll_export_id_fkey" FOREIGN KEY ("payroll_export_id") REFERENCES "public"."payroll_exports"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."manufacturing_orders"
+      ADD CONSTRAINT "manufacturing_orders_bom_id_fkey" FOREIGN KEY ("bom_id") REFERENCES "public"."bom_headers"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."manufacturing_orders"
+      ADD CONSTRAINT "manufacturing_orders_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."mo_components"
+      ADD CONSTRAINT "mo_components_component_product_id_fkey" FOREIGN KEY ("component_product_id") REFERENCES "public"."products"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."mo_components"
+      ADD CONSTRAINT "mo_components_mo_id_fkey" FOREIGN KEY ("mo_id") REFERENCES "public"."manufacturing_orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_email_opens"
+      ADD CONSTRAINT "newsletter_email_opens_newsletter_id_fkey" FOREIGN KEY ("newsletter_id") REFERENCES "public"."newsletters"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletter_link_clicks"
+      ADD CONSTRAINT "newsletter_link_clicks_newsletter_id_fkey" FOREIGN KEY ("newsletter_id") REFERENCES "public"."newsletters"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."newsletters"
+      ADD CONSTRAINT "newsletters_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."onboarding_checklists"
+      ADD CONSTRAINT "onboarding_checklists_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."one_on_ones"
+      ADD CONSTRAINT "one_on_ones_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."one_on_ones"
+      ADD CONSTRAINT "one_on_ones_manager_id_fkey" FOREIGN KEY ("manager_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."order_items"
+      ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."order_items"
+      ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."orders"
+      ADD CONSTRAINT "orders_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."orders"
+      ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."page_versions"
+      ADD CONSTRAINT "page_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."page_versions"
+      ADD CONSTRAINT "page_versions_page_id_fkey" FOREIGN KEY ("page_id") REFERENCES "public"."pages"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."page_views"
+      ADD CONSTRAINT "page_views_page_id_fkey" FOREIGN KEY ("page_id") REFERENCES "public"."pages"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pages"
+      ADD CONSTRAINT "pages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pages"
+      ADD CONSTRAINT "pages_deleted_by_fkey" FOREIGN KEY ("deleted_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pages"
+      ADD CONSTRAINT "pages_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payment_reconciliations"
+      ADD CONSTRAINT "payment_reconciliations_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payment_reconciliations"
+      ADD CONSTRAINT "payment_reconciliations_journal_entry_id_fkey" FOREIGN KEY ("journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payment_reconciliations"
+      ADD CONSTRAINT "payment_reconciliations_reversal_journal_entry_id_fkey" FOREIGN KEY ("reversal_journal_entry_id") REFERENCES "public"."journal_entries"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_components"
+      ADD CONSTRAINT "payroll_components_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_export_lines"
+      ADD CONSTRAINT "payroll_export_lines_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_export_lines"
+      ADD CONSTRAINT "payroll_export_lines_export_id_fkey" FOREIGN KEY ("export_id") REFERENCES "public"."payroll_exports"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_lines"
+      ADD CONSTRAINT "payroll_lines_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_lines"
+      ADD CONSTRAINT "payroll_lines_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "public"."payroll_runs"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_runs"
+      ADD CONSTRAINT "payroll_runs_approval_journal_id_fkey" FOREIGN KEY ("approval_journal_id") REFERENCES "public"."journal_entries"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."payroll_runs"
+      ADD CONSTRAINT "payroll_runs_payment_journal_id_fkey" FOREIGN KEY ("payment_journal_id") REFERENCES "public"."journal_entries"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."peer_invitations"
+      ADD CONSTRAINT "peer_invitations_invitee_peer_id_fkey" FOREIGN KEY ("invitee_peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."peer_invitations"
+      ADD CONSTRAINT "peer_invitations_inviter_peer_id_fkey" FOREIGN KEY ("inviter_peer_id") REFERENCES "public"."a2a_peers"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pending_operations"
+      ADD CONSTRAINT "pending_operations_created_by_user_id_fkey" FOREIGN KEY ("created_by_user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pending_operations"
+      ADD CONSTRAINT "pending_operations_reviewed_by_fkey" FOREIGN KEY ("reviewed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pending_operations"
+      ADD CONSTRAINT "pending_operations_skill_id_fkey" FOREIGN KEY ("skill_id") REFERENCES "public"."agent_skills"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."performance_goals"
+      ADD CONSTRAINT "performance_goals_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."performance_reviews"
+      ADD CONSTRAINT "performance_reviews_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."performance_reviews"
+      ADD CONSTRAINT "performance_reviews_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_lines"
+      ADD CONSTRAINT "picking_lines_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_lines"
+      ADD CONSTRAINT "picking_lines_picking_order_id_fkey" FOREIGN KEY ("picking_order_id") REFERENCES "public"."picking_orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_lines"
+      ADD CONSTRAINT "picking_lines_reservation_id_fkey" FOREIGN KEY ("reservation_id") REFERENCES "public"."stock_reservations"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."picking_orders"
+      ADD CONSTRAINT "picking_orders_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "public"."stock_locations"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_payments"
+      ADD CONSTRAINT "pos_payments_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."pos_sales"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sale_lines"
+      ADD CONSTRAINT "pos_sale_lines_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."pos_sales"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sales"
+      ADD CONSTRAINT "pos_sales_cashier_id_fkey" FOREIGN KEY ("cashier_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sales"
+      ADD CONSTRAINT "pos_sales_refund_of_fkey" FOREIGN KEY ("refund_of") REFERENCES "public"."pos_sales"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sales"
+      ADD CONSTRAINT "pos_sales_register_id_fkey" FOREIGN KEY ("register_id") REFERENCES "public"."pos_registers"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sales"
+      ADD CONSTRAINT "pos_sales_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."pos_sessions"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sessions"
+      ADD CONSTRAINT "pos_sessions_cashier_id_fkey" FOREIGN KEY ("cashier_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pos_sessions"
+      ADD CONSTRAINT "pos_sessions_register_id_fkey" FOREIGN KEY ("register_id") REFERENCES "public"."pos_registers"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pricelist_items"
+      ADD CONSTRAINT "pricelist_items_pricelist_id_fkey" FOREIGN KEY ("pricelist_id") REFERENCES "public"."pricelists"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pricelist_items"
+      ADD CONSTRAINT "pricelist_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pricelists"
+      ADD CONSTRAINT "pricelists_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."pricelists"
+      ADD CONSTRAINT "pricelists_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."procurement_suggestions"
+      ADD CONSTRAINT "procurement_suggestions_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."procurement_suggestions"
+      ADD CONSTRAINT "procurement_suggestions_preferred_vendor_id_fkey" FOREIGN KEY ("preferred_vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."procurement_suggestions"
+      ADD CONSTRAINT "procurement_suggestions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."product_stock"
+      ADD CONSTRAINT "product_stock_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."products"
+      ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."product_categories"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."products"
+      ADD CONSTRAINT "products_pos_category_id_fkey" FOREIGN KEY ("pos_category_id") REFERENCES "public"."product_categories"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."profiles"
+      ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_members"
+      ADD CONSTRAINT "project_members_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_members"
+      ADD CONSTRAINT "project_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_members"
+      ADD CONSTRAINT "project_members_user_id_profiles_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_tasks"
+      ADD CONSTRAINT "project_tasks_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_tasks"
+      ADD CONSTRAINT "project_tasks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."project_tasks"
+      ADD CONSTRAINT "project_tasks_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."projects"
+      ADD CONSTRAINT "projects_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_order_lines"
+      ADD CONSTRAINT "purchase_order_lines_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_order_lines"
+      ADD CONSTRAINT "purchase_order_lines_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "public"."purchase_orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_orders"
+      ADD CONSTRAINT "purchase_orders_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."purchase_orders"
+      ADD CONSTRAINT "purchase_orders_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_items"
+      ADD CONSTRAINT "quote_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_items"
+      ADD CONSTRAINT "quote_items_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_signatures"
+      ADD CONSTRAINT "quote_signatures_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_templates"
+      ADD CONSTRAINT "quote_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_versions"
+      ADD CONSTRAINT "quote_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quote_versions"
+      ADD CONSTRAINT "quote_versions_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_approval_request_id_fkey" FOREIGN KEY ("approval_request_id") REFERENCES "public"."approval_requests"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."quotes"
+      ADD CONSTRAINT "quotes_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."quote_templates"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reconciliation_matches"
+      ADD CONSTRAINT "reconciliation_matches_bank_transaction_id_fkey" FOREIGN KEY ("bank_transaction_id") REFERENCES "public"."bank_transactions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reconciliation_matches"
+      ADD CONSTRAINT "reconciliation_matches_reconciliation_id_fkey" FOREIGN KEY ("reconciliation_id") REFERENCES "public"."payment_reconciliations"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reorder_rules"
+      ADD CONSTRAINT "reorder_rules_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reorder_rules"
+      ADD CONSTRAINT "reorder_rules_preferred_vendor_id_fkey" FOREIGN KEY ("preferred_vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."reorder_rules"
+      ADD CONSTRAINT "reorder_rules_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."return_items"
+      ADD CONSTRAINT "return_items_order_item_id_fkey" FOREIGN KEY ("order_item_id") REFERENCES "public"."order_items"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."return_items"
+      ADD CONSTRAINT "return_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."return_items"
+      ADD CONSTRAINT "return_items_return_id_fkey" FOREIGN KEY ("return_id") REFERENCES "public"."returns"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."returns"
+      ADD CONSTRAINT "returns_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_bids"
+      ADD CONSTRAINT "rfq_bids_rfq_id_fkey" FOREIGN KEY ("rfq_id") REFERENCES "public"."rfqs"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_bids"
+      ADD CONSTRAINT "rfq_bids_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_lines"
+      ADD CONSTRAINT "rfq_lines_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfq_lines"
+      ADD CONSTRAINT "rfq_lines_rfq_id_fkey" FOREIGN KEY ("rfq_id") REFERENCES "public"."rfqs"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfqs"
+      ADD CONSTRAINT "rfqs_awarded_po_id_fkey" FOREIGN KEY ("awarded_po_id") REFERENCES "public"."purchase_orders"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfqs"
+      ADD CONSTRAINT "rfqs_awarded_vendor_id_fkey" FOREIGN KEY ("awarded_vendor_id") REFERENCES "public"."vendors"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."rfqs"
+      ADD CONSTRAINT "rfqs_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."river_posts"
+      ADD CONSTRAINT "river_posts_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."river_posts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."river_reactions"
+      ADD CONSTRAINT "river_reactions_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."river_posts"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."sales_intelligence_profiles"
+      ADD CONSTRAINT "sales_intelligence_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_order_lines"
+      ADD CONSTRAINT "service_order_lines_service_order_id_fkey" FOREIGN KEY ("service_order_id") REFERENCES "public"."service_orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_orders"
+      ADD CONSTRAINT "service_orders_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_orders"
+      ADD CONSTRAINT "service_orders_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_visits"
+      ADD CONSTRAINT "service_visits_service_order_id_fkey" FOREIGN KEY ("service_order_id") REFERENCES "public"."service_orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."service_visits"
+      ADD CONSTRAINT "service_visits_technician_id_fkey" FOREIGN KEY ("technician_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."shipments"
+      ADD CONSTRAINT "shipments_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."carriers"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."shipments"
+      ADD CONSTRAINT "shipments_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."site_settings"
+      ADD CONSTRAINT "site_settings_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."sla_violations"
+      ADD CONSTRAINT "sla_violations_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "public"."sla_policies"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_locations"
+      ADD CONSTRAINT "stock_locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."stock_locations"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_lots"
+      ADD CONSTRAINT "stock_lots_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_moves"
+      ADD CONSTRAINT "stock_moves_from_location_id_fkey" FOREIGN KEY ("from_location_id") REFERENCES "public"."stock_locations"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_moves"
+      ADD CONSTRAINT "stock_moves_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_moves"
+      ADD CONSTRAINT "stock_moves_mo_id_fkey" FOREIGN KEY ("mo_id") REFERENCES "public"."manufacturing_orders"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_moves"
+      ADD CONSTRAINT "stock_moves_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_moves"
+      ADD CONSTRAINT "stock_moves_to_location_id_fkey" FOREIGN KEY ("to_location_id") REFERENCES "public"."stock_locations"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_quants"
+      ADD CONSTRAINT "stock_quants_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_quants"
+      ADD CONSTRAINT "stock_quants_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_quants"
+      ADD CONSTRAINT "stock_quants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_reservations"
+      ADD CONSTRAINT "stock_reservations_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."stock_locations"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_reservations"
+      ADD CONSTRAINT "stock_reservations_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "public"."stock_lots"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."stock_reservations"
+      ADD CONSTRAINT "stock_reservations_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_churn_reasons"
+      ADD CONSTRAINT "subscription_churn_reasons_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_events"
+      ADD CONSTRAINT "subscription_events_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_winback_sends"
+      ADD CONSTRAINT "subscription_winback_sends_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."subscription_winback_campaigns"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscription_winback_sends"
+      ADD CONSTRAINT "subscription_winback_sends_subscription_id_fkey" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscriptions"
+      ADD CONSTRAINT "subscriptions_last_invoice_id_fkey" FOREIGN KEY ("last_invoice_id") REFERENCES "public"."invoices"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscriptions"
+      ADD CONSTRAINT "subscriptions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."subscriptions"
+      ADD CONSTRAINT "subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_agents"
+      ADD CONSTRAINT "support_agents_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_escalations"
+      ADD CONSTRAINT "support_escalations_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."chat_conversations"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_escalations"
+      ADD CONSTRAINT "support_escalations_form_submission_id_fkey" FOREIGN KEY ("form_submission_id") REFERENCES "public"."form_submissions"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."support_escalations"
+      ADD CONSTRAINT "support_escalations_resolved_by_fkey" FOREIGN KEY ("resolved_by") REFERENCES "public"."profiles"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_campaigns"
+      ADD CONSTRAINT "survey_campaigns_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."survey_templates"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_responses"
+      ADD CONSTRAINT "survey_responses_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."survey_campaigns"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_responses"
+      ADD CONSTRAINT "survey_responses_send_id_fkey" FOREIGN KEY ("send_id") REFERENCES "public"."survey_sends"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_responses"
+      ADD CONSTRAINT "survey_responses_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."survey_templates"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."survey_sends"
+      ADD CONSTRAINT "survey_sends_campaign_id_fkey" FOREIGN KEY ("campaign_id") REFERENCES "public"."survey_campaigns"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_code_grids"
+      ADD CONSTRAINT "tax_code_grids_tax_code_id_fkey" FOREIGN KEY ("tax_code_id") REFERENCES "public"."tax_codes"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tax_code_grids"
+      ADD CONSTRAINT "tax_code_grids_tax_grid_id_fkey" FOREIGN KEY ("tax_grid_id") REFERENCES "public"."tax_grids"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."ticket_comments"
+      ADD CONSTRAINT "ticket_comments_ticket_id_fkey" FOREIGN KEY ("ticket_id") REFERENCES "public"."tickets"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tickets"
+      ADD CONSTRAINT "tickets_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."tickets"
+      ADD CONSTRAINT "tickets_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."time_entries"
+      ADD CONSTRAINT "time_entries_employee_id_fkey" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."time_entries"
+      ADD CONSTRAINT "time_entries_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."time_entries"
+      ADD CONSTRAINT "time_entries_task_id_fkey" FOREIGN KEY ("task_id") REFERENCES "public"."project_tasks"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."user_roles"
+      ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_invoices"
+      ADD CONSTRAINT "vendor_invoices_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_invoices"
+      ADD CONSTRAINT "vendor_invoices_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_invoices"
+      ADD CONSTRAINT "vendor_invoices_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "public"."purchase_orders"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_invoices"
+      ADD CONSTRAINT "vendor_invoices_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE RESTRICT;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_products"
+      ADD CONSTRAINT "vendor_products_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendor_products"
+      ADD CONSTRAINT "vendor_products_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendors"
+      ADD CONSTRAINT "vendors_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."vendors"
+      ADD CONSTRAINT "vendors_last_used_template_id_fkey" FOREIGN KEY ("last_used_template_id") REFERENCES "public"."accounting_templates"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webhook_logs"
+      ADD CONSTRAINT "webhook_logs_webhook_id_fkey" FOREIGN KEY ("webhook_id") REFERENCES "public"."webhooks"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webhooks"
+      ADD CONSTRAINT "webhooks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webinar_registrations"
+      ADD CONSTRAINT "webinar_registrations_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webinar_registrations"
+      ADD CONSTRAINT "webinar_registrations_webinar_id_fkey" FOREIGN KEY ("webinar_id") REFERENCES "public"."webinars"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."webinars"
+      ADD CONSTRAINT "webinars_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wiki_pages"
+      ADD CONSTRAINT "wiki_pages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wiki_pages"
+      ADD CONSTRAINT "wiki_pages_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wishlist_items"
+      ADD CONSTRAINT "wishlist_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+DO $idem$ BEGIN
+  ALTER TABLE ONLY "public"."wishlist_items"
+      ADD CONSTRAINT "wishlist_items_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
+
+
+
+DROP POLICY IF EXISTS "Admins can delete activity" ON "public"."a2a_activity";
 CREATE POLICY "Admins can delete activity" ON "public"."a2a_activity" FOR DELETE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Admins can delete agent activity" ON "public"."agent_activity";
 CREATE POLICY "Admins can delete agent activity" ON "public"."agent_activity" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete any conversation" ON "public"."chat_conversations";
 CREATE POLICY "Admins can delete any conversation" ON "public"."chat_conversations" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete any message" ON "public"."chat_messages";
 CREATE POLICY "Admins can delete any message" ON "public"."chat_messages" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete articles" ON "public"."kb_articles";
 CREATE POLICY "Admins can delete articles" ON "public"."kb_articles" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete bookings" ON "public"."bookings";
 CREATE POLICY "Admins can delete bookings" ON "public"."bookings" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete chat feedback" ON "public"."chat_feedback";
 CREATE POLICY "Admins can delete chat feedback" ON "public"."chat_feedback" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete chat messages" ON "public"."chat_messages";
 CREATE POLICY "Admins can delete chat messages" ON "public"."chat_messages" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete deal activities" ON "public"."deal_activities";
 CREATE POLICY "Admins can delete deal activities" ON "public"."deal_activities" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete documents" ON "public"."documents";
 CREATE POLICY "Admins can delete documents" ON "public"."documents" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete dunning sequences" ON "public"."dunning_sequences";
 CREATE POLICY "Admins can delete dunning sequences" ON "public"."dunning_sequences" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete employee documents" ON "public"."employee_documents";
 CREATE POLICY "Admins can delete employee documents" ON "public"."employee_documents" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete employees" ON "public"."employees";
 CREATE POLICY "Admins can delete employees" ON "public"."employees" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete form submissions" ON "public"."form_submissions";
 CREATE POLICY "Admins can delete form submissions" ON "public"."form_submissions" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete global blocks" ON "public"."global_blocks";
 CREATE POLICY "Admins can delete global blocks" ON "public"."global_blocks" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete leave requests" ON "public"."leave_requests";
 CREATE POLICY "Admins can delete leave requests" ON "public"."leave_requests" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete onboarding checklists" ON "public"."onboarding_checklists";
 CREATE POLICY "Admins can delete onboarding checklists" ON "public"."onboarding_checklists" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete order items" ON "public"."order_items";
 CREATE POLICY "Admins can delete order items" ON "public"."order_items" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete orders" ON "public"."orders";
 CREATE POLICY "Admins can delete orders" ON "public"."orders" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete page views" ON "public"."page_views";
 CREATE POLICY "Admins can delete page views" ON "public"."page_views" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete pages" ON "public"."pages";
 CREATE POLICY "Admins can delete pages" ON "public"."pages" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete posts" ON "public"."blog_posts";
 CREATE POLICY "Admins can delete posts" ON "public"."blog_posts" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can delete subscribers" ON "public"."newsletter_subscribers";
 CREATE POLICY "Admins can delete subscribers" ON "public"."newsletter_subscribers" FOR DELETE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert bootstrap runs" ON "public"."bootstrap_runs";
 CREATE POLICY "Admins can insert bootstrap runs" ON "public"."bootstrap_runs" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert documents" ON "public"."documents";
 CREATE POLICY "Admins can insert documents" ON "public"."documents" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert dunning actions" ON "public"."dunning_actions";
 CREATE POLICY "Admins can insert dunning actions" ON "public"."dunning_actions" FOR INSERT WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert dunning sequences" ON "public"."dunning_sequences";
 CREATE POLICY "Admins can insert dunning sequences" ON "public"."dunning_sequences" FOR INSERT WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert employee documents" ON "public"."employee_documents";
 CREATE POLICY "Admins can insert employee documents" ON "public"."employee_documents" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert employees" ON "public"."employees";
 CREATE POLICY "Admins can insert employees" ON "public"."employees" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert global blocks" ON "public"."global_blocks";
 CREATE POLICY "Admins can insert global blocks" ON "public"."global_blocks" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert leave requests" ON "public"."leave_requests";
 CREATE POLICY "Admins can insert leave requests" ON "public"."leave_requests" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert onboarding checklists" ON "public"."onboarding_checklists";
 CREATE POLICY "Admins can insert onboarding checklists" ON "public"."onboarding_checklists" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can insert site settings" ON "public"."site_settings";
 CREATE POLICY "Admins can insert site settings" ON "public"."site_settings" FOR INSERT WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage accounting templates" ON "public"."accounting_templates";
 CREATE POLICY "Admins can manage accounting templates" ON "public"."accounting_templates" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage ad campaigns" ON "public"."ad_campaigns";
 CREATE POLICY "Admins can manage ad campaigns" ON "public"."ad_campaigns" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage ad creatives" ON "public"."ad_creatives";
 CREATE POLICY "Admins can manage ad creatives" ON "public"."ad_creatives" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage agent memory" ON "public"."agent_memory";
 CREATE POLICY "Admins can manage agent memory" ON "public"."agent_memory" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage all agents" ON "public"."support_agents";
 CREATE POLICY "Admins can manage all agents" ON "public"."support_agents" USING ((EXISTS ( SELECT 1
    FROM "public"."user_roles"
   WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"public"."app_role")))));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage all time entries" ON "public"."time_entries";
 CREATE POLICY "Admins can manage all time entries" ON "public"."time_entries" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage api_keys" ON "public"."api_keys";
 CREATE POLICY "Admins can manage api_keys" ON "public"."api_keys" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage automations" ON "public"."agent_automations";
 CREATE POLICY "Admins can manage automations" ON "public"."agent_automations" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage availability" ON "public"."booking_availability";
 CREATE POLICY "Admins can manage availability" ON "public"."booking_availability" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage back in stock requests" ON "public"."back_in_stock_requests";
 CREATE POLICY "Admins can manage back in stock requests" ON "public"."back_in_stock_requests" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage blocked dates" ON "public"."booking_blocked_dates";
 CREATE POLICY "Admins can manage blocked dates" ON "public"."booking_blocked_dates" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage briefings" ON "public"."flowpilot_briefings";
 CREATE POLICY "Admins can manage briefings" ON "public"."flowpilot_briefings" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage categories" ON "public"."blog_categories";
 CREATE POLICY "Admins can manage categories" ON "public"."blog_categories" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage categories" ON "public"."kb_categories";
 CREATE POLICY "Admins can manage categories" ON "public"."kb_categories" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage categories" ON "public"."product_categories";
 CREATE POLICY "Admins can manage categories" ON "public"."product_categories" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage chart of accounts" ON "public"."chart_of_accounts";
 CREATE POLICY "Admins can manage chart of accounts" ON "public"."chart_of_accounts" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage companies" ON "public"."companies";
 CREATE POLICY "Admins can manage companies" ON "public"."companies" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage consultant profiles" ON "public"."consultant_profiles";
 CREATE POLICY "Admins can manage consultant profiles" ON "public"."consultant_profiles" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage deals" ON "public"."deals";
 CREATE POLICY "Admins can manage deals" ON "public"."deals" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage defaults" ON "public"."role_module_access_defaults";
 CREATE POLICY "Admins can manage defaults" ON "public"."role_module_access_defaults" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage docs pages" ON "public"."docs_pages";
 CREATE POLICY "Admins can manage docs pages" ON "public"."docs_pages" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage handbook chapters" ON "public"."handbook_chapters";
 CREATE POLICY "Admins can manage handbook chapters" ON "public"."handbook_chapters" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage installed_template" ON "public"."installed_template";
 CREATE POLICY "Admins can manage installed_template" ON "public"."installed_template" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage invoices" ON "public"."invoices";
 CREATE POLICY "Admins can manage invoices" ON "public"."invoices" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage journal entries" ON "public"."journal_entries";
 CREATE POLICY "Admins can manage journal entries" ON "public"."journal_entries" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage journal entry lines" ON "public"."journal_entry_lines";
 CREATE POLICY "Admins can manage journal entry lines" ON "public"."journal_entry_lines" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage leads" ON "public"."leads";
 CREATE POLICY "Admins can manage leads" ON "public"."leads" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage newsletters" ON "public"."newsletters";
 CREATE POLICY "Admins can manage newsletters" ON "public"."newsletters" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage objective activities" ON "public"."agent_objective_activities";
 CREATE POLICY "Admins can manage objective activities" ON "public"."agent_objective_activities" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage objectives" ON "public"."agent_objectives";
 CREATE POLICY "Admins can manage objectives" ON "public"."agent_objectives" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage opening balances" ON "public"."opening_balances";
 CREATE POLICY "Admins can manage opening balances" ON "public"."opening_balances" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage peers" ON "public"."a2a_peers";
 CREATE POLICY "Admins can manage peers" ON "public"."a2a_peers" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage products" ON "public"."products";
 CREATE POLICY "Admins can manage products" ON "public"."products" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage projects" ON "public"."projects";
 CREATE POLICY "Admins can manage projects" ON "public"."projects" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage quotes" ON "public"."quotes";
 CREATE POLICY "Admins can manage quotes" ON "public"."quotes" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage registrations" ON "public"."webinar_registrations";
 CREATE POLICY "Admins can manage registrations" ON "public"."webinar_registrations" USING ((EXISTS ( SELECT 1
    FROM "public"."user_roles"
   WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = ANY (ARRAY['admin'::"public"."app_role", 'approver'::"public"."app_role"]))))));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage roles" ON "public"."user_roles";
 CREATE POLICY "Admins can manage roles" ON "public"."user_roles" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage sales intelligence profiles" ON "public"."sales_intelligence_profiles";
 CREATE POLICY "Admins can manage sales intelligence profiles" ON "public"."sales_intelligence_profiles" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage services" ON "public"."booking_services";
 CREATE POLICY "Admins can manage services" ON "public"."booking_services" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage skill packs" ON "public"."agent_skill_packs";
 CREATE POLICY "Admins can manage skill packs" ON "public"."agent_skill_packs" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage skills" ON "public"."agent_skills";
 CREATE POLICY "Admins can manage skills" ON "public"."agent_skills" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage sla_policies" ON "public"."sla_policies";
 CREATE POLICY "Admins can manage sla_policies" ON "public"."sla_policies" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage sla_violations" ON "public"."sla_violations";
 CREATE POLICY "Admins can manage sla_violations" ON "public"."sla_violations" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage subscription events" ON "public"."subscription_events";
 CREATE POLICY "Admins can manage subscription events" ON "public"."subscription_events" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage tags" ON "public"."blog_tags";
 CREATE POLICY "Admins can manage tags" ON "public"."blog_tags" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage ticket comments" ON "public"."ticket_comments";
 CREATE POLICY "Admins can manage ticket comments" ON "public"."ticket_comments" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage tickets" ON "public"."tickets";
 CREATE POLICY "Admins can manage tickets" ON "public"."tickets" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage vendor products" ON "public"."vendor_products";
 CREATE POLICY "Admins can manage vendor products" ON "public"."vendor_products" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage webhooks" ON "public"."webhooks";
 CREATE POLICY "Admins can manage webhooks" ON "public"."webhooks" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage webinars" ON "public"."webinars";
 CREATE POLICY "Admins can manage webinars" ON "public"."webinars" USING ((EXISTS ( SELECT 1
    FROM "public"."user_roles"
   WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = ANY (ARRAY['admin'::"public"."app_role", 'approver'::"public"."app_role"]))))));
 
 
 
+DROP POLICY IF EXISTS "Admins can manage workflows" ON "public"."agent_workflows";
 CREATE POLICY "Admins can manage workflows" ON "public"."agent_workflows" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can read ai_usage_logs" ON "public"."ai_usage_logs";
 CREATE POLICY "Admins can read ai_usage_logs" ON "public"."ai_usage_logs" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can read peers" ON "public"."a2a_peers";
 CREATE POLICY "Admins can read peers" ON "public"."a2a_peers" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update agent activity" ON "public"."agent_activity";
 CREATE POLICY "Admins can update agent activity" ON "public"."agent_activity" FOR UPDATE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update any conversation" ON "public"."chat_conversations";
 CREATE POLICY "Admins can update any conversation" ON "public"."chat_conversations" FOR UPDATE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update bookings" ON "public"."bookings";
 CREATE POLICY "Admins can update bookings" ON "public"."bookings" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Admins can update documents" ON "public"."documents";
 CREATE POLICY "Admins can update documents" ON "public"."documents" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update dunning sequences" ON "public"."dunning_sequences";
 CREATE POLICY "Admins can update dunning sequences" ON "public"."dunning_sequences" FOR UPDATE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update employees" ON "public"."employees";
 CREATE POLICY "Admins can update employees" ON "public"."employees" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update global blocks" ON "public"."global_blocks";
 CREATE POLICY "Admins can update global blocks" ON "public"."global_blocks" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update leave requests" ON "public"."leave_requests";
 CREATE POLICY "Admins can update leave requests" ON "public"."leave_requests" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update onboarding checklists" ON "public"."onboarding_checklists";
 CREATE POLICY "Admins can update onboarding checklists" ON "public"."onboarding_checklists" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update orders" ON "public"."orders";
 CREATE POLICY "Admins can update orders" ON "public"."orders" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update quotes" ON "public"."quotes";
 CREATE POLICY "Admins can update quotes" ON "public"."quotes" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can update site settings" ON "public"."site_settings";
 CREATE POLICY "Admins can update site settings" ON "public"."site_settings" FOR UPDATE USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view activity" ON "public"."a2a_activity";
 CREATE POLICY "Admins can view activity" ON "public"."a2a_activity" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view agent activity" ON "public"."agent_activity";
 CREATE POLICY "Admins can view agent activity" ON "public"."agent_activity" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view all agent events" ON "public"."agent_events";
 CREATE POLICY "Admins can view all agent events" ON "public"."agent_events" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view all bookings" ON "public"."bookings";
 CREATE POLICY "Admins can view all bookings" ON "public"."bookings" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Admins can view all conversations" ON "public"."chat_conversations";
 CREATE POLICY "Admins can view all conversations" ON "public"."chat_conversations" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view all messages" ON "public"."chat_messages";
 CREATE POLICY "Admins can view all messages" ON "public"."chat_messages" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view auth events" ON "public"."auth_events";
 CREATE POLICY "Admins can view auth events" ON "public"."auth_events" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view bootstrap runs" ON "public"."bootstrap_runs";
 CREATE POLICY "Admins can view bootstrap runs" ON "public"."bootstrap_runs" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view checkin log" ON "public"."consultant_checkin_log";
 CREATE POLICY "Admins can view checkin log" ON "public"."consultant_checkin_log" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view dunning actions" ON "public"."dunning_actions";
 CREATE POLICY "Admins can view dunning actions" ON "public"."dunning_actions" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view dunning sequences" ON "public"."dunning_sequences";
 CREATE POLICY "Admins can view dunning sequences" ON "public"."dunning_sequences" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view email opens" ON "public"."newsletter_email_opens";
 CREATE POLICY "Admins can view email opens" ON "public"."newsletter_email_opens" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view feedback" ON "public"."chat_feedback";
 CREATE POLICY "Admins can view feedback" ON "public"."chat_feedback" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."user_roles"
   WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"public"."app_role")))));
 
 
 
+DROP POLICY IF EXISTS "Admins can view form submissions" ON "public"."form_submissions";
 CREATE POLICY "Admins can view form submissions" ON "public"."form_submissions" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view link clicks" ON "public"."newsletter_link_clicks";
 CREATE POLICY "Admins can view link clicks" ON "public"."newsletter_link_clicks" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view order items" ON "public"."order_items";
 CREATE POLICY "Admins can view order items" ON "public"."order_items" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view orders" ON "public"."orders";
 CREATE POLICY "Admins can view orders" ON "public"."orders" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view page views" ON "public"."page_views";
 CREATE POLICY "Admins can view page views" ON "public"."page_views" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view subscribers" ON "public"."newsletter_subscribers";
 CREATE POLICY "Admins can view subscribers" ON "public"."newsletter_subscribers" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view webhook logs" ON "public"."webhook_logs";
 CREATE POLICY "Admins can view webhook logs" ON "public"."webhook_logs" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins delete approval requests" ON "public"."approval_requests";
 CREATE POLICY "Admins delete approval requests" ON "public"."approval_requests" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins insert a2a activity" ON "public"."a2a_activity";
 CREATE POLICY "Admins insert a2a activity" ON "public"."a2a_activity" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins insert ad campaigns" ON "public"."ad_campaigns";
 CREATE POLICY "Admins insert ad campaigns" ON "public"."ad_campaigns" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins insert ad creatives" ON "public"."ad_creatives";
 CREATE POLICY "Admins insert ad creatives" ON "public"."ad_creatives" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins insert agent memory" ON "public"."agent_memory";
 CREATE POLICY "Admins insert agent memory" ON "public"."agent_memory" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins insert objective activities" ON "public"."agent_objective_activities";
 CREATE POLICY "Admins insert objective activities" ON "public"."agent_objective_activities" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins insert objectives" ON "public"."agent_objectives";
 CREATE POLICY "Admins insert objectives" ON "public"."agent_objectives" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage accounting periods" ON "public"."accounting_periods";
 CREATE POLICY "Admins manage accounting periods" ON "public"."accounting_periods" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage activities" ON "public"."activities";
 CREATE POLICY "Admins manage activities" ON "public"."activities" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage addresses" ON "public"."addresses";
 CREATE POLICY "Admins manage addresses" ON "public"."addresses" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage agent locks" ON "public"."agent_locks";
 CREATE POLICY "Admins manage agent locks" ON "public"."agent_locks" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage agent skill packs" ON "public"."agent_skill_packs";
 CREATE POLICY "Admins manage agent skill packs" ON "public"."agent_skill_packs" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage agent workflows" ON "public"."agent_workflows";
 CREATE POLICY "Admins manage agent workflows" ON "public"."agent_workflows" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage allocations" ON "public"."leave_allocations";
 CREATE POLICY "Admins manage allocations" ON "public"."leave_allocations" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage analytic_accounts" ON "public"."analytic_accounts";
 CREATE POLICY "Admins manage analytic_accounts" ON "public"."analytic_accounts" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage analytic_lines" ON "public"."analytic_lines";
 CREATE POLICY "Admins manage analytic_lines" ON "public"."analytic_lines" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage applications" ON "public"."applications";
 CREATE POLICY "Admins manage applications" ON "public"."applications" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage approval rules" ON "public"."approval_rules";
 CREATE POLICY "Admins manage approval rules" ON "public"."approval_rules" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage bank_accounts" ON "public"."bank_accounts";
 CREATE POLICY "Admins manage bank_accounts" ON "public"."bank_accounts" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage candidate notes" ON "public"."candidate_notes";
 CREATE POLICY "Admins manage candidate notes" ON "public"."candidate_notes" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage carriers" ON "public"."carriers";
 CREATE POLICY "Admins manage carriers" ON "public"."carriers" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Admins manage contract templates" ON "public"."contract_templates";
 CREATE POLICY "Admins manage contract templates" ON "public"."contract_templates" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage contract templates" ON "public"."employment_contract_templates";
 CREATE POLICY "Admins manage contract templates" ON "public"."employment_contract_templates" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage employment contracts" ON "public"."employment_contracts";
 CREATE POLICY "Admins manage employment contracts" ON "public"."employment_contracts" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage expense payments" ON "public"."expense_payments";
 CREATE POLICY "Admins manage expense payments" ON "public"."expense_payments" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage federation connections" ON "public"."federation_connections";
 CREATE POLICY "Admins manage federation connections" ON "public"."federation_connections" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage job postings" ON "public"."job_postings";
 CREATE POLICY "Admins manage job postings" ON "public"."job_postings" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage journals" ON "public"."journals";
 CREATE POLICY "Admins manage journals" ON "public"."journals" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage locations" ON "public"."stock_locations";
 CREATE POLICY "Admins manage locations" ON "public"."stock_locations" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage onboarding templates" ON "public"."onboarding_templates";
 CREATE POLICY "Admins manage onboarding templates" ON "public"."onboarding_templates" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage payroll export lines" ON "public"."payroll_export_lines";
 CREATE POLICY "Admins manage payroll export lines" ON "public"."payroll_export_lines" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage payroll exports" ON "public"."payroll_exports";
 CREATE POLICY "Admins manage payroll exports" ON "public"."payroll_exports" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage payroll_components" ON "public"."payroll_components";
 CREATE POLICY "Admins manage payroll_components" ON "public"."payroll_components" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage payroll_lines" ON "public"."payroll_lines";
 CREATE POLICY "Admins manage payroll_lines" ON "public"."payroll_lines" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage payroll_runs" ON "public"."payroll_runs";
 CREATE POLICY "Admins manage payroll_runs" ON "public"."payroll_runs" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage peer invitations" ON "public"."peer_invitations";
 CREATE POLICY "Admins manage peer invitations" ON "public"."peer_invitations" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage pending ops" ON "public"."pending_operations";
 CREATE POLICY "Admins manage pending ops" ON "public"."pending_operations" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage picking_lines" ON "public"."picking_lines";
 CREATE POLICY "Admins manage picking_lines" ON "public"."picking_lines" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage picking_orders" ON "public"."picking_orders";
 CREATE POLICY "Admins manage picking_orders" ON "public"."picking_orders" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage pricelist_items" ON "public"."pricelist_items";
 CREATE POLICY "Admins manage pricelist_items" ON "public"."pricelist_items" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Admins manage pricelists" ON "public"."pricelists";
 CREATE POLICY "Admins manage pricelists" ON "public"."pricelists" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Admins manage project members" ON "public"."project_members";
 CREATE POLICY "Admins manage project members" ON "public"."project_members" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage reorder rules" ON "public"."reorder_rules";
 CREATE POLICY "Admins manage reorder rules" ON "public"."reorder_rules" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage role_module_access" ON "public"."role_module_access";
 CREATE POLICY "Admins manage role_module_access" ON "public"."role_module_access" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage timesheet period locks" ON "public"."timesheet_period_locks";
 CREATE POLICY "Admins manage timesheet period locks" ON "public"."timesheet_period_locks" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage tolerance" ON "public"."tolerance_policies";
 CREATE POLICY "Admins manage tolerance" ON "public"."tolerance_policies" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'accounting'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'purchasing'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'accounting'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'purchasing'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Admins manage vacation policies" ON "public"."vacation_policies";
 CREATE POLICY "Admins manage vacation policies" ON "public"."vacation_policies" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins manage vendor invoices" ON "public"."vendor_invoices";
 CREATE POLICY "Admins manage vendor invoices" ON "public"."vendor_invoices" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins read audit trail" ON "public"."agent_audit_trail";
 CREATE POLICY "Admins read audit trail" ON "public"."agent_audit_trail" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins read corrections" ON "public"."accounting_corrections";
 CREATE POLICY "Admins read corrections" ON "public"."accounting_corrections" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins read federation connections" ON "public"."federation_connections";
 CREATE POLICY "Admins read federation connections" ON "public"."federation_connections" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins read peer invitations" ON "public"."peer_invitations";
 CREATE POLICY "Admins read peer invitations" ON "public"."peer_invitations" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins read platform test runs" ON "public"."platform_test_runs";
 CREATE POLICY "Admins read platform test runs" ON "public"."platform_test_runs" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins read stage history" ON "public"."application_stages";
 CREATE POLICY "Admins read stage history" ON "public"."application_stages" FOR SELECT USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins update a2a activity" ON "public"."a2a_activity";
 CREATE POLICY "Admins update a2a activity" ON "public"."a2a_activity" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins update ad campaigns" ON "public"."ad_campaigns";
 CREATE POLICY "Admins update ad campaigns" ON "public"."ad_campaigns" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins update ad creatives" ON "public"."ad_creatives";
 CREATE POLICY "Admins update ad creatives" ON "public"."ad_creatives" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins update agent memory" ON "public"."agent_memory";
 CREATE POLICY "Admins update agent memory" ON "public"."agent_memory" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins update objective activities" ON "public"."agent_objective_activities";
 CREATE POLICY "Admins update objective activities" ON "public"."agent_objective_activities" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins update objectives" ON "public"."agent_objectives";
 CREATE POLICY "Admins update objectives" ON "public"."agent_objectives" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins write corrections" ON "public"."accounting_corrections";
 CREATE POLICY "Admins write corrections" ON "public"."accounting_corrections" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Admins write stage history" ON "public"."application_stages";
 CREATE POLICY "Admins write stage history" ON "public"."application_stages" FOR INSERT WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Agents can update escalations" ON "public"."support_escalations";
 CREATE POLICY "Agents can update escalations" ON "public"."support_escalations" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."support_agents"
   WHERE ("support_agents"."user_id" = "auth"."uid"()))));
 
 
 
+DROP POLICY IF EXISTS "All authenticated can view versions" ON "public"."page_versions";
 CREATE POLICY "All authenticated can view versions" ON "public"."page_versions" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "All authenticated users can view pages" ON "public"."pages";
 CREATE POLICY "All authenticated users can view pages" ON "public"."pages" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon insert on beta_test_exchanges" ON "public"."beta_test_exchanges";
 CREATE POLICY "Allow anon insert on beta_test_exchanges" ON "public"."beta_test_exchanges" FOR INSERT TO "anon" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon insert on beta_test_findings" ON "public"."beta_test_findings";
 CREATE POLICY "Allow anon insert on beta_test_findings" ON "public"."beta_test_findings" FOR INSERT TO "anon" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon insert on beta_test_sessions" ON "public"."beta_test_sessions";
 CREATE POLICY "Allow anon insert on beta_test_sessions" ON "public"."beta_test_sessions" FOR INSERT TO "anon" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon select on beta_test_exchanges" ON "public"."beta_test_exchanges";
 CREATE POLICY "Allow anon select on beta_test_exchanges" ON "public"."beta_test_exchanges" FOR SELECT TO "anon" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon select on beta_test_findings" ON "public"."beta_test_findings";
 CREATE POLICY "Allow anon select on beta_test_findings" ON "public"."beta_test_findings" FOR SELECT TO "anon" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon select on beta_test_sessions" ON "public"."beta_test_sessions";
 CREATE POLICY "Allow anon select on beta_test_sessions" ON "public"."beta_test_sessions" FOR SELECT TO "anon" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow anon update on beta_test_sessions" ON "public"."beta_test_sessions";
 CREATE POLICY "Allow anon update on beta_test_sessions" ON "public"."beta_test_sessions" FOR UPDATE TO "anon" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated delete on beta_test_findings" ON "public"."beta_test_findings";
 CREATE POLICY "Allow authenticated delete on beta_test_findings" ON "public"."beta_test_findings" FOR DELETE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated insert on beta_test_exchanges" ON "public"."beta_test_exchanges";
 CREATE POLICY "Allow authenticated insert on beta_test_exchanges" ON "public"."beta_test_exchanges" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated insert on beta_test_findings" ON "public"."beta_test_findings";
 CREATE POLICY "Allow authenticated insert on beta_test_findings" ON "public"."beta_test_findings" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated insert on beta_test_sessions" ON "public"."beta_test_sessions";
 CREATE POLICY "Allow authenticated insert on beta_test_sessions" ON "public"."beta_test_sessions" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated read on beta_test_exchanges" ON "public"."beta_test_exchanges";
 CREATE POLICY "Allow authenticated read on beta_test_exchanges" ON "public"."beta_test_exchanges" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated read on beta_test_findings" ON "public"."beta_test_findings";
 CREATE POLICY "Allow authenticated read on beta_test_findings" ON "public"."beta_test_findings" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated read on beta_test_sessions" ON "public"."beta_test_sessions";
 CREATE POLICY "Allow authenticated read on beta_test_sessions" ON "public"."beta_test_sessions" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated update on beta_test_findings" ON "public"."beta_test_findings";
 CREATE POLICY "Allow authenticated update on beta_test_findings" ON "public"."beta_test_findings" FOR UPDATE TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Allow authenticated update on beta_test_sessions" ON "public"."beta_test_sessions";
 CREATE POLICY "Allow authenticated update on beta_test_sessions" ON "public"."beta_test_sessions" FOR UPDATE TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can create bookings" ON "public"."bookings";
 CREATE POLICY "Anyone can create bookings" ON "public"."bookings" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can create order items" ON "public"."order_items";
 CREATE POLICY "Anyone can create order items" ON "public"."order_items" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can create orders" ON "public"."orders";
 CREATE POLICY "Anyone can create orders" ON "public"."orders" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can insert page views" ON "public"."page_views";
 CREATE POLICY "Anyone can insert page views" ON "public"."page_views" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can register for webinars" ON "public"."webinar_registrations";
 CREATE POLICY "Anyone can register for webinars" ON "public"."webinar_registrations" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can request back in stock notifications" ON "public"."back_in_stock_requests";
 CREATE POLICY "Anyone can request back in stock notifications" ON "public"."back_in_stock_requests" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can submit feedback" ON "public"."chat_feedback";
 CREATE POLICY "Anyone can submit feedback" ON "public"."chat_feedback" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can submit forms" ON "public"."form_submissions";
 CREATE POLICY "Anyone can submit forms" ON "public"."form_submissions" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can subscribe" ON "public"."newsletter_subscribers";
 CREATE POLICY "Anyone can subscribe" ON "public"."newsletter_subscribers" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Anyone can view site settings" ON "public"."site_settings";
 CREATE POLICY "Anyone can view site settings" ON "public"."site_settings" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Approvers can insert companies" ON "public"."companies";
 CREATE POLICY "Approvers can insert companies" ON "public"."companies" FOR INSERT WITH CHECK (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can insert deals" ON "public"."deals";
 CREATE POLICY "Approvers can insert deals" ON "public"."deals" FOR INSERT WITH CHECK (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can manage bank_import_batches" ON "public"."bank_import_batches";
 CREATE POLICY "Approvers can manage bank_import_batches" ON "public"."bank_import_batches" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can manage bank_transactions" ON "public"."bank_transactions";
 CREATE POLICY "Approvers can manage bank_transactions" ON "public"."bank_transactions" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can manage reconciliation_matches" ON "public"."reconciliation_matches";
 CREATE POLICY "Approvers can manage reconciliation_matches" ON "public"."reconciliation_matches" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can update companies" ON "public"."companies";
 CREATE POLICY "Approvers can update companies" ON "public"."companies" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can update deals" ON "public"."deals";
 CREATE POLICY "Approvers can update deals" ON "public"."deals" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can update invoices" ON "public"."invoices";
 CREATE POLICY "Approvers can update invoices" ON "public"."invoices" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Approvers can update leads" ON "public"."leads";
 CREATE POLICY "Approvers can update leads" ON "public"."leads" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can update tickets" ON "public"."tickets";
 CREATE POLICY "Approvers can update tickets" ON "public"."tickets" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view and update companies" ON "public"."companies";
 CREATE POLICY "Approvers can view and update companies" ON "public"."companies" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view and update deals" ON "public"."deals";
 CREATE POLICY "Approvers can view and update deals" ON "public"."deals" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view and update leads" ON "public"."leads";
 CREATE POLICY "Approvers can view and update leads" ON "public"."leads" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view invoices" ON "public"."invoices";
 CREATE POLICY "Approvers can view invoices" ON "public"."invoices" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view products" ON "public"."products";
 CREATE POLICY "Approvers can view products" ON "public"."products" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view ticket comments" ON "public"."ticket_comments";
 CREATE POLICY "Approvers can view ticket comments" ON "public"."ticket_comments" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers can view tickets" ON "public"."tickets";
 CREATE POLICY "Approvers can view tickets" ON "public"."tickets" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Approvers insert decisions" ON "public"."approval_decisions";
 CREATE POLICY "Approvers insert decisions" ON "public"."approval_decisions" FOR INSERT TO "authenticated" WITH CHECK ((("decided_by" = "auth"."uid"()) AND ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), "decided_role"))));
 
 
 
+DROP POLICY IF EXISTS "Approvers update approval requests" ON "public"."approval_requests";
 CREATE POLICY "Approvers update approval requests" ON "public"."approval_requests" FOR UPDATE TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), "required_role") OR ("requested_by" = "auth"."uid"()))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), "required_role") OR ("requested_by" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Auth read own pending ops" ON "public"."pending_operations";
 CREATE POLICY "Auth read own pending ops" ON "public"."pending_operations" FOR SELECT TO "authenticated" USING ((("created_by_user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can create audit logs" ON "public"."audit_logs";
 CREATE POLICY "Authenticated can create audit logs" ON "public"."audit_logs" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can create deal activities" ON "public"."deal_activities";
 CREATE POLICY "Authenticated can create deal activities" ON "public"."deal_activities" FOR INSERT WITH CHECK (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can give feedback" ON "public"."feedback";
 CREATE POLICY "Authenticated can give feedback" ON "public"."feedback" FOR INSERT TO "authenticated" WITH CHECK ((("giver_user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can insert contract versions" ON "public"."contract_versions";
 CREATE POLICY "Authenticated can insert contract versions" ON "public"."contract_versions" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can manage post categories" ON "public"."blog_post_categories";
 CREATE POLICY "Authenticated can manage post categories" ON "public"."blog_post_categories" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."blog_posts" "p"
   WHERE (("p"."id" = "blog_post_categories"."post_id") AND (("p"."created_by" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))))));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can manage post tags" ON "public"."blog_post_tags";
 CREATE POLICY "Authenticated can manage post tags" ON "public"."blog_post_tags" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."blog_posts" "p"
   WHERE (("p"."id" = "blog_post_tags"."post_id") AND (("p"."created_by" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))))));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can read defaults" ON "public"."role_module_access_defaults";
 CREATE POLICY "Authenticated can read defaults" ON "public"."role_module_access_defaults" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can read journals" ON "public"."journals";
 CREATE POLICY "Authenticated can read journals" ON "public"."journals" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can read role_module_access" ON "public"."role_module_access";
 CREATE POLICY "Authenticated can read role_module_access" ON "public"."role_module_access" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can update deal activities" ON "public"."deal_activities";
 CREATE POLICY "Authenticated can update deal activities" ON "public"."deal_activities" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view BOM headers" ON "public"."bom_headers";
 CREATE POLICY "Authenticated can view BOM headers" ON "public"."bom_headers" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view BOM lines" ON "public"."bom_lines";
 CREATE POLICY "Authenticated can view BOM lines" ON "public"."bom_lines" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view MO components" ON "public"."mo_components";
 CREATE POLICY "Authenticated can view MO components" ON "public"."mo_components" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view MOs" ON "public"."manufacturing_orders";
 CREATE POLICY "Authenticated can view MOs" ON "public"."manufacturing_orders" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view ad campaigns" ON "public"."ad_campaigns";
 CREATE POLICY "Authenticated can view ad campaigns" ON "public"."ad_campaigns" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view ad creatives" ON "public"."ad_creatives";
 CREATE POLICY "Authenticated can view ad creatives" ON "public"."ad_creatives" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view agent memory" ON "public"."agent_memory";
 CREATE POLICY "Authenticated can view agent memory" ON "public"."agent_memory" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view all articles" ON "public"."kb_articles";
 CREATE POLICY "Authenticated can view all articles" ON "public"."kb_articles" FOR SELECT USING (("auth"."uid"() IS NOT NULL));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view all categories" ON "public"."kb_categories";
 CREATE POLICY "Authenticated can view all categories" ON "public"."kb_categories" FOR SELECT USING (("auth"."uid"() IS NOT NULL));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view all global blocks" ON "public"."global_blocks";
 CREATE POLICY "Authenticated can view all global blocks" ON "public"."global_blocks" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view all posts" ON "public"."blog_posts";
 CREATE POLICY "Authenticated can view all posts" ON "public"."blog_posts" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view automations" ON "public"."agent_automations";
 CREATE POLICY "Authenticated can view automations" ON "public"."agent_automations" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view company profiles" ON "public"."sales_intelligence_profiles";
 CREATE POLICY "Authenticated can view company profiles" ON "public"."sales_intelligence_profiles" FOR SELECT TO "authenticated" USING (("type" = 'company'::"text"));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view contract signatures" ON "public"."contract_signatures";
 CREATE POLICY "Authenticated can view contract signatures" ON "public"."contract_signatures" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view contract versions" ON "public"."contract_versions";
 CREATE POLICY "Authenticated can view contract versions" ON "public"."contract_versions" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view deal activities" ON "public"."deal_activities";
 CREATE POLICY "Authenticated can view deal activities" ON "public"."deal_activities" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view enabled skills" ON "public"."agent_skills";
 CREATE POLICY "Authenticated can view enabled skills" ON "public"."agent_skills" FOR SELECT TO "authenticated" USING (("enabled" = true));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view lead activities" ON "public"."lead_activities";
 CREATE POLICY "Authenticated can view lead activities" ON "public"."lead_activities" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view locations" ON "public"."stock_locations";
 CREATE POLICY "Authenticated can view locations" ON "public"."stock_locations" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view lots" ON "public"."stock_lots";
 CREATE POLICY "Authenticated can view lots" ON "public"."stock_lots" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view objective activities" ON "public"."agent_objective_activities";
 CREATE POLICY "Authenticated can view objective activities" ON "public"."agent_objective_activities" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view objectives" ON "public"."agent_objectives";
 CREATE POLICY "Authenticated can view objectives" ON "public"."agent_objectives" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view onboarding templates" ON "public"."onboarding_templates";
 CREATE POLICY "Authenticated can view onboarding templates" ON "public"."onboarding_templates" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view quants" ON "public"."stock_quants";
 CREATE POLICY "Authenticated can view quants" ON "public"."stock_quants" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view reorder rules" ON "public"."reorder_rules";
 CREATE POLICY "Authenticated can view reorder rules" ON "public"."reorder_rules" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view reservations" ON "public"."stock_reservations";
 CREATE POLICY "Authenticated can view reservations" ON "public"."stock_reservations" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated can view suggestions" ON "public"."procurement_suggestions";
 CREATE POLICY "Authenticated can view suggestions" ON "public"."procurement_suggestions" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated create approval requests" ON "public"."approval_requests";
 CREATE POLICY "Authenticated create approval requests" ON "public"."approval_requests" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() IS NOT NULL));
 
 
 
+DROP POLICY IF EXISTS "Authenticated read activities" ON "public"."activities";
 CREATE POLICY "Authenticated read activities" ON "public"."activities" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated read analytic_accounts" ON "public"."analytic_accounts";
 CREATE POLICY "Authenticated read analytic_accounts" ON "public"."analytic_accounts" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated read analytic_lines" ON "public"."analytic_lines";
 CREATE POLICY "Authenticated read analytic_lines" ON "public"."analytic_lines" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated read approval requests" ON "public"."approval_requests";
 CREATE POLICY "Authenticated read approval requests" ON "public"."approval_requests" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated read approval rules" ON "public"."approval_rules";
 CREATE POLICY "Authenticated read approval rules" ON "public"."approval_rules" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated read decisions" ON "public"."approval_decisions";
 CREATE POLICY "Authenticated read decisions" ON "public"."approval_decisions" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated read vacation policies" ON "public"."vacation_policies";
 CREATE POLICY "Authenticated read vacation policies" ON "public"."vacation_policies" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can create content proposals" ON "public"."content_proposals";
 CREATE POLICY "Authenticated users can create content proposals" ON "public"."content_proposals" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "created_by"));
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can create contract documents" ON "public"."contract_documents";
 CREATE POLICY "Authenticated users can create contract documents" ON "public"."contract_documents" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "uploaded_by"));
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can create contracts" ON "public"."contracts";
 CREATE POLICY "Authenticated users can create contracts" ON "public"."contracts" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "created_by"));
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can create tasks" ON "public"."project_tasks";
 CREATE POLICY "Authenticated users can create tasks" ON "public"."project_tasks" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can delete content proposals" ON "public"."content_proposals";
 CREATE POLICY "Authenticated users can delete content proposals" ON "public"."content_proposals" FOR DELETE TO "authenticated" USING ((("auth"."uid"() = "created_by") OR (EXISTS ( SELECT 1
    FROM "public"."user_roles"
   WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"public"."app_role"))))));
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can delete contract documents" ON "public"."contract_documents";
 CREATE POLICY "Authenticated users can delete contract documents" ON "public"."contract_documents" FOR DELETE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can delete contracts" ON "public"."contracts";
 CREATE POLICY "Authenticated users can delete contracts" ON "public"."contracts" FOR DELETE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can delete tasks" ON "public"."crm_tasks";
 CREATE POLICY "Authenticated users can delete tasks" ON "public"."crm_tasks" FOR DELETE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can delete tasks" ON "public"."project_tasks";
 CREATE POLICY "Authenticated users can delete tasks" ON "public"."project_tasks" FOR DELETE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can insert tasks" ON "public"."crm_tasks";
 CREATE POLICY "Authenticated users can insert tasks" ON "public"."crm_tasks" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read accounting templates" ON "public"."accounting_templates";
 CREATE POLICY "Authenticated users can read accounting templates" ON "public"."accounting_templates" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read chart of accounts" ON "public"."chart_of_accounts";
 CREATE POLICY "Authenticated users can read chart of accounts" ON "public"."chart_of_accounts" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read handbook chapters" ON "public"."handbook_chapters";
 CREATE POLICY "Authenticated users can read handbook chapters" ON "public"."handbook_chapters" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read journal entries" ON "public"."journal_entries";
 CREATE POLICY "Authenticated users can read journal entries" ON "public"."journal_entries" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read journal entry lines" ON "public"."journal_entry_lines";
 CREATE POLICY "Authenticated users can read journal entry lines" ON "public"."journal_entry_lines" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read opening balances" ON "public"."opening_balances";
 CREATE POLICY "Authenticated users can read opening balances" ON "public"."opening_balances" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read sla_policies" ON "public"."sla_policies";
 CREATE POLICY "Authenticated users can read sla_policies" ON "public"."sla_policies" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read sla_violations" ON "public"."sla_violations";
 CREATE POLICY "Authenticated users can read sla_violations" ON "public"."sla_violations" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read test runs" ON "public"."autonomy_test_runs";
 CREATE POLICY "Authenticated users can read test runs" ON "public"."autonomy_test_runs" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can update content proposals" ON "public"."content_proposals";
 CREATE POLICY "Authenticated users can update content proposals" ON "public"."content_proposals" FOR UPDATE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can update contracts" ON "public"."contracts";
 CREATE POLICY "Authenticated users can update contracts" ON "public"."contracts" FOR UPDATE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can update tasks" ON "public"."crm_tasks";
 CREATE POLICY "Authenticated users can update tasks" ON "public"."crm_tasks" FOR UPDATE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can update tasks" ON "public"."project_tasks";
 CREATE POLICY "Authenticated users can update tasks" ON "public"."project_tasks" FOR UPDATE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view all profiles" ON "public"."profiles";
 CREATE POLICY "Authenticated users can view all profiles" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() IS NOT NULL));
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view content proposals" ON "public"."content_proposals";
 CREATE POLICY "Authenticated users can view content proposals" ON "public"."content_proposals" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view contract documents" ON "public"."contract_documents";
 CREATE POLICY "Authenticated users can view contract documents" ON "public"."contract_documents" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view contracts" ON "public"."contracts";
 CREATE POLICY "Authenticated users can view contracts" ON "public"."contracts" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view documents" ON "public"."documents";
 CREATE POLICY "Authenticated users can view documents" ON "public"."documents" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view employee documents" ON "public"."employee_documents";
 CREATE POLICY "Authenticated users can view employee documents" ON "public"."employee_documents" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view employees" ON "public"."employees";
 CREATE POLICY "Authenticated users can view employees" ON "public"."employees" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view escalations" ON "public"."support_escalations";
 CREATE POLICY "Authenticated users can view escalations" ON "public"."support_escalations" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view leave requests" ON "public"."leave_requests";
 CREATE POLICY "Authenticated users can view leave requests" ON "public"."leave_requests" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view onboarding checklists" ON "public"."onboarding_checklists";
 CREATE POLICY "Authenticated users can view onboarding checklists" ON "public"."onboarding_checklists" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view projects" ON "public"."projects";
 CREATE POLICY "Authenticated users can view projects" ON "public"."projects" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view stock" ON "public"."product_stock";
 CREATE POLICY "Authenticated users can view stock" ON "public"."product_stock" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view stock moves" ON "public"."stock_moves";
 CREATE POLICY "Authenticated users can view stock moves" ON "public"."stock_moves" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view tasks" ON "public"."crm_tasks";
 CREATE POLICY "Authenticated users can view tasks" ON "public"."crm_tasks" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view tasks" ON "public"."project_tasks";
 CREATE POLICY "Authenticated users can view tasks" ON "public"."project_tasks" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can view vendor products" ON "public"."vendor_products";
 CREATE POLICY "Authenticated users can view vendor products" ON "public"."vendor_products" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to goods_receipt_lines" ON "public"."goods_receipt_lines";
 CREATE POLICY "Authenticated users full access to goods_receipt_lines" ON "public"."goods_receipt_lines" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to goods_receipts" ON "public"."goods_receipts";
 CREATE POLICY "Authenticated users full access to goods_receipts" ON "public"."goods_receipts" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to purchase_order_lines" ON "public"."purchase_order_lines";
 CREATE POLICY "Authenticated users full access to purchase_order_lines" ON "public"."purchase_order_lines" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to purchase_orders" ON "public"."purchase_orders";
 CREATE POLICY "Authenticated users full access to purchase_orders" ON "public"."purchase_orders" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to rfq_bids" ON "public"."rfq_bids";
 CREATE POLICY "Authenticated users full access to rfq_bids" ON "public"."rfq_bids" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to rfq_lines" ON "public"."rfq_lines";
 CREATE POLICY "Authenticated users full access to rfq_lines" ON "public"."rfq_lines" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to rfqs" ON "public"."rfqs";
 CREATE POLICY "Authenticated users full access to rfqs" ON "public"."rfqs" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated users full access to vendors" ON "public"."vendors";
 CREATE POLICY "Authenticated users full access to vendors" ON "public"."vendors" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Authenticated view contract templates" ON "public"."contract_templates";
 CREATE POLICY "Authenticated view contract templates" ON "public"."contract_templates" FOR SELECT TO "authenticated" USING ((("is_active" = true) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Authenticated view contract templates" ON "public"."employment_contract_templates";
 CREATE POLICY "Authenticated view contract templates" ON "public"."employment_contract_templates" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Cowork uploaders can view their own documents" ON "public"."documents";
 CREATE POLICY "Cowork uploaders can view their own documents" ON "public"."documents" FOR SELECT TO "authenticated" USING ((("source" = 'cowork-upload'::"text") AND ("uploaded_by" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Create expense attachments" ON "public"."expense_attachments";
 CREATE POLICY "Create expense attachments" ON "public"."expense_attachments" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."expenses" "e"
   WHERE (("e"."id" = "expense_attachments"."expense_id") AND ("e"."user_id" = "auth"."uid"())))));
 
 
 
+DROP POLICY IF EXISTS "Customers can delete own addresses" ON "public"."customer_addresses";
 CREATE POLICY "Customers can delete own addresses" ON "public"."customer_addresses" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Customers can insert own addresses" ON "public"."customer_addresses";
 CREATE POLICY "Customers can insert own addresses" ON "public"."customer_addresses" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Customers can update own addresses" ON "public"."customer_addresses";
 CREATE POLICY "Customers can update own addresses" ON "public"."customer_addresses" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Customers can view own addresses" ON "public"."customer_addresses";
 CREATE POLICY "Customers can view own addresses" ON "public"."customer_addresses" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Customers can view own order items" ON "public"."order_items";
 CREATE POLICY "Customers can view own order items" ON "public"."order_items" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."orders"
   WHERE (("orders"."id" = "order_items"."order_id") AND ("orders"."user_id" = "auth"."uid"())))));
 
 
 
+DROP POLICY IF EXISTS "Customers can view own orders" ON "public"."orders";
 CREATE POLICY "Customers can view own orders" ON "public"."orders" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Customers can view own subscriptions" ON "public"."subscriptions";
 CREATE POLICY "Customers can view own subscriptions" ON "public"."subscriptions" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Customers see own returns" ON "public"."returns";
 CREATE POLICY "Customers see own returns" ON "public"."returns" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."orders" "o"
   WHERE (("o"."id" = "returns"."order_id") AND ("o"."user_id" = "auth"."uid"())))));
 
 
 
+DROP POLICY IF EXISTS "Delete expense attachments" ON "public"."expense_attachments";
 CREATE POLICY "Delete expense attachments" ON "public"."expense_attachments" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."expenses" "e"
   WHERE (("e"."id" = "expense_attachments"."expense_id") AND ("e"."user_id" = "auth"."uid"()) AND ("e"."status" = 'draft'::"text")))));
 
 
 
+DROP POLICY IF EXISTS "Employee can comment on own review" ON "public"."performance_reviews";
 CREATE POLICY "Employee can comment on own review" ON "public"."performance_reviews" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "performance_reviews"."employee_id") AND ("e"."user_id" = "auth"."uid"())))));
 
 
 
+DROP POLICY IF EXISTS "Employees create own leave" ON "public"."leave_requests";
 CREATE POLICY "Employees create own leave" ON "public"."leave_requests" FOR INSERT TO "authenticated" WITH CHECK ((("employee_id" = "public"."current_employee_id"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Employees manage own goals" ON "public"."performance_goals";
 CREATE POLICY "Employees manage own goals" ON "public"."performance_goals" TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "performance_goals"."employee_id") AND ("e"."user_id" = "auth"."uid"())))) OR "public"."is_manager_of"("auth"."uid"(), "employee_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (((EXISTS ( SELECT 1
@@ -23433,90 +24507,110 @@ CREATE POLICY "Employees manage own goals" ON "public"."performance_goals" TO "a
 
 
 
+DROP POLICY IF EXISTS "Employees read own allocations" ON "public"."leave_allocations";
 CREATE POLICY "Employees read own allocations" ON "public"."leave_allocations" FOR SELECT USING (("employee_id" = "public"."current_employee_id"()));
 
 
 
+DROP POLICY IF EXISTS "Employees see own goals" ON "public"."performance_goals";
 CREATE POLICY "Employees see own goals" ON "public"."performance_goals" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "performance_goals"."employee_id") AND ("e"."user_id" = "auth"."uid"())))) OR "public"."is_manager_of"("auth"."uid"(), "employee_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Employees update assigned picking_orders" ON "public"."picking_orders";
 CREATE POLICY "Employees update assigned picking_orders" ON "public"."picking_orders" FOR UPDATE TO "authenticated" USING (("assigned_to" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Employees update own pending leave" ON "public"."leave_requests";
 CREATE POLICY "Employees update own pending leave" ON "public"."leave_requests" FOR UPDATE TO "authenticated" USING (((("employee_id" = "public"."current_employee_id"()) AND ("status" = 'pending'::"text")) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Employees view own contracts" ON "public"."employment_contracts";
 CREATE POLICY "Employees view own contracts" ON "public"."employment_contracts" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "employment_contracts"."employee_id") AND ("e"."user_id" = "auth"."uid"()))))));
 
 
 
+DROP POLICY IF EXISTS "Employees view own leave" ON "public"."leave_requests";
 CREATE POLICY "Employees view own leave" ON "public"."leave_requests" FOR SELECT TO "authenticated" USING ((("employee_id" = "public"."current_employee_id"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Employees view own payroll lines" ON "public"."payroll_export_lines";
 CREATE POLICY "Employees view own payroll lines" ON "public"."payroll_export_lines" FOR SELECT TO "authenticated" USING (("employee_id" = "public"."current_employee_id"()));
 
 
 
+DROP POLICY IF EXISTS "Employees view picking_lines" ON "public"."picking_lines";
 CREATE POLICY "Employees view picking_lines" ON "public"."picking_lines" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'employee'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."picking_orders" "po"
   WHERE (("po"."id" = "picking_lines"."picking_order_id") AND ("po"."assigned_to" = "auth"."uid"()))))));
 
 
 
+DROP POLICY IF EXISTS "Employees view picking_orders" ON "public"."picking_orders";
 CREATE POLICY "Employees view picking_orders" ON "public"."picking_orders" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'employee'::"public"."app_role") OR ("assigned_to" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Feedback visibility" ON "public"."feedback";
 CREATE POLICY "Feedback visibility" ON "public"."feedback" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "feedback"."receiver_id") AND ("e"."user_id" = "auth"."uid"())))) OR ("giver_user_id" = "auth"."uid"()) OR (("visibility" = ANY (ARRAY['receiver_and_manager'::"text", 'public'::"text"])) AND "public"."is_manager_of"("auth"."uid"(), "receiver_id")) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Givers delete own feedback" ON "public"."feedback";
 CREATE POLICY "Givers delete own feedback" ON "public"."feedback" FOR DELETE TO "authenticated" USING ((("giver_user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Givers edit own feedback" ON "public"."feedback";
 CREATE POLICY "Givers edit own feedback" ON "public"."feedback" FOR UPDATE TO "authenticated" USING ((("giver_user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Manager and admin manage reviews" ON "public"."performance_reviews";
 CREATE POLICY "Manager and admin manage reviews" ON "public"."performance_reviews" TO "authenticated" USING (("public"."is_manager_of"("auth"."uid"(), "employee_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."is_manager_of"("auth"."uid"(), "employee_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Managers can update team leave requests" ON "public"."leave_requests";
 CREATE POLICY "Managers can update team leave requests" ON "public"."leave_requests" FOR UPDATE USING ("public"."is_manager_of"("auth"."uid"(), "employee_id")) WITH CHECK ("public"."is_manager_of"("auth"."uid"(), "employee_id"));
 
 
 
+DROP POLICY IF EXISTS "Managers can view team allocations" ON "public"."leave_allocations";
 CREATE POLICY "Managers can view team allocations" ON "public"."leave_allocations" FOR SELECT USING ("public"."is_manager_of"("auth"."uid"(), "employee_id"));
 
 
 
+DROP POLICY IF EXISTS "Managers can view team leave requests" ON "public"."leave_requests";
 CREATE POLICY "Managers can view team leave requests" ON "public"."leave_requests" FOR SELECT USING ("public"."is_manager_of"("auth"."uid"(), "employee_id"));
 
 
 
+DROP POLICY IF EXISTS "Managers can view team members" ON "public"."employees";
 CREATE POLICY "Managers can view team members" ON "public"."employees" FOR SELECT USING ("public"."is_manager_of"("auth"."uid"(), "id"));
 
 
 
+DROP POLICY IF EXISTS "No client deletes audit trail" ON "public"."agent_audit_trail";
 CREATE POLICY "No client deletes audit trail" ON "public"."agent_audit_trail" FOR DELETE TO "authenticated" USING (false);
 
 
 
+DROP POLICY IF EXISTS "No client updates audit trail" ON "public"."agent_audit_trail";
 CREATE POLICY "No client updates audit trail" ON "public"."agent_audit_trail" FOR UPDATE TO "authenticated" USING (false) WITH CHECK (false);
 
 
 
+DROP POLICY IF EXISTS "Participants manage 1:1s" ON "public"."one_on_ones";
 CREATE POLICY "Participants manage 1:1s" ON "public"."one_on_ones" TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE ((("e"."id" = "one_on_ones"."employee_id") OR ("e"."id" = "e"."manager_id")) AND ("e"."user_id" = "auth"."uid"())))) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (((EXISTS ( SELECT 1
@@ -23525,592 +24619,734 @@ CREATE POLICY "Participants manage 1:1s" ON "public"."one_on_ones" TO "authentic
 
 
 
+DROP POLICY IF EXISTS "Participants see 1:1s" ON "public"."one_on_ones";
 CREATE POLICY "Participants see 1:1s" ON "public"."one_on_ones" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE ((("e"."id" = "one_on_ones"."employee_id") OR ("e"."id" = "e"."manager_id")) AND ("e"."user_id" = "auth"."uid"())))) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Peers can read own mission" ON "public"."federation_peer_missions";
 CREATE POLICY "Peers can read own mission" ON "public"."federation_peer_missions" FOR SELECT USING (("peer_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Public can insert signature via token" ON "public"."quote_signatures";
 CREATE POLICY "Public can insert signature via token" ON "public"."quote_signatures" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."quotes" "q"
   WHERE (("q"."id" = "quote_signatures"."quote_id") AND ("q"."accept_token" IS NOT NULL) AND (("q"."status")::"text" = ANY (ARRAY['sent'::"text", 'viewed'::"text"]))))));
 
 
 
+DROP POLICY IF EXISTS "Public can insert via valid token" ON "public"."contract_signatures";
 CREATE POLICY "Public can insert via valid token" ON "public"."contract_signatures" FOR INSERT TO "authenticated", "anon" WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."contracts" "c"
   WHERE (("c"."id" = "contract_signatures"."contract_id") AND ("c"."accept_token" IS NOT NULL)))));
 
 
 
+DROP POLICY IF EXISTS "Public can read docs pages" ON "public"."docs_pages";
 CREATE POLICY "Public can read docs pages" ON "public"."docs_pages" FOR SELECT TO "authenticated", "anon" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can read handbook chapters" ON "public"."handbook_chapters";
 CREATE POLICY "Public can read handbook chapters" ON "public"."handbook_chapters" FOR SELECT TO "anon" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can read installed_template" ON "public"."installed_template";
 CREATE POLICY "Public can read installed_template" ON "public"."installed_template" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can read published webinars" ON "public"."webinars";
 CREATE POLICY "Public can read published webinars" ON "public"."webinars" FOR SELECT USING (("status" = ANY (ARRAY['published'::"text", 'live'::"text", 'completed'::"text"])));
 
 
 
+DROP POLICY IF EXISTS "Public can submit applications" ON "public"."applications";
 CREATE POLICY "Public can submit applications" ON "public"."applications" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."job_postings" "jp"
   WHERE (("jp"."id" = "applications"."job_posting_id") AND ("jp"."status" = 'published'::"public"."job_posting_status")))));
 
 
 
+DROP POLICY IF EXISTS "Public can view active availability" ON "public"."booking_availability";
 CREATE POLICY "Public can view active availability" ON "public"."booking_availability" FOR SELECT USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view active categories" ON "public"."kb_categories";
 CREATE POLICY "Public can view active categories" ON "public"."kb_categories" FOR SELECT USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view active categories" ON "public"."product_categories";
 CREATE POLICY "Public can view active categories" ON "public"."product_categories" FOR SELECT USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view active global blocks" ON "public"."global_blocks";
 CREATE POLICY "Public can view active global blocks" ON "public"."global_blocks" FOR SELECT USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view active products" ON "public"."products";
 CREATE POLICY "Public can view active products" ON "public"."products" FOR SELECT USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view active profiles" ON "public"."consultant_profiles";
 CREATE POLICY "Public can view active profiles" ON "public"."consultant_profiles" FOR SELECT TO "anon" USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view active services" ON "public"."booking_services";
 CREATE POLICY "Public can view active services" ON "public"."booking_services" FOR SELECT USING (("is_active" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view blocked dates" ON "public"."booking_blocked_dates";
 CREATE POLICY "Public can view blocked dates" ON "public"."booking_blocked_dates" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can view categories" ON "public"."blog_categories";
 CREATE POLICY "Public can view categories" ON "public"."blog_categories" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can view contract by token" ON "public"."contracts";
 CREATE POLICY "Public can view contract by token" ON "public"."contracts" FOR SELECT TO "authenticated", "anon" USING ((("accept_token" IS NOT NULL) AND ("status" = ANY (ARRAY['pending_signature'::"public"."contract_status", 'active'::"public"."contract_status"]))));
 
 
 
+DROP POLICY IF EXISTS "Public can view items via quote token" ON "public"."quote_items";
 CREATE POLICY "Public can view items via quote token" ON "public"."quote_items" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."quotes" "q"
   WHERE (("q"."id" = "quote_items"."quote_id") AND ("q"."accept_token" IS NOT NULL) AND (("q"."status")::"text" = ANY (ARRAY['sent'::"text", 'viewed'::"text", 'accepted'::"text", 'rejected'::"text"]))))));
 
 
 
+DROP POLICY IF EXISTS "Public can view post categories" ON "public"."blog_post_categories";
 CREATE POLICY "Public can view post categories" ON "public"."blog_post_categories" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can view post tags" ON "public"."blog_post_tags";
 CREATE POLICY "Public can view post tags" ON "public"."blog_post_tags" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Public can view published articles" ON "public"."kb_articles";
 CREATE POLICY "Public can view published articles" ON "public"."kb_articles" FOR SELECT USING (("is_published" = true));
 
 
 
+DROP POLICY IF EXISTS "Public can view published jobs" ON "public"."job_postings";
 CREATE POLICY "Public can view published jobs" ON "public"."job_postings" FOR SELECT USING (("status" = 'published'::"public"."job_posting_status"));
 
 
 
+DROP POLICY IF EXISTS "Public can view published pages" ON "public"."pages";
 CREATE POLICY "Public can view published pages" ON "public"."pages" FOR SELECT TO "anon" USING (("status" = 'published'::"public"."page_status"));
 
 
 
+DROP POLICY IF EXISTS "Public can view published posts" ON "public"."blog_posts";
 CREATE POLICY "Public can view published posts" ON "public"."blog_posts" FOR SELECT TO "anon" USING (("status" = 'published'::"public"."page_status"));
 
 
 
+DROP POLICY IF EXISTS "Public can view published webinars" ON "public"."webinars";
 CREATE POLICY "Public can view published webinars" ON "public"."webinars" FOR SELECT USING (("status" = ANY (ARRAY['published'::"text", 'live'::"text", 'completed'::"text"])));
 
 
 
+DROP POLICY IF EXISTS "Public can view quote by token" ON "public"."quotes";
 CREATE POLICY "Public can view quote by token" ON "public"."quotes" FOR SELECT USING ((("accept_token" IS NOT NULL) AND (("status")::"text" = ANY (ARRAY['sent'::"text", 'viewed'::"text", 'accepted'::"text", 'rejected'::"text"]))));
 
 
 
+DROP POLICY IF EXISTS "Public can view tags" ON "public"."blog_tags";
 CREATE POLICY "Public can view tags" ON "public"."blog_tags" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Registrants can read own registrations" ON "public"."webinar_registrations";
 CREATE POLICY "Registrants can read own registrations" ON "public"."webinar_registrations" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Review visibility" ON "public"."performance_reviews";
 CREATE POLICY "Review visibility" ON "public"."performance_reviews" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "performance_reviews"."employee_id") AND ("e"."user_id" = "auth"."uid"())))) OR "public"."is_manager_of"("auth"."uid"(), "employee_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Service inserts audit trail" ON "public"."agent_audit_trail";
 CREATE POLICY "Service inserts audit trail" ON "public"."agent_audit_trail" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role can manage missions" ON "public"."federation_peer_missions";
 CREATE POLICY "Service role can manage missions" ON "public"."federation_peer_missions" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role can read missions" ON "public"."federation_peer_missions";
 CREATE POLICY "Service role can read missions" ON "public"."federation_peer_missions" FOR SELECT USING (true);
 
 
 
+DROP POLICY IF EXISTS "Service role can update missions" ON "public"."federation_peer_missions";
 CREATE POLICY "Service role can update missions" ON "public"."federation_peer_missions" FOR UPDATE USING (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access expense_attachments" ON "public"."expense_attachments";
 CREATE POLICY "Service role full access expense_attachments" ON "public"."expense_attachments" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access expense_payments" ON "public"."expense_payments";
 CREATE POLICY "Service role full access expense_payments" ON "public"."expense_payments" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access expense_reports" ON "public"."expense_reports";
 CREATE POLICY "Service role full access expense_reports" ON "public"."expense_reports" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access expenses" ON "public"."expenses";
 CREATE POLICY "Service role full access expenses" ON "public"."expenses" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access on autonomy_test_runs" ON "public"."autonomy_test_runs";
 CREATE POLICY "Service role full access on autonomy_test_runs" ON "public"."autonomy_test_runs" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access on invoices" ON "public"."invoices";
 CREATE POLICY "Service role full access on invoices" ON "public"."invoices" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access sla_policies" ON "public"."sla_policies";
 CREATE POLICY "Service role full access sla_policies" ON "public"."sla_policies" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role full access sla_violations" ON "public"."sla_violations";
 CREATE POLICY "Service role full access sla_violations" ON "public"."sla_violations" TO "service_role" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Service role inserts platform test runs" ON "public"."platform_test_runs";
 CREATE POLICY "Service role inserts platform test runs" ON "public"."platform_test_runs" FOR INSERT TO "service_role" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Staff can create versions" ON "public"."quote_versions";
 CREATE POLICY "Staff can create versions" ON "public"."quote_versions" FOR INSERT WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can delete registrations" ON "public"."webinar_registrations";
 CREATE POLICY "Staff can delete registrations" ON "public"."webinar_registrations" FOR DELETE USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can manage quote items" ON "public"."quote_items";
 CREATE POLICY "Staff can manage quote items" ON "public"."quote_items" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can manage subscriptions" ON "public"."subscriptions";
 CREATE POLICY "Staff can manage subscriptions" ON "public"."subscriptions" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can manage templates" ON "public"."quote_templates";
 CREATE POLICY "Staff can manage templates" ON "public"."quote_templates" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can manage webinars" ON "public"."webinars";
 CREATE POLICY "Staff can manage webinars" ON "public"."webinars" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can update registrations" ON "public"."webinar_registrations";
 CREATE POLICY "Staff can update registrations" ON "public"."webinar_registrations" FOR UPDATE USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view all subscriptions" ON "public"."subscriptions";
 CREATE POLICY "Staff can view all subscriptions" ON "public"."subscriptions" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view consultant profiles" ON "public"."consultant_profiles";
 CREATE POLICY "Staff can view consultant profiles" ON "public"."consultant_profiles" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view quote items" ON "public"."quote_items";
 CREATE POLICY "Staff can view quote items" ON "public"."quote_items" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view registrations" ON "public"."webinar_registrations";
 CREATE POLICY "Staff can view registrations" ON "public"."webinar_registrations" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view signatures" ON "public"."quote_signatures";
 CREATE POLICY "Staff can view signatures" ON "public"."quote_signatures" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view subscription events" ON "public"."subscription_events";
 CREATE POLICY "Staff can view subscription events" ON "public"."subscription_events" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view templates" ON "public"."quote_templates";
 CREATE POLICY "Staff can view templates" ON "public"."quote_templates" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff can view versions" ON "public"."quote_versions";
 CREATE POLICY "Staff can view versions" ON "public"."quote_versions" FOR SELECT USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff manage return_items" ON "public"."return_items";
 CREATE POLICY "Staff manage return_items" ON "public"."return_items" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff manage returns" ON "public"."returns";
 CREATE POLICY "Staff manage returns" ON "public"."returns" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Staff manage shipments" ON "public"."shipments";
 CREATE POLICY "Staff manage shipments" ON "public"."shipments" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'warehouse'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "System can create escalations" ON "public"."support_escalations";
 CREATE POLICY "System can create escalations" ON "public"."support_escalations" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can create versions" ON "public"."page_versions";
 CREATE POLICY "System can create versions" ON "public"."page_versions" FOR INSERT TO "authenticated" WITH CHECK (("public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "System can create webhook logs" ON "public"."webhook_logs";
 CREATE POLICY "System can create webhook logs" ON "public"."webhook_logs" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert agent activity" ON "public"."agent_activity";
 CREATE POLICY "System can insert agent activity" ON "public"."agent_activity" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert briefings" ON "public"."flowpilot_briefings";
 CREATE POLICY "System can insert briefings" ON "public"."flowpilot_briefings" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert clicks" ON "public"."newsletter_link_clicks";
 CREATE POLICY "System can insert clicks" ON "public"."newsletter_link_clicks" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert consultant profiles" ON "public"."consultant_profiles";
 CREATE POLICY "System can insert consultant profiles" ON "public"."consultant_profiles" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert installed_template" ON "public"."installed_template";
 CREATE POLICY "System can insert installed_template" ON "public"."installed_template" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert lead activities" ON "public"."lead_activities";
 CREATE POLICY "System can insert lead activities" ON "public"."lead_activities" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert leads" ON "public"."leads";
 CREATE POLICY "System can insert leads" ON "public"."leads" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert opens" ON "public"."newsletter_email_opens";
 CREATE POLICY "System can insert opens" ON "public"."newsletter_email_opens" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert profiles" ON "public"."sales_intelligence_profiles";
 CREATE POLICY "System can insert profiles" ON "public"."sales_intelligence_profiles" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert quotes" ON "public"."quotes";
 CREATE POLICY "System can insert quotes" ON "public"."quotes" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert ticket comments" ON "public"."ticket_comments";
 CREATE POLICY "System can insert ticket comments" ON "public"."ticket_comments" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can insert tickets" ON "public"."tickets";
 CREATE POLICY "System can insert tickets" ON "public"."tickets" FOR INSERT WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "System can update automations" ON "public"."agent_automations";
 CREATE POLICY "System can update automations" ON "public"."agent_automations" FOR UPDATE TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "System can update clicks" ON "public"."newsletter_link_clicks";
 CREATE POLICY "System can update clicks" ON "public"."newsletter_link_clicks" FOR UPDATE USING (true);
 
 
 
+DROP POLICY IF EXISTS "System can update opens" ON "public"."newsletter_email_opens";
 CREATE POLICY "System can update opens" ON "public"."newsletter_email_opens" FOR UPDATE USING (true);
 
 
 
+DROP POLICY IF EXISTS "System can update profiles" ON "public"."sales_intelligence_profiles";
 CREATE POLICY "System can update profiles" ON "public"."sales_intelligence_profiles" FOR UPDATE USING (true);
 
 
 
+DROP POLICY IF EXISTS "Users can add to own wishlist" ON "public"."wishlist_items";
 CREATE POLICY "Users can add to own wishlist" ON "public"."wishlist_items" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can create conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users can create conversations" ON "public"."chat_conversations" FOR INSERT WITH CHECK ((("user_id" = "auth"."uid"()) OR ("session_id" IS NOT NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can create messages in own conversations" ON "public"."chat_messages";
 CREATE POLICY "Users can create messages in own conversations" ON "public"."chat_messages" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."chat_conversations" "c"
   WHERE (("c"."id" = "chat_messages"."conversation_id") AND (("c"."user_id" = "auth"."uid"()) OR ("c"."session_id" IS NOT NULL))))));
 
 
 
+DROP POLICY IF EXISTS "Users can create own time entries" ON "public"."time_entries";
 CREATE POLICY "Users can create own time entries" ON "public"."time_entries" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can create research" ON "public"."content_research";
 CREATE POLICY "Users can create research" ON "public"."content_research" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "created_by"));
 
 
 
+DROP POLICY IF EXISTS "Users can delete own conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users can delete own conversations" ON "public"."chat_conversations" FOR DELETE USING (((("user_id" IS NOT NULL) AND ("user_id" = "auth"."uid"())) OR (("session_id" IS NOT NULL) AND ("session_id" = NULLIF((("current_setting"('request.headers'::"text", true))::json ->> 'x-chat-session'::"text"), ''::"text")))));
 
 
 
+DROP POLICY IF EXISTS "Users can delete own time entries" ON "public"."time_entries";
 CREATE POLICY "Users can delete own time entries" ON "public"."time_entries" FOR DELETE TO "authenticated" USING ((("user_id" = "auth"."uid"()) AND ("is_invoiced" = false)));
 
 
 
+DROP POLICY IF EXISTS "Users can delete their research" ON "public"."content_research";
 CREATE POLICY "Users can delete their research" ON "public"."content_research" FOR DELETE TO "authenticated" USING (("auth"."uid"() = "created_by"));
 
 
 
+DROP POLICY IF EXISTS "Users can manage own user profile" ON "public"."sales_intelligence_profiles";
 CREATE POLICY "Users can manage own user profile" ON "public"."sales_intelligence_profiles" TO "authenticated" USING ((("type" = 'user'::"text") AND ("user_id" = "auth"."uid"()))) WITH CHECK ((("type" = 'user'::"text") AND ("user_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users can remove from own wishlist" ON "public"."wishlist_items";
 CREATE POLICY "Users can remove from own wishlist" ON "public"."wishlist_items" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can update own conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users can update own conversations" ON "public"."chat_conversations" FOR UPDATE USING (((("user_id" IS NOT NULL) AND ("user_id" = "auth"."uid"())) OR (("session_id" IS NOT NULL) AND ("session_id" = NULLIF((("current_setting"('request.headers'::"text", true))::json ->> 'x-chat-session'::"text"), ''::"text")))));
 
 
 
+DROP POLICY IF EXISTS "Users can update own profile" ON "public"."profiles";
 CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can update own time entries" ON "public"."time_entries";
 CREATE POLICY "Users can update own time entries" ON "public"."time_entries" FOR UPDATE TO "authenticated" USING ((("user_id" = "auth"."uid"()) AND ("is_invoiced" = false)));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own status" ON "public"."support_agents";
 CREATE POLICY "Users can update their own status" ON "public"."support_agents" FOR UPDATE USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can update their research" ON "public"."content_research";
 CREATE POLICY "Users can update their research" ON "public"."content_research" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "created_by"));
 
 
 
+DROP POLICY IF EXISTS "Users can view all research" ON "public"."content_research";
 CREATE POLICY "Users can view all research" ON "public"."content_research" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Users can view audit logs" ON "public"."audit_logs";
 CREATE POLICY "Users can view audit logs" ON "public"."audit_logs" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Users can view messages in own conversations" ON "public"."chat_messages";
 CREATE POLICY "Users can view messages in own conversations" ON "public"."chat_messages" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."chat_conversations" "c"
   WHERE (("c"."id" = "chat_messages"."conversation_id") AND ((("c"."user_id" IS NOT NULL) AND ("c"."user_id" = "auth"."uid"())) OR (("c"."session_id" IS NOT NULL) AND ("c"."session_id" = NULLIF((("current_setting"('request.headers'::"text", true))::json ->> 'x-chat-session'::"text"), ''::"text"))))))));
 
 
 
+DROP POLICY IF EXISTS "Users can view own conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users can view own conversations" ON "public"."chat_conversations" FOR SELECT USING (((("user_id" IS NOT NULL) AND ("user_id" = "auth"."uid"())) OR (("session_id" IS NOT NULL) AND ("session_id" = NULLIF((("current_setting"('request.headers'::"text", true))::json ->> 'x-chat-session'::"text"), ''::"text")))));
 
 
 
+DROP POLICY IF EXISTS "Users can view own profile" ON "public"."profiles";
 CREATE POLICY "Users can view own profile" ON "public"."profiles" FOR SELECT USING (("id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can view own role" ON "public"."user_roles";
 CREATE POLICY "Users can view own role" ON "public"."user_roles" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users can view own time entries" ON "public"."time_entries";
 CREATE POLICY "Users can view own time entries" ON "public"."time_entries" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users can view own wishlist" ON "public"."wishlist_items";
 CREATE POLICY "Users can view own wishlist" ON "public"."wishlist_items" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own agent record" ON "public"."support_agents";
 CREATE POLICY "Users can view their own agent record" ON "public"."support_agents" FOR SELECT USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users create own expenses" ON "public"."expenses";
 CREATE POLICY "Users create own expenses" ON "public"."expenses" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users create own internal conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users create own internal conversations" ON "public"."chat_conversations" FOR INSERT TO "authenticated" WITH CHECK ((("scope" = 'internal'::"text") AND ("user_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users delete own draft expenses" ON "public"."expenses";
 CREATE POLICY "Users delete own draft expenses" ON "public"."expenses" FOR DELETE TO "authenticated" USING ((("user_id" = "auth"."uid"()) AND ("status" = 'draft'::"text")));
 
 
 
+DROP POLICY IF EXISTS "Users delete own internal conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users delete own internal conversations" ON "public"."chat_conversations" FOR DELETE TO "authenticated" USING ((("scope" = 'internal'::"text") AND ("user_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users insert own internal messages" ON "public"."chat_messages";
 CREATE POLICY "Users insert own internal messages" ON "public"."chat_messages" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."chat_conversations" "c"
   WHERE (("c"."id" = "chat_messages"."conversation_id") AND ("c"."scope" = 'internal'::"text") AND ("c"."user_id" = "auth"."uid"())))));
 
 
 
+DROP POLICY IF EXISTS "Users manage own activities" ON "public"."activities";
 CREATE POLICY "Users manage own activities" ON "public"."activities" TO "authenticated" USING ((("created_by" = "auth"."uid"()) OR ("assigned_to" = "auth"."uid"()))) WITH CHECK ((("created_by" = "auth"."uid"()) OR ("assigned_to" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users manage own draft expense reports" ON "public"."expense_reports";
 CREATE POLICY "Users manage own draft expense reports" ON "public"."expense_reports" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "Users manage own profile addresses" ON "public"."addresses";
 CREATE POLICY "Users manage own profile addresses" ON "public"."addresses" TO "authenticated" USING ((("owner_type" = 'profile'::"text") AND ("owner_id" = "auth"."uid"()))) WITH CHECK ((("owner_type" = 'profile'::"text") AND ("owner_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users read own profile addresses" ON "public"."addresses";
 CREATE POLICY "Users read own profile addresses" ON "public"."addresses" FOR SELECT TO "authenticated" USING ((("owner_type" = 'profile'::"text") AND ("owner_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users see own internal conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users see own internal conversations" ON "public"."chat_conversations" FOR SELECT TO "authenticated" USING ((("scope" = 'internal'::"text") AND ("user_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users see own internal messages" ON "public"."chat_messages";
 CREATE POLICY "Users see own internal messages" ON "public"."chat_messages" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."chat_conversations" "c"
   WHERE (("c"."id" = "chat_messages"."conversation_id") AND ("c"."scope" = 'internal'::"text") AND ("c"."user_id" = "auth"."uid"())))));
 
 
 
+DROP POLICY IF EXISTS "Users update own expense reports" ON "public"."expense_reports";
 CREATE POLICY "Users update own expense reports" ON "public"."expense_reports" FOR UPDATE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users update own expenses" ON "public"."expenses";
 CREATE POLICY "Users update own expenses" ON "public"."expenses" FOR UPDATE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users update own internal conversations" ON "public"."chat_conversations";
 CREATE POLICY "Users update own internal conversations" ON "public"."chat_conversations" FOR UPDATE TO "authenticated" USING ((("scope" = 'internal'::"text") AND ("user_id" = "auth"."uid"()))) WITH CHECK ((("scope" = 'internal'::"text") AND ("user_id" = "auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users view own expense payments" ON "public"."expense_payments";
 CREATE POLICY "Users view own expense payments" ON "public"."expense_payments" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users view own expense reports" ON "public"."expense_reports";
 CREATE POLICY "Users view own expense reports" ON "public"."expense_reports" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users view own expenses" ON "public"."expenses";
 CREATE POLICY "Users view own expenses" ON "public"."expenses" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Users view own memberships" ON "public"."project_members";
 CREATE POLICY "Users view own memberships" ON "public"."project_members" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "View expense attachments" ON "public"."expense_attachments";
 CREATE POLICY "View expense attachments" ON "public"."expense_attachments" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."expenses" "e"
   WHERE (("e"."id" = "expense_attachments"."expense_id") AND (("e"."user_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))))));
 
 
 
+DROP POLICY IF EXISTS "Wiki delete by admin" ON "public"."wiki_pages";
 CREATE POLICY "Wiki delete by admin" ON "public"."wiki_pages" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "Wiki insert by authenticated" ON "public"."wiki_pages";
 CREATE POLICY "Wiki insert by authenticated" ON "public"."wiki_pages" FOR INSERT TO "authenticated" WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Wiki readable by authenticated" ON "public"."wiki_pages";
 CREATE POLICY "Wiki readable by authenticated" ON "public"."wiki_pages" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "Wiki update by authenticated" ON "public"."wiki_pages";
 CREATE POLICY "Wiki update by authenticated" ON "public"."wiki_pages" FOR UPDATE TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "Writers can create articles" ON "public"."kb_articles";
 CREATE POLICY "Writers can create articles" ON "public"."kb_articles" FOR INSERT TO "authenticated" WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can create pages" ON "public"."pages";
 CREATE POLICY "Writers can create pages" ON "public"."pages" FOR INSERT TO "authenticated" WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can create posts" ON "public"."blog_posts";
 CREATE POLICY "Writers can create posts" ON "public"."blog_posts" FOR INSERT TO "authenticated" WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can create stock moves" ON "public"."stock_moves";
 CREATE POLICY "Writers can create stock moves" ON "public"."stock_moves" FOR INSERT TO "authenticated" WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can manage BOM headers" ON "public"."bom_headers";
 CREATE POLICY "Writers can manage BOM headers" ON "public"."bom_headers" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can manage BOM lines" ON "public"."bom_lines";
 CREATE POLICY "Writers can manage BOM lines" ON "public"."bom_lines" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can manage MO components" ON "public"."mo_components";
 CREATE POLICY "Writers can manage MO components" ON "public"."mo_components" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can manage MOs" ON "public"."manufacturing_orders";
 CREATE POLICY "Writers can manage MOs" ON "public"."manufacturing_orders" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can manage stock" ON "public"."product_stock";
 CREATE POLICY "Writers can manage stock" ON "public"."product_stock" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can update own articles, admins all" ON "public"."kb_articles";
 CREATE POLICY "Writers can update own articles, admins all" ON "public"."kb_articles" FOR UPDATE TO "authenticated" USING ((("created_by" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK ((("created_by" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can update own draft pages" ON "public"."pages";
 CREATE POLICY "Writers can update own draft pages" ON "public"."pages" FOR UPDATE TO "authenticated" USING (((("created_by" = "auth"."uid"()) AND ("status" = 'draft'::"public"."page_status")) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (((("created_by" = "auth"."uid"()) AND ("status" = 'draft'::"public"."page_status")) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers can update own posts" ON "public"."blog_posts";
 CREATE POLICY "Writers can update own posts" ON "public"."blog_posts" FOR UPDATE TO "authenticated" USING ((("created_by" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK ((("created_by" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers manage lots" ON "public"."stock_lots";
 CREATE POLICY "Writers manage lots" ON "public"."stock_lots" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "Writers view vendor invoices" ON "public"."vendor_invoices";
 CREATE POLICY "Writers view vendor invoices" ON "public"."vendor_invoices" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'writer'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")));
 
 
@@ -24142,38 +25378,47 @@ ALTER TABLE "public"."ad_creatives" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."addresses" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS admin_all_campaigns ON "public"."survey_campaigns";
 CREATE POLICY "admin_all_campaigns" ON "public"."survey_campaigns" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admin_all_responses ON "public"."survey_responses";
 CREATE POLICY "admin_all_responses" ON "public"."survey_responses" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admin_all_sends ON "public"."survey_sends";
 CREATE POLICY "admin_all_sends" ON "public"."survey_sends" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admin_all_templates ON "public"."survey_templates";
 CREATE POLICY "admin_all_templates" ON "public"."survey_templates" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "admins read outbound communications" ON "public"."outbound_communications";
 CREATE POLICY "admins read outbound communications" ON "public"."outbound_communications" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admins_manage_churn_reasons ON "public"."subscription_churn_reasons";
 CREATE POLICY "admins_manage_churn_reasons" ON "public"."subscription_churn_reasons" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admins_manage_pos_registers ON "public"."pos_registers";
 CREATE POLICY "admins_manage_pos_registers" ON "public"."pos_registers" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admins_manage_winback_campaigns ON "public"."subscription_winback_campaigns";
 CREATE POLICY "admins_manage_winback_campaigns" ON "public"."subscription_winback_campaigns" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS admins_manage_winback_sends ON "public"."subscription_winback_sends";
 CREATE POLICY "admins_manage_winback_sends" ON "public"."subscription_winback_sends" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
@@ -24238,22 +25483,26 @@ ALTER TABLE "public"."approval_requests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."approval_rules" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "attendance admin delete" ON "public"."attendance_entries";
 CREATE POLICY "attendance admin delete" ON "public"."attendance_entries" FOR DELETE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "attendance employee update own" ON "public"."attendance_entries";
 CREATE POLICY "attendance employee update own" ON "public"."attendance_entries" FOR UPDATE TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "attendance_entries"."employee_id") AND ("e"."user_id" = "auth"."uid"()))))));
 
 
 
+DROP POLICY IF EXISTS "attendance employee write" ON "public"."attendance_entries";
 CREATE POLICY "attendance employee write" ON "public"."attendance_entries" FOR INSERT TO "authenticated" WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "attendance_entries"."employee_id") AND ("e"."user_id" = "auth"."uid"()))))));
 
 
 
+DROP POLICY IF EXISTS "attendance read" ON "public"."attendance_entries";
 CREATE POLICY "attendance read" ON "public"."attendance_entries" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "attendance_entries"."employee_id") AND ("e"."user_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
@@ -24271,22 +25520,27 @@ ALTER TABLE "public"."audit_logs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."auth_events" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS auth_manage_pos_payments ON "public"."pos_payments";
 CREATE POLICY "auth_manage_pos_payments" ON "public"."pos_payments" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS auth_manage_pos_sale_lines ON "public"."pos_sale_lines";
 CREATE POLICY "auth_manage_pos_sale_lines" ON "public"."pos_sale_lines" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS auth_manage_pos_sales ON "public"."pos_sales";
 CREATE POLICY "auth_manage_pos_sales" ON "public"."pos_sales" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS auth_manage_pos_sessions ON "public"."pos_sessions";
 CREATE POLICY "auth_manage_pos_sessions" ON "public"."pos_sessions" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS auth_read_pos_registers ON "public"."pos_registers";
 CREATE POLICY "auth_read_pos_registers" ON "public"."pos_registers" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24360,10 +25614,12 @@ ALTER TABLE "public"."carriers" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."certifications" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "certifications admin write" ON "public"."certifications";
 CREATE POLICY "certifications admin write" ON "public"."certifications" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "certifications read" ON "public"."certifications";
 CREATE POLICY "certifications read" ON "public"."certifications" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "certifications"."employee_id") AND ("e"."user_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
@@ -24420,10 +25676,12 @@ ALTER TABLE "public"."crm_tasks" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."currencies" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS currencies_admin_all ON "public"."currencies";
 CREATE POLICY "currencies_admin_all" ON "public"."currencies" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS currencies_read_all_authenticated ON "public"."currencies";
 CREATE POLICY "currencies_read_all_authenticated" ON "public"."currencies" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24440,6 +25698,7 @@ ALTER TABLE "public"."deals" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."demo_run_items" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "demo_run_items admin read" ON "public"."demo_run_items";
 CREATE POLICY "demo_run_items admin read" ON "public"."demo_run_items" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
@@ -24447,6 +25706,7 @@ CREATE POLICY "demo_run_items admin read" ON "public"."demo_run_items" FOR SELEC
 ALTER TABLE "public"."demo_runs" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "demo_runs admin read" ON "public"."demo_runs";
 CREATE POLICY "demo_runs admin read" ON "public"."demo_runs" FOR SELECT TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
@@ -24454,6 +25714,7 @@ CREATE POLICY "demo_runs admin read" ON "public"."demo_runs" FOR SELECT TO "auth
 ALTER TABLE "public"."depreciation_entries" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS depreciation_entries_admin_all ON "public"."depreciation_entries";
 CREATE POLICY "depreciation_entries_admin_all" ON "public"."depreciation_entries" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
@@ -24476,10 +25737,12 @@ ALTER TABLE "public"."employee_documents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."employee_skills" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "employee_skills admin write" ON "public"."employee_skills";
 CREATE POLICY "employee_skills admin write" ON "public"."employee_skills" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "employee_skills read" ON "public"."employee_skills";
 CREATE POLICY "employee_skills read" ON "public"."employee_skills" FOR SELECT TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR (EXISTS ( SELECT 1
    FROM "public"."employees" "e"
   WHERE (("e"."id" = "employee_skills"."employee_id") AND ("e"."user_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
@@ -24503,10 +25766,12 @@ ALTER TABLE "public"."entity_followers" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."entity_tags" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS entity_tags_admin_all ON "public"."entity_tags";
 CREATE POLICY "entity_tags_admin_all" ON "public"."entity_tags" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS entity_tags_authenticated_read ON "public"."entity_tags";
 CREATE POLICY "entity_tags_authenticated_read" ON "public"."entity_tags" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24514,10 +25779,12 @@ CREATE POLICY "entity_tags_authenticated_read" ON "public"."entity_tags" FOR SEL
 ALTER TABLE "public"."exchange_rates" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS exchange_rates_admin_all ON "public"."exchange_rates";
 CREATE POLICY "exchange_rates_admin_all" ON "public"."exchange_rates" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS exchange_rates_read_authenticated ON "public"."exchange_rates";
 CREATE POLICY "exchange_rates_read_authenticated" ON "public"."exchange_rates" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24546,6 +25813,7 @@ ALTER TABLE "public"."feedback" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."fixed_assets" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS fixed_assets_admin_all ON "public"."fixed_assets";
 CREATE POLICY "fixed_assets_admin_all" ON "public"."fixed_assets" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
@@ -24553,14 +25821,17 @@ CREATE POLICY "fixed_assets_admin_all" ON "public"."fixed_assets" TO "authentica
 ALTER TABLE "public"."flowpilot_briefings" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "followers read auth" ON "public"."entity_followers";
 CREATE POLICY "followers read auth" ON "public"."entity_followers" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "followers self delete" ON "public"."entity_followers";
 CREATE POLICY "followers self delete" ON "public"."entity_followers" FOR DELETE TO "authenticated" USING ((("auth"."uid"() = "user_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "followers self insert" ON "public"."entity_followers";
 CREATE POLICY "followers self insert" ON "public"."entity_followers" FOR INSERT TO "authenticated" WITH CHECK ((("auth"."uid"() = "user_id") OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
@@ -24586,10 +25857,12 @@ ALTER TABLE "public"."installed_template" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."invoices" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS jelt_admin_write ON "public"."journal_entry_line_taxes";
 CREATE POLICY "jelt_admin_write" ON "public"."journal_entry_line_taxes" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS jelt_read_auth ON "public"."journal_entry_line_taxes";
 CREATE POLICY "jelt_read_auth" ON "public"."journal_entry_line_taxes" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24678,10 +25951,12 @@ ALTER TABLE "public"."pages" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."payment_reconciliations" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS payrec_admin_write ON "public"."payment_reconciliations";
 CREATE POLICY "payrec_admin_write" ON "public"."payment_reconciliations" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'approver'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS payrec_read_auth ON "public"."payment_reconciliations";
 CREATE POLICY "payrec_read_auth" ON "public"."payment_reconciliations" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24812,22 +26087,27 @@ ALTER TABLE "public"."rfqs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."river_posts" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "river_posts admin update" ON "public"."river_posts";
 CREATE POLICY "river_posts admin update" ON "public"."river_posts" FOR UPDATE TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK (true);
 
 
 
+DROP POLICY IF EXISTS "river_posts delete own or admin" ON "public"."river_posts";
 CREATE POLICY "river_posts delete own or admin" ON "public"."river_posts" FOR DELETE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR "public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS "river_posts insert own" ON "public"."river_posts";
 CREATE POLICY "river_posts insert own" ON "public"."river_posts" FOR INSERT TO "authenticated" WITH CHECK (("author_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "river_posts read authed" ON "public"."river_posts";
 CREATE POLICY "river_posts read authed" ON "public"."river_posts" FOR SELECT TO "authenticated" USING (true);
 
 
 
+DROP POLICY IF EXISTS "river_posts update own" ON "public"."river_posts";
 CREATE POLICY "river_posts update own" ON "public"."river_posts" FOR UPDATE TO "authenticated" USING (("author_id" = "auth"."uid"())) WITH CHECK (("author_id" = "auth"."uid"()));
 
 
@@ -24835,14 +26115,17 @@ CREATE POLICY "river_posts update own" ON "public"."river_posts" FOR UPDATE TO "
 ALTER TABLE "public"."river_reactions" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "river_reactions delete own" ON "public"."river_reactions";
 CREATE POLICY "river_reactions delete own" ON "public"."river_reactions" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "river_reactions insert own" ON "public"."river_reactions";
 CREATE POLICY "river_reactions insert own" ON "public"."river_reactions" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS "river_reactions read authed" ON "public"."river_reactions";
 CREATE POLICY "river_reactions read authed" ON "public"."river_reactions" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24859,18 +26142,22 @@ ALTER TABLE "public"."sales_intelligence_profiles" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."saved_views" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "saved_views delete own" ON "public"."saved_views";
 CREATE POLICY "saved_views delete own" ON "public"."saved_views" FOR DELETE TO "authenticated" USING (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "saved_views insert own" ON "public"."saved_views";
 CREATE POLICY "saved_views insert own" ON "public"."saved_views" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "saved_views read" ON "public"."saved_views";
 CREATE POLICY "saved_views read" ON "public"."saved_views" FOR SELECT TO "authenticated" USING ((("auth"."uid"() = "user_id") OR ("is_shared" = true)));
 
 
 
+DROP POLICY IF EXISTS "saved_views update own" ON "public"."saved_views";
 CREATE POLICY "saved_views update own" ON "public"."saved_views" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
@@ -24878,6 +26165,7 @@ CREATE POLICY "saved_views update own" ON "public"."saved_views" FOR UPDATE TO "
 ALTER TABLE "public"."service_order_lines" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS service_order_lines_admin_all ON "public"."service_order_lines";
 CREATE POLICY "service_order_lines_admin_all" ON "public"."service_order_lines" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role")));
 
 
@@ -24885,10 +26173,12 @@ CREATE POLICY "service_order_lines_admin_all" ON "public"."service_order_lines" 
 ALTER TABLE "public"."service_orders" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS service_orders_admin_all ON "public"."service_orders";
 CREATE POLICY "service_orders_admin_all" ON "public"."service_orders" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS service_orders_assigned_view ON "public"."service_orders";
 CREATE POLICY "service_orders_assigned_view" ON "public"."service_orders" FOR SELECT TO "authenticated" USING (("assigned_to" = "auth"."uid"()));
 
 
@@ -24896,14 +26186,17 @@ CREATE POLICY "service_orders_assigned_view" ON "public"."service_orders" FOR SE
 ALTER TABLE "public"."service_visits" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS service_visits_admin_all ON "public"."service_visits";
 CREATE POLICY "service_visits_admin_all" ON "public"."service_visits" TO "authenticated" USING (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role"))) WITH CHECK (("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'sales'::"public"."app_role") OR "public"."has_role"("auth"."uid"(), 'support'::"public"."app_role")));
 
 
 
+DROP POLICY IF EXISTS service_visits_tech_update ON "public"."service_visits";
 CREATE POLICY "service_visits_tech_update" ON "public"."service_visits" FOR UPDATE TO "authenticated" USING (("technician_id" = "auth"."uid"())) WITH CHECK (("technician_id" = "auth"."uid"()));
 
 
 
+DROP POLICY IF EXISTS service_visits_tech_view ON "public"."service_visits";
 CREATE POLICY "service_visits_tech_view" ON "public"."service_visits" FOR SELECT TO "authenticated" USING (("technician_id" = "auth"."uid"()));
 
 
@@ -24917,10 +26210,12 @@ ALTER TABLE "public"."site_settings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."skills_catalog" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS "skills_catalog admin write" ON "public"."skills_catalog";
 CREATE POLICY "skills_catalog admin write" ON "public"."skills_catalog" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS "skills_catalog read" ON "public"."skills_catalog";
 CREATE POLICY "skills_catalog read" ON "public"."skills_catalog" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24982,10 +26277,12 @@ ALTER TABLE "public"."survey_templates" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."tags" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS tags_admin_all ON "public"."tags";
 CREATE POLICY "tags_admin_all" ON "public"."tags" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS tags_authenticated_read ON "public"."tags";
 CREATE POLICY "tags_authenticated_read" ON "public"."tags" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -24993,10 +26290,12 @@ CREATE POLICY "tags_authenticated_read" ON "public"."tags" FOR SELECT TO "authen
 ALTER TABLE "public"."tax_code_grids" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS tax_code_grids_admin_write ON "public"."tax_code_grids";
 CREATE POLICY "tax_code_grids_admin_write" ON "public"."tax_code_grids" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS tax_code_grids_read_all_auth ON "public"."tax_code_grids";
 CREATE POLICY "tax_code_grids_read_all_auth" ON "public"."tax_code_grids" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -25004,10 +26303,12 @@ CREATE POLICY "tax_code_grids_read_all_auth" ON "public"."tax_code_grids" FOR SE
 ALTER TABLE "public"."tax_codes" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS tax_codes_admin_write ON "public"."tax_codes";
 CREATE POLICY "tax_codes_admin_write" ON "public"."tax_codes" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS tax_codes_read_all_auth ON "public"."tax_codes";
 CREATE POLICY "tax_codes_read_all_auth" ON "public"."tax_codes" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -25015,10 +26316,12 @@ CREATE POLICY "tax_codes_read_all_auth" ON "public"."tax_codes" FOR SELECT TO "a
 ALTER TABLE "public"."tax_grids" ENABLE ROW LEVEL SECURITY;
 
 
+DROP POLICY IF EXISTS tax_grids_admin_write ON "public"."tax_grids";
 CREATE POLICY "tax_grids_admin_write" ON "public"."tax_grids" TO "authenticated" USING ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role")) WITH CHECK ("public"."has_role"("auth"."uid"(), 'admin'::"public"."app_role"));
 
 
 
+DROP POLICY IF EXISTS tax_grids_read_all_auth ON "public"."tax_grids";
 CREATE POLICY "tax_grids_read_all_auth" ON "public"."tax_grids" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -25073,54 +26376,90 @@ ALTER TABLE "public"."wishlist_items" ENABLE ROW LEVEL SECURITY;
 
 
 
-ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
-
-
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."agent_activity";
-
-
-
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."audit_logs";
-
-
-
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."chat_messages";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+  
+  
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."agent_activity";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."leave_allocations";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."audit_logs";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."leave_requests";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."chat_messages";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."manufacturing_orders";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."leave_allocations";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."orders";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."leave_requests";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."pages";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."manufacturing_orders";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."river_posts";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."orders";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."river_reactions";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."pages";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."support_agents";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."river_posts";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 
-ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."support_escalations";
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."river_reactions";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
+
+
+
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."support_agents";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
+
+
+
+DO $idem$ BEGIN
+  ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."support_escalations";
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $idem$;
 
 
 

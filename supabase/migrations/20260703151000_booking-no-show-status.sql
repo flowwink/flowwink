@@ -7,6 +7,10 @@
 
 ALTER TABLE "public"."bookings"
   DROP CONSTRAINT IF EXISTS "bookings_status_check";
-ALTER TABLE "public"."bookings"
-  ADD CONSTRAINT "bookings_status_check"
-  CHECK (("status" = ANY (ARRAY['pending'::"text", 'confirmed'::"text", 'cancelled'::"text", 'completed'::"text", 'no_show'::"text"])));
+
+DO $idem$ BEGIN
+  ALTER TABLE "public"."bookings"
+    ADD CONSTRAINT "bookings_status_check"
+    CHECK (("status" = ANY (ARRAY['pending'::"text", 'confirmed'::"text", 'cancelled'::"text", 'completed'::"text", 'no_show'::"text"])));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;

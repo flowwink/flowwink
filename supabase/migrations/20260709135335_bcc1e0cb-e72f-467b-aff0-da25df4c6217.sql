@@ -11,8 +11,12 @@ ALTER TABLE public.survey_responses
 
 -- Extend template kind to allow 'quiz' (weighted point scoring)
 ALTER TABLE public.survey_templates DROP CONSTRAINT IF EXISTS survey_templates_kind_check;
-ALTER TABLE public.survey_templates ADD CONSTRAINT survey_templates_kind_check
-  CHECK (kind = ANY (ARRAY['nps','csat','ces','custom','quiz']));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.survey_templates ADD CONSTRAINT survey_templates_kind_check
+    CHECK (kind = ANY (ARRAY['nps','csat','ces','custom','quiz']));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- Replace submit_survey_response: computes weighted points against per-question
 -- `points` and `correct` fields on template.questions, plus optional `passed`

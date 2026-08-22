@@ -4,17 +4,23 @@
 -- Idempotent: ON CONFLICT (account_code) refreshes classification but preserves
 -- the row identity.
 
-INSERT INTO public.chart_of_accounts
-  (account_code, account_name, account_type, account_category, normal_balance, is_active, locale)
-VALUES
-  ('1210', 'Maskiner och andra tekniska anläggningar', 'asset',     'tillgångar',   'debit',  true, 'se-bas2024'),
-  ('2090', 'Balanserad vinst eller förlust',           'equity',    'eget kapital', 'credit', true, 'se-bas2024'),
-  ('2641', 'Debiterad ingående moms',                   'asset',     'tillgångar',   'debit',  true, 'se-bas2024'),
-  ('7970', 'Förlust vid avyttring av immateriella och materiella anläggningstillgångar',
-                                                        'expense',   'kostnader',    'debit',  true, 'se-bas2024')
-ON CONFLICT (account_code) DO UPDATE
-SET account_name     = EXCLUDED.account_name,
-    account_type     = EXCLUDED.account_type,
-    account_category = EXCLUDED.account_category,
-    normal_balance   = EXCLUDED.normal_balance,
-    is_active        = true;
+DO $idem$ BEGIN
+  INSERT INTO public.chart_of_accounts
+    (account_code, account_name, account_type, account_category, normal_balance, is_active, locale)
+  VALUES
+    ('1210', 'Maskiner och andra tekniska anläggningar', 'asset',     'tillgångar',   'debit',  true, 'se-bas2024'),
+    ('2090', 'Balanserad vinst eller förlust',           'equity',    'eget kapital', 'credit', true, 'se-bas2024'),
+    ('2641', 'Debiterad ingående moms',                   'asset',     'tillgångar',   'debit',  true, 'se-bas2024'),
+    ('7970', 'Förlust vid avyttring av immateriella och materiella anläggningstillgångar',
+                                                          'expense',   'kostnader',    'debit',  true, 'se-bas2024')
+  ON CONFLICT (account_code) DO UPDATE
+  SET account_name     = EXCLUDED.account_name,
+      account_type     = EXCLUDED.account_type,
+      account_category = EXCLUDED.account_category,
+      normal_balance   = EXCLUDED.normal_balance,
+      is_active        = true;
+EXCEPTION WHEN invalid_column_reference THEN
+  -- Unika nyckeln blev (locale, account_code) i en senare migration. Vid
+  -- omkörning matchar ON CONFLICT (account_code) inget — raderna finns redan.
+  NULL;
+END $idem$;

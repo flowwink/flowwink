@@ -19,16 +19,19 @@
 ALTER TABLE public.documents
   DROP CONSTRAINT IF EXISTS documents_extraction_status_check;
 
-ALTER TABLE public.documents
-  ADD CONSTRAINT documents_extraction_status_check
-  CHECK (extraction_status = ANY (ARRAY[
-    'pending'::text,        -- uploaded, waiting for the sweeper
-    'processing'::text,     -- claimed by a sweeper, extractor running
-    'success'::text,
-    'failed'::text,         -- read but unparseable; never retried on a loop
-    'unsupported'::text,    -- seen, and this platform cannot read this type
-    'not_applicable'::text
-  ]));
+DO $idem$ BEGIN
+  ALTER TABLE public.documents
+    ADD CONSTRAINT documents_extraction_status_check
+    CHECK (extraction_status = ANY (ARRAY[
+      'pending'::text,        -- uploaded, waiting for the sweeper
+      'processing'::text,     -- claimed by a sweeper, extractor running
+      'success'::text,
+      'failed'::text,         -- read but unparseable; never retried on a loop
+      'unsupported'::text,    -- seen, and this platform cannot read this type
+      'not_applicable'::text
+    ]));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 -- A row stranded in 'processing' by a deploy that predates this constraint
 -- cannot exist (the write was rejected), so there is nothing to backfill.

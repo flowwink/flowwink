@@ -8,9 +8,13 @@ ALTER TABLE public.outbound_communications
 
 ALTER TABLE public.outbound_communications
   DROP CONSTRAINT IF EXISTS outbound_communications_direction_check;
-ALTER TABLE public.outbound_communications
-  ADD CONSTRAINT outbound_communications_direction_check
-  CHECK (direction IN ('inbound','outbound'));
+
+DO $idem$ BEGIN
+  ALTER TABLE public.outbound_communications
+    ADD CONSTRAINT outbound_communications_direction_check
+    CHECK (direction IN ('inbound','outbound'));
+EXCEPTION WHEN duplicate_object OR invalid_table_definition OR duplicate_table THEN NULL;
+END $idem$;
 
 CREATE INDEX IF NOT EXISTS idx_outbound_comm_direction
   ON public.outbound_communications (direction, created_at DESC);

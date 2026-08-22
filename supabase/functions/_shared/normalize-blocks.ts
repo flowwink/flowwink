@@ -723,6 +723,32 @@ export function normalizeBlockEnvelopes(blocks: unknown[]): void {
   }
 }
 
+/**
+ * A page is a FLAT ARRAY of blocks. The commonest wrong answer is a shape that
+ * DESCRIBES a page instead — `{ hero: {...}, sections: [...] }` — observed live
+ * 2026-08-22. It used to reach normalizeBlocks and throw `blocks is not
+ * iterable`: a crash message, not an answer. A caller that gets a stack trace
+ * cannot correct itself, so it goes looking for another skill (the exact move
+ * that produced a worse page an hour earlier that evening).
+ *
+ * Returns null when the shape is acceptable (array, or absent). ONE message,
+ * used by both the preflight and the executor — two copies is how the write
+ * paths disagreed about types for months.
+ */
+export function blocksShapeError(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (Array.isArray(raw)) return null;
+  const got = typeof raw === 'object'
+    ? `an object with key(s): ${Object.keys(raw as object).slice(0, 8).join(', ')}`
+    : `a ${typeof raw}`;
+  return (
+    `content_json must be a flat ARRAY of blocks — got ${got}. ` +
+    `A page is not { hero, sections }: every section IS a block, in order. ` +
+    `Shape: [{"type":"hero","data":{"title":"…"}},{"type":"features","data":{"features":[…]}}]. ` +
+    `Call describe_blocks for the block types and their exact fields, then resend the whole array.`
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
@@ -1272,6 +1298,11 @@ export function preflightBlockArgs(
     // content_json is an alias for blocks — `get` returns the column under that
     // name, so that is the name a caller naturally sends back.
     const raw = args.blocks !== undefined ? args.blocks : (args as Record<string, unknown>).content_json;
+    // A non-array is not "nothing to judge" — it IS the error, and returning
+    // NONE here let a doomed write stage and a human approve it before the
+    // executor crashed on it (observed 2026-08-22).
+    const shapeErr = blocksShapeError(raw);
+    if (shapeErr) return { checked: true, errors: [shapeErr] };
     if (!Array.isArray(raw)) return NONE;
     return { checked: true, errors: normalizeBlocks(copy(raw) as unknown[]) };
   }

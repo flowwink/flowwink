@@ -1,7 +1,7 @@
 // agent-execute v2026-04-20-stale-deals-with-contact (lead/company in deal_stale_check)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { normalizeBlockData, normalizeBlocks, validateBlockData } from '../_shared/normalize-blocks.ts';
+import { blocksShapeError, normalizeBlockData, normalizeBlocks, validateBlockData } from '../_shared/normalize-blocks.ts';
 import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { retiredSkillResult } from '../_shared/skills/retired-skills.ts';
 import { applyIdentityPolicy } from '../_shared/site-identity.ts';
@@ -3941,6 +3941,9 @@ async function executePagesAction(
       // disagreeing with itself (the model did as it was told and was refused).
       const effectiveBlocks = blocks !== undefined ? blocks : (args as any).content_json;
       const meta = (args as any).meta !== undefined ? (args as any).meta : (args as any).meta_json;
+
+      const blocksShapeErr = blocksShapeError(effectiveBlocks);
+      if (blocksShapeErr) throw new Error(`${blocksShapeErr} Nothing was written.`);
 
       // Accept a slug wherever an id is wanted, same contract as manage_wiki_page
       // and manage_page_blocks (which already routes through resolvePageId).

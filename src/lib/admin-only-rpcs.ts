@@ -36,9 +36,18 @@ export const ADMIN_ONLY_RPCS: Readonly<Record<string, string>> = {
   // schemaläggarna körs via service_role från edge och står därför INTE här —
   // guardrailen listar bara frontend-anropade RPC:er.
   register_flowpilot_cron: 'Schemalägger cron (net.http_post). Admin, inte modul.',
+  // Skriver site_settings.modules — vilka moduler som ÖVER HUVUD TAGET finns.
+  // Får aldrig grindas AV matrisen: den som saknar en modul måste ändå kunna
+  // föda raden som gör modulen synlig för servern. Admin är rätt dimension.
+  ensure_modules_settings: 'Sår modulraden (plattformskonfig). Får aldrig grindas av matrisen den föder.',
   disable_demo_cycle_cron: 'Plattformens cron-schema, inte en modulyta.',
   run_period_lock_tests: 'Testhärnesk för periodlåsen — plattformsverktyg.',
   instance_sync_status: 'Driftstatus för instansen (fyra lager). Plattformsyta.',
+  // Läser cron.job + net._http_response för hela instansen — schemat är
+  // plattformsnivå, inte en modulyta, och rapporten avslöjar vilka jobb som
+  // pekar på en ANNAN instans. Samma dimension som register_flowpilot_cron
+  // ovan: den som får schemalägga jobb får läsa schemat.
+  cron_health_report: 'Läser instansens cron-schema och HTTP-fel. Plattformsyta, inte modul.',
 
   // ── Matrisen kan inte grinda sig själv ───────────────────────────────────
   // En roll som fick sin modul via matrisen får inte kunna skriva om matrisen.

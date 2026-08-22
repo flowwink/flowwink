@@ -47,6 +47,20 @@ FROM (VALUES
 WHERE NOT EXISTS (
   SELECT 1 FROM public.chart_of_accounts c
    WHERE c.account_code = v.account_code AND c.locale = v.locale
+)
+-- COUNTRY GUARD (2026-08-22, se 20260822234500): fifteen Swedish purchase
+-- accounts were the single largest reason a brand-new install anywhere in the
+-- world woke up with a half-Swedish chart. They exist to make the SKV value
+-- boxes readable; an instance with no activated locale files no SKV return.
+AND (
+  EXISTS (
+    SELECT 1 FROM public.site_settings s
+     WHERE s.key = 'accounting_locale'
+       AND COALESCE(s.value ->> 'id', NULLIF(s.value #>> '{}', '')) = 'se-bas2024'
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.journal_entry_lines l WHERE l.account_code = v.account_code
+  )
 );
 
 -- ─── 2. Respect each line's own account ─────────────────────────────────────

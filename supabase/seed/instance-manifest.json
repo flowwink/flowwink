@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260822180000",
-      "migrations_count": 485,
+      "migration_head": "20260822234500",
+      "migrations_count": 489,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1945,6 +1945,22 @@
         {
           "version": "20260822180000",
           "name": "b0c1d2e3-reorder-point-has-one-home"
+        },
+        {
+          "version": "20260822190000",
+          "name": "the-module-row-is-born-with-the-instance"
+        },
+        {
+          "version": "20260822200000",
+          "name": "the-event-lane-gets-a-registrar"
+        },
+        {
+          "version": "20260822230000",
+          "name": "c1d2e3f4-a-guard-that-only-looks-like-a-guard"
+        },
+        {
+          "version": "20260822234500",
+          "name": "e3f4a5b6-a-country-is-a-choice-not-a-default"
         }
       ]
     },

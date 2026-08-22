@@ -8,6 +8,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { EmptyDashboard } from '@/components/admin/EmptyDashboard';
+import { InstanceReadinessChecklist } from '@/components/admin/InstanceReadinessChecklist';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -553,6 +554,14 @@ export default function AdminDashboard() {
             </Sheet>
           )}
         </div>
+
+        {/*
+          Instance readiness — above everything, because the risk this answers
+          is a dashboard that LOOKS healthy while the agent surface is empty
+          and the automation file is dead. Renders nothing at all once every
+          measurable layer is complete, so a mature instance never sees it.
+        */}
+        <InstanceReadinessChecklist />
 
         {/* Empty State - Show when no pages exist */}
         {isEmpty ? (

@@ -44,7 +44,15 @@ SELECT
   'platform'
 FROM public.agent_skills s
 WHERE s.name = 'run_daily_briefing'
-ON CONFLICT DO NOTHING;
+  -- `ON CONFLICT DO NOTHING` stod här. agent_automations har bara PK på `id`
+  -- (defaultad uuid) — ingen unik nyckel på `name`. En NAKEN ON CONFLICT kan
+  -- därför aldrig utlösas: den var en vakt som bara SÅG UT som en vakt, och
+  -- varje omkörning la till ännu en "Daily Briefing"-rad. Syskonen (Quote
+  -- Expiry Reminders, Webinar Reminders, Notify approvers in cowork chat)
+  -- använder NOT EXISTS — samma mönster här.
+  AND NOT EXISTS (
+    SELECT 1 FROM public.agent_automations a WHERE a.name = 'Daily Briefing'
+  );
 
 -- If a row already exists with this name, ensure schedule + executor are correct
 UPDATE public.agent_automations

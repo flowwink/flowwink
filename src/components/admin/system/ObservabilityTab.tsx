@@ -13,6 +13,7 @@ import { useAgentEvents } from '@/hooks/useAgentEvents';
 import { useAutomationHealth } from '@/hooks/useAutomationHealth';
 import { useKnowledgeIndexHealth, useRunKnowledgeIndexer, KNOWLEDGE_SOURCES } from '@/hooks/useKnowledgeIndex';
 import { McpActivityPanel } from '@/components/admin/developer/McpActivityPanel';
+import { PLATFORM_SKILL_NAMES } from '@/lib/platform-seeds';
 
 function timeAgo(iso: string | null) {
   if (!iso) return '—';
@@ -443,13 +444,25 @@ function InstanceSyncCard() {
       ? `all ${expected.schema.migrations_count} migrations applied`
       : `${missing.length} migration(s) MISSING — e.g. ${missing.slice(0, 2).map((m) => m.name).join(', ')}${missing.length > 2 ? '…' : ''}`;
 
+  // Floor check before stamp check. A never-seeded instance has NO stamp, and
+  // "no stamp yet" reads as a neutral grey — so the loudest possible failure
+  // (the agent surface was never built at all: measured 6 skills on a fresh
+  // replay vs 537 on a mature instance) rendered as a shrug. Carrying fewer
+  // skills than the platform layer alone requires is not ambiguous: the 4th
+  // deploy layer never landed. That is red.
+  const platformFloor = PLATFORM_SKILL_NAMES.length;
+  const skillsTotal = data?.skills?.total ?? null;
+  const belowFloor = skillsTotal !== null && skillsTotal < platformFloor;
+
   const stampHash = data?.skills?.stamp?.seed_hash ?? null;
-  const skillsOk = stampHash === null ? null : stampHash === expected.skills.seed_hash;
-  const skillsDetail = stampHash === null
-    ? `${data?.skills?.enabled ?? '…'} enabled — no sync stamp yet (run "Sync skills from code" once to stamp)`
-    : skillsOk
-      ? `bundle in sync (${data?.skills?.enabled ?? 0} enabled)`
-      : 'seed bundle OUT OF DATE — run "Sync skills from code" (hard-refresh /admin/modules first)';
+  const skillsOk = belowFloor ? false : stampHash === null ? null : stampHash === expected.skills.seed_hash;
+  const skillsDetail = belowFloor
+    ? `only ${skillsTotal} skill(s) — below the ${platformFloor}-skill platform floor. The skills layer was never seeded; the agent surface is empty. Run "Sync skills from code" in Modules.`
+    : stampHash === null
+      ? `${data?.skills?.enabled ?? '…'} enabled — no sync stamp yet (run "Sync skills from code" once to stamp)`
+      : skillsOk
+        ? `bundle in sync (${data?.skills?.enabled ?? 0} enabled)`
+        : 'seed bundle OUT OF DATE — run "Sync skills from code" (hard-refresh /admin/modules first)';
 
   const allKnownGreen = schemaOk === true && skillsOk === true;
 

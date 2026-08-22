@@ -96,7 +96,10 @@ describe('fresh-install replay guardrails', () => {
     }
     expect(sql, 'finalizer must retry on deadlock_detected').toMatch(/WHEN\s+deadlock_detected/i);
     expect(sql, 'finalizer must re-activate the jobs the stream quiesced').toMatch(
-      /cron\.alter_job\([^)]*active\s*=>\s*true/i,
+      // Både `=>` och `:=` är giltig namngiven-argument-syntax i PL/pgSQL.
+      // Matchar vi bara den ena blir vakten blind för den andra — se
+      // kommentaren vid quiescence-detektionen nedan för varför det är farligt.
+      /cron\.alter_job\([^)]*active\s*(?:=>|:=)\s*true/i,
     );
   });
 
@@ -108,15 +111,33 @@ describe('fresh-install replay guardrails', () => {
     // there would deactivate every job on a live site with nothing ever
     // turning them back on. (Its own new job is safe active: it only calls
     // objects from migrations ≤ its own timestamp.)
+    // Undantag: RIKTAD deaktivering är inte blankettsläckning. De här två
+    // stänger av cron-jobb vars kommando pekar på en FRÄMMANDE instans host
+    // (giftkedjan: en klonad instans ärver den ursprungliga instansens URL:er
+    // och skjuter trafik dit). Loopen är filtrerad på
+    // `substring(command ...) IS DISTINCT FROM v_own_host` — den rör aldrig ett
+    // jobb som pekar rätt. Regeln nedan finns för att hindra att någon släcker
+    // ALLA jobb efter finalizern; den ska inte hindra att man släcker de jobb
+    // som bevisligen är fel.
+    const TARGETED_DEACTIVATION = new Set([
+      '20260812190000_outbound-cron-follows-the-instance.sql',
+      '20260814145336_ee7237cc-0e9c-42aa-9e5b-d0ab4e73e721.sql',
+    ]);
     const mustQuiesce: string[] = [];
     const mustNotQuiesce: string[] = [];
     for (const f of files) {
       if (f === FINALIZER) continue;
       const sql = stripComments(read(f));
       const schedules = /cron\.schedule\s*\(/i.test(sql);
-      const quiesces = /cron\.alter_job\([^)]*active\s*=>\s*false/i.test(sql);
+      // `=>` OCH `:=` — PL/pgSQL godtar båda för namngivna argument. Vakten
+      // måste se båda, och den farliga riktningen är POST-finalizer: en
+      // migration som skriver `active := false` slår i verkligheten av varje
+      // cron-jobb på en levande instans, men matchar vi bara `=>` passerar den
+      // tyst genom "must NOT quiesce"-kontrollen. Fleeten skulle gå mörk utan
+      // att ett enda test blev rött.
+      const quiesces = /cron\.alter_job\([^)]*active\s*(?:=>|:=)\s*false/i.test(sql);
       if (f < FINALIZER && schedules && !quiesces) mustQuiesce.push(f);
-      if (f > FINALIZER && quiesces) mustNotQuiesce.push(f);
+      if (f > FINALIZER && quiesces && !TARGETED_DEACTIVATION.has(f)) mustNotQuiesce.push(f);
     }
     expect(
       mustQuiesce,

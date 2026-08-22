@@ -64,32 +64,17 @@ describe('declared actions exist in the handler', () => {
 });
 
 describe('cross-references point at skills that exist', () => {
-  // A ratchet, not a clean sheet. Sweeping the catalog for "(use X)" pointers
-  // turned up 20 more of them beyond the four this session was sent to fix —
-  // some plain phantoms (seo_audit, get_exchange_rate), some plural near-misses
-  // the executor's inflection tolerance happens to absorb (manage_projects →
-  // manage_project). They live in a dozen modules other work is touching, so
-  // they are recorded rather than silently swept: this list may SHRINK freely,
-  // and anything new fails the build.
-  const KNOWN_DANGLING = new Set([
-    'seo_content_brief → seo_audit',
-    'manage_contract → manage_projects',
-    'manage_document → manage_media',
-    'cart_recovery_check → check_order',
-    'submit_expense_report → generate_expense_report',
-    'queue_beta_test → openclaw_test',
-    'register_fixed_asset → expenses',
-    'register_fixed_asset → bills',
-    'set_exchange_rate → get_exchange_rate',
-    'manage_project_task → manage_crm_tasks',
-    'register_vendor_invoice → create_invoice',
-    'flag_invoice_variance → get_invoice',
-    'manage_job_posting → manage_application',
-    'post_to_river → manage_tickets',
-    'sales_profile_setup → manage_business_identity',
-    'log_time → manage_projects',
-    'generate_blog_from_webinar → manage_blog',
-  ]);
+  // A ratchet that has now reached zero. The sweep that introduced this test
+  // recorded 17 pre-existing phantoms rather than silently fixing them — some
+  // plain ghosts (seo_audit, get_exchange_rate, manage_media), some plural
+  // near-misses the executor's inflection tolerance happens to absorb
+  // (manage_projects → manage_project). All 17 have since been repointed at the
+  // skill that actually does the job, or reworded so the pointer is gone where
+  // no such skill exists (set_exchange_rate had nothing to convert with;
+  // manage_approvals pointed at manage_purchase_order, which is update_
+  // purchase_order). The list may SHRINK freely and must never grow: every
+  // "(use X)" in the catalog now names a skill an agent can actually reach.
+  const KNOWN_DANGLING = new Set<string>([]);
 
   const danglingPointers = (): string[] => {
     const known = new Set(seeds.map((s) => s.name));

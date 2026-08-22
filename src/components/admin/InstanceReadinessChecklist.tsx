@@ -342,8 +342,15 @@ export function InstanceReadinessChecklist({
   // Minns om den här mountningen någonsin haft något att göra — grunden för
   // klart-läget nedan. En ref, inte state: den ska inte trigga en rendering,
   // bara färga den sista.
+  //
+  // `!isLoading` är inte kosmetik utan hela villkoret. `ready` härleds ur rader
+  // som är `unknown` innan datan finns, så FÖRSTA renderingen på varje
+  // sidladdning har ready=false. Utan laddningsvakten sattes flaggan där, på
+  // varje instans, och kortet kunde aldrig försvinna igen — vilket är precis
+  // vad som hände på nordbrygg: allt grönt, "This instance is set up", och
+  // kortet låg kvar. Kvittot ska bara minnas ARBETE, inte ovisshet.
   const hadWorkRef = useRef(false);
-  if (!ready) hadWorkRef.current = true;
+  if (!isLoading && !ready) hadWorkRef.current = true;
   const hadWork = hadWorkRef.current;
 
   const invalidate = useCallback(async () => {
@@ -487,7 +494,8 @@ export function InstanceReadinessChecklist({
             <CardDescription className="mt-1">
               {ready ? (
                 <>
-                  Every measurable layer is complete — this card no longer appears on the dashboard.
+                  Every measurable layer is complete — this card is done and will not come back unless
+                  something it measures goes missing.
                   {advisory.length > 0 && ` ${advisory.length} row(s) below can only be verified outside FlowWink.`}
                 </>
               ) : (
@@ -499,6 +507,20 @@ export function InstanceReadinessChecklist({
               )}
             </CardDescription>
           </div>
+          {ready && !alwaysShow && (
+            // En väg framåt, inte en dismiss. Att dölja ett RÖTT kort gömmer
+            // sanning; att gå vidare från ett grönt gömmer ingenting — kortet
+            // är ändå borta vid nästa laddning. Navigeringen avmonterar
+            // dashboarden, så kvitto-refen nollställs på köpet.
+            // Mallgalleriet är nästa steg på riktigt: en färdigprovisionerad
+            // instans har schema, skills och cron — men noll sidor.
+            <Button asChild size="sm">
+              <Link to="/admin/templates">
+                Build your site
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              </Link>
+            </Button>
+          )}
           {!ready && (
             <Badge variant="outline" className="shrink-0">
               {rows.length - blocking.length}/{rows.length}

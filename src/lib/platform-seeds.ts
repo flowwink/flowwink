@@ -609,6 +609,41 @@ export const PLATFORM_AUTOMATIONS: AutomationSeed[] = [
 ];
 
 /**
+ * The platform skill FLOOR: every instance must carry all of these, whatever
+ * its module toggles say. Derived from PLATFORM_SKILLS so the floor can never
+ * drift from the seeds it describes.
+ */
+export const PLATFORM_SKILL_NAMES: readonly string[] = PLATFORM_SKILLS.map((s) => s.name);
+
+/**
+ * Which platform skills this instance is missing.
+ *
+ * This is the self-heal CONDITION, kept pure so it can be tested without a DB.
+ * It is a *completeness* check over the whole platform layer — deliberately not
+ * the presence/absence of one named skill.
+ *
+ * Why that matters (regression this replaces): the old self-heal fired only when
+ * `run_daily_briefing` was ABSENT. That skill is seeded by a migration, so it is
+ * present on every instance from birth — the branch was structurally dead and a
+ * fresh install came up with 6 skills, no platform cron, and an empty agent
+ * surface while the admin UI, public site and chat all looked healthy.
+ *
+ * A completeness check cannot die that way: it is TRUE (work to do) on a fresh
+ * install, and becomes FALSE the moment bootstrapPlatform() has inserted the
+ * whole layer — the seeding itself is the marker, so there is no separate flag
+ * to go stale. It also re-arms for free when a release adds a platform skill.
+ */
+export function missingPlatformSkills(presentSkillNames: Iterable<string>): string[] {
+  const present = new Set(presentSkillNames);
+  return PLATFORM_SKILL_NAMES.filter((name) => !present.has(name));
+}
+
+/** Convenience inverse of missingPlatformSkills(). */
+export function isPlatformLayerComplete(presentSkillNames: Iterable<string>): boolean {
+  return missingPlatformSkills(presentSkillNames).length === 0;
+}
+
+/**
  * Seed all platform-level skills and automations.
  * Idempotent — safe to run multiple times. Refreshes definition fields on
  * existing rows so deploys propagate without a manual DB poke.

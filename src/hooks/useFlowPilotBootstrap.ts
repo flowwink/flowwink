@@ -2,9 +2,18 @@ import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { useToast } from '@/hooks/use-toast';
 import { useModules } from '@/hooks/useModules';
-import { bootstrapModule } from '@/lib/module-bootstrap';
-import { bootstrapPlatform } from '@/lib/platform-seeds';
+import { bootstrapModule, ensurePlatformCron, ensureSkillRegistry } from '@/lib/module-bootstrap';
+import { bootstrapPlatform, missingPlatformSkills, PLATFORM_SKILL_NAMES } from '@/lib/platform-seeds';
+
+/**
+ * Module-scoped so a StrictMode double-mount (or a route change that remounts
+ * AdminLayout) cannot run the heal twice — a useRef is recreated on remount.
+ * It resets on page reload, so a FAILED heal is retried on the next load
+ * instead of being permanently swallowed.
+ */
+let platformHealStarted = false;
 
 /**
  * useFlowPilotBootstrap
@@ -14,13 +23,23 @@ import { bootstrapPlatform } from '@/lib/platform-seeds';
  *     seeds soul, identity, agents-rules, tool_policy, starter objectives,
  *     core skills, and the weekly digest automation.
  *
- * This hook now serves as a SAFETY NET only: if FlowPilot is enabled but soul
- * is missing (e.g. partial install, manual DB edit), it triggers a re-bootstrap
- * of the module. No more calls to the legacy setup-flowpilot edge function from here.
+ * This hook serves as a SAFETY NET, and it carries TWO independent branches:
+ *
+ *   1. PLATFORM (unconditional) — seeds the always-on platform skill layer and
+ *      the platform cron jobs when they are incomplete. Runs regardless of any
+ *      module toggle, because a fresh install has no other automatic path to
+ *      its 4th deploy layer. Never enables a module.
+ *   2. FLOWPILOT (only when the FlowPilot module is enabled) — if soul is
+ *      missing (partial install, manual DB edit), re-bootstraps the module.
+ *
+ * Keeping them separate is deliberate: branch 2 is gated on a module that is
+ * OFF by default, so it can never be the carrier for platform-level repair.
+ * No more calls to the legacy setup-flowpilot edge function from here.
  */
 export function useFlowPilotBootstrap() {
   const hasTriggered = useRef(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: modules } = useModules();
   const isFlowPilotEnabled = modules?.flowpilot?.enabled ?? false;
 
@@ -52,28 +71,128 @@ export function useFlowPilotBootstrap() {
     },
   });
 
-  // Platform seeds (Daily Briefing, etc.) must exist on every instance regardless
-  // of FlowPilot. Self-heal once per session: if the briefing skill is missing,
-  // re-seed the platform layer.
+  // ── Platform layer self-heal ────────────────────────────────────────────
+  //
+  // A self-provisioned instance gets three of its four deploy layers for free
+  // (schema via migrations, edge functions via the Supabase GitHub integration,
+  // frontend via Vercel). The FOURTH — agent_skills, which is table DATA born
+  // from TypeScript seeds — has no deploy layer at all. Nothing ever applied it
+  // automatically, and nothing errored: the admin UI, the public site and the
+  // chat all render fine while the agent surface is empty and every automation
+  // sits at run_count 0 forever because the per-minute cron tick never existed.
+  // Measured on a fresh replay: 6 skills, 6 cron jobs (a mature instance: 537
+  // and 15).
+  //
+  // The previous guard here fired only when `run_daily_briefing` was ABSENT —
+  // but that skill is migration-seeded, so it is present from birth and the
+  // branch never ran. The condition is now the completeness of the whole
+  // platform skill layer (see missingPlatformSkills), which is true on a fresh
+  // install and false on a mature one.
+  //
+  // SCOPE: this seeds the PLATFORM layer only — the always-on skills and
+  // automations from platform-seeds plus the platform cron jobs. It never
+  // enables a module. ensureSkillRegistry() delegates to sync_skills_from_code,
+  // which is itself module-gated server-side (`platform` always, other modules
+  // only when site_settings.modules says enabled), so an operator's module
+  // choices are respected, not overridden.
+  //
+  // COST: on a healthy instance this is exactly one bounded read — 14 names, at
+  // most 14 rows — and then it stops. Nothing heavy runs per page load.
   useEffect(() => {
+    if (platformHealStarted) return;
+    platformHealStarted = true;
+
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from('agent_skills')
-        .select('id')
-        .eq('name', 'run_daily_briefing')
-        .maybeSingle();
-      if (cancelled || error) return;
-      if (!data) {
-        logger.log('[PlatformBootstrap] run_daily_briefing missing — seeding platform layer');
-        await bootstrapPlatform().catch((err) =>
-          logger.warn('[PlatformBootstrap] Platform seed failed (non-fatal):', err)
-        );
+        .select('name')
+        .in('name', PLATFORM_SKILL_NAMES as string[]);
+      if (cancelled) return;
+      if (error) {
+        // Can't read the registry — say so rather than assuming health.
+        logger.warn('[PlatformBootstrap] Could not read agent_skills:', error.message);
+        platformHealStarted = false; // let the next load retry
+        return;
       }
+
+      const missing = missingPlatformSkills((data ?? []).map((r) => r.name as string));
+      if (missing.length === 0) return; // steady state: one read, done
+
+      logger.log(
+        `[PlatformBootstrap] Platform layer incomplete — ${missing.length}/${PLATFORM_SKILL_NAMES.length} skills missing ` +
+          `(${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}). Seeding platform layer + cron.`
+      );
+
+      const errors: string[] = [];
+
+      // 1. Platform skills + platform automations (Daily Briefing, Integration
+      //    Health Check, Skill Curator). Always-on, module-toggle-independent.
+      try {
+        const seeded = await bootstrapPlatform();
+        errors.push(...seeded.errors);
+      } catch (err) {
+        errors.push(`platform seeds: ${err instanceof Error ? err.message : 'unknown error'}`);
+      }
+
+      // 2. Platform cron. Postgres cannot derive the instance's own URL/anon key;
+      //    the browser can. Without this there is no heartbeat, no automation
+      //    dispatcher and no retrieval sweep — the silent half-install.
+      const cron = await ensurePlatformCron();
+      if (!cron.registered) errors.push(`platform cron: ${cron.error ?? 'not registered'}`);
+
+      // 3. Reconcile the registry against the deployed seed artifact. Module-gated
+      //    server-side; hash-gated so it is cheap once applied.
+      const registry = await ensureSkillRegistry();
+      if (registry.status === 'error') errors.push(`skill registry: ${registry.error ?? 'sync failed'}`);
+
+      if (cancelled) return;
+
+      // Verify — don't trust the seeder's own report. Re-read the floor.
+      const { data: after } = await supabase
+        .from('agent_skills')
+        .select('name')
+        .in('name', PLATFORM_SKILL_NAMES as string[]);
+      const stillMissing = missingPlatformSkills((after ?? []).map((r) => r.name as string));
+
+      queryClient.invalidateQueries({ queryKey: ['agent-skills'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-automations'] });
+      queryClient.invalidateQueries({ queryKey: ['instance-sync-status'] });
+
+      if (cancelled) return;
+
+      // Be honest. A half-succeeded seed is the exact failure mode this exists
+      // to kill, so it must never be swallowed.
+      if (stillMissing.length > 0 || errors.length > 0) {
+        platformHealStarted = false; // retry on the next load
+        logger.error(
+          `[PlatformBootstrap] Platform seed incomplete — ${stillMissing.length} skill(s) still missing.`,
+          errors
+        );
+        toast({
+          variant: 'destructive',
+          title: 'Platform layer not fully seeded',
+          description:
+            (stillMissing.length > 0
+              ? `${stillMissing.length} platform skill(s) still missing (${stillMissing.slice(0, 3).join(', ')}). `
+              : '') +
+            (errors[0] ? `First error: ${errors[0]}. ` : '') +
+            'Open Modules → "Sync skills from code".',
+        });
+        return;
+      }
+
+      logger.log('[PlatformBootstrap] Platform layer seeded — skills, automations and cron registered.');
+      toast({
+        title: 'Platform layer seeded',
+        description: `${PLATFORM_SKILL_NAMES.length} platform skills, platform automations and scheduled jobs registered on this instance.`,
+      });
     })();
+
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

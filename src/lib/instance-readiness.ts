@@ -169,7 +169,28 @@ export interface ReadinessInput {
 export const SUPABASE_AUTH_URL_CONFIG =
   'https://supabase.com/dashboard/project/_/auth/url-configuration';
 
-function schemaRow(input: ReadinessInput['schema']): ReadinessRow {
+/**
+ * Har den här instansen NÅGONSIN blivit färdigställd?
+ *
+ * Skiljer två tillstånd som ser identiska ut i ledgern men betyder motsatta
+ * saker: en MOGEN instans som ligger en release efter (frontenden deployar
+ * rutinmässigt före sina migrationer — ofarligt), och en NY installation vars
+ * körning stannade halvvägs (fyrtio migrationer saknas — allvarligt).
+ *
+ * Signalen är att ingen någonsin gjort klart: plattformslagret aldrig seedat
+ * OCH inget modulval sparat. En instans i drift har passerat båda för länge
+ * sedan. Verkligt fall 2026-08-22: nordbryggs körning tog slut på tid vid
+ * 449/489, och utan den här skillnaden hade schema-raden sagt "deploy currency,
+ * not an onboarding gap" till en admin vars installation var avbruten.
+ */
+function neverFinished(input: ReadinessInput): boolean {
+  const platformUnseeded =
+    input.skills.total != null && input.skills.total < input.skills.platformFloor;
+  const noModuleChoice = input.modules.chosen === false;
+  return platformUnseeded && noModuleChoice;
+}
+
+function schemaRow(input: ReadinessInput['schema'], unfinished = false): ReadinessRow {
   const base = {
     id: 'schema' as const,
     label: 'Database schema',
@@ -213,6 +234,22 @@ function schemaRow(input: ReadinessInput['schema']): ReadinessRow {
       ...base,
       status: 'ok',
       detail: `All ${input.expected.length} migrations this build expects are applied.`,
+    };
+  }
+
+  // På en instans som ALDRIG blivit färdigställd är en eftersläpande ledger
+  // inte releasefördröjning — det är en avbruten provisionering. Körningen kan
+  // ta slut på tid mitt i kedjan (nordbrygg stannade på 449/489). Den är
+  // återupptagbar, eftersom varje migration är omkörbar — men bara om någon
+  // vet att en ny push är det som startar om den. Utan den här grenen läser
+  // admin "deploy currency, ignorera" på en halvfärdig installation.
+  if (unfinished) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: `The provisioning run stopped short: ${missing.length} of ${input.expected.length} migrations were never applied. This instance has never been finished, so this is an unfinished install — not release lag.`,
+      note: 'Runs can time out mid-chain. Every migration is re-runnable, so pushing to the connected repo starts a new run that resumes where this one stopped.',
+      action: { kind: 'link', to: '/admin/system', label: 'See the full layer diff' },
     };
   }
 
@@ -516,7 +553,7 @@ function modulesRow(input: ReadinessInput['modules']): ReadinessRow {
  */
 export function evaluateInstanceReadiness(input: ReadinessInput): ReadinessRow[] {
   return [
-    schemaRow(input.schema),
+    schemaRow(input.schema, neverFinished(input)),
     edgeRow(input.edge),
     skillsRow(input.skills),
     cronRow(input.cron),

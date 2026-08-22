@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
-import { useModules } from '@/hooks/useModules';
-import { bootstrapModule, ensurePlatformCron, ensureSkillRegistry } from '@/lib/module-bootstrap';
+import { useModules, defaultModulesSettings } from '@/hooks/useModules';
+import { bootstrapModule, ensureModulesRow, ensurePlatformCron, ensureSkillRegistry } from '@/lib/module-bootstrap';
 import { bootstrapPlatform, missingPlatformSkills, PLATFORM_SKILL_NAMES } from '@/lib/platform-seeds';
 
 /**
@@ -98,6 +98,41 @@ export function useFlowPilotBootstrap() {
   //
   // COST: on a healthy instance this is exactly one bounded read — 14 names, at
   // most 14 rows — and then it stops. Nothing heavy runs per page load.
+  // ── Module row self-heal ────────────────────────────────────────────────
+  //
+  // Runs UNCONDITIONALLY and independently of the platform heal below, because
+  // the two failure modes do not overlap: a mature instance whose modules row
+  // was emptied (ResetSiteDialog wrote `value: {}` for months) has a complete
+  // skill layer, so the platform branch early-returns and would never repair
+  // it. See ensureModulesRow() for the split brain this closes.
+  //
+  // Deduped at module scope inside ensureModulesRow, so a StrictMode double
+  // mount or a route change costs one RPC per page load at most — and that RPC
+  // writes nothing once the row is complete.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await ensureModulesRow(defaultModulesSettings);
+      if (cancelled) return;
+      if (result.missing.length === 0) return;
+
+      // Shout. A modules row the server cannot see is the difference between
+      // "18 modules enabled" in the UI and 14 skills on the instance.
+      toast({
+        variant: 'destructive',
+        title: 'Module settings not stored',
+        description:
+          `${result.missing.length} module(s) are missing from site_settings.modules ` +
+          `(${result.missing.slice(0, 3).join(', ')}). Edge functions and the skill sync will treat them as OFF. ` +
+          (result.error ? `Error: ${result.error}` : 'Open Modules and save once to write the row.'),
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (platformHealStarted) return;
     platformHealStarted = true;
@@ -143,6 +178,17 @@ export function useFlowPilotBootstrap() {
 
       // 3. Reconcile the registry against the deployed seed artifact. Module-gated
       //    server-side; hash-gated so it is cheap once applied.
+      //
+      //    ORDER MATTERS: sync_skills_from_code reads site_settings.modules and
+      //    syncs only what it says is enabled. Run it before the row exists and
+      //    it syncs the `platform` pseudo-module alone — a fresh install lands
+      //    on 14 skills, reports success, and looks fine. Await the row first.
+      const modulesRow = await ensureModulesRow(defaultModulesSettings);
+      if (modulesRow.missing.length > 0) {
+        errors.push(
+          `module settings row incomplete (${modulesRow.missing.length} missing) — skill sync will under-report`
+        );
+      }
       const registry = await ensureSkillRegistry();
       if (registry.status === 'error') errors.push(`skill registry: ${registry.error ?? 'sync failed'}`);
 

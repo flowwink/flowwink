@@ -13,6 +13,7 @@ import { useAgentEvents } from '@/hooks/useAgentEvents';
 import { useAutomationHealth } from '@/hooks/useAutomationHealth';
 import { useKnowledgeIndexHealth, useRunKnowledgeIndexer, KNOWLEDGE_SOURCES } from '@/hooks/useKnowledgeIndex';
 import { McpActivityPanel } from '@/components/admin/developer/McpActivityPanel';
+import { InstanceReadinessChecklist } from '@/components/admin/InstanceReadinessChecklist';
 import { PLATFORM_SKILL_NAMES } from '@/lib/platform-seeds';
 
 function timeAgo(iso: string | null) {
@@ -645,6 +646,13 @@ export function ObservabilityTab() {
         <LoginActivityCard />
         <KnowledgeIndexCard />
       </div>
+      {/*
+        The provisioning checklist keeps a home here after it has vanished from
+        the dashboard. `alwaysShow` is correct on THIS page and nowhere else:
+        Observability is a page you open on purpose, so a green checklist is an
+        answer ("yes, this instance was finished"), not furniture.
+      */}
+      <InstanceReadinessChecklist variant="compact" alwaysShow />
       <InstanceSyncCard />
       <CronHealthCard />
       <div className="pt-4 border-t">

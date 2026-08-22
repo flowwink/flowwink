@@ -27,15 +27,34 @@
 -- (backdated files are silently skipped).
 
 -- ── 1. Chart of accounts: benefit cost account ───────────────────────────────
-DO $idem$ BEGIN
-  INSERT INTO public.chart_of_accounts (account_code, account_name, account_type, account_category, normal_balance, locale)
-  VALUES ('7385', 'Kostnader för skattepliktiga förmåner', 'expense', 'Personalkostnader', 'debit', 'se-bas2024')
-  ON CONFLICT (account_code) DO NOTHING;
-EXCEPTION WHEN invalid_column_reference THEN
-  -- Unika nyckeln blev (locale, account_code) i en senare migration. Vid
-  -- omkörning matchar ON CONFLICT (account_code) inget — raderna finns redan.
-  NULL;
-END $idem$;
+-- COUNTRY GUARD (2026-08-22, se 20260822234500): seeded only where the instance
+-- has activated se-bas2024, or already posts to 7385. A generic install must
+-- not be born with a Swedish personnel account. Note that 7399 — the
+-- counter-account this very function posts against — was never seeded by any
+-- migration ("7399 already exists" above was true of dev, not of a fresh
+-- install), so 7385's row was never the dependency it looked like: the chart
+-- row is reference data, the posting itself is a hardcoded code in
+-- approve_payroll_run and neither has a foreign key to the other.
+INSERT INTO public.chart_of_accounts
+  (account_code, account_name, account_type, account_category, normal_balance, locale)
+SELECT v.*
+FROM (VALUES
+  ('7385', 'Kostnader för skattepliktiga förmåner', 'expense', 'Personalkostnader', 'debit', 'se-bas2024')
+) AS v(account_code, account_name, account_type, account_category, normal_balance, locale)
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.chart_of_accounts c
+   WHERE c.account_code = v.account_code AND c.locale = v.locale
+)
+AND (
+  EXISTS (
+    SELECT 1 FROM public.site_settings s
+     WHERE s.key = 'accounting_locale'
+       AND COALESCE(s.value ->> 'id', NULLIF(s.value #>> '{}', '')) = 'se-bas2024'
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.journal_entry_lines l WHERE l.account_code = v.account_code
+  )
+);
 
 
 -- ── 2. Run creation v3: net pay excludes non-cash benefits ───────────────────

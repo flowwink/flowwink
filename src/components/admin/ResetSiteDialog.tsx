@@ -32,12 +32,26 @@ import {
   Database,
 } from 'lucide-react';
 import { getAllModuleOwnership, wipeModulesData, countModuleRows } from '@/lib/module-data-ownership';
-import type { ModulesSettings } from '@/hooks/useModules';
+import { defaultModulesSettings, type ModulesSettings } from '@/hooks/useModules';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 
 interface ResetSiteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * The value a reset writes to `site_settings.modules`.
+ *
+ * Derived from `defaultModulesSettings` so it can never drift from what the
+ * code considers a fresh install, and stored in the same minimal `{enabled}`
+ * shape the seed RPC uses — structural fields (name, icon, category…) are owned
+ * by code and re-applied on read by useModules().
+ */
+function modulesResetValue(): Record<string, { enabled: boolean }> {
+  return Object.fromEntries(
+    Object.entries(defaultModulesSettings).map(([id, cfg]) => [id, { enabled: cfg.enabled === true }])
+  );
 }
 
 type ResetStep = 'warning' | 'confirm' | 'password' | 'progress' | 'complete';
@@ -304,7 +318,14 @@ export function ResetSiteDialog({ open, onOpenChange }: ResetSiteDialogProps) {
             { key: 'custom_scripts', value: { headStart: '', headEnd: '', bodyStart: '', bodyEnd: '' } },
             { key: 'store', value: { currency: localeSettings.default_currency, taxRate: 0, taxDisplay: 'hidden', taxLabel: 'VAT', storeName: '' } },
             { key: 'autonomy_schedule', value: { timezone: 'Europe/Stockholm', heartbeatEnabled: true, briefingEnabled: true, briefingHour: 8, learnEnabled: true, learnHour: 3, heartbeatHours: [0, 12] } },
-            { key: 'modules', value: {} },
+            // NOT `{}`. An empty modules row is not "reset to defaults" — it is
+            // the split brain: useModules() merges the code defaults over it and
+            // shows a configured product, while the server's isModuleEnabled()
+            // reads every module as OFF and ~20 edge functions silently no-op
+            // (sync_skills_from_code included — it would resync the instance
+            // down to the `platform` skills alone). Reset means "back to what a
+            // fresh install is born with", so write exactly that.
+            { key: 'modules', value: modulesResetValue() },
             { key: 'footer', value: {} },
             { key: 'integrations', value: {} },
             { key: 'kb', value: { enabled: true, menuSlug: 'help', menuTitle: 'Help', showInMenu: true } },

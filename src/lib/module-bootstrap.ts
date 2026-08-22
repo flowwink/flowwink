@@ -180,6 +180,93 @@ export async function ensureSkillRegistry(): Promise<{ status: string; error?: s
 }
 
 /**
+ * Ensure `site_settings.modules` EXISTS, seeded from the code defaults.
+ *
+ * The client and the server read an absent row differently, and both are
+ * internally consistent:
+ *   • useModules() merges `defaultModulesSettings` over the stored row, so an
+ *     absent row renders as a configured product — 7 modules on, nav populated.
+ *     It never persists that merge.
+ *   • _shared/modules.ts (isModuleEnabled) reads `value?.[name]?.enabled`, so an
+ *     absent row means EVERY module is off.
+ *
+ * Together that is a split brain: the admin sees a working instance while ~20
+ * edge functions no-op. The sharpest consequence is sync_skills_from_code — it
+ * is module-gated server-side, so with no row it syncs only the `platform`
+ * pseudo-module and a fresh install lands on 14 skills instead of ~150.
+ *
+ * The row is seeded at birth by migration 20260822190000. THIS caller exists
+ * for the two things a migration cannot do:
+ *   1. carry the LIVE `defaultModulesSettings`, so a module added to the code
+ *      after install still reaches the row (the migration's ledger row stops it
+ *      from ever running again), and
+ *   2. repair an instance whose row was emptied — ResetSiteDialog wrote
+ *      `{key:'modules', value:{}}` for months, manufacturing exactly the state
+ *      the migration was written to prevent.
+ *
+ * The RPC owns the rule, not this function: fill missing keys, never overwrite
+ * an operator's choice. Steady state is one round trip that writes nothing.
+ * Measure → act → READ BACK → shout: the RPC's own report is not evidence, so
+ * the row is re-read and compared against the defaults before we call it done.
+ */
+let modulesRowPromise: Promise<{ status: string; missing: string[]; error?: string }> | null = null;
+
+export function ensureModulesRow(
+  defaults: Record<string, { enabled?: boolean }>
+): Promise<{ status: string; missing: string[]; error?: string }> {
+  if (modulesRowPromise) return modulesRowPromise;
+
+  modulesRowPromise = (async () => {
+    const ids = Object.keys(defaults);
+    const minimal = Object.fromEntries(ids.map((id) => [id, { enabled: defaults[id]?.enabled === true }]));
+
+    try {
+      // `ensure_modules_settings` is newer than the generated types. Cast the
+      // ARGUMENTS, not `supabase.rpc` itself — the RPC-vs-matrix guardrail scans
+      // for the literal `.rpc('name'` and goes blind on `(supabase.rpc as any)`.
+      const { data, error } = await supabase.rpc('ensure_modules_settings' as never, {
+        p_defaults: minimal as unknown as Json,
+      } as never);
+      if (error) throw error;
+
+      // Verify — don't trust the writer's own report. Re-read the row.
+      const { data: row, error: readErr } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'modules')
+        .maybeSingle();
+      if (readErr) throw readErr;
+
+      const stored = (row?.value ?? {}) as Record<string, unknown>;
+      const missing = ids.filter((id) => !(id in stored));
+      const status = (data as { status?: string } | null)?.status ?? 'unknown';
+
+      if (missing.length > 0) {
+        logger.error(
+          `[module-bootstrap] site_settings.modules still missing ${missing.length}/${ids.length} module(s) ` +
+            `after ensure_modules_settings (${missing.slice(0, 5).join(', ')}). ` +
+            'Server-side module gating will read these as OFF while the admin UI shows them ON.'
+        );
+        modulesRowPromise = null; // let the next load retry
+        return { status, missing };
+      }
+
+      if (status !== 'unchanged') {
+        logger.log(`[module-bootstrap] site_settings.modules ${status} — ${ids.length} modules now visible to the server`);
+      }
+      return { status, missing: [] };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error seeding module settings';
+      logger.error('[module-bootstrap] could not seed site_settings.modules:', msg);
+      modulesRowPromise = null; // let the next load retry
+      return { status: 'error', missing: ids, error: msg };
+    }
+  })();
+
+  return modulesRowPromise;
+}
+
+/**
  * Run bootstrap for a module being enabled.
  * Idempotent — safe to run multiple times.
  *

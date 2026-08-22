@@ -66,6 +66,21 @@ FROM (VALUES
 WHERE NOT EXISTS (
   SELECT 1 FROM public.chart_of_accounts c
    WHERE c.account_code = v.account_code AND c.locale = v.locale
+)
+-- COUNTRY GUARD (2026-08-22, se 20260822234500): the boxes these accounts feed
+-- are Swedish, and so are the accounts. A locale that has not been chosen has
+-- no VAT return to file, so it needs no rows here — and every row it did get
+-- made its chart look partly configured, which is exactly the state
+-- import_accounting_standard refuses to import over.
+AND (
+  EXISTS (
+    SELECT 1 FROM public.site_settings s
+     WHERE s.key = 'accounting_locale'
+       AND COALESCE(s.value ->> 'id', NULLIF(s.value #>> '{}', '')) = 'se-bas2024'
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.journal_entry_lines l WHERE l.account_code = v.account_code
+  )
 );
 
 -- ─── 3. Roles, not account numbers ──────────────────────────────────────────

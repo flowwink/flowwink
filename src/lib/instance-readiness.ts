@@ -1,0 +1,550 @@
+/**
+ * Instance readiness — the first screen that makes a half-provisioned instance
+ * impossible to miss.
+ *
+ * The failure this exists to kill: a fresh FlowWink instance renders a healthy
+ * dashboard while the agent surface is empty and the automation file is dead.
+ * Nothing errors. Measured on a fresh replay (2026-08-22): 6 skills, zero
+ * platform cron jobs, no module choice ever made — versus 537 skills and 8
+ * platform jobs on a mature instance. Every layer was silently absent.
+ *
+ * A "site" is four layers (schema, edge functions, skills, frontend) plus the
+ * human steps nobody can do for you (auth redirects, an AI key, a module
+ * choice). This module turns all seven into ROWS with a measured status.
+ *
+ * Two design rules, both non-negotiable:
+ *
+ *   1. HONESTY BEFORE GREEN. A row that cannot be measured from the browser
+ *      says so (`unverifiable`) and never renders as ok. `measuredBy` on every
+ *      row states, verbatim, what the icon is derived from — nobody has to
+ *      trust the colour. The whole day's bug-hunt was silent half-success; this
+ *      surface must not become another instance of it.
+ *   2. IT DISAPPEARS BY ITSELF. Visibility is a pure function of measured
+ *      state — there is no dismiss button, because a dismiss button hides
+ *      truth. Only `blocked` and `unknown` gate; a row that is merely drifted
+ *      or unverifiable can never keep the checklist alive forever.
+ *
+ * This file is deliberately pure (no React, no Supabase) so the visibility rule
+ * can be pinned by tests against both a fresh and a mature instance.
+ */
+
+/**
+ * - `ok`            — measured, and complete.
+ * - `blocked`       — measured, and incomplete. The instance is not finished.
+ * - `drift`         — measured, provisioned, but not matching THIS build.
+ *                     Advisory: build currency is Instance Sync's job, not the
+ *                     onboarding checklist's, so it never gates.
+ * - `unverifiable`  — structurally not measurable from a browser session.
+ *                     Never green, never gating; carries an exact instruction.
+ * - `unknown`       — the probe itself failed. Health is not claimed, so it
+ *                     gates: an instance we cannot read is not a finished one.
+ */
+export type ReadinessStatus = 'ok' | 'blocked' | 'drift' | 'unverifiable' | 'unknown';
+
+export type ReadinessRowId =
+  | 'schema'
+  | 'edge_functions'
+  | 'skills'
+  | 'cron'
+  | 'ai_provider'
+  | 'site_url'
+  | 'modules';
+
+export type ReadinessAction =
+  /** Something the UI can do on this instance, right now. */
+  | { kind: 'run'; id: 'seed-skills' | 'register-cron'; label: string }
+  /** A decision that lives on another admin page — go make it there. */
+  | { kind: 'link'; to: string; label: string }
+  /** Only doable outside FlowWink (Supabase dashboard, a shell). */
+  | { kind: 'external'; href: string; label: string };
+
+export interface ReadinessRow {
+  id: ReadinessRowId;
+  label: string;
+  status: ReadinessStatus;
+  /** What the measurement actually says, in one line. */
+  detail: string;
+  /** Why this step exists at all — pedagogy in the UI, not in a manual. */
+  why: string;
+  /** The provenance of the icon: what was read, and from where. */
+  measuredBy: string;
+  action?: ReadinessAction;
+  /**
+   * An instruction that is true regardless of status — used where only PART of
+   * a row is measurable and the rest must be stated rather than implied.
+   */
+  note?: string;
+}
+
+/**
+ * The platform cron floor: exactly the jobs `register_flowpilot_cron()` +
+ * `register_retrieval_cron()` schedule, i.e. what `ensurePlatformCron()`
+ * guarantees. Derived from those two functions rather than from a mature
+ * instance's `cron.job` listing, so a business-owned job (gmail-reconcile,
+ * contract billing) can never masquerade as a platform requirement.
+ *
+ * Without these there is no heartbeat, no automation tick and no retrieval
+ * sweep — every automation sits at run_count 0 forever, and nothing errors.
+ */
+export const PLATFORM_CRON_JOBS: readonly string[] = [
+  'flowpilot-heartbeat',
+  'flowpilot-learn',
+  'flowpilot-daily-briefing',
+  'automation-dispatcher-every-minute',
+  'publish-scheduled-pages',
+  'instance-health-check',
+  'knowledge-indexer',
+  'newsletter-dispatch-scheduled',
+];
+
+export interface CronJobState {
+  jobname: string;
+  active: boolean;
+  /** cron_health_report() flags a job whose command points at another instance. */
+  foreign_host?: boolean | null;
+}
+
+export interface ReadinessInput {
+  schema: {
+    /** The ledger, or null when it could not be read. */
+    applied: Array<{ version: string; name: string }> | null;
+    /** What this build expects (from the bundled instance manifest). */
+    expected: Array<{ version: string; name: string }>;
+  };
+  skills: {
+    /** Rows in agent_skills, or null when the status RPC failed. */
+    total: number | null;
+    enabled: number | null;
+    /** site_settings.instance_manifest_stamp.seed_hash, if ever stamped. */
+    stampHash: string | null;
+    expectedHash: string;
+    expectedCount: number;
+    /** PLATFORM_SKILL_NAMES.length — the always-on floor. */
+    platformFloor: number;
+  };
+  edge: {
+    /** Last set reported by the deploy tool, or null when never reported. */
+    deployed: string[] | null;
+    deployedAt: string | null;
+    expected: string[];
+  };
+  cron: {
+    /** cron_health_report().jobs, or null when the RPC failed. */
+    jobs: CronJobState[] | null;
+    /** false when pg_cron is not installed at all. */
+    available: boolean | null;
+  };
+  ai: {
+    /** true/false when check-secrets answered; null when it did not. */
+    configured: boolean | null;
+  };
+  siteUrl: {
+    /** site_settings.general.siteUrl */
+    configured: string | null;
+    /** window.location.origin — the value to paste into Supabase. */
+    origin: string;
+  };
+  modules: {
+    /**
+     * Whether an operator has ever SAVED a module choice — not merely whether
+     * the row exists.
+     *
+     * The row's existence stopped being a signal on 2026-08-22, when
+     * `ensure_modules_settings()` started seeding it at birth to end the
+     * client/server split brain. What still separates a decision from a
+     * default is the SHAPE of what was written: the birth seed stores the
+     * minimal `{id: {enabled}}`, while an explicit save in /admin/modules
+     * persists the whole merged ModulesSettings object (name, category,
+     * autonomy, …). An entry carrying more than `enabled` therefore came from
+     * a human pressing Save.
+     *
+     * null = could not read.
+     */
+    chosen: boolean | null;
+    enabledCount: number | null;
+  };
+}
+
+/** Supabase dashboard deep link for the URL configuration (auth redirects). */
+export const SUPABASE_AUTH_URL_CONFIG =
+  'https://supabase.com/dashboard/project/_/auth/url-configuration';
+
+function schemaRow(input: ReadinessInput['schema']): ReadinessRow {
+  const base = {
+    id: 'schema' as const,
+    label: 'Database schema',
+    why: 'Every other layer sits on this one. A missing migration means missing tables and RPCs — the handlers that call them fail one at a time, at runtime, in whichever module happens to touch them first.',
+    measuredBy:
+      'supabase_migrations ledger via instance_sync_status(), matched by identity against the migration list bundled in this build.',
+  };
+
+  if (input.applied === null) {
+    return {
+      ...base,
+      status: 'unknown',
+      detail: 'Migration ledger could not be read — health is not claimed.',
+      action: { kind: 'link', to: '/admin/system', label: 'Open Observability' },
+    };
+  }
+
+  // Match by IDENTITY, not by head timestamp: a managed ledger stamps `version`
+  // with the RUN time, so comparing heads false-flags it. Same rule as the
+  // Instance Sync card — one convention, two surfaces.
+  const versions = new Set(input.applied.map((m) => m.version));
+  const names = new Set(input.applied.map((m) => m.name));
+  const missing = input.expected.filter(
+    (m) => !versions.has(m.version) && !names.has(m.name) && !names.has(`${m.version}_${m.name}`),
+  );
+
+  // An EMPTY ledger is the provisioning failure: no migration ever ran, so
+  // there is no instance yet. That gates.
+  if (input.applied.length === 0) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: `No migrations have been applied at all — this database was never provisioned (${input.expected.length} expected).`,
+      note: 'Migrations reach an instance through the deploy rail (supabase db push / the fork sync), never from this UI.',
+      action: { kind: 'link', to: '/admin/system', label: 'See the full layer diff' },
+    };
+  }
+
+  if (missing.length === 0) {
+    return {
+      ...base,
+      status: 'ok',
+      detail: `All ${input.expected.length} migrations this build expects are applied.`,
+    };
+  }
+
+  // A populated ledger that lags THIS build is drift, not an unfinished
+  // install — and the frontend is the one auto-deployed layer, so it routinely
+  // arrives minutes before the migrations it expects. Gating here would put
+  // the onboarding card on a mature instance's dashboard on every release,
+  // which is how a checklist becomes furniture. Build currency has an owner
+  // already: the Instance Sync card, which reports the same diff in red.
+  return {
+    ...base,
+    status: 'drift',
+    detail: `${missing.length} of ${input.expected.length} migrations this build expects are not applied yet — e.g. ${missing
+      .slice(0, 2)
+      .map((m) => m.name)
+      .join(', ')}${missing.length > 2 ? '…' : ''}.`,
+    note: 'Deploy currency, not an onboarding gap. Migrations reach an instance through the deploy rail (supabase db push / the fork sync), never from this UI — Instance Sync tracks the diff.',
+    action: { kind: 'link', to: '/admin/system', label: 'See the full layer diff' },
+  };
+}
+
+function skillsRow(input: ReadinessInput['skills']): ReadinessRow {
+  const base = {
+    id: 'skills' as const,
+    label: 'Agent skills',
+    why: 'Skills are table DATA born from TypeScript seeds — the one deploy layer that no push, deploy or migration ever applies. Without them FlowPilot and every external agent have nothing to call, and the site looks perfectly healthy while doing it.',
+    measuredBy: 'agent_skills row count + the seed stamp, via instance_sync_status().',
+  };
+
+  if (input.total === null) {
+    return {
+      ...base,
+      status: 'unknown',
+      detail: 'Skill registry could not be read — health is not claimed.',
+      action: { kind: 'link', to: '/admin/modules', label: 'Open Modules' },
+    };
+  }
+
+  // Floor check FIRST. "No stamp yet" is ambiguous; carrying fewer skills than
+  // the always-on platform layer alone requires is not — the layer was never
+  // applied at all.
+  if (input.total < input.platformFloor) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: `Only ${input.total} skill(s) — below the ${input.platformFloor}-skill platform floor. The agent surface was never built on this instance.`,
+      action: { kind: 'run', id: 'seed-skills', label: 'Seed skills now' },
+    };
+  }
+
+  if (input.stampHash === null) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: `${input.total} skill(s) present but never synced from code — no seed stamp on this instance, so nothing guarantees the definitions match any build.`,
+      action: { kind: 'run', id: 'seed-skills', label: 'Seed skills now' },
+    };
+  }
+
+  if (input.stampHash !== input.expectedHash) {
+    // Provisioned, but from another build. That is drift, not an unfinished
+    // install — Instance Sync owns build currency, so this never gates.
+    return {
+      ...base,
+      status: 'drift',
+      detail: `${input.total} skill(s) seeded, but from a different build than this frontend (${input.expectedCount} expected).`,
+      note: 'Not an onboarding gap — run "Sync skills from code" in Modules when convenient. Instance Sync tracks build currency.',
+      action: { kind: 'run', id: 'seed-skills', label: 'Sync skills from code' },
+    };
+  }
+
+  return {
+    ...base,
+    status: 'ok',
+    detail: `${input.total} skill(s) seeded (${input.enabled ?? 0} enabled), matching this build.`,
+  };
+}
+
+function edgeRow(input: ReadinessInput['edge']): ReadinessRow {
+  const base = {
+    id: 'edge_functions' as const,
+    label: 'Edge functions',
+    why: 'Every `edge:` skill handler, the MCP gateway and the public chat endpoint live here. A function that was never deployed fails only when something calls it.',
+  };
+
+  // The browser cannot list a project's deployed functions — there is no such
+  // API from an anon/authenticated session, and probing 77 URLs is not a
+  // measurement, it is a guess. What DOES exist is a self-report the deploy
+  // tool writes. A report is not a probe, and this row says so.
+  if (input.deployed === null) {
+    return {
+      ...base,
+      status: 'unverifiable',
+      detail: `Cannot be measured from here. This build expects ${input.expected.length} functions; nothing on this instance has ever reported what is deployed.`,
+      measuredBy:
+        'Nothing. The browser has no API for listing deployed functions — this row is never green on a guess.',
+      note: 'The deploy tool (flowwink.sh /update-funcs) records its own result in site_settings.edge_functions_deployed. Until it runs, the Supabase Functions view is the only source of truth.',
+      action: {
+        kind: 'external',
+        href: 'https://supabase.com/dashboard/project/_/functions',
+        label: 'Open Supabase Functions',
+      },
+    };
+  }
+
+  const deployedSet = new Set(input.deployed);
+  const missing = input.expected.filter((fn) => !deployedSet.has(fn));
+  const reportedAt = input.deployedAt ? ` (reported ${input.deployedAt.slice(0, 10)})` : '';
+
+  if (missing.length === 0) {
+    return {
+      ...base,
+      status: 'unverifiable',
+      detail: `The deploy tool last reported all ${input.expected.length} functions deployed${reportedAt}.`,
+      measuredBy:
+        'site_settings.edge_functions_deployed — what the deploy tool SAID it did, not a probe of what is running.',
+      note: 'Still a self-report: it can only be as fresh as the last deploy run. Supabase Functions is authoritative.',
+    };
+  }
+
+  return {
+    ...base,
+    status: 'drift',
+    detail: `The last deploy report${reportedAt} is missing ${missing.length} function(s) this build expects — e.g. ${missing
+      .slice(0, 3)
+      .join(', ')}${missing.length > 3 ? '…' : ''}.`,
+    measuredBy:
+      'site_settings.edge_functions_deployed vs this build\'s manifest — a stale report reads the same as a missing deploy, so this never gates the checklist.',
+    action: {
+      kind: 'external',
+      href: 'https://supabase.com/dashboard/project/_/functions',
+      label: 'Open Supabase Functions',
+    },
+  };
+}
+
+function cronRow(input: ReadinessInput['cron']): ReadinessRow {
+  const base = {
+    id: 'cron' as const,
+    label: 'Scheduled jobs',
+    why: 'The automation file only moves because a cron job ticks it. Without these there is no heartbeat, no dispatcher tick and no retrieval sweep — every automation stays at run_count 0 forever, and nothing anywhere reports an error.',
+    measuredBy: `cron.job via cron_health_report(), against the ${PLATFORM_CRON_JOBS.length} jobs ensurePlatformCron() registers.`,
+  };
+
+  if (input.jobs === null) {
+    return {
+      ...base,
+      status: 'unknown',
+      detail: 'Scheduled jobs could not be read — health is not claimed.',
+      action: { kind: 'run', id: 'register-cron', label: 'Register platform jobs' },
+    };
+  }
+
+  if (input.available === false) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: 'pg_cron is not installed on this database — nothing scheduled can ever run.',
+      note: 'Enable the pg_cron extension on the Supabase project, then re-run the platform job registration.',
+      action: {
+        kind: 'external',
+        href: 'https://supabase.com/dashboard/project/_/database/extensions',
+        label: 'Open Supabase Extensions',
+      },
+    };
+  }
+
+  const byName = new Map(input.jobs.map((j) => [j.jobname, j]));
+  const missing = PLATFORM_CRON_JOBS.filter((n) => !byName.has(n));
+  const inactive = PLATFORM_CRON_JOBS.filter((n) => byName.get(n)?.active === false);
+  // The poison-chain class: a job cloned from another instance keeps pointing
+  // at that instance's URL and silently drives someone else's site.
+  const foreign = input.jobs.filter((j) => j.foreign_host === true).map((j) => j.jobname);
+
+  if (missing.length === 0 && inactive.length === 0 && foreign.length === 0) {
+    return {
+      ...base,
+      status: 'ok',
+      detail: `All ${PLATFORM_CRON_JOBS.length} platform jobs are scheduled and active on this instance.`,
+    };
+  }
+
+  const problems: string[] = [];
+  if (missing.length) problems.push(`${missing.length} missing (${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''})`);
+  if (inactive.length) problems.push(`${inactive.length} inactive`);
+  if (foreign.length) problems.push(`${foreign.length} pointing at ANOTHER instance (${foreign.slice(0, 2).join(', ')})`);
+
+  return {
+    ...base,
+    status: 'blocked',
+    detail: `Platform jobs: ${problems.join(' · ')}.`,
+    action: { kind: 'run', id: 'register-cron', label: 'Register platform jobs' },
+  };
+}
+
+function aiRow(input: ReadinessInput['ai']): ReadinessRow {
+  const base = {
+    id: 'ai_provider' as const,
+    label: 'AI provider',
+    why: 'FlowPilot, the public chat and every AI-backed block resolve through one provider. With no key the surfaces still render — they just answer nothing, which is the hardest failure to spot.',
+    measuredBy:
+      'check-secrets presence booleans (openai / gemini / anthropic) plus the integrations table for a local model. Presence only — no key value ever leaves the edge function.',
+  };
+
+  if (input.configured === null) {
+    return {
+      ...base,
+      status: 'unknown',
+      detail: 'Provider status could not be read — health is not claimed.',
+      action: { kind: 'link', to: '/admin/integrations', label: 'Open Integrations' },
+    };
+  }
+
+  if (!input.configured) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: 'No AI provider key is present on this instance.',
+      note: 'Keys are edge-function secrets — set them on the Supabase project (or point the local-model integration at your own endpoint), then reload.',
+      action: { kind: 'link', to: '/admin/integrations', label: 'Open Integrations' },
+    };
+  }
+
+  return { ...base, status: 'ok', detail: 'At least one AI provider is configured.' };
+}
+
+function siteUrlRow(input: ReadinessInput['siteUrl']): ReadinessRow {
+  const base = {
+    id: 'site_url' as const,
+    label: 'Public URL & auth redirects',
+    why: 'Password resets, colleague invites and signup confirmations are links built from a URL. Get it wrong and every one of those emails sends your users to localhost — the mail is delivered, the flow is dead.',
+    measuredBy:
+      'site_settings.general.siteUrl. Supabase Auth\'s own Site URL lives in the project dashboard and CANNOT be read from a browser session — this icon covers the FlowWink half only.',
+    note: `Second half, unverifiable from here: set Supabase → Authentication → URL Configuration → Site URL to ${input.origin} and add it to the redirect allow-list. Nothing in this UI can read or write that value.`,
+    action: {
+      kind: 'external' as const,
+      href: SUPABASE_AUTH_URL_CONFIG,
+      label: 'Open Supabase URL configuration',
+    },
+  };
+
+  if (!input.configured) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: `No public site URL is set. Backend links have no absolute address to build from. This instance is being served from ${input.origin}.`,
+    };
+  }
+
+  return {
+    ...base,
+    status: 'ok',
+    detail: `Public site URL is ${input.configured}.`,
+  };
+}
+
+function modulesRow(input: ReadinessInput['modules']): ReadinessRow {
+  const base = {
+    id: 'modules' as const,
+    label: 'Module choice',
+    why: 'Modules decide which nav, skills and automations this business actually gets. Running on shipped defaults is not a decision — it is the absence of one, and it stays invisible because defaults look exactly like choices.',
+    measuredBy:
+      'The SHAPE of site_settings.modules. The birth seed writes only {enabled} per module; saving in Modules persists the full module objects. Anything richer than {enabled} means a human pressed Save.',
+  };
+
+  if (input.chosen === null) {
+    return {
+      ...base,
+      status: 'unknown',
+      detail: 'Module settings could not be read — health is not claimed.',
+      action: { kind: 'link', to: '/admin/modules', label: 'Open Modules' },
+    };
+  }
+
+  if (!input.chosen) {
+    return {
+      ...base,
+      status: 'blocked',
+      detail: `No module choice has ever been saved — this instance is running on the shipped defaults${
+        input.enabledCount != null ? ` (${input.enabledCount} enabled)` : ''
+      }. Review them and save, even if you keep them all.`,
+      action: { kind: 'link', to: '/admin/modules', label: 'Choose modules' },
+    };
+  }
+
+  return {
+    ...base,
+    status: 'ok',
+    detail: `Modules were chosen for this instance${
+      input.enabledCount != null ? ` (${input.enabledCount} enabled)` : ''
+    }.`,
+  };
+}
+
+/**
+ * Evaluate every row from measured state. Pure — same input, same rows.
+ *
+ * Row order is the order an instance is built in: schema → functions → skills
+ * → jobs, then the three human steps. That is also the order in which a
+ * failure upstream explains a failure downstream.
+ */
+export function evaluateInstanceReadiness(input: ReadinessInput): ReadinessRow[] {
+  return [
+    schemaRow(input.schema),
+    edgeRow(input.edge),
+    skillsRow(input.skills),
+    cronRow(input.cron),
+    aiRow(input.ai),
+    siteUrlRow(input.siteUrl),
+    modulesRow(input.modules),
+  ];
+}
+
+/**
+ * Which rows keep the checklist on screen.
+ *
+ * `blocked` — measured as incomplete.
+ * `unknown` — the probe failed, so completeness was never established. An
+ *             instance we cannot read is not a finished instance; claiming
+ *             otherwise would be exactly the silent half-success this surface
+ *             exists to expose.
+ *
+ * `drift` and `unverifiable` deliberately do NOT gate. Neither can ever be
+ * resolved to green from this UI, so gating on them would make the checklist
+ * immortal — and an immortal checklist is furniture, which is how a mature
+ * instance learns to ignore it.
+ */
+export function blockingRows(rows: ReadinessRow[]): ReadinessRow[] {
+  return rows.filter((r) => r.status === 'blocked' || r.status === 'unknown');
+}
+
+/** True when nothing is blocking — the checklist removes itself. */
+export function isInstanceReady(rows: ReadinessRow[]): boolean {
+  return blockingRows(rows).length === 0;
+}

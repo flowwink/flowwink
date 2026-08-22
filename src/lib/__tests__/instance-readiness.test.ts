@@ -271,8 +271,17 @@ describe('the checklist obeys the rule, and cannot be dismissed', () => {
   const dashboard = readFileSync(join(process.cwd(), 'src/pages/admin/AdminDashboard.tsx'), 'utf8');
 
   it('renders nothing when the pure rule says the instance is ready', () => {
-    expect(component).toMatch(/if \(ready && !alwaysShow\) return null;/);
+    // Synligheten är en ren funktion av MÄTT tillstånd — `ready` styr, och
+    // kortet försvinner av sig självt. Kvitto-läget (hadWork) håller kvar det
+    // under den mountning som faktiskt gjorde jobbet, så det sista klicket får
+    // ett svar i stället för att kortet bara tystnar; en ny sidladdning börjar
+    // med hadWork=false och då är det borta. Testet låser REGELN, inte den
+    // exakta raden — annars fäller det varje omformulering.
+    expect(component).toMatch(/if \(ready && !alwaysShow[^)]*\) return null;/);
     expect(component).toMatch(/isInstanceReady/);
+    // Kvittot får bara bero på denna mountning: en ref som nollställs vid
+    // omladdning, aldrig något persistent.
+    expect(component).toMatch(/hadWorkRef\s*=\s*useRef\(false\)/);
   });
 
   it('has no dismiss/hide/snooze escape hatch', () => {

@@ -22,7 +22,7 @@
  * The measurement rules and the visibility rule are pure and tested in
  * `src/lib/instance-readiness.ts`.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -330,12 +330,31 @@ export function InstanceReadinessChecklist({
   const [running, setRunning] = useState<string | null>(null);
   const compact = variant === 'compact';
 
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['instance-sync-status'] });
-    queryClient.invalidateQueries({ queryKey: ['cron-health-report'] });
-    queryClient.invalidateQueries({ queryKey: ['cron-health'] });
-    queryClient.invalidateQueries({ queryKey: ['agent-skills'] });
-    queryClient.invalidateQueries({ queryKey: ['agent-automations'] });
+  /**
+   * Läs om varje rad åtgärderna kan ha ändrat — och VÄNTA IN läsningen.
+   *
+   * `['instance-readiness','settings']` saknades här, vilket är varför en satt
+   * site-URL krävde en manuell omladdning för att synas: skrivningen gick
+   * igenom, raden läste kvar gammal data, och kortet såg ut att ignorera
+   * klicket. Await:en gör att raderna hunnit uppdateras innan resultatet
+   * påstås — samma regel som allt annat här: verifiera, lita inte.
+   */
+  // Minns om den här mountningen någonsin haft något att göra — grunden för
+  // klart-läget nedan. En ref, inte state: den ska inte trigga en rendering,
+  // bara färga den sista.
+  const hadWorkRef = useRef(false);
+  if (!ready) hadWorkRef.current = true;
+  const hadWork = hadWorkRef.current;
+
+  const invalidate = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['instance-sync-status'] }),
+      queryClient.invalidateQueries({ queryKey: ['instance-readiness', 'settings'] }),
+      queryClient.invalidateQueries({ queryKey: ['cron-health-report'] }),
+      queryClient.invalidateQueries({ queryKey: ['cron-health'] }),
+      queryClient.invalidateQueries({ queryKey: ['agent-skills'] }),
+      queryClient.invalidateQueries({ queryKey: ['agent-automations'] }),
+    ]);
   }, [queryClient]);
 
   const handleRun = useCallback(
@@ -345,7 +364,7 @@ export function InstanceReadinessChecklist({
         if (id === 'seed-skills') {
           const platform = await bootstrapPlatform();
           const registry = await ensureSkillRegistry();
-          invalidate();
+          await invalidate();
           // Verify, don't trust: the seeder's own report is a claim. Re-read
           // the registry and quote the number that came back.
           const { count } = await supabase
@@ -380,7 +399,7 @@ export function InstanceReadinessChecklist({
             if (stampError) {
               logger.warn('[Readiness] seed stamp failed:', stampError.message);
             }
-            invalidate();
+            await invalidate();
           }
 
           toast({
@@ -401,7 +420,7 @@ export function InstanceReadinessChecklist({
           const { error: urlError } = await supabase
             .from('site_settings')
             .upsert({ key: 'general', value: merged } as never, { onConflict: 'key' });
-          invalidate();
+          await invalidate();
           // Verifiera, lita inte: läs tillbaka och citera vad som faktiskt står.
           const { data: after } = await supabase
             .from('site_settings').select('value').eq('key', 'general').maybeSingle();
@@ -417,7 +436,7 @@ export function InstanceReadinessChecklist({
           });
         } else {
           const cron = await ensurePlatformCron();
-          invalidate();
+          await invalidate();
           toast({
             variant: cron.registered ? 'default' : 'destructive',
             title: cron.registered ? 'Platform jobs registered' : 'Could not register platform jobs',
@@ -443,7 +462,12 @@ export function InstanceReadinessChecklist({
   // Never flash a checklist at an instance that turns out to be complete: wait
   // for the verdict before delivering one.
   if (isLoading) return null;
-  if (ready && !alwaysShow) return null;
+  // Ett kort som bara TYSTNAR säger inte om det gick vägen eller om något gick
+  // sönder. Har den här mountningen visat arbete och allt sedan löst sig,
+  // stannar kortet kvar i ett klart-läge tills sidan laddas om — så att sista
+  // klicket får ett kvitto. Det är inte en dismiss: nästa laddning är den borta
+  // av sig själv, och tas ett värde bort kommer den tillbaka.
+  if (ready && !alwaysShow && !hadWork) return null;
 
   const advisory = rows.filter((r) => r.status === 'drift' || r.status === 'unverifiable');
 
@@ -453,8 +477,12 @@ export function InstanceReadinessChecklist({
         <div className="flex items-start justify-between gap-4">
           <div>
             <CardTitle className="font-serif flex items-center gap-2">
-              <Rocket className="h-4 w-4 text-primary" />
-              Finish setting up this instance
+              {ready ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <Rocket className="h-4 w-4 text-primary" />
+              )}
+              {ready ? 'This instance is set up' : 'Finish setting up this instance'}
             </CardTitle>
             <CardDescription className="mt-1">
               {ready ? (

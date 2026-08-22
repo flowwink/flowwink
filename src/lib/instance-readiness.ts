@@ -143,6 +143,12 @@ export interface ReadinessInput {
     configured: string | null;
     /** window.location.origin — the value to paste into Supabase. */
     origin: string;
+    /**
+     * Projektets Supabase-URL. Avgör om instansen är moln eller self-hosted:
+     * en self-hosted stack har varken dashboard eller Management-API, så
+     * andra halvan sätts som miljövariabel i stället.
+     */
+    supabaseUrl?: string | null;
   };
   modules: {
     /**
@@ -476,19 +482,37 @@ function aiRow(input: ReadinessInput['ai']): ReadinessRow {
   return { ...base, status: 'ok', detail: 'At least one AI provider is configured.' };
 }
 
+/** Värdnamnet ur en URL, tomt om den inte går att tolka — får aldrig kasta i en statusrad. */
+function safeHost(url: string): string {
+  try { return new URL(url).host; } catch { return ''; }
+}
+
 function siteUrlRow(input: ReadinessInput['siteUrl']): ReadinessRow {
+  // Self-hosted Supabase has no dashboard to link to and no Management API —
+  // Auth's Site URL is an environment variable there (GOTRUE_SITE_URL /
+  // GOTRUE_URI_ALLOW_LIST), set where the container is defined. Pointing a
+  // self-hosted operator at supabase.com/dashboard is worse than saying
+  // nothing: it sends them somewhere their instance does not exist.
+  // Detection is the project host — cloud projects live on *.supabase.co.
+  const selfHosted =
+    !!input.supabaseUrl && !/(^|\.)supabase\.co$/i.test(safeHost(input.supabaseUrl));
+
   const base = {
     id: 'site_url' as const,
     label: 'Public URL & auth redirects',
     why: 'Password resets, colleague invites and signup confirmations are links built from a URL. Get it wrong and every one of those emails sends your users to localhost — the mail is delivered, the flow is dead.',
     measuredBy:
-      'site_settings.general.siteUrl. Supabase Auth\'s own Site URL lives in the project dashboard and CANNOT be read from a browser session — this icon covers the FlowWink half only.',
-    note: `Second half, unverifiable from here: set Supabase → Authentication → URL Configuration → Site URL to ${input.origin} and add it to the redirect allow-list. Nothing in this UI can read or write that value.`,
-    action: {
-      kind: 'external' as const,
-      href: SUPABASE_AUTH_URL_CONFIG,
-      label: 'Open Supabase URL configuration',
-    },
+      'site_settings.general.siteUrl. Supabase Auth\'s own Site URL is project configuration, not data, and CANNOT be read from a browser session — this icon covers the FlowWink half only.',
+    note: selfHosted
+      ? `Second half, unverifiable from here: this is a self-hosted Supabase, so set GOTRUE_SITE_URL to ${input.origin} (and add it to GOTRUE_URI_ALLOW_LIST) where the auth container's environment is defined, then restart it. There is no dashboard and no Management API on a self-hosted stack.`
+      : `Second half, unverifiable from here: set Supabase → Authentication → URL Configuration → Site URL to ${input.origin} and add it to the redirect allow-list. Nothing in this UI can read or write that value.`,
+    action: selfHosted
+      ? undefined
+      : {
+          kind: 'external' as const,
+          href: SUPABASE_AUTH_URL_CONFIG,
+          label: 'Open Supabase URL configuration',
+        },
   };
 
   if (!input.configured) {

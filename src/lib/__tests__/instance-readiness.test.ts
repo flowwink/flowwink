@@ -410,3 +410,38 @@ describe('en åtgärd måste peka på det som faktiskt blockerar', () => {
     expect(row.detail).toMatch(/unverifiable/i);
   });
 });
+
+describe('self-hosted Supabase har varken dashboard eller Management-API', () => {
+  // FlowWink säljs på datasuveränitet — self-hosted är en förstklassig
+  // installation, inte ett undantag. Att peka en self-hosted-operatör på
+  // supabase.com/dashboard är värre än att inte säga något: det skickar hen
+  // någonstans där hens instans inte finns.
+  const base = (supabaseUrl: string | null): ReadinessInput => ({
+    schema: { applied: [{ version: '1', name: 'a' }], expected: [{ version: '1', name: 'a' }] },
+    skills: { total: 537, enabled: 500, stampHash: 'h', expectedHash: 'h', expectedCount: 537, platformFloor: 14 },
+    edge: { deployed: null, deployedAt: null, expected: [] },
+    cron: { jobs: null, available: null },
+    ai: { configured: true },
+    siteUrl: { configured: null, origin: 'https://erp.internt.se', supabaseUrl },
+    modules: { chosen: true, enabledCount: 20 },
+  });
+  const row = (u: string | null) =>
+    evaluateInstanceReadiness(base(u)).find((r) => r.id === 'site_url')!;
+
+  it('self-hosted → miljövariabeln namnges, ingen dashboard-länk', () => {
+    const r = row('https://supabase.internt.se');
+    expect(r.note).toContain('GOTRUE_SITE_URL');
+    expect(r.note).toMatch(/self-hosted/i);
+    expect(JSON.stringify(r)).not.toContain('supabase.com/dashboard');
+  });
+
+  it('moln → dashboard-länken finns kvar', () => {
+    const r = row('https://aynnvczbbeoiaukyrudy.supabase.co');
+    expect(r.note).toMatch(/URL Configuration/);
+    expect(r.note).not.toContain('GOTRUE_SITE_URL');
+  });
+
+  it('okänd Supabase-URL → behandlas som moln (länken är ofarlig, gissningen är inte det)', () => {
+    expect(row(null).note).toMatch(/URL Configuration/);
+  });
+});

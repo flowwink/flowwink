@@ -185,6 +185,9 @@ export function useInstanceReadiness() {
       siteUrl: {
         configured: settingsQ.data?.siteUrl ?? null,
         origin: typeof window !== 'undefined' ? window.location.origin : '',
+        // Avgör moln vs self-hosted: en self-hosted stack har varken dashboard
+        // eller Management-API, så andra halvan sätts som miljövariabel.
+        supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? null,
       },
       modules: {
         chosen: settingsQ.isError ? null : settingsQ.data ? settingsQ.data.modulesChosen : null,

@@ -349,6 +349,37 @@ export function InstanceReadinessChecklist({
             .from('agent_skills')
             .select('id', { count: 'exact', head: true });
           const failed = platform.errors.length > 0 || registry.status === 'error';
+
+          // Stamp the instance with the seed bundle that was just applied —
+          // ONLY on a fully clean run, exactly as the Modules page does.
+          //
+          // Without this the button could never turn its own row green: the
+          // skills row asks for the stamp (rows alone prove nothing about
+          // WHICH build the definitions came from), and this path seeded
+          // without ever writing one. Verified on nordbrygg 2026-08-22 —
+          // 65 skills present, stamp absent, row stuck at "not done" while
+          // the seeding had in fact succeeded. A partial run still must not
+          // stamp: a half-synced registry has to keep reading as out-of-date.
+          if (!failed) {
+            const { error: stampError } = await supabase
+              .from('site_settings')
+              .upsert(
+                {
+                  key: 'instance_manifest_stamp',
+                  value: {
+                    seed_hash: instanceManifest.layers.skills.seed_hash,
+                    skill_count: instanceManifest.layers.skills.skill_count,
+                    stamped_at: new Date().toISOString(),
+                  },
+                } as never,
+                { onConflict: 'key' },
+              );
+            if (stampError) {
+              logger.warn('[Readiness] seed stamp failed:', stampError.message);
+            }
+            invalidate();
+          }
+
           toast({
             variant: failed ? 'destructive' : 'default',
             title: failed ? 'Skill seeding did not fully succeed' : 'Skills seeded',

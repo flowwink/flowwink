@@ -372,3 +372,41 @@ describe('en avbruten provisionering läses inte som releasefördröjning', () =
     expect(chosenButUnseeded.status).toBe('drift');
   });
 });
+
+describe('en åtgärd måste peka på det som faktiskt blockerar', () => {
+  // Två fall observerade skarpt på nordbrygg 2026-08-22: seed-knappen som inte
+  // stämplade (raden kunde aldrig bli grön av sin egen knapp) och siteUrl-raden
+  // som blockerade på FlowWink-halvan men bara länkade till Supabase-halvan —
+  // den den uttryckligen inte kan mäta. En knapp som inte kan lösa sin egen rad
+  // är samma sorts fel som en vakt som inte vaktar.
+  const base = (over: Partial<ReadinessInput>): ReadinessInput => ({
+    schema: { applied: [{ version: '1', name: 'a' }], expected: [{ version: '1', name: 'a' }] },
+    skills: { total: 537, enabled: 500, stampHash: 'h', expectedHash: 'h', expectedCount: 537, platformFloor: 14 },
+    edge: { deployed: null, deployedAt: null, expected: [] },
+    cron: { jobs: null, available: null },
+    ai: { configured: true },
+    siteUrl: { configured: null, origin: 'https://nordbygg.flowwink.com' },
+    modules: { chosen: true, enabledCount: 20 },
+    ...over,
+  });
+
+  it('siteUrl blockerad → åtgärden leder till FlowWinks eget fält, inte till Supabase', () => {
+    const row = evaluateInstanceReadiness(base({})).find((r) => r.id === 'site_url')!;
+    expect(row.status).toBe('blocked');
+    expect(row.action).toEqual({ kind: 'link', to: '/admin/settings', label: 'Set the site URL' });
+  });
+
+  it('Supabase-halvan finns kvar i noten — den är ett andra steg, inte radens grind', () => {
+    const row = evaluateInstanceReadiness(base({})).find((r) => r.id === 'site_url')!;
+    expect(row.note).toMatch(/Supabase/);
+    expect(row.note).toContain('nordbygg.flowwink.com');
+  });
+
+  it('satt siteUrl → ok, och sluter aldrig grönt om Supabase-halvan', () => {
+    const row = evaluateInstanceReadiness(
+      base({ siteUrl: { configured: 'https://nordbygg.flowwink.com', origin: 'https://nordbygg.flowwink.com' } }),
+    ).find((r) => r.id === 'site_url')!;
+    expect(row.status).toBe('ok');
+    expect(row.detail).toMatch(/unverifiable/i);
+  });
+});

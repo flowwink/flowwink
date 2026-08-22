@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260822160000",
-      "migrations_count": 483,
+      "migration_head": "20260822180000",
+      "migrations_count": 485,
       "migrations": [
         {
           "version": "00000000000000",
@@ -1937,11 +1937,19 @@
         {
           "version": "20260822160000",
           "name": "back-in-stock-rpc-reaches-instances-past-the-head"
+        },
+        {
+          "version": "20260822170000",
+          "name": "a9b0c1d2-shipment-does-not-erase-payment"
+        },
+        {
+          "version": "20260822180000",
+          "name": "b0c1d2e3-reorder-point-has-one-home"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:53cf2a8ff318c04a1d885a03f533c14061d991a77c8eebdd5f42d9746db38084",
+      "seed_hash": "sha256:f9f05bd7c59187be540767e360466996a46cca5ec6410316c845822303819822",
       "skill_count": 537,
       "module_count": 68
     },
@@ -1951,7 +1959,7 @@
       "functions": {
         "a2a": "sha256:33f9aa45f5a82d23f357aff397403b5b12a94dc3421984a1c883f23509c50f71",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:3c55e86992aa1c824092a86c3558d16a4937ad0e4b5cfd39971c6f2e0cde1461",
+        "agent-execute": "sha256:c38f45445e29ab64ad5389fb8f11c6cbc2537c202be44bdd01b6c40a790b7294",
         "agent-operate": "sha256:75fb1281c6ee8aa748f24c44a0b866686a12cf11df5291d7ff5e6aa59a2c1d2a",
         "ai-task": "sha256:4f3549a12beac9c958dc7b584c91202f67fd5700dad7ac9e512e5483ddfb29c7",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

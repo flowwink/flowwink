@@ -64,6 +64,13 @@ interface OrderShippingFields {
   shipping_cost_cents: number | null;
 }
 
+/**
+ * Rendering map for orders.status. 'shipped' is LEGACY here: until #249 a
+ * shipment overwrote the payment axis with it, so old rows still carry the
+ * value and must keep rendering. It is deliberately absent from
+ * PAYMENT_STATUS_OPTIONS below — offering it in a status picker is offering a
+ * human the same overwrite by hand.
+ */
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   paid: 'Paid',
@@ -73,6 +80,10 @@ const STATUS_LABELS: Record<string, string> = {
   refunded: 'Refunded',
   failed: 'Failed',
 };
+
+/** The money/lifecycle axis — the only values a status picker may write. */
+const PAYMENT_STATUS_OPTIONS = (['pending', 'paid', 'completed', 'cancelled', 'refunded', 'failed'] as const)
+  .map((k) => [k, STATUS_LABELS[k]] as const);
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   unfulfilled: 'Unfulfilled',
@@ -410,7 +421,7 @@ export default function OrdersPage() {
                 <SelectValue placeholder="Choose…" />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                {PAYMENT_STATUS_OPTIONS.map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>
@@ -599,12 +610,17 @@ export default function OrdersPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="refunded">Refunded</SelectItem>
+                      {PAYMENT_STATUS_OPTIONS.map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                      {/* A legacy row still on 'shipped' (#249) must remain
+                          selectable, or the picker renders blank and the
+                          operator cannot see — let alone correct — it. */}
+                      {!PAYMENT_STATUS_OPTIONS.some(([k]) => k === selectedOrder.status) && (
+                        <SelectItem value={selectedOrder.status}>
+                          {STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

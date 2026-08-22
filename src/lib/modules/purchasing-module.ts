@@ -71,7 +71,7 @@ const PURCHASING_SKILLS: SkillSeed[] = [
   },
   {
     name: 'list_reorder_candidates',
-    description: 'List products at or below their reorder point with preferred vendor info. Use when: reviewing what needs reordering, "vad behöver beställas?". NOT for: actually placing orders (use auto_generate_purchase_orders).',
+    description: 'List products below their reordering rule with preferred vendor info. The threshold is reorder_rules.min_qty (the Odoo min/max rule the inventory UI writes and procurement_run reads) — only rules with procurement_method=buy; manufactured items go to mrp_reorder_run. A product with no rule falls back to products.low_stock_threshold; a product with no threshold at all is NOT listed (there is no default reorder point). Use when: reviewing what needs reordering, "vad behöver beställas?". NOT for: actually placing orders (use auto_generate_purchase_orders).',
     category: 'commerce',
     handler: 'rpc:list_reorder_candidates',
     scope: 'external',
@@ -239,7 +239,7 @@ const PURCHASING_SKILLS: SkillSeed[] = [
   },
   {
     name: 'purchase_reorder_check',
-    description: 'Analyze current stock levels against reorder points and suggest purchase orders for low-stock items. Use when: heartbeat detects low inventory, admin asks for reorder suggestions, or as part of daily automation. NOT for: actual PO creation (use create_purchase_order after review).',
+    description: 'Analyze current stock levels against the reordering rules and suggest (or auto-create draft) purchase orders for low-stock items. The threshold is reorder_rules.min_qty — the same rule procurement_run reads — falling back to products.low_stock_threshold for products with no rule; a product with no threshold anywhere is not suggested. Use when: heartbeat detects low inventory, admin asks for reorder suggestions, or as part of daily automation. NOT for: actual PO creation (use create_purchase_order after review).',
     category: 'commerce',
     handler: 'db:products',
     scope: 'internal',
@@ -254,7 +254,7 @@ const PURCHASING_SKILLS: SkillSeed[] = [
         },
       },
     },
-    instructions: 'Compare current stock_quantity against low_stock_threshold for each product. Group low-stock items by preferred vendor if available. Return structured suggestions with vendor_id, product_id, suggested_quantity (reorder to max(threshold * 3, 10)).',
+    instructions: 'Threshold source, in priority order: threshold_override (if given) → the active reorder_rules with procurement_method=buy, summed per product (min_qty is the trigger, max_qty/reorder_qty the quantity — read exactly as procurement_run reads them) → product_stock.reorder_point (legacy) → products.low_stock_threshold. A rule is a MINIMUM: a rule-backed product is low when on hand is BELOW min_qty, not at it; the legacy product threshold keeps its at-or-below meaning. A product whose only rules are procurement_method=manufacture belongs to mrp_reorder_run and is skipped here. A product with no rule and no threshold is not suggested — there is no default reorder point. Reordering rules are set in the inventory UI (Reorder rules), not by this skill. Groups low-stock items by preferred vendor and, with auto_create, creates one DRAFT PO per vendor for an admin to review.',
   },
   {
     name: 'update_purchase_order',

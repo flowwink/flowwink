@@ -15,6 +15,20 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'o
   refunded: 'outline',
 };
 
+/**
+ * An order carries two independent facts, and this page used to show only the
+ * first one — raw. Until #249 a shipment overwrote `status` with 'shipped', so
+ * the chip below happened to read "Shipped" and nobody noticed that "Paid" had
+ * been destroyed to say it. Now the two axes have a chip each: payment on the
+ * left, where the goods are on the right.
+ */
+const FULFILLMENT_LABELS: Record<string, string> = {
+  picked: 'Picked',
+  packed: 'Packed',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+};
+
 function OrderRow({ order }: { order: CustomerOrder }) {
   const [expanded, setExpanded] = useState(false);
   const { data: items = [] } = useCustomerOrderItems(expanded ? order.id : null);
@@ -38,6 +52,9 @@ function OrderRow({ order }: { order: CustomerOrder }) {
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            {order.fulfillment_status && FULFILLMENT_LABELS[order.fulfillment_status] && (
+              <Badge variant="outline">{FULFILLMENT_LABELS[order.fulfillment_status]}</Badge>
+            )}
             <Badge variant={statusVariant[order.status] || 'secondary'} className="capitalize">
               {order.status}
             </Badge>

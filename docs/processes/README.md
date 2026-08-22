@@ -54,7 +54,7 @@ says where the concept actually lives, including where it does not live yet.
 | **Backorder** | The remainder when a receipt or delivery is partial | status `partially_received`; the PO stays open for the rest |
 | **Vendor Bill** | The supplier's invoice | `vendor_invoices`, matched 3-way against PO + receipt |
 | **Credit Note** (vendor) | Correction after a mismatch | `vendor_credit_memos` |
-| **Reordering Rule** (min/max) | Replenish when stock falls below min, up to max | `reorder_rules` (`min_qty`, `reorder_qty`) — **see the divergence below** |
+| **Reordering Rule** (min/max) | Replenish when stock falls below min, up to max | `reorder_rules` (`min_qty`, `max_qty`, `reorder_qty`) — the one home, for the UI and for the agent skills alike |
 | **Replenishment report** | What needs ordering right now | `list_reorder_candidates`, `purchase_reorder_check`, `procurement_run` |
 | **Quotation** | A sales offer before acceptance | `quotes` in `draft` / `sent` |
 | **Sales Order** | Accepted quotation | `orders`, carrying `quote_id` since the order-to-cash fix |
@@ -65,26 +65,36 @@ says where the concept actually lives, including where it does not live yet.
 | **Scrap** | Writing stock off | `stock_moves` with an adjustment reason; no dedicated scrap document |
 | **Incoterms** | Delivery terms on the order | **not modelled** |
 
-### Known divergence: the reordering rule has three homes
+### Resolved: the reordering rule has one home
 
-Verified on the sandbox instance, 2026-08-21. The replenishment loop reads its
-threshold from two different places depending on who asks:
+Reported as a divergence on the sandbox instance 2026-08-21 (#247): the
+threshold lived in three places and the readers disagreed. The UI
+(`useInventoryV2`) wrote `reorder_rules.min_qty` and `procurement_run` read it,
+but the **agent-facing** skills read
+`COALESCE(product_stock.reorder_point, products.low_stock_threshold, 5)` and
+never touched `reorder_rules` — so a rule set the standard way changed nothing
+in the agent's answer, and a product with no threshold anywhere inherited a
+hardcoded **5**.
 
-| Caller | Reads |
-|---|---|
-| UI (`useInventoryV2`) writes, `procurement_run` reads | `reorder_rules.min_qty` — the Odoo-standard rule |
-| `list_reorder_candidates`, `purchase_reorder_check` (the **agent-facing** skills) | `COALESCE(product_stock.reorder_point, products.low_stock_threshold, 5)` — and never `reorder_rules` |
+Settled 2026-08-22: **`reorder_rules` is canonical.** It is the Odoo min/max
+rule, it is what the UI writes, and it is what `procurement_run` reads.
+`list_reorder_candidates`, `purchase_reorder_check` and `mrp_reorder_run` now
+read the same rules, and read them the same way `procurement_run` does: only
+`is_active` rules; `procurement_method` routes buy → purchasing, manufacture →
+MRP; a rule is a minimum, so the trigger is *below* `min_qty`, not at it; and
+the quantity is `COALESCE(NULLIF(reorder_qty,0), max_qty − on hand)`, falling
+back to `min_qty − on hand`.
 
-So an operator who sets a reordering rule the standard way gets no effect on the
-answer an agent gives, and a product with no threshold anywhere silently
-inherits a hardcoded **5**. `product_stock` is additionally the legacy table the
-stock-chain fix already found empty on fresh instances — which is how
-`purchase_reorder_check` once answered *"All stock levels are healthy"* forever.
+Products with no rule fall back to `product_stock.reorder_point` (legacy
+override, retained for instances that populated it) and then
+`products.low_stock_threshold`. The chain ends there — **a product with no rule
+and no threshold has no reorder point and is not suggested at all.** No
+hardcoded 5. A floor, if ever wanted, becomes a visible setting.
 
-One rule, one home: `reorder_rules` is the one that matches the standard and the
-one the UI already writes. The skills should read it, falling back to the
-product threshold only for products with no rule — and a missing threshold
-should be *absent*, not 5.
+Fixed in the same pass: `procurement_run` filtered incoming quantity on
+`po.status IN (…, 'partial')`, a label that does not exist in
+`purchase_order_status`, so the canonical reader raised
+*invalid input value for enum* as soon as one active rule existed.
 
 ---
 

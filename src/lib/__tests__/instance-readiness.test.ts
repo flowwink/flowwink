@@ -277,7 +277,7 @@ describe('the checklist obeys the rule, and cannot be dismissed', () => {
     // ett svar i stället för att kortet bara tystnar; en ny sidladdning börjar
     // med hadWork=false och då är det borta. Testet låser REGELN, inte den
     // exakta raden — annars fäller det varje omformulering.
-    expect(component).toMatch(/if \(ready && !alwaysShow[^)]*\) return null;/);
+    expect(component).toMatch(/if \(ready && !alwaysShow[\s\S]{0,60}?\) return null;/);
     expect(component).toMatch(/isInstanceReady/);
     // Kvittot får bara bero på denna mountning: en ref som nollställs vid
     // omladdning, aldrig något persistent.
@@ -288,6 +288,21 @@ describe('the checklist obeys the rule, and cannot be dismissed', () => {
     // VARJE instans — och kortet kan aldrig försvinna igen. Verkligt fel på
     // nordbrygg 2026-08-22: allt grönt, kortet låg kvar.
     expect(component).toMatch(/if \(!isLoading && !ready\) hadWorkRef\.current = true;/);
+  });
+
+  it('kvittot går att stänga — men ETT RÖTT KORT gör det inte', () => {
+    // Magnus: "kanske bättre om admin bara klickade på close". Rätt — ett grönt
+    // kort döljer ingenting när man stänger det, det är borta vid nästa
+    // laddning ändå. Men skyddet måste vara STRUKTURELLT, inte en artighet:
+    // `receiptAcknowledged` får bara betyda något när `ready` är sant, så att
+    // ingen klickväg kan gömma en instans som fortfarande saknar något.
+    expect(component).toMatch(
+      /if \(ready && !alwaysShow && \(!hadWork \|\| receiptAcknowledged\)\) return null;/,
+    );
+    // Knappen får bara existera i grönt läge.
+    expect(component).toMatch(/\{ready && !alwaysShow && \(/);
+    // Och ingenting får överleva sidladdningen.
+    expect(component).not.toMatch(/receiptAcknowledged[\s\S]{0,200}(localStorage|sessionStorage)/);
   });
 
   it('has no dismiss/hide/snooze escape hatch', () => {

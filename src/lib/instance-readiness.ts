@@ -52,7 +52,7 @@ export type ReadinessRowId =
 
 export type ReadinessAction =
   /** Something the UI can do on this instance, right now. */
-  | { kind: 'run'; id: 'seed-skills' | 'register-cron'; label: string }
+  | { kind: 'run'; id: 'seed-skills' | 'register-cron' | 'set-site-url'; label: string }
   /** A decision that lives on another admin page — go make it there. */
   | { kind: 'link'; to: string; label: string }
   /** Only doable outside FlowWink (Supabase dashboard, a shell). */
@@ -482,6 +482,24 @@ function aiRow(input: ReadinessInput['ai']): ReadinessRow {
   return { ...base, status: 'ok', detail: 'At least one AI provider is configured.' };
 }
 
+/**
+ * Ser ursprunget ut som en riktig publik adress?
+ *
+ * localhost, IP-adresser och Vercels preview-domäner är platser en admin
+ * RÅKAR vara på — inte den kanoniska adressen kunderna ska få i sina mejl.
+ * Där erbjuds inget ettklicksval, för ett felaktigt värde är värre än ett tomt:
+ * ett tomt fält failar synligt, en fel domän skickar tyst varje
+ * återställningslänk och signeringsinbjudan till fel ställe.
+ */
+function canonicalLooking(origin: string): boolean {
+  const host = safeHost(origin);
+  if (!host) return false;
+  if (/^(localhost|127\.|\[?::1)/i.test(host)) return false;
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host.split(':')[0])) return false;
+  if (/\.vercel\.app$/i.test(host)) return false;
+  return host.includes('.');
+}
+
 /** Värdnamnet ur en URL, tomt om den inte går att tolka — får aldrig kasta i en statusrad. */
 function safeHost(url: string): string {
   try { return new URL(url).host; } catch { return ''; }
@@ -528,7 +546,13 @@ function siteUrlRow(input: ReadinessInput['siteUrl']): ReadinessRow {
       ...base,
       status: 'blocked',
       detail: `No public site URL is set in FlowWink. Backend links have no absolute address to build from. This instance is being served from ${input.origin}.`,
-      action: { kind: 'link', to: '/admin/settings', label: 'Set the site URL' },
+      // Du är redan på domänen — skriv inte in den för hand. Men ett TYST
+      // autoval vore fel: en admin kan sitta på en preview-deploy eller
+      // localhost, och en felaktig kanonisk URL skickar kunder dit i varje
+      // mejl. Därför ett klick som visar värdet, inte en osynlig skrivning.
+      action: canonicalLooking(input.origin)
+        ? { kind: 'run', id: 'set-site-url', label: `Use ${input.origin}` }
+        : { kind: 'link', to: '/admin/settings', label: 'Set the site URL' },
     };
   }
 

@@ -221,7 +221,7 @@ function RowAction({
   running,
 }: {
   row: ReadinessRow;
-  onRun: (id: 'seed-skills' | 'register-cron') => void;
+  onRun: (id: 'seed-skills' | 'register-cron' | 'set-site-url') => void;
   running: string | null;
 }) {
   const action = row.action;
@@ -266,7 +266,7 @@ function ChecklistRow({
 }: {
   row: ReadinessRow;
   compact: boolean;
-  onRun: (id: 'seed-skills' | 'register-cron') => void;
+  onRun: (id: 'seed-skills' | 'register-cron' | 'set-site-url') => void;
   running: string | null;
 }) {
   const meta = STATUS_META[row.status];
@@ -339,7 +339,7 @@ export function InstanceReadinessChecklist({
   }, [queryClient]);
 
   const handleRun = useCallback(
-    async (id: 'seed-skills' | 'register-cron') => {
+    async (id: 'seed-skills' | 'register-cron' | 'set-site-url') => {
       setRunning(id);
       try {
         if (id === 'seed-skills') {
@@ -389,6 +389,31 @@ export function InstanceReadinessChecklist({
             description: failed
               ? `${platform.errors[0] ?? registry.error ?? 'Unknown error'} — agent_skills now holds ${count ?? '?'} row(s).`
               : `agent_skills now holds ${count ?? '?'} row(s).`,
+          });
+        } else if (id === 'set-site-url') {
+          // Du står redan på domänen — skriv inte in den för hand. MERGE, inte
+          // överskrivning: `general` bär fler fält än siteUrl (t.ex.
+          // terms-slug), och en blind upsert hade tystat dem.
+          const origin = window.location.origin;
+          const { data: existing } = await supabase
+            .from('site_settings').select('value').eq('key', 'general').maybeSingle();
+          const merged = { ...((existing?.value as Record<string, unknown>) ?? {}), siteUrl: origin };
+          const { error: urlError } = await supabase
+            .from('site_settings')
+            .upsert({ key: 'general', value: merged } as never, { onConflict: 'key' });
+          invalidate();
+          // Verifiera, lita inte: läs tillbaka och citera vad som faktiskt står.
+          const { data: after } = await supabase
+            .from('site_settings').select('value').eq('key', 'general').maybeSingle();
+          const stored = (after?.value as { siteUrl?: string } | null)?.siteUrl ?? null;
+          toast({
+            variant: urlError || stored !== origin ? 'destructive' : 'default',
+            title: urlError || stored !== origin ? 'Could not set the site URL' : 'Site URL set',
+            description: urlError
+              ? urlError.message
+              : stored === origin
+                ? `Backend links will now be built from ${stored}. The Supabase half is still yours to set — see the note.`
+                : `Wrote ${origin} but read back ${stored ?? 'nothing'}.`,
           });
         } else {
           const cron = await ensurePlatformCron();

@@ -282,6 +282,12 @@ describe('the checklist obeys the rule, and cannot be dismissed', () => {
     // Kvittot får bara bero på denna mountning: en ref som nollställs vid
     // omladdning, aldrig något persistent.
     expect(component).toMatch(/hadWorkRef\s*=\s*useRef\(false\)/);
+    // OCH det får bara minnas ARBETE, aldrig ovisshet. `ready` härleds ur
+    // rader som är `unknown` innan datan finns, så första renderingen på varje
+    // sidladdning har ready=false. Utan laddningsvakten sätts flaggan där — på
+    // VARJE instans — och kortet kan aldrig försvinna igen. Verkligt fel på
+    // nordbrygg 2026-08-22: allt grönt, kortet låg kvar.
+    expect(component).toMatch(/if \(!isLoading && !ready\) hadWorkRef\.current = true;/);
   });
 
   it('has no dismiss/hide/snooze escape hatch', () => {

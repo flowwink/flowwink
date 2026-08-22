@@ -390,10 +390,14 @@ describe('en åtgärd måste peka på det som faktiskt blockerar', () => {
     ...over,
   });
 
-  it('siteUrl blockerad → åtgärden leder till FlowWinks eget fält, inte till Supabase', () => {
+  it('siteUrl blockerad → åtgärden löser FlowWink-halvan, aldrig Supabase-halvan', () => {
     const row = evaluateInstanceReadiness(base({})).find((r) => r.id === 'site_url')!;
     expect(row.status).toBe('blocked');
-    expect(row.action).toEqual({ kind: 'link', to: '/admin/settings', label: 'Set the site URL' });
+    // Formen får variera (ettklicksval på en kanonisk domän, annars en länk
+    // till fältet) — invarianten är att åtgärden angriper det som BLOCKERAR.
+    // Att skicka admin till Supabase-dashboarden löser aldrig den här raden.
+    expect(row.action?.kind === 'run' || row.action?.kind === 'link').toBe(true);
+    expect(JSON.stringify(row.action)).not.toContain('supabase.com');
   });
 
   it('Supabase-halvan finns kvar i noten — den är ett andra steg, inte radens grind', () => {
@@ -443,5 +447,37 @@ describe('self-hosted Supabase har varken dashboard eller Management-API', () =>
 
   it('okänd Supabase-URL → behandlas som moln (länken är ofarlig, gissningen är inte det)', () => {
     expect(row(null).note).toMatch(/URL Configuration/);
+  });
+});
+
+describe('site-URL:en ska inte behöva skrivas in för hand', () => {
+  // Magnus frågade: varför måste admin lägga in den manuellt när hen redan är
+  // inloggad på domänen? Svaret: värdet MÅSTE lagras (server-side kod som
+  // bygger signeringslänkar, inbjudningar och påminnelsemejl har ingen
+  // webbläsare att fråga). Men att skriva in den för hand är onödigt — ett
+  // klick räcker, så länge ursprunget ser kanoniskt ut.
+  const at = (origin: string): ReadinessInput => ({
+    schema: { applied: [{ version: '1', name: 'a' }], expected: [{ version: '1', name: 'a' }] },
+    skills: { total: 537, enabled: 500, stampHash: 'h', expectedHash: 'h', expectedCount: 537, platformFloor: 14 },
+    edge: { deployed: null, deployedAt: null, expected: [] },
+    cron: { jobs: null, available: null },
+    ai: { configured: true },
+    siteUrl: { configured: null, origin, supabaseUrl: 'https://x.supabase.co' },
+    modules: { chosen: true, enabledCount: 20 },
+  });
+  const row = (o: string) => evaluateInstanceReadiness(at(o)).find((r) => r.id === 'site_url')!;
+
+  it('kanonisk domän → ettklicksval som visar värdet', () => {
+    expect(row('https://nordbygg.flowwink.com').action).toEqual({
+      kind: 'run', id: 'set-site-url', label: 'Use https://nordbygg.flowwink.com',
+    });
+  });
+
+  it('localhost, IP och preview-domän erbjuder INTE klicket', () => {
+    // Fel kanonisk URL är värre än tom: en tom failar synligt, en fel domän
+    // skickar tyst varje återställningslänk till fel ställe.
+    for (const o of ['http://localhost:8080', 'http://192.168.1.10:3000', 'https://flowwink-abc123.vercel.app']) {
+      expect(row(o).action, o).toEqual({ kind: 'link', to: '/admin/settings', label: 'Set the site URL' });
+    }
   });
 });

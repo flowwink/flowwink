@@ -168,3 +168,75 @@ everything `succeeded`, and `SELECT status_code, count(*) FROM
 net._http_response GROUP BY 1` should show only 200s. A pile of 401s means an
 edge function's `verify_jwt` doesn't match how cron calls it — see
 `supabase/config.toml`, where every function declares it explicitly.
+
+## The branch status field is not evidence
+
+The Supabase GitHub integration keeps a *branch object* per connected project,
+readable through the Management API:
+
+```bash
+curl -s -H "Authorization: Bearer $SBP_TOKEN" \
+  "https://api.supabase.com/v1/projects/<ref>/branches"
+```
+
+Its `status` walks `MIGRATIONS_PASSED` / `MIGRATIONS_FAILED` → `FUNCTIONS_DEPLOYED`,
+and reading it is the fastest way to learn *why* a fresh instance is empty — it
+is how the 2026-08-22 wedge was diagnosed (`MIGRATIONS_FAILED` on a project
+whose ledger claimed 14 rows while the database held 233 tables).
+
+**But the status is a state machine, not a measurement.** Minutes after
+connecting a brand-new project — before any push — the same field read
+`FUNCTIONS_DEPLOYED` while the project had **0 migrations, 0 tables and 0
+edge functions**. A run that did nothing still ends in the terminal state.
+
+So: use `status` to explain a failure, never to confirm a success. Confirm
+success against the objects themselves — the ledger, `information_schema.tables`,
+and `GET /v1/projects/<ref>/functions`. Same rule as everywhere else in this
+repo: the name in the ledger is weak evidence, the object is the strong one.
+
+Connecting the repo does not itself deploy. **A push to the production branch is
+what triggers a run**, so an instance connected but never pushed to sits at zero
+with a green-looking status field.
+
+## When a run stops short
+
+A run can end before the chain does — a time budget, a transient error. It
+happened on 2026-08-22: the ledger reached **449 of 489** and stopped, with no
+migration at fault (the next five in the queue each applied cleanly when tested
+against the instance in a rollback transaction).
+
+This used to be fatal. Before the chain was made re-runnable, a resumed run died
+on `already exists` at the first non-idempotent statement, and every subsequent
+attempt died on the same one — the instance was wedged permanently.
+
+**The fix is a push.** Every migration is now re-runnable, so a new run resumes
+where the last one stopped:
+
+```bash
+git commit --allow-empty -m "trigger: resume provisioning" && git push
+```
+
+Verified: the 2026-08-22 run picked up at 449 and finished all 489.
+
+The onboarding checklist on `/admin` says this too. A lagging ledger on an
+instance that has *never been finished* (platform skills unseeded **and** no
+module choice saved) reads as **an unfinished install**, not as release lag —
+and its note names the push. On a mature instance the same lag stays
+non-gating, because a frontend that deployed minutes before its migrations is
+normal and gating on it would turn the checklist into furniture.
+
+### If you cannot push
+
+The dashboard SQL editor will run the missing files' contents — they are
+idempotent, so running one twice is safe. Two caveats:
+
+- **It does not write the ledger.** `supabase_migrations.schema_migrations`
+  will still list the run as short, so the next integration run re-applies what
+  you pasted. Harmless now (that is what re-runnable buys), but it means the
+  ledger stops being a reliable account of what is applied. Verify against the
+  objects — `information_schema.tables`, `pg_proc` — not the ledger.
+- **Order matters.** Apply them in filename order; the chain assumes it.
+
+The same is true of anything else that runs the SQL for you, including the
+dashboard's assistant: it can execute the statements, but the ledger and the
+ordering are yours to keep straight. Prefer the push.

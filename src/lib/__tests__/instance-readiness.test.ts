@@ -319,3 +319,56 @@ describe('the platform cron floor is derived from what the registrars actually s
     }
   });
 });
+
+describe('en avbruten provisionering läses inte som releasefördröjning', () => {
+  // Verkligt fall 2026-08-22: nordbryggs körning tog slut på tid vid 449/489.
+  // Kedjan är omkörbar så en ny push återupptar — men bara om admin FÅR VETA
+  // att installationen är avbruten. Läste den "deploy currency, ignorera"
+  // skulle den halvfärdiga instansen se normal ut.
+  const expected = Array.from({ length: 489 }, (_, i) => ({
+    version: `2026${String(i).padStart(10, '0')}`,
+    name: `m${i}`,
+  }));
+  const applied = expected.slice(0, 449);
+
+  const base = (over: Partial<ReadinessInput>): ReadinessInput => ({
+    schema: { applied, expected },
+    skills: { total: 6, enabled: 6, stampHash: null, expectedHash: 'h', expectedCount: 537, platformFloor: 14 },
+    edge: { deployed: null, deployedAt: null, expected: [] },
+    cron: { jobs: null, available: null },
+    ai: { configured: null },
+    siteUrl: { configured: null, origin: 'https://example.test' },
+    modules: { chosen: false, enabledCount: 7 },
+    ...over,
+  });
+
+  const schemaOf = (input: ReadinessInput) =>
+    evaluateInstanceReadiness(input).find((r) => r.id === 'schema')!;
+
+  it('ny instans som stannade halvvägs → blocked, och säger att en push återupptar', () => {
+    const row = schemaOf(base({}));
+    expect(row.status).toBe('blocked');
+    expect(row.detail).toContain('stopped short');
+    expect(row.note).toMatch(/re-runnable|resumes/i);
+  });
+
+  it('MOGEN instans som ligger en release efter → drift, inte blocked', () => {
+    // Plattformslagret seedat och modulval sparat = någon har gjort klart här.
+    const row = schemaOf(
+      base({
+        skills: { total: 537, enabled: 500, stampHash: 'h', expectedHash: 'h', expectedCount: 537, platformFloor: 14 },
+        modules: { chosen: true, enabledCount: 20 },
+      }),
+    );
+    expect(row.status).toBe('drift');
+  });
+
+  it('räcker inte med EN av signalerna — båda krävs för att kalla den oavslutad', () => {
+    const seededButNoChoice = schemaOf(
+      base({ skills: { total: 537, enabled: 500, stampHash: 'h', expectedHash: 'h', expectedCount: 537, platformFloor: 14 } }),
+    );
+    const chosenButUnseeded = schemaOf(base({ modules: { chosen: true, enabledCount: 20 } }));
+    expect(seededButNoChoice.status).toBe('drift');
+    expect(chosenButUnseeded.status).toBe('drift');
+  });
+});

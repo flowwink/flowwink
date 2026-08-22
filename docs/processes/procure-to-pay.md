@@ -128,15 +128,14 @@ paid require admin trust.
 
 ## Known gaps
 
-> **The reordering rule has three homes.** Verified on sandbox 2026-08-21: the
-> UI writes `reorder_rules` (the Odoo-standard min/max rule) and `procurement_run`
-> reads it, while the agent-facing skills `list_reorder_candidates` and
-> `purchase_reorder_check` read
-> `COALESCE(product_stock.reorder_point, products.low_stock_threshold, 5)` and
-> never look at `reorder_rules` at all. So a rule set the standard way does not
-> change what an agent answers, and a product with no threshold anywhere
-> silently inherits a hardcoded 5. See the mapping table in
-> [README](./README.md#known-divergence-the-reordering-rule-has-three-homes).
+> ✅ **The reordering rule had three homes — settled 2026-08-22 (#247).**
+> `reorder_rules` is canonical: the Odoo min/max rule the UI writes and
+> `procurement_run` reads. `list_reorder_candidates`, `purchase_reorder_check`
+> and `mrp_reorder_run` now read the same rules with the same interpretation,
+> falling back to `products.low_stock_threshold` only for products with no rule.
+> A product with no rule and no threshold has no reorder point and is not
+> suggested — the hardcoded 5 is gone. See
+> [README](./README.md#resolved-the-reordering-rule-has-one-home).
 
 ### Other gaps (missing for L5)
 

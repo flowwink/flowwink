@@ -355,7 +355,7 @@ const MANUFACTURING_SKILLS: SkillSeed[] = [
   },
   {
     name: 'mrp_reorder_run',
-    description: 'Scan manufactured products (those with an active BOM) at/below their reorder point and create draft manufacturing orders to replenish. Use when: MRP planning, auto-replenishing made-in-house stock. NOT for: purchased items (those go via purchasing reorder/procurement_run).',
+    description: 'Scan manufactured products (those with an active BOM) below their reordering rule and create draft manufacturing orders to replenish. The threshold is reorder_rules.min_qty with procurement_method=manufacture (the same rule procurement_run reads); a product with no rule falls back to products.low_stock_threshold, and a product whose only rules are procurement_method=buy is skipped as purchasing business. No threshold anywhere = no candidate. Use when: MRP planning, auto-replenishing made-in-house stock. NOT for: purchased items (those go via purchasing reorder/procurement_run).',
     category: 'commerce',
     handler: 'rpc:mrp_reorder_run',
     scope: 'internal',
@@ -363,7 +363,7 @@ const MANUFACTURING_SKILLS: SkillSeed[] = [
       type: 'function',
       function: {
         name: 'mrp_reorder_run',
-        description: 'Creates draft MOs (source_type=reorder, qty = reorder_point − on_hand) for products with an active BOM, below reorder point, and no open MO. dry_run returns candidates without creating.',
+        description: 'Creates draft MOs (source_type=reorder) for products with an active BOM that are below their reordering rule and have no open MO. Quantity follows the rule (reorder_qty, else max_qty − on hand), or reorder_point − on hand when the product has no rule. dry_run returns candidates without creating.',
         parameters: {
           type: 'object',
           properties: {
@@ -372,7 +372,7 @@ const MANUFACTURING_SKILLS: SkillSeed[] = [
         },
       },
     },
-    instructions: 'Only manufactured products (active bom_headers) are considered — bought items are skipped. Idempotent: products that already have an open MO (not done/cancelled) are not re-ordered. Run with p_dry_run=false to actually create the draft MOs (admin/service-role).',
+    instructions: 'Only manufactured products (active bom_headers) are considered — bought items are skipped. Threshold source, in priority order: the active reorder_rules with procurement_method=manufacture, summed per product (min_qty triggers, reorder_qty/max_qty size the MO — same reading as procurement_run) → product_stock.reorder_point (legacy) → products.low_stock_threshold. A rule is a MINIMUM: rule-backed products trigger BELOW min_qty, fallback products at or below the threshold. Products whose only active rules are procurement_method=buy are left to the purchasing lane. Reordering rules are set in the inventory UI, not by this skill. Idempotent: products that already have an open MO (not done/cancelled) are not re-ordered. Run with p_dry_run=false to actually create the draft MOs (admin/service-role).',
   },
 ];
 

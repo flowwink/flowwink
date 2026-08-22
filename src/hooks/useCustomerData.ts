@@ -98,7 +98,11 @@ export function useDeleteAddress() {
 
 export interface CustomerOrder {
   id: string;
+  /** Money and lifecycle: pending | paid | completed | cancelled | refunded | failed. */
   status: string;
+  /** Where the goods are: unfulfilled | picked | packed | shipped | delivered.
+   *  A separate axis from `status` — see #249. */
+  fulfillment_status: string | null;
   total_cents: number;
   currency: string;
   customer_email: string;

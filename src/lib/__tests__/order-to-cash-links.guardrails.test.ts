@@ -170,6 +170,37 @@ describe('an order has two status axes and nothing writes across', () => {
     expect(update).toContain('Fulfillment axis');
   });
 
+  /**
+   * The agent path was fixed on 2026-08-20, and the assertion above only ever
+   * watched agent-execute. Two other writers kept the overwrite and shipped it
+   * to live data (#249): the SQL function `ship_picking` and the admin
+   * fulfillment button. The axis rule is not an agent-execute rule — it is a
+   * property of the table, so every writer is pinned here.
+   */
+  it('ship_picking moves the fulfillment axis and leaves orders.status alone', () => {
+    const sql = migrationContaining('CREATE OR REPLACE FUNCTION public.ship_picking');
+    const fn = slice(sql, 'CREATE OR REPLACE FUNCTION public.ship_picking', 'END; $function$;');
+    const orderUpdate = slice(fn, 'UPDATE public.orders', ';');
+    expect(orderUpdate).toContain("fulfillment_status = 'shipped'");
+    expect(orderUpdate, 'a shipment must not decide whether the order is paid')
+      .not.toMatch(/\bstatus\s*=\s*'shipped'/);
+    // The BEFORE UPDATE trigger stamps shipped_at AND backfills picked_at /
+    // packed_at, but only while shipped_at is still NULL. Setting it here
+    // skips that branch and leaves the fulfillment timeline full of holes.
+    expect(orderUpdate, 'let validate_fulfillment_status stamp the timeline')
+      .not.toContain('shipped_at');
+  });
+
+  it('the admin fulfillment button writes the same axis as the agent does', () => {
+    const ui = readFileSync(
+      join(root, 'src/components/admin/orders/FulfillmentActions.tsx'),
+      'utf8',
+    );
+    expect(ui).toContain('fulfillment_status: next.key');
+    expect(ui.replace(/\/\/[^\n]*/g, ''), "marking an order shipped must not touch orders.status")
+      .not.toMatch(/update\.status\s*=\s*'shipped'/);
+  });
+
   it('revenue is counted on the money axis only', () => {
     const stats = slice(orders, "if (action === 'stats')", 'return { error: `Unknown orders action');
     expect(stats).toContain("o.status === 'paid'");

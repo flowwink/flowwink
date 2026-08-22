@@ -47,8 +47,12 @@ export function FulfillmentActions({
       if (trackingUrl) update.tracking_url = trackingUrl;
       if (notes) update.fulfillment_notes = notes;
 
-      // Also update order status when shipping/delivering
-      if (next.key === 'shipped') update.status = 'shipped';
+      // #249: shipping moves the FULFILLMENT axis only. This used to also write
+      // `status = 'shipped'`, which erased 'paid' — the same overwrite
+      // ship_picking did in SQL, and the one manage_orders was fixed for on
+      // 2026-08-20. orders.status carries money and lifecycle; it is not ours.
+      // ('delivered' still closes the lifecycle as 'completed' — that IS a
+      // payment-axis value, and the weekly briefing counts revenue on it.)
       if (next.key === 'delivered') update.status = 'completed';
 
       const { error } = await supabase

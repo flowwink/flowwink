@@ -10855,7 +10855,18 @@ async function executeDbAction(
       if (skillName === 'purchase_reorder_check') {
         const { threshold_override, auto_create = false } = args as any;
 
-        // 1. Fetch products with stock info.
+        // 1. Fetch products with stock info, and the reordering rules.
+        //
+        // The threshold lives in `reorder_rules` (#247) — the Odoo min/max rule
+        // the inventory UI writes and `procurement_run` reads. This handler used
+        // to read COALESCE(product_stock.reorder_point, low_stock_threshold, 5)
+        // and never touched reorder_rules, so a rule set the standard way
+        // changed nothing in the agent's answer, and a product with no threshold
+        // anywhere silently inherited a hardcoded 5. Priority now: explicit
+        // override → active 'buy' rules (summed per product, read exactly as
+        // procurement_run reads them) → product_stock.reorder_point (legacy
+        // override) → products.low_stock_threshold. Nothing anywhere means the
+        // threshold is ABSENT, not 5 — the product is not suggested at all.
         //
         // On-hand lives on products.stock_quantity — the number the receipt
         // writes and the order decrements. This used to read `product_stock`
@@ -10866,6 +10877,10 @@ async function executeDbAction(
         const { data: stockRows } = await supabase.from('product_stock')
           .select('product_id, quantity_on_hand, reorder_point, reorder_quantity, auto_reorder');
 
+        const { data: ruleRows } = await supabase.from('reorder_rules')
+          .select('product_id, min_qty, max_qty, reorder_qty, procurement_method')
+          .eq('is_active', true);
+
         const { data: products, error: prodErr } = await supabase.from('products')
           .select('id, name, price_cents, stock_quantity, low_stock_threshold')
           .eq('track_inventory', true)
@@ -10873,22 +10888,66 @@ async function executeDbAction(
         if (prodErr) throw new Error(`Product fetch failed: ${prodErr.message}`);
 
         const stockMap = new Map((stockRows || []).map((s: any) => [s.product_id, s]));
+
+        // Rules are per (product, location); this answer is per product, so the
+        // active rules are summed — the total minimum the operator asked us to
+        // keep. procurement_method routes: 'buy' is this file, 'manufacture'
+        // belongs to mrp_reorder_run.
+        const ruleMap = new Map<string, any>();
+        for (const r of (ruleRows || [])) {
+          const agg = ruleMap.get(r.product_id)
+            ?? { rules_total: 0, buy_rules: 0, min_qty: 0, max_qty: 0, reorder_qty: 0 };
+          agg.rules_total += 1;
+          if (r.procurement_method === 'buy') {
+            agg.buy_rules += 1;
+            agg.min_qty += Number(r.min_qty ?? 0);
+            agg.max_qty += Number(r.max_qty ?? 0);
+            agg.reorder_qty += Number(r.reorder_qty ?? 0);
+          }
+          ruleMap.set(r.product_id, agg);
+        }
+
+        const hasOverride = threshold_override !== undefined && threshold_override !== null;
         const lowStock: any[] = [];
 
         for (const p of (products || [])) {
           const stock = stockMap.get(p.id);
+          const rule = ruleMap.get(p.id);
           const onHand = stock?.quantity_on_hand ?? p.stock_quantity ?? 0;
-          const threshold = threshold_override ?? stock?.reorder_point ?? p.low_stock_threshold ?? 5;
-          if (onHand <= threshold) {
-            lowStock.push({
-              product_id: p.id,
-              product_name: p.name,
-              current_stock: onHand,
-              reorder_point: threshold,
-              reorder_quantity: stock?.reorder_quantity || Math.max(threshold * 3, 10),
-              auto_reorder: stock?.auto_reorder ?? true,
-            });
+          const hasRule = !hasOverride && (rule?.buy_rules ?? 0) > 0;
+          // Rules exist but none of them buys: that product is MRP's business.
+          if (!hasOverride && !hasRule && (rule?.rules_total ?? 0) > 0) continue;
+
+          const threshold = hasOverride
+            ? threshold_override
+            : (hasRule ? rule.min_qty : (stock?.reorder_point ?? p.low_stock_threshold));
+          // No rule and no threshold: absent, never 5.
+          if (threshold === null || threshold === undefined) continue;
+
+          // A rule is a MINIMUM — procurement_run acts below min_qty, not at it.
+          // The legacy product threshold keeps its "at or below" meaning.
+          const breached = hasRule ? onHand < threshold : onHand <= threshold;
+          if (!breached) continue;
+
+          let reorderQty: number;
+          if (hasRule) {
+            // Same derivation as procurement_run.
+            reorderQty = rule.reorder_qty || (rule.max_qty - onHand);
+            if (reorderQty <= 0) reorderQty = rule.min_qty - onHand;
+          } else {
+            reorderQty = stock?.reorder_quantity || Math.max(threshold * 3, 10);
           }
+
+          lowStock.push({
+            product_id: p.id,
+            product_name: p.name,
+            current_stock: onHand,
+            reorder_point: Math.ceil(threshold),
+            reorder_quantity: Math.max(Math.ceil(reorderQty), 1),
+            // An explicit rule IS the operator's opt-in — procurement_run does
+            // not consult auto_reorder either. The flag guards the legacy lane.
+            auto_reorder: hasRule ? true : (stock?.auto_reorder ?? true),
+          });
         }
 
         if (lowStock.length === 0) {

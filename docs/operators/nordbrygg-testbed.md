@@ -171,8 +171,9 @@ worth checking back on:
 
 - **Does the overdue invoice escalate?** `F-2026-0288` is seeded 12 days overdue.
   Does `dunning-processor` act on it, and what does it do on day 30, 60, 90?
-- **Does the reordering rule fire?** Stock depletes as the testbed is used. The
-  rule has three homes (#247) — which one wins in practice?
+- **Does the reordering rule fire?** Stock depletes as the testbed is used.
+  `reorder_rules` is the one home since #247 — does a rule set in the UI show up
+  in what the agent answers, and in the draft POs it creates?
 - **Does the parked RMA get chased?** `RMA-00002` sits at `received`,
   un-inspected, on purpose. Does anything notice?
 - **Does the awaiting PO ever land?** The Milano Due import is dated +9 days.

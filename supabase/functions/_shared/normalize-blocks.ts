@@ -19,6 +19,7 @@
  */
 import { TIPTAP_NESTED_FIELDS, IMPORTABLE_BLOCK_TYPES } from './block-schema.ts';
 import { BLOCK_CREATION_TOOLS, toolNameToBlockType } from './block-tools.ts';
+import { suggestClosestNames } from './suggest-names.ts';
 
 // ---------------------------------------------------------------------------
 // Tiptap helpers
@@ -1016,19 +1017,6 @@ const FIELD_SYNONYMS: Record<string, string[]> = {
   href: ['buttonUrl', 'url'],
 };
 
-/** lowercase + drop separators, so primary_cta / primaryCta / primary-cta match. */
-function normalizeFieldName(name: string): string {
-  return String(name || '').toLowerCase().replace(/[\s_-]+/g, '');
-}
-
-/** camelCase / snake_case / kebab-case → lowercase word tokens. */
-function fieldWords(name: string): string[] {
-  return String(name || '')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .split(/[\s_-]+/)
-    .map((w) => w.toLowerCase())
-    .filter(Boolean);
-}
 
 /**
  * Suggest the valid FIELD names closest to what the caller sent, for one block
@@ -1041,40 +1029,11 @@ function fieldWords(name: string): string[] {
 export function suggestBlockFields(blockType: string, invented: string): string[] {
   const valid = blockFieldMap().get(blockType);
   if (!valid || valid.size === 0) return [];
-  const n = normalizeFieldName(invented);
-  if (!n) return [];
-  const out: string[] = [];
-  const push = (f: string) => { if (valid.has(f) && !out.includes(f)) out.push(f); };
-
-  // 1. Known synonym (filtered against this block's real fields).
-  for (const s of FIELD_SYNONYMS[n] ?? []) push(s);
-
-  // 2. Same field, other casing: `sub_title` → `subtitle`, `background_image` →
-  //    `backgroundImage`. The single most common miss and always unambiguous —
-  //    so it answers alone; a second guess beside a certainty only adds doubt.
-  for (const f of valid) if (normalizeFieldName(f) === n) return [f];
-
-  // 3. Containment, both ways, on names long enough for it to mean something
-  //    ("buttonlabel" ↔ "buttonText" is caught by the word pass instead).
-  if (n.length >= 5) {
-    for (const f of valid) {
-      const fn = normalizeFieldName(f);
-      if (fn.length >= 4 && (fn.includes(n) || n.includes(fn))) push(f);
-    }
-  }
-
-  // 4. Shared word: `buttonLabel` → `buttonText`, `heroTitle` → `title`.
-  const words = new Set(fieldWords(invented));
-  const scored: Array<{ field: string; shared: number }> = [];
-  for (const f of valid) {
-    if (out.includes(f)) continue;
-    const shared = fieldWords(f).filter((w) => words.has(w)).length;
-    if (shared > 0) scored.push({ field: f, shared });
-  }
-  scored.sort((a, b) => b.shared - a.shared || a.field.length - b.field.length);
-  for (const s of scored) push(s.field);
-
-  return out.slice(0, 2);
+  // The similarity itself is generic and lives in suggest-names.ts, shared with
+  // the skill-PARAMETER bounce in workspace-chat. An unknown block field and an
+  // unknown skill parameter are the same defect twice; a second copy of the
+  // matcher would be the drift class this codebase keeps paying for.
+  return suggestClosestNames(invented, valid, { synonyms: FIELD_SYNONYMS, limit: 2 });
 }
 
 /**

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260824120000",
-      "migrations_count": 499,
+      "migration_head": "20260824150000",
+      "migrations_count": 500,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2001,6 +2001,10 @@
         {
           "version": "20260824120000",
           "name": "a8b9c0d1-recognition-beats-recall"
+        },
+        {
+          "version": "20260824150000",
+          "name": "b9c0d1e2-a-service-has-no-shelf"
         }
       ]
     },

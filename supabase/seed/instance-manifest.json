@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260825120000",
-      "migrations_count": 502,
+      "migration_head": "20260825140000",
+      "migrations_count": 503,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2013,6 +2013,10 @@
         {
           "version": "20260825120000",
           "name": "d1e2f3a4-a-send-with-no-ledger-of-who-got-it"
+        },
+        {
+          "version": "20260825140000",
+          "name": "e2f3a4b5-null-is-not-equal-to-null"
         }
       ]
     },

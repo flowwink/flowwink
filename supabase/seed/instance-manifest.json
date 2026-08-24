@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260827800000",
-      "migrations_count": 516,
+      "migration_head": "20260828120000",
+      "migrations_count": 517,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2069,6 +2069,10 @@
         {
           "version": "20260827800000",
           "name": "f6a7b8c0-en-halv-flytt-utan-ett-ord"
+        },
+        {
+          "version": "20260828120000",
+          "name": "a-vendor-term-is-a-word-not-a-number"
         }
       ]
     },

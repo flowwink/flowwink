@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260827700000",
-      "migrations_count": 515,
+      "migration_head": "20260827800000",
+      "migrations_count": 516,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2065,6 +2065,10 @@
         {
           "version": "20260827700000",
           "name": "e5f6a7b8-en-rad-utan-pris-blev-en-rad-utan-varde"
+        },
+        {
+          "version": "20260827800000",
+          "name": "f6a7b8c0-en-halv-flytt-utan-ett-ord"
         }
       ]
     },

@@ -5,6 +5,7 @@ import { blocksShapeError, normalizeBlockData, normalizeBlocks, validateBlockDat
 import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { buildUnknownParameterBounce } from '../_shared/skills/parameter-contract.ts';
 import { retiredSkillResult } from '../_shared/skills/retired-skills.ts';
+import { readAllRows } from '../_shared/read-all-rows.ts';
 import { applyIdentityPolicy } from '../_shared/site-identity.ts';
 import { filterRecipients, blockedResponse } from '../_shared/email-allowlist.ts';
 import { resolveSiteUrl } from '../_shared/site-url.ts';
@@ -10825,7 +10826,7 @@ async function executeDbAction(
           .select('id, name').single();
         if (error) throw new Error(`Create vendor failed: ${error.message}`);
         // Fire webhook
-        try { await fetch(`${supabaseUrl}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` }, body: JSON.stringify({ event: 'vendor.created', data: { id: data.id, name: data.name, email } }) }); } catch {}
+        try { await fetch(`${supabaseUrl}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` }, body: JSON.stringify({ event: 'vendor.created', data: { id: data.id, name: data.name, email } }) }); } catch { /* Fire-and-forget webhook. A webhook failure must not fail the business operation that triggered it. */ }
         return { vendor_id: data.id, name: data.name, created: true };
       }
 
@@ -10959,7 +10960,7 @@ async function executeDbAction(
         try {
           const { data: vendorInfo } = await supabase.from('vendors').select('name').eq('id', vendor_id).single();
           await fetch(`${supabaseUrl}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` }, body: JSON.stringify({ event: 'purchase_order.created', data: { id: po.id, po_number: po.po_number, vendor_name: vendorInfo?.name, total_cents: po.total_cents, currency: po.currency } }) });
-        } catch {}
+        } catch { /* Fire-and-forget webhook. A webhook failure must not fail the business operation that triggered it. */ }
 
         const rate = Number(po.exchange_rate ?? 1);
         return {
@@ -11050,7 +11051,7 @@ async function executeDbAction(
 
           try {
             await fetch(`${supabaseUrl}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` }, body: JSON.stringify({ event: 'purchase_order.sent', data: { id: purchase_order_id, po_number: po?.po_number, vendor_name: vendorName, email_sent: emailSent } }) });
-          } catch {}
+          } catch { /* Fire-and-forget webhook. A webhook failure must not fail the business operation that triggered it. */ }
         }
 
         const { data: updated } = await supabase.from('purchase_orders')
@@ -11162,7 +11163,7 @@ async function executeDbAction(
         if (allReceived) {
           await fetch(`${supabaseUrl}/functions/v1/send-webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` }, body: JSON.stringify({ event: 'purchase_order.received', data: { id: purchase_order_id, po_number: poInfo?.po_number, fully_received: true } }) });
         }
-      } catch {}
+      } catch { /* Fire-and-forget webhook. A webhook failure must not fail the business operation that triggered it. */ }
 
       return {
         goods_receipt_id: gr.id,
@@ -14658,16 +14659,31 @@ async function executeLintSkill(
   const targetName = typeof args.skill_name === 'string' ? args.skill_name.trim() : '';
   const includePassing = args.include_passing === true;
 
-  // 1. Load skill(s)
-  let q = supabase
-    .from('agent_skills')
-    .select('id,name,handler,category,enabled,mcp_exposed,description,tool_definition')
-    .eq('enabled', true);
-  if (targetName) q = q.eq('name', targetName);
-  const { data: skills, error: skillErr } = await q;
-  if (skillErr) return { error: `Failed to load skills: ${skillErr.message}` };
-  if (!skills || skills.length === 0) {
+  // 1. Load skill(s).
+  // Paginated when linting the whole register. The output of this skill is a
+  // clean bill of health — "✓ N skill(s) clean of blocking issues" — and an
+  // unbounded select stops at PostgREST's silent 1000-row cap, so past it the
+  // verdict would cover a prefix while reading as a verdict on everything.
+  // agent_skills measured 540 rows (538 enabled) on optic on 2026-08-23 and
+  // grows with every module. A single-skill lint is bounded by `.eq('name', …)`
+  // and needs no paging.
+  const skillsRead = await readAllRows(supabase, 'agent_skills', {
+    columns: 'id,name,handler,category,enabled,mcp_exposed,description,tool_definition',
+    orderBy: 'name',
+    filter: (q) => (targetName ? q.eq('enabled', true).eq('name', targetName) : q.eq('enabled', true)),
+  });
+  if (skillsRead.error) return { error: `Failed to load skills: ${skillsRead.error}` };
+  const skills = skillsRead.rows;
+  if (skills.length === 0) {
     return { error: targetName ? `Skill "${targetName}" not found or disabled.` : 'No enabled skills.' };
+  }
+  if (skillsRead.truncated) {
+    return {
+      error:
+        'Could not read the whole skill register — a lint report over a prefix would ' +
+        'certify skills it never looked at. Re-run against a single skill (skill_name) ' +
+        'or raise the page ceiling.',
+    };
   }
 
   // 2. Load RPC signatures

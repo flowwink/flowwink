@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20260905090000",
-      "migrations_count": 567,
+      "migration_head": "20260905100000",
+      "migrations_count": 568,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2273,21 +2273,25 @@
         {
           "version": "20260905090000",
           "name": "tio-konsulter-i-demoseeden"
+        },
+        {
+          "version": "20260905100000",
+          "name": "kb-svaret-har-en-skrivare"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:401cb78e0ec73b91832302f5b2c106b37379863621a0e54b754031987f28bd2c",
+      "seed_hash": "sha256:4a70ff4a6e35c7a6f16e1079cd2628909e229e88c4911f0137092fdfc5d3df8c",
       "skill_count": 553,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:beeab2bcc5a71646a2d657d4345718e2563abaf775c5ebdf1a948ffcc7715016",
+      "shared_hash": "sha256:a3bd5f3b21cc917c1406076efed7d1786b6162255afdd8b9dc9566f982d7ac6f",
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:c1078e15399984362cb6ad3a0b829929e61fa90f4fbfce762bd46157853fdc12",
+        "agent-execute": "sha256:f3601c91e5c2ed322e3c002b4db0e71f1ecc82acb41f319fb9ccad11f60dbdc5",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:35ae34d3748467b51f716cfef3d80af31b08e92e801905277b8460765b017169",
         "automation-dispatcher": "sha256:3cb8681d7acce65624bd7957a432b143a2d959d769845dc71696b95c2ea2012b",

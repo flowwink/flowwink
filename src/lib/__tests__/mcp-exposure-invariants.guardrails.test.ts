@@ -19,16 +19,18 @@
  *   external callers — they are FlowPilot's own peer-comms primitives.
  *   They stay mcp_exposed=false intentionally.
  *
- * Snapshot source: live DB read at fixture build time.
- * Update via: psql + the migration; this test reads supabase live.
+ * Source of the exception: the seed's `mcp_exposed: false` (SkillSeed), honoured
+ * by every writer — browser bootstrap, sync-skills.ts, sync_skills_from_code.
+ * This test reads the live instance to prove the writers kept their word.
  */
 import { describe, expect, it } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import { describeIfServiceKey } from '@/test/live-db';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'https://rzhjotxffjfsdlhrdkpj.supabase.co';
+// No instance default — unset means the suite skips (describeIfServiceKey).
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://unconfigured-live-db.invalid';
 // agent_skills is not anon-readable since the matrix/anon hardening reached
-// dev (2026-09-06, 42501 "permission denied for table agent_skills") — this
+// the fleet (2026-09-06, 42501 "permission denied for table agent_skills") — this
 // suite reads it, so it needs the service key, exactly as live-db.ts says.
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
 
@@ -37,8 +39,9 @@ const OPERATOR_INTERNAL_SKILLS = new Set([
   'a2a_chat',
   'a2a_request',
   'dispatch_claw_mission',
-  'openclaw_start_session',
-  'openclaw_end_session',
+  // openclaw_start_session/end_session never existed as seeds — the QA
+  // session skills are start_qa_session/end_qa_session and ARE for external
+  // operators (OpenClaw files findings through them).
   'openclaw_exchange',
   'openclaw_get_status',
   'queue_beta_test',

@@ -119,7 +119,7 @@ export interface BrandingSettings {
   defaultTheme?: 'light' | 'dark' | 'system';
 }
 
-const defaultBrandingSettings: BrandingSettings = {
+export const defaultBrandingSettings: BrandingSettings = {
   logo: '',
   logoDark: '',
   favicon: '',
@@ -208,7 +208,7 @@ export interface MaintenanceSettings {
   expectedEndTime?: string;
 }
 
-const defaultMaintenanceSettings: MaintenanceSettings = {
+export const defaultMaintenanceSettings: MaintenanceSettings = {
   enabled: false,
   title: 'Site under maintenance',
   message: 'We are currently performing scheduled maintenance. The site will be back online shortly.',
@@ -712,7 +712,7 @@ export interface BlogSettings {
   rssDescription: string;
 }
 
-const defaultBlogSettings: BlogSettings = {
+export const defaultBlogSettings: BlogSettings = {
   enabled: true,
   postsPerPage: 10,
   showAuthorBio: true,

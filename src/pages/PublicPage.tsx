@@ -3,7 +3,7 @@ import { useUiText, useSetUiTextLang } from '@/lib/ui-text';
 import { pagePath } from '@/lib/language-path';
 import { buildHreflangAlternates } from '@/lib/hreflang';
 import { operatorText } from '@/lib/operator-text';
-import { useSiteLanguages } from '@/hooks/useSiteSettings';
+import { useSiteLanguages, defaultMaintenanceSettings } from '@/hooks/useSiteSettings';
 import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -446,6 +446,7 @@ export default function PublicPage() {
             maintenanceSettings.title,
             t('maintenance.title', 'Website is under maintenance'),
             declaredLang, siteDefaultLanguage,
+            defaultMaintenanceSettings.title,
           )}
           noIndex
         />
@@ -458,6 +459,7 @@ export default function PublicPage() {
               maintenanceSettings.title,
               t('maintenance.title', 'Website is under maintenance'),
               declaredLang, siteDefaultLanguage,
+              defaultMaintenanceSettings.title,
             )}
           </h1>
           <p className="text-muted-foreground mb-4">
@@ -465,6 +467,7 @@ export default function PublicPage() {
               maintenanceSettings.message,
               t('maintenance.message', 'We are performing scheduled maintenance. The website will be available again shortly.'),
               declaredLang, siteDefaultLanguage,
+              defaultMaintenanceSettings.message,
             )}
           </p>
           {maintenanceSettings.expectedEndTime && (
@@ -561,8 +564,10 @@ export default function PublicPage() {
   });
   
   // Build breadcrumbs for structured data
+  // Strukturerad data är det Google skriver ut under träffen. Ordet stod på
+  // svenska i koden, på varje instans och varje språk.
   const breadcrumbs = [
-    { name: 'Hem', url: baseUrl }
+    { name: t('breadcrumb.home', 'Home'), url: baseUrl }
   ];
   if (pageSlug !== homepageSlug) {
     breadcrumbs.push({ name: pageData.title, url: canonicalUrl });

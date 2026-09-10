@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUiText, useUiTextLanguage } from '@/lib/ui-text';
-import { operatorPrompts } from '@/lib/operator-text';
+import { operatorPrompts, operatorText } from '@/lib/operator-text';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useChatSettings } from '@/hooks/useSiteSettings';
+import { useChatSettings, defaultChatSettings } from '@/hooks/useSiteSettings';
 import { useIsModuleEnabled } from '@/hooks/useModules';
 import { cn } from '@/lib/utils';
 
@@ -31,22 +31,35 @@ export function ChatLauncherBlock({ data }: ChatLauncherBlockProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
-    title = chatSettings?.title || 'What can I help you with?',
+    title: ownTitle,
     subtitle,
-    placeholder = chatSettings?.placeholder || 'Message AI Assistant...',
+    placeholder: ownPlaceholder,
     showQuickActions = true,
     quickActionCount = 4,
     variant = 'card',
   } = data;
 
   const { lang, siteLang } = useUiTextLanguage();
+
+  // Blockets egen text vinner; annars chattinställningen genom regeln, aldrig
+  // `|| 'English'` — den formen är just vad adoptionsvakten vägrar, och den satt
+  // kvar här tolv rader från operatorPrompts som redan var rättad.
+  const title = ownTitle || operatorText(
+    chatSettings?.title, t('chat.launcherTitle', 'What can I help you with?'),
+    lang, siteLang, defaultChatSettings.title,
+  );
+  const placeholder = ownPlaceholder || operatorText(
+    chatSettings?.placeholder, t('chat.launcherPlaceholder', 'Message the assistant…'),
+    lang, siteLang, defaultChatSettings.placeholder,
+  );
+
   // Samma regel som chatten: operatörens frågor på sajtens språk, packets på andra.
   const quickActions = operatorPrompts(chatSettings?.suggestedPrompts, [
     t('chat.suggestion1', 'What can you help me with?'),
     t('chat.suggestion2', 'Tell me about your services'),
     t('chat.suggestion3', 'How do I book an appointment?'),
     t('chat.suggestion4', 'How do I get in touch?'),
-  ], lang, siteLang).slice(0, quickActionCount);
+  ], lang, siteLang, defaultChatSettings.suggestedPrompts).slice(0, quickActionCount);
 
   const chatModuleEnabled = useIsModuleEnabled('chat');
   const isEnabled = chatModuleEnabled && chatSettings?.landingPageEnabled;

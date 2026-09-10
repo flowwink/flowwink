@@ -66,20 +66,43 @@ export function CookieBanner() {
   // koden bär engelskan längst ned.
   const t = useUiText();
   const { lang, siteLang } = useUiTextLanguage();
+  // Raden läses rå (ingen merge med defaults), så ingen koddefault kan nå `own`.
   const own = settings.text ?? {};
 
   // t() anropas med LITERALER, inte genom en hjälpare — katalog-generatorn
   // läser anropsplatserna, så en nyckel bakom en variabel blir osynlig i
   // besökartext-editorn. Det gick jag på en gång redan med bloggänken.
   const text: BannerText = {
-    title: operatorText(own.title, t('cookie.title', 'We use cookies'), lang, siteLang),
-    description: operatorText(own.description, t('cookie.description', 'We use cookies for essential site functions, anonymous analytics, and — when you allow it — to help our sales team understand your interests. You choose what to allow.'), lang, siteLang),
-    customize: operatorText(own.customize, t('cookie.customize', 'Customize'), lang, siteLang),
-    acceptAll: operatorText(own.acceptAll, t('cookie.acceptAll', 'Accept all'), lang, siteLang),
-    essentialOnly: operatorText(own.essentialOnly, t('cookie.essentialOnly', 'Essential only'), lang, siteLang),
-    preferencesTitle: operatorText(own.preferencesTitle, t('cookie.preferencesTitle', 'Cookie preferences'), lang, siteLang),
-    back: operatorText(own.back, t('cookie.back', 'Back'), lang, siteLang),
-    saveSelection: operatorText(own.saveSelection, t('cookie.saveSelection', 'Save selection'), lang, siteLang),
+    title: operatorText(own.title, t('cookie.title', 'We use cookies'), lang, siteLang, null),
+    description: operatorText(own.description, t('cookie.description', 'We use cookies for essential site functions, anonymous analytics, and — when you allow it — to help our sales team understand your interests. You choose what to allow.'), lang, siteLang, null),
+    customize: operatorText(own.customize, t('cookie.customize', 'Customize'), lang, siteLang, null),
+    acceptAll: operatorText(own.acceptAll, t('cookie.acceptAll', 'Accept all'), lang, siteLang, null),
+    essentialOnly: operatorText(own.essentialOnly, t('cookie.essentialOnly', 'Essential only'), lang, siteLang, null),
+    preferencesTitle: operatorText(own.preferencesTitle, t('cookie.preferencesTitle', 'Cookie preferences'), lang, siteLang, null),
+    back: operatorText(own.back, t('cookie.back', 'Back'), lang, siteLang, null),
+    saveSelection: operatorText(own.saveSelection, t('cookie.saveSelection', 'Save selection'), lang, siteLang, null),
+  };
+
+  /* Kategorierna är operatörsägda sedan starten och var de ENDA strängarna i
+     filen som inte gick genom regeln — tio rader under de åtta som gör det.
+     Raden läses rå, men `defaults` fyller i när den saknas helt, så kodens
+     engelska måste räknas som frånvarande (samma klass som #513). */
+  const cat = (
+    own: string, packText: string, codeDefault: string,
+  ) => operatorText(own, packText, lang, siteLang, codeDefault);
+  const categoryText = {
+    essential: {
+      label: cat(settings.categories.essential.label, t('cookie.cat.essential', 'Essential'), defaults.categories.essential.label),
+      description: cat(settings.categories.essential.description, t('cookie.cat.essentialDesc', 'Required for the site to work.'), defaults.categories.essential.description),
+    },
+    analytics: {
+      label: cat(settings.categories.analytics.label, t('cookie.cat.analytics', 'Analytics'), defaults.categories.analytics.label),
+      description: cat(settings.categories.analytics.description, t('cookie.cat.analyticsDesc', 'Anonymous measurement of page visits.'), defaults.categories.analytics.description),
+    },
+    marketing: {
+      label: cat(settings.categories.marketing.label, t('cookie.cat.marketing', 'Marketing'), defaults.categories.marketing.label),
+      description: cat(settings.categories.marketing.description, t('cookie.cat.marketingDesc', 'Personalization and signals for the sales team.'), defaults.categories.marketing.description),
+    },
   };
 
   useEffect(() => {
@@ -147,23 +170,23 @@ export function CookieBanner() {
 
             <CategoryRow
               id="essential"
-              label={settings.categories.essential.label}
-              description={settings.categories.essential.description}
+              label={categoryText.essential.label}
+              description={categoryText.essential.description}
               checked={true}
               disabled
               onChange={() => {}}
             />
             <CategoryRow
               id="analytics"
-              label={settings.categories.analytics.label}
-              description={settings.categories.analytics.description}
+              label={categoryText.analytics.label}
+              description={categoryText.analytics.description}
               checked={analytics}
               onChange={setAnalytics}
             />
             <CategoryRow
               id="marketing"
-              label={settings.categories.marketing.label}
-              description={settings.categories.marketing.description}
+              label={categoryText.marketing.label}
+              description={categoryText.marketing.description}
               checked={marketing}
               onChange={setMarketing}
             />

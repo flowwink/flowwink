@@ -21,7 +21,10 @@ description: A Swedish SMB's accounting year is a fixed sequence of statutory ev
 |--------|---------------------|
 | **Accounting** | Chart of accounts (BAS 2024 / IFRS / US GAAP via locale packs), journal entries, templates, period lock, export adapters (SIE 4 / SAF-T) |
 | **Reconciliation** | Stripe payouts sync, bank file/image (OCR) import, auto-matching |
-| **Invoicing** | Source for AR bookings |
+| **Invoicing** | Source for AR bookings; credit notes mirror their invoice (`credit_note_issued`) |
+| **POS** | One entry per closed session (`pos_session`): tenders by method, revenue and VAT per rate, tips, cash difference — sales tendered on invoice are the invoice's |
+| **Returns** | A refund reverses revenue and VAT against the booked sale — the order's `order_paid` entry or its invoice (`return_refund`); goods restocked book COGS back (`inventory_return`) |
+| **E-commerce** | An order is booked when it becomes `paid` (`order_paid`): clearing account in debit, revenue and VAT per rate in credit |
 | **Expenses** | Source for AP / expense bookings (auto-booked on approval) |
 | **Analytics** | Financial KPI reports |
 | **Documents** | Voucher / supporting document archive |
@@ -77,6 +80,8 @@ flowchart TD
 - ❌ Cash-flow statement (kassaflödesanalys) — we report balance sheet + P&L + GL; the third statement is missing
 - ❌ Document retention enforcement — the archive stores vouchers' documents, but nothing enforces the 7-year rule or provides the BFL-required *systemdokumentation* and *arkivplan* artifacts
 - ✅ Reverse-charge VAT (omvänd skattskyldighet) on expenses — `expenses.reverse_charge_rate` is a declared field (never inferred from currency/vendor); booking pairs the outgoing/ingoing VAT legs so box 30 and box 48 report correctly instead of netting to a silent zero
+- ✅ **E-commerce orders are booked when paid** (`order_paid`, 2026-09-17): the status flip to `paid` — from the Stripe webhook, an operator or the demo cycle, no live integration needed — posts Dt payment-provider clearing (role `payment_clearing`, BAS 1580) / Cr revenue and output VAT per rate, shipping included, discount spread; `sync_stripe_payouts` then settles the clearing account against the bank. An invoice raised for a paid order is a receipt and is not booked again; a refund reverses against the order and credits the clearing account when the money goes back through the provider
+- ❌ Manufacturing labor is capitalised in the finished good's valuation layer but not posted to the ledger
 - ❌ Multi-currency revaluation
 - ⚠️ Cost center / project-level — `manage_analytic_account` + `tag_journal_entry_analytics` exist; reporting limited
 - ❌ Consolidation (multi-entity)

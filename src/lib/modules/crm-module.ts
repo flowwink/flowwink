@@ -778,15 +778,19 @@ Use this to find email addresses and contact information for people at a company
             },
             status_filter: {
               enum: [
-                'new',
-                'contacted',
-                'qualified',
+                'prospect',
+                'lead',
+                'opportunity',
+                'customer',
+                'lost',
                 'all',
               ],
               type: 'string',
+              description: 'A lead status (the values leads actually carry), or all.',
             },
             days_since_contact: {
               type: 'number',
+              description: 'A lead untouched for this many days counts as stale (default 14).',
             },
           },
         },
@@ -842,6 +846,7 @@ Use this to find email addresses and contact information for people at a company
           properties: {
             p_threshold: { type: 'number', description: 'Name similarity 0-1 (default 0.45)' },
             p_limit: { type: 'number', description: 'Max pairs (default 25)' },
+            p_lead_id: { type: 'string', description: 'Optional: only the duplicates of THIS lead. Use it when the question is about one person — in a CRM with many look-alike names the pair you care about can fall outside p_limit otherwise.' },
           },
         },
       },

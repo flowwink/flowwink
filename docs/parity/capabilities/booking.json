@@ -10,7 +10,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Appointment booking supported"
+      "verify": "Appointment booking supported",
+      "notes": "2026-09-19 process battery: book_appointment_slot checks only service + overlap: bookings outside opening hours and in the past are accepted; no exclusion constraint or lock, and the legacy book_appointment has no overlap check (book-to-meet). Back to done when the known-red check is green. · FIXED 2026-09-19: opening hours, the past and overlap (under a lock) are enforced by a trigger on bookings — every writer obeys; the public block books through request_booking; the process-battery checks are green."
     },
     {
       "id": "availability_check",
@@ -18,7 +19,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Availability checked before booking"
+      "verify": "Availability checked before booking",
+      "notes": "2026-09-19 process battery: UTC minutes are compared with zone-less opening hours: after booking 10:00+01:00 the platform still offers 10:00 (book-to-meet). Back to done when the known-red check is green. · FIXED 2026-09-19: availability is computed in the platform timezone and for the service the trigger checks; the process-battery checks are green."
     },
     {
       "id": "blocked_dates",
@@ -26,7 +28,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Blocked dates excluded from booking"
+      "verify": "Blocked dates excluded from booking",
+      "notes": "2026-09-19 process battery: a booking on a blocked date is accepted — only check_availability honours the block (book-to-meet). Back to done when the known-red check is green. · FIXED 2026-09-19: a booking on a blocked day is refused by the table trigger; the process-battery checks are green."
     },
     {
       "id": "service_browsing",
@@ -42,7 +45,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Availability windows managed"
+      "verify": "Availability windows managed",
+      "notes": "2026-09-19 process battery: set_hours inserts a new row each time instead of replacing, no action removes hours, duplicate windows duplicate free slots; no skill creates a booking service (a fresh install has none) (book-to-meet). Back to done when the known-red check is green. · FIXED 2026-09-19: set_hours replaces, clear_hours closes a day, hours can be per service, and manage_booking_service creates the services a fresh install lacks; the process-battery checks are green."
     },
     {
       "id": "status_lifecycle",
@@ -50,7 +54,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Booking status lifecycle supported"
+      "verify": "Booking status lifecycle supported",
+      "notes": "2026-09-19 process battery: manage_bookings update_status has no state machine: cancelled → confirmed, completed → pending (book-to-meet). Back to done when the known-red check is green. · FIXED 2026-09-19: the status machine is a trigger: cancelled, completed and no_show are terminal; the process-battery checks are green."
     },
     {
       "id": "confirmation_email",
@@ -66,7 +71,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Booking webhooks fired"
+      "verify": "trigger tg_emit_booking_status_events on bookings emits booking.confirmed / booking.cancelled once per transition, whoever the writer; booking.created by tg_emit_booking_created",
+      "notes": "2026-09-19: the events are emitted by the TABLE now — the agent path used to emit booking.created only. Battery: book-to-meet › booking.confirmed is emitted once / booking.cancelled is emitted once."
     },
     {
       "id": "cancellation",
@@ -74,7 +80,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Booking cancellation supported"
+      "verify": "Booking cancellation supported",
+      "notes": "2026-09-19 process battery: a cancelled booking can be revived on top of the customer who took the freed slot (book-to-meet). Back to done when the known-red check is green. · FIXED 2026-09-19: a cancelled booking cannot be revived; cancelling stamps cancelled_at for every writer; the process-battery checks are green."
     },
     {
       "id": "resource_calendars",
@@ -108,25 +115,28 @@
       "id": "capacity_overbooking",
       "name": "Multi-resource capacity",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 1,
-      "verify": "Multi-resource capacity/overbooking control"
+      "verify": "booking_services.capacity (places per time) — booking_rules counts live bookings against it, booking_free_slots answers places_left per slot; admin: Bookings → Services → Places per time; the public widget shows places left",
+      "notes": "Shipped 2026-09-19. Found on the way: book_appointment_slot carried its own overlap check in front of the table rule and refused the second place in a class. Battery: book-to-meet › the third is refused — the class is full."
     },
     {
       "id": "waiting_list",
       "name": "Waiting list",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 1,
-      "verify": "Waiting list for full slots"
+      "verify": "booking_waitlist + join_booking_waitlist (anonymous door, only for a full day, one entry per person/service/day) + manage_booking_waitlist; a cancellation marks the queue of that day offered and emits booking.waitlist_slot_opened; admin: Bookings → Waiting list; the public widget offers the queue when a day has no times",
+      "notes": "Shipped 2026-09-19. Battery: book-to-meet › the cancellation offers the freed day to the queue / a day with free times takes no queue."
     },
     {
       "id": "buffer_time",
       "name": "Buffer time",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 1,
-      "verify": "Buffer time between appointments"
+      "verify": "booking_services.buffer_before_minutes / buffer_after_minutes; counted by booking_rules (the table) AND booking_free_slots (the reader) as the same occupied window; admin: Bookings → Services → Buffer before/after; skill manage_booking_service",
+      "notes": "Shipped 2026-09-19. Battery: book-to-meet › with a 30-minute buffer neither 09:00 nor 11:00 is offered any more / the table refuses what the reader no longer offers."
     },
     {
       "id": "reminders",

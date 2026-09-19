@@ -680,13 +680,18 @@ serve(async (req) => {
         console.error('[agent-execute] staging insert failed:', opErr);
       }
 
-      // Double-gated skills (requires_staging AND trust_level=approve) need BOTH flags
-      // on the re-invoke, or they stop at the trust gate with status=pending_approval.
-      // Spell that out in the envelope so an agent following the message alone completes.
+      // Double-gated skills (requires_staging AND trust_level=approve) pass TWO gates
+      // in order: the operator approves its own staged operation, and the re-invoke
+      // then stops at the trust gate with status=pending_approval until a HUMAN
+      // decides. `_approved=true` is not an approval — it is only honoured together
+      // with an approved request, so telling the operator to send it straight away
+      // (as this envelope did) sent every double-gated call into a guaranteed
+      // `no_approved_request` refusal. Spell out the order that actually completes.
       const isDoubleGated = ((skill as any).trust_level === 'approve');
-      const reinvokeArgs = isDoubleGated
-        ? `_approved_operation_id="${opRow?.id}" AND _approved=true`
-        : `_approved_operation_id="${opRow?.id}"`;
+      const reinvokeArgs = `_approved_operation_id="${opRow?.id}"`;
+      const doubleGateNote = isDoubleGated
+        ? ` This skill also requires human approval: that re-invoke answers status="pending_approval" with an approval_request_id. Do NOT pass _approved=true yet — it is refused until the request is approved in /admin/approvals. Once it is, re-call ONCE with the same arguments plus _approved_operation_id, _approved=true and _approval_request_id.`
+        : '';
       return new Response(JSON.stringify({
         staged: true,
         operation_id: opRow?.id,
@@ -695,11 +700,12 @@ serve(async (req) => {
         period_status: periodStatus,
         actor: agent_type,
         double_gated: isDoubleGated,
-        message: `Skill "${skill.name}" is staged. Review the preview, then call approve_pending_operation(p_id="${opRow?.id}") followed by re-invoking with ${reinvokeArgs}.${isDoubleGated ? ' (This skill also requires approval, so BOTH flags are needed — passing only _approved_operation_id stops at the trust gate.)' : ''}`,
+        message: `Skill "${skill.name}" is staged. Review the preview, then call approve_pending_operation(p_id="${opRow?.id}") followed by re-invoking with ${reinvokeArgs}.${doubleGateNote}`,
         preview: { args },
         next: {
           approve: { skill: 'approve_pending_operation', args: { p_id: opRow?.id } },
-          reinvoke_args: isDoubleGated ? { _approved_operation_id: opRow?.id, _approved: true } : { _approved_operation_id: opRow?.id },
+          reinvoke_args: { _approved_operation_id: opRow?.id },
+          ...(isDoubleGated ? { after_human_approval: { _approved_operation_id: opRow?.id, _approved: true, _approval_request_id: '<from the pending_approval answer>' } } : {}),
           reject: { skill: 'reject_pending_operation', args: { p_id: opRow?.id, p_reason: '<reason>' } },
         },
       }), {
@@ -1241,6 +1247,9 @@ serve(async (req) => {
       } else if (handler === 'internal:invoice_from_timesheets') {
         result = await executeInvoiceFromTimesheets(supabase, args);
 
+      } else if (handler === 'internal:send_dunning_reminders') {
+        result = await executeSendDunningReminders(supabase, args, supabaseUrl, serviceKey);
+
       } else if (handler.startsWith('rpc:')) {
         const fnName = handler.replace('rpc:', '');
 
@@ -1558,13 +1567,18 @@ async function executeModuleAction(
         return { error: `Unknown CRM skill routed to module:crm: ${skillName}` };
       }
       // add_lead — upsert to handle duplicate emails gracefully
-      const { email, name, source = 'chat', phone } = args as any;
+      const { name, source = 'chat', phone } = args as any;
+      // One address is one lead in any letter case: leads store the lower-cased address
+      // (trigger lead_email_is_lowercase), so the lookup asks for that. Anna.Berg@… used to
+      // miss the existing anna.berg@… and become a second lead.
+      const email = typeof (args as { email?: unknown }).email === 'string' ? String((args as { email: string }).email).trim().toLowerCase() : '';
       if (!email) {
         return { error: 'email is required for add_lead' };
       }
       // Check if lead already exists
-      const { data: existing } = await supabase.from('leads')
+      const { data: existing, error: existingErr } = await supabase.from('leads')
         .select('id, email, status, name').eq('email', email).maybeSingle();
+      if (existingErr) throw new Error(`Lead lookup failed: ${existingErr.message}`);
       if (existing) {
         // Update existing lead with any new info
         const updates: Record<string, unknown> = {};
@@ -6237,18 +6251,23 @@ async function executeDealsAction(
           .from('companies').select('id, name').ilike('name', `%${company_name}%`).limit(1).maybeSingle();
         if (comp) { resolvedCompanyId = comp.id; resolvedCompanyName = comp.name; }
       }
-      if (resolvedCompanyId) {
-        const { data: existing } = await supabase
+      // The person the caller NAMED comes first. It used to take the company's newest lead
+      // whenever company_id was given and ignore lead_email: the deal landed on a colleague,
+      // and winning it made the wrong person the customer (process battery, 2026-09-19).
+      if (lead_email) {
+        // ilike with no wildcards = case-insensitive exact match.
+        const { data: byEmail, error: byEmailErr } = await supabase
+          .from('leads').select('id').ilike('email', String(lead_email).trim())
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (byEmailErr) throw new Error(`Lead lookup failed: ${byEmailErr.message}`);
+        if (byEmail) lead_id = byEmail.id;
+      }
+      if (!lead_id && !lead_email && resolvedCompanyId) {
+        const { data: existing, error: existingErr } = await supabase
           .from('leads').select('id').eq('company_id', resolvedCompanyId)
           .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (existingErr) throw new Error(`Lead lookup failed: ${existingErr.message}`);
         if (existing) lead_id = existing.id;
-      }
-      if (!lead_id && lead_email) {
-        // ilike with no wildcards = case-insensitive exact match.
-        const { data: byEmail } = await supabase
-          .from('leads').select('id').ilike('email', lead_email)
-          .order('created_at', { ascending: false }).limit(1).maybeSingle();
-        if (byEmail) lead_id = byEmail.id;
       }
       if (!lead_id) {
         if (!resolvedCompanyId && !lead_email && !lead_name) {
@@ -6517,15 +6536,45 @@ async function executeProductsAction(
     if (cost_cents !== undefined) insertData.cost_cents = cost_cents;
     if (category_id !== undefined) insertData.category_id = category_id;
 
+    // A product "born stocked" used to get only the catalog mirror (products.stock_quantity):
+    // no quant, no move, no cost layer. The shop said 10 while the warehouse held 0 — the
+    // picking came back short, a confirmed MO reserved nothing, and shipping drove the quant
+    // negative (process battery, 2026-09-19). The opening stock now goes in through the same
+    // door every other receipt uses (adjust_quant: quant + move + valuation + mirror).
+    const openingQty = Number(stock_quantity ?? 0);
+    const bornStocked = track_inventory === true && openingQty > 0;
+    if (bornStocked) insertData.stock_quantity = 0;
+
     const { data, error } = await supabase.from('products').insert(insertData)
       .select('id, name, price_cents, stock_quantity, track_inventory').single();
     if (error) throw new Error(`Create product failed: ${error.message}`);
+
+    let onHand: number | null = data.stock_quantity;
+    let stockNote: string | undefined;
+    if (bornStocked) {
+      const { data: locId, error: locErr } = await supabase.rpc('default_internal_location');
+      if (locErr || !locId) {
+        // No warehouse yet (a shop that never opened the inventory module): keep the old
+        // behaviour — the mirror carries the number — and say so.
+        const { error: mirrorErr } = await supabase.from('products').update({ stock_quantity: openingQty }).eq('id', data.id);
+        if (mirrorErr) throw new Error(`Product created but the opening stock was not recorded: ${mirrorErr.message}`);
+        onHand = openingQty;
+        stockNote = 'No internal stock location exists, so the opening stock is on the catalog number only — it is not in the warehouse. Create a location (or run seed_stock_locations) and use adjust_quant.';
+      } else {
+        const { error: adjErr } = await supabase.rpc('adjust_quant', {
+          p_product_id: data.id, p_location_id: locId, p_qty_delta: openingQty, p_reason: 'Opening stock at product creation',
+        });
+        if (adjErr) throw new Error(`Product created but the opening stock was not received: ${adjErr.message}`);
+        onHand = openingQty;
+      }
+    }
     return {
       product_id: data.id,
       name: data.name,
       price_cents: data.price_cents,
-      stock_quantity: data.stock_quantity,
+      stock_quantity: onHand,
       track_inventory: data.track_inventory,
+      ...(stockNote ? { note: stockNote } : {}),
     };
   }
 
@@ -6740,6 +6789,19 @@ async function executeCompaniesAction(
     return { company_id, status: 'deleted' };
   }
 
+  if (action === 'get') {
+    // In the skill's action enum since the start, never in the handler.
+    const { company_id, name, domain } = args as { company_id?: string; name?: string; domain?: string };
+    if (!company_id && !name && !domain) throw new Error('company_id (or name / domain) is required');
+    let q = supabase.from('companies').select('*');
+    q = company_id ? q.eq('id', company_id) : domain ? q.ilike('domain', String(domain).trim()) : q.ilike('name', String(name).trim());
+    const { data, error } = await q.limit(2);
+    if (error) throw new Error(`Get company failed: ${error.message}`);
+    if (!data || data.length === 0) return { error: 'Company not found' };
+    if (data.length > 1) return { error: `More than one company matches — pass company_id. Candidates: ${data.map((c: { id: string; name: string }) => `${c.name} (${c.id})`).join(', ')}` };
+    return { company: data[0] };
+  }
+
   return { error: `Unknown companies action: ${action}` };
 }
 
@@ -6899,13 +6961,16 @@ async function executeWebinarsAction(
   }
 
   if (action === 'register') {
+    // Undeclared legacy verb. It used to insert the row itself and so walked
+    // past capacity, status and the lead link; it now goes through the one
+    // door everyone else uses (register_webinar → rpc:register_for_webinar).
     const { webinar_id, name, email, phone } = args as any;
     if (!webinar_id || !name || !email) throw new Error('webinar_id, name, and email required');
-    const { data, error } = await supabase.from('webinar_registrations').insert({
-      webinar_id, name, email, phone: phone || null,
-    }).select('id, name, email').single();
+    const { data, error } = await supabase.rpc('register_for_webinar', {
+      p_webinar_id: webinar_id, p_name: name, p_email: email, p_phone: phone ?? null,
+    });
     if (error) throw new Error(`Registration failed: ${error.message}`);
-    return { registration_id: data.id, name: data.name, email: data.email, status: 'registered' };
+    return { ...(data as Record<string, unknown>), status: 'registered' };
   }
 
   if (action === 'create') {
@@ -7220,6 +7285,28 @@ async function findUnsplashPhoto(
 // Booking module — full handler with availability checking
 // =============================================================================
 
+/** Wall-clock date + minutes-since-midnight of an instant, in an IANA zone. */
+function zonedParts(d: Date, tz: string): { date: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).formatToParts(d).reduce<Record<string, string>>((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, minutes: Number(parts.hour) * 60 + Number(parts.minute) };
+}
+
+/** The instant at which the wall clock in `tz` shows `date` `time` (HH:MM). */
+function zonedTimeToUtc(date: string, time: string, tz: string): Date {
+  const guess = new Date(`${date}T${time.length === 5 ? `${time}:00` : time}Z`);
+  if (isNaN(guess.getTime())) return guess;
+  const shown = zonedParts(guess, tz);
+  const shownAsUtc = Date.parse(`${shown.date}T${String(Math.floor(shown.minutes / 60)).padStart(2, '0')}:${String(shown.minutes % 60).padStart(2, '0')}:00Z`);
+  return new Date(guess.getTime() - (shownAsUtc - guess.getTime()));
+}
+
+async function platformTimezone(supabase: SupabaseClient): Promise<string> {
+  const { data, error } = await supabase.rpc('platform_timezone');
+  return !error && typeof data === 'string' && data ? data : 'Europe/Stockholm';
+}
+
 async function executeBookingAction(
   supabase: SupabaseClient,
   skillName: string,
@@ -7230,7 +7317,11 @@ async function executeBookingAction(
     const { date, service_id } = args as any;
     if (!date) throw new Error('date is required');
 
-    const dayOfWeek = new Date(date).getDay();
+    // Opening hours are wall-clock times with no zone: everything below is computed in the
+    // platform timezone. It used to compare them with UTC minutes — after a 10:00 (+01:00)
+    // booking the platform took 09:00 off the list and kept offering 10:00.
+    const tz = await platformTimezone(supabase);
+    const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay();
     // NB: availability rows with service_id NULL apply to ALL services — a
     // plain .eq(service_id) filter silently excluded them, so any caller that
     // passed a service_id got "no windows" (the voice receptionist's
@@ -7248,12 +7339,16 @@ async function executeBookingAction(
       .eq('date', date);
 
     // Check existing bookings
-    const dayStart = `${date}T00:00:00`;
-    const dayEnd = `${date}T23:59:59`;
-    const { data: bookings } = await supabase.from('bookings')
+    const dayStart = zonedTimeToUtc(date, '00:00', tz).toISOString();
+    const dayEnd = new Date(zonedTimeToUtc(date, '00:00', tz).getTime() + 26 * 3600_000).toISOString();
+    const { data: dayBookings, error: bookingsErr } = await supabase.from('bookings')
       .select('start_time, end_time, service_id')
-      .gte('start_time', dayStart).lte('start_time', dayEnd)
-      .neq('status', 'cancelled');
+      .gte('start_time', dayStart).lt('start_time', dayEnd)
+      .in('status', ['pending', 'confirmed']);
+    if (bookingsErr) throw new Error(`Availability check failed: ${bookingsErr.message}`);
+    // Same rule as the booking_rules trigger: a slot is taken by a live booking of the SAME service.
+    const bookings = (dayBookings || []).filter((b: { start_time: string; service_id: string | null }) =>
+      zonedParts(new Date(b.start_time), tz).date === date && (!service_id || b.service_id === service_id));
 
     const isFullyBlocked = blocked?.some((b: any) => b.is_all_day);
 
@@ -7265,33 +7360,17 @@ async function executeBookingAction(
       if (svc?.duration_minutes) slotMinutes = svc.duration_minutes;
     }
 
-    // Compute DISCRETE free slots the agent can read straight to the caller —
-    // windows minus existing bookings minus partial-day blocks, aligned to the
-    // slot grid, excluding past times when the date is today.
-    const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const busy: Array<[number, number]> = (bookings || []).map((b: any) => {
-      const s = new Date(b.start_time); const e = new Date(b.end_time);
-      return [s.getUTCHours() * 60 + s.getUTCMinutes(), e.getUTCHours() * 60 + e.getUTCMinutes()];
-    });
-    for (const bl of blocked || []) {
-      if (!bl.is_all_day && bl.start_time && bl.end_time) busy.push([toMin(bl.start_time), toMin(bl.end_time)]);
-    }
-    const now = new Date();
-    const isToday = date === now.toISOString().slice(0, 10);
-    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
-
-    const freeSlots: string[] = [];
-    if (!isFullyBlocked) {
-      for (const w of availability || []) {
-        const wStart = toMin(w.start_time); const wEnd = toMin(w.end_time);
-        for (let t = wStart; t + slotMinutes <= wEnd && freeSlots.length < 24; t += slotMinutes) {
-          if (isToday && t <= nowMin) continue;
-          const overlaps = busy.some(([bs, be]) => t < be && t + slotMinutes > bs);
-          if (!overlaps) freeSlots.push(`${pad(Math.floor(t / 60))}:${pad(t % 60)}`);
-        }
-      }
-    }
+    // Free slots come from ONE reader, the database function booking_free_slots — the same
+    // one the public widget asks. It applies exactly what the table's booking_rules refuses:
+    // opening hours, blocked days, the platform timezone, the past, the service's buffers and
+    // its capacity. This handler used to compute them a second time in TypeScript, without
+    // buffers or capacity, so the agent could offer a time the table then refused.
+    const { data: free, error: freeErr } = await supabase.rpc('booking_free_slots', { p_service_id: service_id ?? null, p_date: date });
+    if (freeErr) throw new Error(`Availability check failed: ${freeErr.message}`);
+    const freeAnswer = (free ?? {}) as { success?: boolean; error?: string; free_slots?: string[]; slots?: unknown[]; capacity?: number; buffer_before_minutes?: number; buffer_after_minutes?: number; slot_minutes?: number };
+    if (freeAnswer.success === false) return { error: freeAnswer.error ?? 'Availability check failed' };
+    const freeSlots: string[] = (freeAnswer.free_slots ?? []).slice(0, 24);
+    if (freeAnswer.slot_minutes) slotMinutes = freeAnswer.slot_minutes;
 
     return {
       date,
@@ -7303,7 +7382,13 @@ async function executeBookingAction(
       })),
       // Ready-to-offer start times (slot grid = service duration, default 30 min).
       free_slots: freeSlots,
+      // Per slot: the exact instant (send it as start_time) and, for a class, the places left.
+      slots: (freeAnswer.slots ?? []).slice(0, 24),
+      capacity: freeAnswer.capacity ?? 1,
+      buffer_before_minutes: freeAnswer.buffer_before_minutes ?? 0,
+      buffer_after_minutes: freeAnswer.buffer_after_minutes ?? 0,
       slot_minutes: slotMinutes,
+      timezone: tz,
       existing_bookings: (bookings || []).length,
       booked_ranges: (bookings || []).map((b: any) => ({ start: b.start_time, end: b.end_time })),
     };
@@ -7328,13 +7413,25 @@ async function executeBookingAction(
       return { hours: data || [] };
     }
     if (action === 'set_hours') {
-      const { day_of_week, start_time, end_time } = args as any;
+      // REPLACES the day's hours (the skill text always said so). It used to insert one more
+      // row per call, and duplicate windows produced duplicate free slots.
+      const { day_of_week, start_time, end_time, service_id: hoursServiceId } = args as { day_of_week?: number; start_time?: string; end_time?: string; service_id?: string };
       if (day_of_week === undefined || !start_time || !end_time) throw new Error('day_of_week, start_time, end_time required');
-      const { data, error } = await supabase.from('booking_availability').insert({
-        day_of_week, start_time, end_time, is_active: true,
-      }).select('id').single();
+      const { data, error } = await supabase.rpc('set_booking_hours', {
+        p_day_of_week: day_of_week, p_start_time: start_time, p_end_time: end_time, p_service_id: hoursServiceId ?? null,
+      });
       if (error) throw new Error(`Set hours failed: ${error.message}`);
-      return { availability_id: data.id, status: 'created' };
+      const res = (data ?? {}) as { availability_id?: string; replaced?: number };
+      return { availability_id: res.availability_id, status: 'set', replaced: res.replaced ?? 0 };
+    }
+    if (action === 'clear_hours') {
+      const { day_of_week, service_id: hoursServiceId } = args as { day_of_week?: number; service_id?: string };
+      if (day_of_week === undefined) throw new Error('day_of_week is required');
+      let del = supabase.from('booking_availability').delete().eq('day_of_week', day_of_week);
+      del = hoursServiceId ? del.eq('service_id', hoursServiceId) : del.is('service_id', null);
+      const { error } = await del;
+      if (error) throw new Error(`Clear hours failed: ${error.message}`);
+      return { day_of_week, status: 'closed' };
     }
     if (action === 'block_date') {
       const { date, reason } = args as any;
@@ -7372,7 +7469,9 @@ async function executeBookingAction(
       .eq('is_active', true).order('sort_order').limit(1);
     if (services?.length) svcId = services[0].id;
   }
-  const startTime = starts_at ? new Date(String(starts_at)) : new Date(`${date}T${time}:00`);
+  // date + time are what a person says on the phone: wall clock in the PLATFORM timezone
+  // (they were read as UTC, so "10:00" landed on 11:00 or 12:00 Stockholm time).
+  const startTime = starts_at ? new Date(String(starts_at)) : zonedTimeToUtc(String(date), String(time), await platformTimezone(supabase));
   if (isNaN(startTime.getTime())) {
     return { error: 'book_appointment needs starts_at (ISO timestamp) or date (YYYY-MM-DD) + time (HH:MM)' };
   }
@@ -7424,16 +7523,24 @@ async function executeNewsletterAction(
     }
     if (action === 'count') {
       const { count, error } = await supabase.from('newsletter_subscribers')
-        .select('*', { count: 'exact', head: true }).eq('status', 'active');
+        // 'active' is not a status this table has (pending | confirmed | unsubscribed | bounced):
+        // the count was always 0. The people a send reaches are the CONFIRMED ones.
+        .select('*', { count: 'exact', head: true }).eq('status', 'confirmed');
       if (error) throw new Error(`Count failed: ${error.message}`);
-      return { active_subscribers: count || 0 };
+      return { active_subscribers: count || 0, confirmed_subscribers: count || 0 };
     }
     if (action === 'remove' && email) {
-      const { error } = await supabase.from('newsletter_subscribers')
+      // An address is one address in any letter case. `.eq` matched nothing for
+      // ANNA@…, changed no row — and still answered "unsubscribed" (GDPR: the person
+      // kept getting mail). ilike without wildcards = case-insensitive exact match,
+      // and the answer now comes from the rows that changed.
+      const { data: changed, error } = await supabase.from('newsletter_subscribers')
         .update({ status: 'unsubscribed', unsubscribed_at: new Date().toISOString() })
-        .eq('email', email);
+        .ilike('email', String(email).trim().replace(/([%_\\])/g, '\\$1'))
+        .select('id, email');
       if (error) throw new Error(`Remove failed: ${error.message}`);
-      return { email, status: 'unsubscribed' };
+      if (!changed || changed.length === 0) return { error: `No subscriber with the address ${email} — nothing was unsubscribed.` };
+      return { email: changed[0].email, status: 'unsubscribed', rows: changed.length };
     }
     return { error: `Unknown subscriber action: ${action}` };
   }
@@ -7755,8 +7862,17 @@ async function placeOrderShared(
     .single();
   if (orderErr) throw new Error(`Order creation failed: ${orderErr.message}`);
 
-  for (const ri of resolvedItems) {
-    await supabase.from('order_items').insert({ order_id: order.id, ...ri });
+  // A line can be refused (the stock guard on an oversold product). The error was never
+  // read: the caller got success:true and total_cents for an order head with NO lines —
+  // an order for 5 500 kr that nobody could pick (process battery, 2026-09-19). A refused
+  // line now takes the order with it: the head is removed and the refusal is the answer.
+  // ONE statement for all lines: either every line lands or none does, so removing the
+  // head never strands a line's stock decrement or reservation.
+  const { error: lineErr } = await supabase.from('order_items')
+    .insert(resolvedItems.map((ri) => ({ order_id: order.id, ...ri })));
+  if (lineErr) {
+    const { error: undoErr } = await supabase.from('orders').delete().eq('id', order.id);
+    throw new Error(`Order not placed: ${lineErr.message}${undoErr ? ` (and the empty order ${order.id} could not be removed: ${undoErr.message})` : ''}`);
   }
 
   return {
@@ -8076,7 +8192,19 @@ async function executeLeadPipelineReview(
   supabase: any,
   args: Record<string, unknown>,
 ): Promise<unknown> {
-  const { status_filter = 'all', limit = 25, stale_days = 14 } = args as any;
+  const { limit = 25 } = args as any;
+  // The schema offered new|contacted|qualified — none of which is a lead_status, so three of
+  // its four values crashed on the enum. The real ones are accepted, the old words are mapped.
+  const LEAD_STATUSES = ['prospect', 'lead', 'opportunity', 'customer', 'lost'];
+  const LEGACY_STATUS: Record<string, string> = { new: 'lead', contacted: 'lead', qualified: 'opportunity', won: 'customer' };
+  const rawStatus = String((args as { status_filter?: unknown }).status_filter ?? 'all').toLowerCase();
+  const status_filter = LEGACY_STATUS[rawStatus] ?? rawStatus;
+  if (status_filter !== 'all' && !LEAD_STATUSES.includes(status_filter)) {
+    return { error: `status_filter "${rawStatus}" is not a lead status. Use one of: ${LEAD_STATUSES.join(', ')}, all.` };
+  }
+  // days_since_contact is the name the schema declares; stale_days the one the handler read.
+  const stale_days = Number((args as { stale_days?: unknown; days_since_contact?: unknown }).stale_days
+    ?? (args as { days_since_contact?: unknown }).days_since_contact ?? 14);
   const cap = Math.min(Math.max(Number(limit) || 25, 1), 100);
 
   let query = supabase
@@ -8998,6 +9126,23 @@ async function executeBlogPostsManagement(
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (title !== undefined) updates.title = title;
     if (excerpt !== undefined) updates.excerpt = excerpt;
+    // `status` was accepted, ignored, and answered with "updated" — the post stayed a draft
+    // while the caller believed it was live. It is honoured now, and so is scheduled_at
+    // (a post waiting for its time is `reviewing` + scheduled_at; publish_scheduled_content
+    // takes it live).
+    const scheduledAt = (args as { scheduled_at?: string | null }).scheduled_at;
+    if (scheduledAt !== undefined) {
+      if (scheduledAt !== null && isNaN(new Date(scheduledAt).getTime())) throw new Error('scheduled_at must be an ISO timestamp (or null to take the post out of the queue)');
+      updates.scheduled_at = scheduledAt;
+      if (scheduledAt !== null && status === undefined) updates.status = 'reviewing';
+    }
+    if (status !== undefined) {
+      if (!['draft', 'reviewing', 'published', 'archived'].includes(String(status))) {
+        throw new Error(`status "${status}" is not a post status. Use draft, reviewing, published or archived.`);
+      }
+      updates.status = status;
+      if (status === 'published') { updates.published_at = new Date().toISOString(); updates.scheduled_at = null; }
+    }
     if (featured_image !== undefined) {
       if (featured_image === 'auto') {
         // Look up current post to use title/excerpt as query basis
@@ -9017,7 +9162,8 @@ async function executeBlogPostsManagement(
     const { data, error } = await supabase.from('blog_posts')
       .update(updates).eq('id', resolvedPostId).select('id, title, status, featured_image').single();
     if (error) throw new Error(`Update post failed: ${error.message}`);
-    return { post_id: data.id, status: 'updated', featured_image: data.featured_image };
+    // `status` is the POST's status, read back from the row — never the word "updated".
+    return { post_id: data.id, updated: true, status: data.status, featured_image: data.featured_image };
   }
 
   if (action === 'publish') {
@@ -9875,22 +10021,44 @@ async function executeDbAction(
         }
 
         // Fetch posted lines with optional filters
-        let linesQuery = supabase.from('journal_entry_lines').select(`
-          account_code, account_name, debit_cents, credit_cents, description,
-          journal_entries!inner(id, entry_date, description, status)
-        `).eq('journal_entries.status', 'posted');
+        // EVERY posted line, page by page. This was one unbounded select, and PostgREST
+        // cuts that at 1 000 rows without a word: with 2 322 posted lines the trial
+        // balance reported 3.3 M where the ledger held 7.95 M, and whether it
+        // "balanced" depended on where the cut fell (process battery, 2026-09-19).
+        // The same read feeds the income statement, the balance sheet and the general
+        // ledger. A report that cannot read the whole ledger refuses — a total that is
+        // silently short is worse than no total.
+        type LedgerLine = { id: string; account_code: string; account_name: string | null; debit_cents: number | null; credit_cents: number | null; description: string | null;
+          journal_entries: { id: string; entry_date: string; description: string | null; status: string } };
+        type ChartRow = { id: string; account_code: string; account_name: string; account_type: string; account_category: string | null; normal_balance: string | null };
+        type Filterable<Q> = { eq: (c: string, v: unknown) => Q; gte: (c: string, v: unknown) => Q; lte: (c: string, v: unknown) => Q };
+        const linesRead = await readAllRows<LedgerLine>(supabase, 'journal_entry_lines', {
+          columns: `id, account_code, account_name, debit_cents, credit_cents, description,
+          journal_entries!inner(id, entry_date, description, status)`,
+          orderBy: 'id',
+          pageSize: 1000,
+          maxPages: 500,
+          filter: <Q extends Filterable<Q>>(q: Q) => {
+            let f = q.eq('journal_entries.status', 'posted');
+            if (sinceDate) f = f.gte('journal_entries.entry_date', sinceDate);
+            if (untilDate) f = f.lte('journal_entries.entry_date', untilDate);
+            if (account_code) f = f.eq('account_code', account_code);
+            return f;
+          },
+        });
+        if (linesRead.error) throw new Error(`Accounting query failed: ${linesRead.error}`);
+        if (linesRead.truncated) throw new Error('Accounting query failed: the ledger has more posted lines than this report can read in one call — narrow the period (from_date/to_date) or the account.');
+        const lines = linesRead.rows;
 
-        if (sinceDate) linesQuery = linesQuery.gte('journal_entries.entry_date', sinceDate);
-        if (untilDate) linesQuery = linesQuery.lte('journal_entries.entry_date', untilDate);
-        if (account_code) linesQuery = linesQuery.eq('account_code', account_code);
-
-        const { data: lines, error: linesErr } = await linesQuery;
-        if (linesErr) throw new Error(`Accounting query failed: ${linesErr.message}`);
-
-        // Fetch chart of accounts for classification
-        const { data: chart } = await supabase.from('chart_of_accounts')
-          .select('account_code, account_name, account_type, account_category, normal_balance')
-          .eq('is_active', true);
+        // The chart is read whole too: se-bas2024 alone is 1 262 accounts.
+        const chartRead = await readAllRows<ChartRow>(supabase, 'chart_of_accounts', {
+          columns: 'id, account_code, account_name, account_type, account_category, normal_balance',
+          orderBy: 'id',
+          pageSize: 1000,
+          filter: <Q extends Filterable<Q>>(q: Q) => q.eq('is_active', true),
+        });
+        if (chartRead.error || chartRead.truncated) throw new Error(`Accounting query failed: could not read the chart of accounts${chartRead.error ? ` (${chartRead.error})` : ''}`);
+        const chart = chartRead.rows;
         const chartMap = new Map((chart || []).map((a: any) => [a.account_code, a]));
 
         // Aggregate balances
@@ -10108,9 +10276,16 @@ async function executeDbAction(
 
         // Already reversed → say so instead of writing a second reversal, which
         // would leave the books off by the entry's amount in the other direction.
-        if (original.reversed_by) {
+        // The reversal's own `reverses` link is the memory, not the stamp on the original:
+        // in a CLOSED period the period guard refuses the reversed_by update below (and the
+        // error was never read), so a second void found no stamp and booked a second
+        // reversal (process battery, 2026-09-19).
+        const { data: priorReversal, error: priorErr } = await supabase.from('journal_entries')
+          .select('id').eq('reverses', entry_id).limit(1).maybeSingle();
+        if (priorErr) throw new Error(`Could not check for an earlier reversal: ${priorErr.message}`);
+        if (original.reversed_by || priorReversal) {
           return {
-            voided: false, original_id: entry_id, reversal_id: original.reversed_by,
+            voided: false, original_id: entry_id, reversal_id: original.reversed_by ?? priorReversal?.id,
             error: 'This entry has already been reversed. Its reversal is reversal_id — the two net to zero. ' +
               'If the correction itself was wrong, book the fix as a new entry rather than reversing twice.',
           };
@@ -10139,8 +10314,11 @@ async function executeDbAction(
           }).select('id').single();
         if (revErr) throw new Error(`Reversal failed: ${revErr.message}`);
 
-        await supabase.from('journal_entries')
+        // Best effort: an original in a closed period cannot be stamped (the guard refuses any
+        // write to it), and that is fine — `reverses` on the reversal carries the link.
+        const { error: stampErr } = await supabase.from('journal_entries')
           .update({ reversed_by: reversal.id }).eq('id', entry_id);
+        if (stampErr) console.warn(`[manage_journal_entry] original ${entry_id} not stamped reversed_by (${stampErr.message}) — the reversal's 'reverses' link stands`);
 
         // Reverse lines (swap debit/credit)
         if (origLines && origLines.length > 0) {
@@ -10385,6 +10563,20 @@ async function executeDbAction(
         throw new Error('Zero-amount entry rejected: lines have no debit_cents/credit_cents. For percentage templates, pass amount_cents (NET base) so the lines can be expanded.');
       }
 
+      // Every account must exist in the chart. An entry on `9Z9Z` was created and posted:
+      // a typo became a ledger account nobody could report on (process battery, 2026-09-19).
+      // Asked about the handful of codes on THIS entry — never a read of the whole chart.
+      const lineCodes = [...new Set((entryLines as Array<{ account_code?: unknown }>).map((l) => String(l.account_code ?? '').trim()))];
+      if (lineCodes.some((c) => !c)) throw new Error('Every line needs an account_code.');
+      const { data: knownAccounts, error: knownErr } = await supabase.from('chart_of_accounts')
+        .select('account_code').in('account_code', lineCodes);
+      if (knownErr) throw new Error(`Could not verify the accounts: ${knownErr.message}`);
+      const known = new Set(((knownAccounts || []) as Array<{ account_code: string }>).map((a) => a.account_code));
+      const unknownCodes = lineCodes.filter((c) => !known.has(c));
+      if (unknownCodes.length > 0) {
+        throw new Error(`Unknown account${unknownCodes.length > 1 ? 's' : ''} ${unknownCodes.join(', ')} — not in the chart of accounts. Look the account up with manage_chart_of_accounts (action list/search), or add it there first if it is genuinely new.`);
+      }
+
       const { data: entry, error: entryErr } = await supabase.from('journal_entries')
         .insert({
           entry_date: effectiveDate,
@@ -10500,8 +10692,28 @@ async function executeDbAction(
         }
       }
 
+      // A manual entry above an approval rule for 'journal_entry' is held by the table as a
+      // DRAFT with an approval request (checked when its lines are committed). Read the entry
+      // back and say so — "created" alone would read as booked.
+      const { data: landed, error: landedErr } = await supabase.from('journal_entries')
+        .select('status').eq('id', entry.id).maybeSingle();
+      if (landedErr) throw new Error(`Read back entry failed: ${landedErr.message}`);
+      let heldForApproval: { approval_request_id: string | null; next: string } | null = null;
+      if (landed?.status === 'draft') {
+        const { data: req, error: reqErr } = await supabase.from('approval_requests')
+          .select('id').eq('entity_type', 'journal_entry').eq('entity_id', entry.id).eq('status', 'pending')
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (reqErr) throw new Error(`Read approval request failed: ${reqErr.message}`);
+        heldForApproval = {
+          approval_request_id: req?.id ?? null,
+          next: 'The amount needs approval: the entry is a DRAFT and is not in the books yet. Once approved, post it with post_journal_entry({p_entry_id}).',
+        };
+      }
+
       return {
         created: true,
+        status: landed?.status ?? 'posted',
+        ...(heldForApproval ? { approval_required: true, ...heldForApproval } : {}),
         documents_attached,
         entry_id: entry.id,
         bank_transaction_id: bankTxId || null,
@@ -11011,8 +11223,22 @@ async function executeDbAction(
         // Law 3 symmetry: the UI's send path (useQuoteWorkflow) mints the public
         // accept_token; without it an agent-sent quote has no customer link and
         // quote-expiry-reminders skips it (found live 2026-07-04, EPIC-05).
-        const { data: existing } = await supabase.from('quotes')
-          .select('accept_token').eq('id', qid).maybeSingle();
+        const { data: existing, error: existingErr } = await supabase.from('quotes')
+          .select('accept_token, status, approval_request_id').eq('id', qid).maybeSingle();
+        if (existingErr || !existing) throw new Error(`Quote not found: ${qid}`);
+        // A quote awaiting approval is not sent. It goes out once its request is approved.
+        if (String(existing?.status) === 'pending_approval') {
+          const { data: appr, error: apprErr } = existing.approval_request_id
+            ? await supabase.from('approval_requests').select('status').eq('id', existing.approval_request_id).maybeSingle()
+            : { data: null, error: null };
+          // Cannot tell whether it is approved → it is not sent.
+          if (apprErr) throw new Error(`Send quote failed: could not read the approval request (${apprErr.message})`);
+          if (String(appr?.status) !== 'approved') {
+            return { error: `Quote is pending approval (${appr?.status ?? 'no decision yet'}) — it cannot be sent until an approver has approved it at /admin/approvals.` };
+          }
+        } else if (!['draft', 'sent', 'viewed'].includes(String(existing?.status))) {
+          return { error: `Quote is ${existing?.status} — only a draft (or an already sent quote, to re-send) can be sent.` };
+        }
         let acceptToken: string | null = existing?.accept_token ?? null;
         if (!acceptToken) {
           const arr = new Uint8Array(24);
@@ -11023,18 +11249,60 @@ async function executeDbAction(
           .update({ status: 'sent', accept_token: acceptToken, sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
           .eq('id', qid).select('id, quote_number, status, accept_token').single();
         if (error) throw new Error(`Send quote failed: ${error.message}`);
-        return { sent: true, quote_id: data.id, quote_number: data.quote_number, status: data.status, accept_token: data.accept_token, note: 'Status set to sent; public accept link token ensured. Email delivery is a separate concern (requires an email integration).' };
+
+        // "Send" means the customer gets the quote. The admin UI has always handed it to the
+        // mail rail (comms-send quote_email); the agent path only flipped the status and said
+        // e-mail was "a separate concern" — a quote an agent sent never reached anyone
+        // (process battery, 2026-09-19). Same rail now, and the answer says what happened:
+        // the quote IS sent (the link works) even when no mail could go, exactly as in the UI.
+        let origin = Deno.env.get('PUBLIC_SITE_URL') || '';
+        if (!origin) {
+          const { data: general } = await supabase.from('site_settings').select('value').eq('key', 'general').maybeSingle();
+          const v = (general?.value ?? {}) as Record<string, string | undefined>;
+          origin = v.siteUrl || v.site_url || v.public_url || v.publicUrl || '';
+        }
+        origin = origin.replace(/\/$/, '');
+        const publicUrl = origin ? `${origin}/quote/${data.accept_token}` : null;
+        let emailSent = false;
+        let emailError: string | undefined;
+        if (!publicUrl) {
+          emailError = 'Public Site URL is not configured (Admin → Site Settings → General), so no link could be built and no e-mail was sent.';
+        } else {
+          try {
+            const mailRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/comms-send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+              body: JSON.stringify({ kind: 'quote_email', quote_id: data.id, public_url: publicUrl, custom_message: (a as { custom_message?: string }).custom_message }),
+            });
+            const mailBody = await mailRes.json().catch(() => ({}));
+            emailSent = mailRes.ok && (mailBody as { success?: boolean }).success === true;
+            if (!emailSent) emailError = String((mailBody as { error?: string }).error ?? `comms-send answered ${mailRes.status}`);
+          } catch (e) {
+            emailError = (e as Error).message;
+          }
+        }
+        return { sent: true, quote_id: data.id, quote_number: data.quote_number, status: data.status, accept_token: data.accept_token,
+          public_url: publicUrl, email_sent: emailSent, ...(emailError ? { email_error: emailError } : {}),
+          note: emailSent ? 'The customer has been e-mailed the quote with its accept link.'
+            : 'The quote is marked sent and the link works, but NO e-mail went out — pass the link on yourself, or fix the cause in email_error and send again.' };
       }
 
       if (action === 'request_approval') {
-        const a = args as any;
+        // ONE door for the admin UI and the agent: request_quote_approval. With an active
+        // approval chain for quotes the request enters the chain (advance_approval_step per
+        // step); otherwise the single-rule path (resolve_approval). The decision lands on the
+        // quote by trigger, and the TABLE refuses a send that no approved request covers —
+        // so this handler carries no rule of its own.
+        const a = args as { id?: string; quote_id?: string; reason?: string };
         const qid = a.id || a.quote_id;
         if (!qid) throw new Error('id (or quote_id) is required');
-        const { data, error } = await supabase.from('quotes')
-          .update({ status: 'pending_approval', updated_at: new Date().toISOString() })
-          .eq('id', qid).select('id, quote_number, status').single();
-        if (error) throw new Error(`Request approval failed: ${error.message}`);
-        return { requested: true, quote_id: data.id, status: data.status };
+        const { data: res, error: rpcErr } = await supabase.rpc('request_quote_approval', {
+          p_quote_id: qid, p_reason: a.reason ?? null, p_only_if_required: false,
+        });
+        if (rpcErr) throw new Error(`Request approval failed: ${rpcErr.message}`);
+        const r = (res ?? {}) as Record<string, unknown>;
+        if (r.success === false) return { error: String(r.error ?? 'Request approval failed') };
+        return r;
       }
 
       if (action === 'list_templates') {
@@ -11084,6 +11352,12 @@ async function executeDbAction(
         if (quoteRes.error || !quoteRes.data) throw new Error(`Quote not found: ${qid}`);
         const quote = quoteRes.data;
         if (quote.invoice_id) return { converted: false, invoice_id: quote.invoice_id, note: 'Quote already has an invoice' };
+        // Only what the customer said yes to is invoiced. There was no status check:
+        // a quote the customer DECLINED got a draft invoice and was flipped to
+        // accepted (process battery, 2026-09-19).
+        if (String(quote.status) !== 'accepted') {
+          return { error: `Quote is ${quote.status} — only an accepted quote becomes an invoice. ${['rejected', 'declined', 'expired'].includes(String(quote.status)) ? 'Send a new or revised quote.' : 'It is accepted when the customer signs it (or mark it accepted once you hold their written yes).'}` };
+        }
         const qItems = itemsRes.data || [];
         if (qItems.length === 0) throw new Error('Quote has no line items to invoice');
         // Map quote_items → the invoices line_items jsonb shape.
@@ -11695,7 +11969,7 @@ async function executeDbAction(
         if (updateLines !== undefined) {
           return {
             error: 'action:"update" does not rewrite purchase order lines — the lines you passed would have been ignored. '
-              + 'Use action:"create" for a new order, or edit the lines in the purchase order editor.',
+              + 'Use amend_purchase_order({p_purchase_order_id, p_reason, p_lines}) — it changes the lines and records the revision in one step.',
             valid_parameters: ['purchase_order_id', 'status', 'expected_delivery', 'notes', 'currency', 'exchange_rate', 'order_date'],
           };
         }
@@ -12061,11 +12335,32 @@ async function executeDbAction(
         if (cErr) throw new Error(`Fetch contract failed: ${cErr.message}`);
         if (!contract) return { error: `Contract ${contract_id} not found` };
 
+        // Only a draft is sent; a pending one may be re-sent (same token). A signed,
+        // expired or terminated contract is not an offer any more — it used to go
+        // back to pending_signature with a live signing link (2026-09-19).
+        if (!['draft', 'pending_signature'].includes(String(contract.status))) {
+          return { error: `Contract is ${contract.status} — only a draft (or a pending one, to re-send) can be sent for signature. To change a signed agreement, draft a new contract or a new version.` };
+        }
+
         const hasBody = (contract.body_markdown && String(contract.body_markdown).trim().length > 0)
           || !!contract.file_url;
         if (!hasBody) {
           return { error: 'Contract has empty body_markdown and no file_url. Write the agreement (manage_contract action=update body_markdown=...) before sending for signature.' };
         }
+
+        // Checked BEFORE anything is written: a send that cannot produce a link used to
+        // flip the contract to pending_signature, store the token, and THEN throw.
+        let origin = Deno.env.get('PUBLIC_SITE_URL') || '';
+        if (!origin) {
+          const { data: setting } = await supabase.from('site_settings')
+            .select('value').eq('key', 'general').maybeSingle();
+          const v = (setting?.value as any) || {};
+          origin = v.siteUrl || v.site_url || v.public_url || v.publicUrl || '';
+        }
+        if (!origin) {
+          throw new Error('Public Site URL is not configured. Set it in Admin → Site Settings → General (or PUBLIC_SITE_URL env).');
+        }
+        origin = origin.replace(/\/$/, '');
 
         // Reuse existing token, otherwise mint a new one.
         let token: string = contract.accept_token;
@@ -12100,18 +12395,7 @@ async function executeDbAction(
           }).eq('id', contract.id);
         if (uErr) throw new Error(`Update contract failed: ${uErr.message}`);
 
-        // Resolve site origin (env first, then site_settings.general)
-        let origin = Deno.env.get('PUBLIC_SITE_URL') || '';
-        if (!origin) {
-          const { data: setting } = await supabase.from('site_settings')
-            .select('value').eq('key', 'general').maybeSingle();
-          const v = (setting?.value as any) || {};
-          origin = v.siteUrl || v.site_url || v.public_url || v.publicUrl || '';
-        }
-        if (!origin) {
-          throw new Error('Public Site URL is not configured. Set it in Admin → Site Settings → General (or PUBLIC_SITE_URL env).');
-        }
-        origin = origin.replace(/\/$/, '');
+
 
 
         return {
@@ -12242,7 +12526,9 @@ async function executeDbAction(
         // Preferred path: render from template via RPC (handles tokens + guard)
         if (a.template_id) {
           const overrides: Record<string, unknown> = {};
-          for (const k of ['title', 'start_date', 'end_date', 'value_cents', 'currency']) {
+          // quote_id carries the accepted quote's lines into §4 ({{quote_lines}}); without it
+          // an agent-drafted contract rendered the placeholder "[PRISER ENLIGT ACCEPTERAD OFFERT]".
+          for (const k of ['title', 'start_date', 'end_date', 'value_cents', 'currency', 'quote_id']) {
             if (a[k] !== undefined) overrides[k] = a[k];
           }
           const { data, error } = await supabase.rpc('create_contract_from_template', {
@@ -12282,7 +12568,7 @@ async function executeDbAction(
         };
         // Recurring-billing config (lets an agent enable generate_contract_invoice; the
         // billing_* columns were previously unreachable via the skill — QA 2026-07-10).
-        for (const k of ['billing_enabled', 'billing_amount_cents', 'billing_interval', 'billing_interval_count', 'billing_next_date', 'billing_due_in_days', 'billing_tax_rate']) {
+        for (const k of ['billing_enabled', 'billing_amount_cents', 'billing_interval', 'billing_interval_count', 'billing_next_date', 'billing_due_in_days', 'billing_tax_rate', 'quote_id']) {
           if (a[k] !== undefined) insertData[k] = a[k];
         }
         const { data, error } = await supabase.from('contracts').insert(insertData)
@@ -13414,6 +13700,8 @@ const GENERIC_CRUD_TABLES = new Set([
   'survey_campaigns', 'survey_responses', 'survey_templates',
   // Point of Sale (registers/sessions/sales — read/list skills)
   'pos_registers', 'pos_sessions', 'pos_sales', 'pos_sale_lines',
+  // Booking — the menu of bookable services (manage_booking_service)
+  'booking_services',
   // Subscriptions — win-back campaigns (list_winback_campaigns read/list)
   'subscription_winback_campaigns',
   // Voice module — call log + callback scheduling (list/schedule/mark skills)
@@ -13600,6 +13888,11 @@ async function executeGenericCrud(
     list_open:     { action: 'list', extraFilters: { status: 'open' } },
     list_approved: { action: 'list', extraFilters: { status: 'approved' } },
     list_draft:    { action: 'list', extraFilters: { status: 'draft' } },
+    // "list for one employee" and "search" are lists: the employee_id / search the caller
+    // passes is already a filter the list branch understands.
+    list_by_employee: { action: 'list' },
+    list_incomplete:  { action: 'list', extraFilters: { status: 'in_progress' } },
+    search:        { action: 'list' },
     fetch:         { action: 'get' },
     read:          { action: 'get' },
     insert:        { action: 'create' },
@@ -13623,13 +13916,27 @@ async function executeGenericCrud(
       publish: { status: 'published', published_at: new Date().toISOString() },
       close: { status: 'closed', closed_at: new Date().toISOString() },
     },
+    // manage_leave advertised approve/reject and manage_employee advertised deactivate;
+    // all three answered "Unknown action", so an agent could neither decide a leave
+    // request nor offboard anyone (process battery, 2026-09-19).
+    leave_requests: {
+      approve: { status: 'approved' },
+      reject: { status: 'rejected' },
+    },
+    employees: {
+      deactivate: { status: 'terminated', end_date: new Date().toISOString().slice(0, 10) },
+    },
   };
+  // The id a verb acts on, under the name the skill's schema uses for it.
+  const VERB_ID_ALIASES: Record<string, string[]> = { leave_requests: ['request_id', 'leave_request_id'] };
   const verbFields = STATUS_VERBS[table]?.[action];
   if (verbFields) {
     if (id === undefined) {
       const singular = table.replace(/ies$/, 'y').replace(/s$/, '');
       const naturalKey = `${singular}_id`;
-      if (fields[naturalKey] !== undefined) { id = fields[naturalKey]; delete fields[naturalKey]; }
+      for (const key of [naturalKey, ...(VERB_ID_ALIASES[table] ?? [])]) {
+        if (id === undefined && fields[key] !== undefined) { id = fields[key]; delete fields[key]; }
+      }
     }
     action = 'update';
     Object.assign(fields, verbFields);
@@ -15826,6 +16133,17 @@ async function executeEmailToTicket(
   }
 
   if (parentTicket?.id) {
+    // A redelivered reply (the mail trigger fires again, a watch replays) is the SAME reply.
+    // Only a NEW ticket was deduped (on source_id); a reply became a second comment every
+    // time it was delivered, despite "Idempotent on message_id". The ticket remembers the
+    // inbound message ids it has taken in.
+    const seenInbound = new Set<string>([
+      ...((parentTicket.metadata?.inbound_message_ids as string[] | undefined) ?? []),
+      ...(parentTicket.metadata?.last_inbound_message_id ? [String(parentTicket.metadata.last_inbound_message_id)] : []),
+    ]);
+    if (seenInbound.has(messageId)) {
+      return { success: true, ticket_id: parentTicket.id, action: 'already_appended', idempotent: true };
+    }
     // Append as ticket comment, reopen if closed.
     const author = fromName || fromAddr || 'Email';
     const { error: commentErr } = await supabase.from('ticket_comments').insert({
@@ -15843,6 +16161,7 @@ async function executeEmailToTicket(
       updated_at: new Date().toISOString(),
       metadata: {
         ...(parentTicket.metadata || {}),
+        inbound_message_ids: [...seenInbound, messageId].slice(-200),
         last_inbound_message_id: messageId,
         last_inbound_message_id_header: messageIdHeader,
         last_inbound_at: new Date().toISOString(),
@@ -16107,11 +16426,85 @@ async function executeInvoiceFromTimesheets(
   const { data, error } = await supabase.rpc('bulk_invoice_from_timesheets', {
     p_project_id: projectId, p_start_date: start, p_end_date: end,
     p_group_by: a.group_by || 'entry', p_due_days: a.due_days ?? 30,
+    // The skill always declared tax_rate; the RPC hardcoded 25 % and never saw it
+    // (a 6 % request produced 25 % VAT). NULL → the instance's default rate.
+    p_tax_rate: a.tax_rate ?? null,
   });
   if (error) return { error: `Invoice from timesheets failed: ${error.message}`, status: 'failed' };
   const rows = data || [];
   return { project_id: projectId, period, start_date: start, end_date: end,
     invoices_created: rows.length, invoices: rows };
+}
+
+/**
+ * Dunning: the RPC decides which invoices are due for which step and records the reminder as
+ * PENDING. This hands every pending reminder to the mail rail (comms-send invoice_email,
+ * reminder) and writes what happened — `sent`, or `failed` with the reason. It used to be the
+ * RPC alone, which logged `sent` while nothing was sent and nothing read the table.
+ */
+async function executeSendDunningReminders(
+  supabase: SupabaseClient,
+  args: Record<string, unknown>,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<unknown> {
+  const dryRun = (args as { dry_run?: boolean; p_dry_run?: boolean }).dry_run ?? (args as { p_dry_run?: boolean }).p_dry_run ?? false;
+  const { data: due, error: dueErr } = await supabase.rpc('send_dunning_reminders', { p_dry_run: dryRun });
+  if (dueErr) return { error: `send_dunning_reminders failed: ${dueErr.message}`, status: 'failed' };
+  if (dryRun) return { dry_run: true, due: due ?? [], count: (due ?? []).length };
+
+  let origin = Deno.env.get('PUBLIC_SITE_URL') || '';
+  if (!origin) {
+    const { data: general, error: generalErr } = await supabase.from('site_settings').select('value').eq('key', 'general').maybeSingle();
+    if (generalErr) return { error: `Could not read the site settings: ${generalErr.message}`, status: 'failed' };
+    const v = (general?.value ?? {}) as Record<string, string | undefined>;
+    origin = v.siteUrl || v.site_url || v.public_url || v.publicUrl || '';
+  }
+  origin = origin.replace(/\/$/, '');
+
+  // Everything that is pending — also what an earlier run (or the cron calling the RPC
+  // directly) left behind.
+  const { data: pending, error: pendingErr } = await supabase.from('invoice_dunning_actions')
+    .select('id, invoice_id, step_name, recipient_email, invoices!inner(invoice_number, public_token, status)')
+    .eq('action_type', 'email').eq('status', 'pending').order('created_at', { ascending: true }).limit(200);
+  if (pendingErr) return { error: `Could not read the pending reminders: ${pendingErr.message}`, status: 'failed' };
+
+  const results: Array<{ invoice_number: string | null; step: string; sent: boolean; error?: string }> = [];
+  for (const row of (pending ?? []) as Array<{ id: string; invoice_id: string; step_name: string; recipient_email: string | null; invoices: { invoice_number: string | null; public_token: string | null; status: string } }>) {
+    let sent = false;
+    let reason: string | undefined;
+    if (['paid', 'cancelled', 'void'].includes(String(row.invoices.status))) {
+      reason = `invoice is ${row.invoices.status} — no reminder needed`;
+    } else if (!origin) {
+      reason = 'Public Site URL is not configured (Admin → Site Settings → General) — no link could be built';
+    } else if (!row.invoices.public_token) {
+      reason = 'invoice has no public link (public_token)';
+    } else {
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/comms-send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
+          body: JSON.stringify({ kind: 'invoice_email', invoice_id: row.invoice_id, public_url: `${origin}/invoice/${row.invoices.public_token}`, reminder: true }),
+        });
+        const body = await res.json().catch(() => ({}));
+        sent = res.ok && (body as { success?: boolean }).success === true;
+        if (!sent) reason = String((body as { error?: string }).error ?? `comms-send answered ${res.status}`);
+      } catch (e) {
+        reason = (e as Error).message;
+      }
+    }
+    const { error: markErr } = await supabase.from('invoice_dunning_actions')
+      .update({ status: sent ? 'sent' : 'failed', error_message: sent ? null : reason ?? null, executed_at: new Date().toISOString() })
+      .eq('id', row.id);
+    if (markErr) reason = `${reason ? `${reason}; ` : ''}and the outcome could not be recorded: ${markErr.message}`;
+    results.push({ invoice_number: row.invoices.invoice_number, step: row.step_name, sent, ...(reason ? { error: reason } : {}) });
+  }
+  return {
+    due: (due ?? []).length,
+    reminders_sent: results.filter((r) => r.sent).length,
+    reminders_failed: results.filter((r) => !r.sent).length,
+    results,
+  };
 }
 
 async function executeReplyToTicketViaEmail(

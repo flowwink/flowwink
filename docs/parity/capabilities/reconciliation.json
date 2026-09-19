@@ -10,7 +10,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "multi-format bank statement import"
+      "verify": "multi-format bank statement import",
+      "notes": "2026-09-19 process battery: parseCSV splits on comma AND semicolon: a Swedish-format 1234,50 is read as 1 234,00 and the reference becomes \"50\" (record-to-report). Back to done when the known-red check is green. · FIXED 2026-09-19: bank CSV reads one delimiter per file and both decimal conventions (unit-tested); the process-battery checks are green."
     },
     {
       "id": "stripe_sync",
@@ -50,7 +51,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "transaction deduplication"
+      "verify": "transaction deduplication",
+      "notes": "2026-09-19 process battery: re-importing a bank CSV duplicates every line — external_id contains the new batch id (record-to-report). Back to done when the known-red check is green. · FIXED 2026-09-19: CSV row ids come from the row, so importing the same file twice is the same rows; the process-battery checks are green."
     },
     {
       "id": "status_tracking",

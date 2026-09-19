@@ -164,6 +164,7 @@ Lists available booking services (visitor-facing).
               enum: [
                 'list_hours',
                 'set_hours',
+                'clear_hours',
                 'block_date',
                 'unblock_date',
                 'list_blocked',
@@ -188,6 +189,10 @@ Lists available booking services (visitor-facing).
             reason: {
               type: 'string',
             },
+            service_id: {
+              type: 'string',
+              description: 'Optional on set_hours / clear_hours: hours for ONE service. Omit for hours that apply to every service.',
+            },
           },
           required: [
             'action',
@@ -203,13 +208,15 @@ Manages booking hours and blocked dates for the scheduling system.
 - Admin blocks dates for holidays/vacations
 - Schedule configuration changes
 ### Parameters
-- **action**: Required. list_hours, set_hours, block_date, unblock_date, list_blocked.
-- **day_of_week**: 0-6 (0=Sunday) for set_hours.
-- **start_time**, **end_time**: HH:MM format.
+- **action**: Required. list_hours, set_hours, clear_hours, block_date, unblock_date, list_blocked.
+- **day_of_week**: 0-6 (0=Sunday) for set_hours / clear_hours.
+- **start_time**, **end_time**: HH:MM wall-clock time in the PLATFORM timezone (check_availability returns it as timezone).
+- **service_id**: optional on set_hours / clear_hours — hours for ONE service; omit for hours that apply to every service.
 - **date**: YYYY-MM-DD for block/unblock.
 ### Edge cases
-- Setting hours replaces existing hours for that day.
-- Blocked dates override availability hours.`,
+- set_hours REPLACES that day's hours (for that service, or the general ones). clear_hours closes the day.
+- Blocked dates override availability hours.
+- These are RULES, not hints: a booking outside the hours, on a blocked day, in the past or on top of another booking of the same service is refused for every caller (slot_unavailable). Only a signed-in staff member in the admin UI may place one outside hours or after the fact; overlap is refused for everyone.`,
   },
   {
     name: 'manage_bookings',
@@ -334,6 +341,97 @@ There is no move action — do: (1) find the booking (list + customer filter), (
 - **slot_unavailable** → the slot was taken between check and book: re-run check_availability and offer the nearest free_slots. Do NOT retry the same time.
 - Cancelled bookings free their slot; back-to-back (adjacent) bookings are allowed.`,
   },
+  {
+    name: 'join_booking_waitlist',
+    description: 'Put a customer on the waiting list for a fully booked day. Use when: check_availability shows no free times on the day the customer wants and they would take a cancellation. NOT for: a day that still has free times (book one with book_appointment — the function refuses), or reading the queue (manage_booking_waitlist).',
+    category: 'crm',
+    handler: 'rpc:join_booking_waitlist',
+    scope: 'external',
+    trust_level: 'notify',
+    instructions:
+      'One entry per person, service and day — a second call answers already_waiting:true. When a booking on that day is cancelled every waiting entry turns "offered" and the event booking.waitlist_slot_opened is emitted; contact the customers in queue order (manage_booking_waitlist list) and mark the one who takes the time with set_status "booked".',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'join_booking_waitlist',
+        description: 'Queue a customer for a fully booked day.',
+        parameters: {
+          type: 'object',
+          properties: {
+            p_service_id: { type: 'string', description: 'UUID of the booking service' },
+            p_date: { type: 'string', description: 'The wanted day, YYYY-MM-DD' },
+            p_customer_name: { type: 'string' },
+            p_customer_email: { type: 'string' },
+            p_customer_phone: { type: 'string' },
+            p_notes: { type: 'string' },
+          },
+          required: ['p_service_id', 'p_date', 'p_customer_name', 'p_customer_email'],
+        },
+      },
+    },
+  },
+  {
+    name: 'manage_booking_waitlist',
+    description: 'Read the booking waiting list, or change the status of an entry. Use when: a time has opened up and you need to know who is waiting for that day, or an entry should be marked booked, expired or cancelled. NOT for: adding someone (join_booking_waitlist) or the bookings themselves (manage_bookings).',
+    category: 'crm',
+    handler: 'rpc:manage_booking_waitlist',
+    scope: 'internal',
+    instructions:
+      'p_action "list" answers the open queue (waiting + offered) oldest first; filter with p_service_id, p_date or p_status. p_action "set_status" takes p_waitlist_id and p_status: waiting | offered | booked | expired | cancelled.',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'manage_booking_waitlist',
+        description: 'List the booking waiting list or set the status of one entry.',
+        parameters: {
+          type: 'object',
+          properties: {
+            p_action: { type: 'string', enum: ['list', 'set_status'] },
+            p_waitlist_id: { type: 'string' },
+            p_service_id: { type: 'string' },
+            p_date: { type: 'string', description: 'YYYY-MM-DD' },
+            p_status: { type: 'string', enum: ['waiting', 'offered', 'booked', 'expired', 'cancelled'] },
+          },
+          required: ['p_action'],
+        },
+      },
+    },
+  },
+  {
+    name: 'manage_booking_service',
+    description: 'Create, update, list or retire the services customers can book (booking_services): name, duration, price, colour, order. Use when: setting up booking on a new site (a fresh install has NO services, and nothing can be booked until one exists), adding or renaming a service, changing its length or price, taking one off the menu (is_active false). NOT for: opening hours or blocked dates (manage_booking_availability), seeing what is bookable as a visitor (browse_services), booking a time (book_appointment_slot).',
+    category: 'crm',
+    handler: 'db:booking_services',
+    scope: 'internal',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'manage_booking_service',
+        description: 'CRUD on booking_services — the menu of bookable services.',
+        parameters: {
+          type: 'object',
+          properties: {
+            action: { type: 'string', enum: ['create', 'update', 'list', 'get'] },
+            booking_service_id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            duration_minutes: { type: 'integer', description: 'Length of one booking; also the slot grid check_availability offers. Default 60.' },
+            price_cents: { type: 'integer', description: '0 for a free meeting' },
+            buffer_before_minutes: { type: 'integer', description: 'Minutes kept free BEFORE each booking (set-up, travel). Default 0.' },
+            buffer_after_minutes: { type: 'integer', description: 'Minutes kept free AFTER each booking (cleaning, notes). Default 0.' },
+            capacity: { type: 'integer', description: 'How many may book the same time — 1 for an appointment, more for a class or a viewing. Default 1.' },
+            currency: { type: 'string', description: 'Defaults to the platform currency' },
+            is_active: { type: 'boolean', description: 'false takes the service off the menu without deleting its bookings' },
+            color: { type: 'string', description: 'Hex colour in the calendar' },
+            sort_order: { type: 'integer' },
+          },
+          required: ['action'],
+          'x-action-required': { create: ['name'], update: ['booking_service_id'] },
+        },
+      },
+    },
+    instructions: 'A booking needs a service: its duration decides how long the slot is and which grid check_availability offers. Set the service up first, then the opening hours (manage_booking_availability set_hours), then bookings can be taken. Retire a service with is_active false — never delete one that has bookings.',
+  },
 ];
 
 const BOOKING_AUTOMATIONS: AutomationSeed[] = [
@@ -369,6 +467,7 @@ export const bookingModule = defineModule<BookingModuleInput, BookingModuleOutpu
     'check_availability',
     'browse_services',
     'manage_booking_availability',
+    'manage_booking_service',
     'manage_bookings',
     'book_appointment_slot',
   ],

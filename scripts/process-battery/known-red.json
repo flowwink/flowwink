@@ -1,0 +1,4 @@
+{
+  "_comment": "Checks that are red because of an unfixed product finding. May only shrink. See scripts/process-battery/README.md.",
+  "checks": {}
+}

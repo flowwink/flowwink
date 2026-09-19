@@ -10,7 +10,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "balanced debit/credit journal entries"
+      "verify": "balanced debit/credit journal entries",
+      "notes": "2026-09-19 process battery: manage_journal_entry creates and posts an entry on an account that does not exist (record-to-report). Back to done when the known-red check is green. · FIXED 2026-09-19: an entry names only accounts that exist in the chart; the process-battery checks are green."
     },
     {
       "id": "chart_of_accounts",
@@ -34,8 +35,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "Dual-surface DONE 2026-07-06. Momsdeklaration SKV 4700: declarative box mapping in the SE locale pack (vat-return-2026.ts, versioned data) \u2192 engine edge fn accounting-vat-return-se \u2192 skill prepare_vat_return (edge handler) + Momsdeklaration admin tab. Stage-3 live as an agent over the MCP gateway: year 2026/month 7 \u2192 ruta 05 11100, ruta 10 2775, ruta 49 2775 att betala, matches_box_49:true. Boxes 05/10/11/12/20/21/22/30/31/32/35/39/41/48/49.",
-      "notes": "Generic engine + year-versioned pack data (SKV 4700 2026). Next SE-pack items: NE-bilaga/INK2/SRU (year-versioned), skatteutr\u00e4kning engine."
+      "verify": "Dual-surface DONE 2026-07-06. Momsdeklaration SKV 4700: declarative box mapping in the SE locale pack (vat-return-2026.ts, versioned data) → engine edge fn accounting-vat-return-se → skill prepare_vat_return (edge handler) + Momsdeklaration admin tab. Stage-3 live as an agent over the MCP gateway: year 2026/month 7 → ruta 05 11100, ruta 10 2775, ruta 49 2775 att betala, matches_box_49:true. Boxes 05/10/11/12/20/21/22/30/31/32/35/39/41/48/49.",
+      "notes": "Generic engine + year-versioned pack data (SKV 4700 2026). Next SE-pack items: NE-bilaga/INK2/SRU (year-versioned), skatteuträkning engine."
     },
     {
       "id": "financial_reports",
@@ -43,7 +44,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "P&L, balance sheet, general ledger, trial balance reports"
+      "verify": "P&L, balance sheet, general ledger, trial balance reports",
+      "notes": " · 2026-09-19: the reports read ONE unbounded select and were cut at 1 000 journal lines (3.3 M reported of 7.95 M) — fixed: the whole ledger and chart are read page by page, and a read that cannot reach the end refuses."
     },
     {
       "id": "period_close",
@@ -51,7 +53,8 @@
       "odoo": true,
       "status": "done",
       "weight": 1,
-      "verify": "period close/reopen with lock"
+      "verify": "period close/reopen with lock",
+      "notes": "2026-09-19 process battery: a void in a closed period can be repeated — the guard refuses the reversed_by stamp, unchecked, so a second reversal books (record-to-report). Back to done when the known-red check is green. · FIXED 2026-09-19: a void is remembered by the reversal link, so it cannot be repeated in a closed period; the process-battery checks are green."
     },
     {
       "id": "vendor_defaults",
@@ -83,7 +86,7 @@
       "odoo": true,
       "status": "done",
       "weight": 2,
-      "verify": "Dual-surface DONE 2026-07-06. Skill: manage_budget upsert live over gateway \u2014 called twice for (6541, FY2026) returned the SAME budget_id both times (idempotent; ON CONFLICT bug fixed via unique index, commit 4251891d). UI: Budgets tab + budget_vs_actual variance view in AccountingPage.",
+      "verify": "Dual-surface DONE 2026-07-06. Skill: manage_budget upsert live over gateway — called twice for (6541, FY2026) returned the SAME budget_id both times (idempotent; ON CONFLICT bug fixed via unique index, commit 4251891d). UI: Budgets tab + budget_vs_actual variance view in AccountingPage.",
       "notes": "Backend fixed + admin UI built + Stage-3 live 2026-07-06.",
       "epic": "EPIC-08"
     },
@@ -91,18 +94,19 @@
       "id": "consolidation",
       "name": "Multi-company consolidation",
       "odoo": true,
-      "status": "partial",
+      "status": "done",
       "weight": 2,
-      "verify": "MCP skill exists: consolidation_report (+ manage_subsidiary, subsidiary_ledger_report) in src/lib/modules/multi-currency-module.ts \u2014 translates each subsidiary's trial balance into a presentation currency at closing rate. No admin UI screen found (rg for 'consolidation' in src/components/admin, src/pages/admin only matches an unrelated FlowPilot memory-consolidation string).",
-      "notes": "Skill-only \u2014 needs an admin UI (e.g. Consolidation tab/report) to satisfy the dual-surface law before flipping to done."
+      "verify": "consolidation_report (skill, closing-rate translation per entity) + admin: Accounting → More → Consolidation (ConsolidationTab: closing date, presentation currency, per-entity trial balance, missing rates)",
+      "notes": "Dual surface since 2026-09-19 — the admin tab was the missing half."
     },
     {
       "id": "cash_flow_forecast",
       "name": "Cash-flow forecasting",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 2,
-      "verify": "cash-flow forecast"
+      "verify": "cash_flow_forecast(p_weeks, p_include_subscriptions) + skill of the same name; admin: Accounting → More → Cash flow. Opening = posted bank + cash balance today; open customer invoices, open supplier bills minus applied credit memos, and recurring subscription invoices by due date",
+      "notes": "Shipped 2026-09-19. The answer names what it leaves out (payroll, VAT/tax payments, uninvoiced orders) and currencies it could not convert. Battery: record-to-report › it starts from the posted bank and cash balance / every week closes at the previous balance plus its net."
     },
     {
       "id": "project_accounting",
@@ -132,9 +136,10 @@
       "id": "je_approval",
       "name": "Journal-entry approval workflow",
       "odoo": true,
-      "status": "missing",
+      "status": "done",
       "weight": 1,
-      "verify": "journal-entry approval workflow"
+      "verify": "approval rules and chains for entity type journal_entry; a manual entry above the threshold is held by the table as a draft with a request (deferred constraint trigger on journal_entry_lines); draft → posted refused until an approved request covers the amount; request_journal_entry_approval + post_journal_entry (skills) and Request approval / Post entry on a draft in the journal (admin)",
+      "notes": "Shipped 2026-09-19. Automatic bookings (invoices, payroll, stock, depreciation) are not held — their approval is upstream. Battery: record-to-report › above it the entry is held as a draft / an unapproved draft cannot be posted / the approved entry is in the books."
     }
   ]
 }

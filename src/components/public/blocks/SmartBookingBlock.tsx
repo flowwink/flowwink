@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { BookingBlockData } from '@/types/cms';
-import { useBookingServices, useAvailableSlots } from '@/hooks/useBookings';
+import { useBookingServices, useBookingFreeSlots } from '@/hooks/useBookings';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { useVisitorDateFormat } from '@/lib/visitor-date';
 import { webhookEvents } from '@/lib/webhook-utils';
@@ -53,10 +53,33 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
   
   const selectedService = activeServices.find(s => s.id === selectedServiceId);
   
-  const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(
+  const { data: freeSlots, isLoading: slotsLoading } = useBookingFreeSlots(
     selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null,
     selectedServiceId
   );
+  const availableSlots = (freeSlots?.slots ?? []).map((s) => s.time);
+  const showPlacesLeft = (freeSlots?.capacity ?? 1) > 1;
+  const [waitlist, setWaitlist] = useState({ name: '', email: '', joining: false, joined: false });
+
+  const joinWaitlist = async () => {
+    if (!selectedDate || !selectedServiceId) return;
+    setWaitlist((w) => ({ ...w, joining: true }));
+    const rpcCall = supabase.rpc as unknown as (
+      fn: string, args: Record<string, unknown>,
+    ) => Promise<{ data: { success?: boolean; error?: string } | null; error: { message: string } | null }>;
+    const { data, error } = await rpcCall('join_booking_waitlist', {
+      p_service_id: selectedServiceId,
+      p_date: format(selectedDate, 'yyyy-MM-dd'),
+      p_customer_name: waitlist.name,
+      p_customer_email: waitlist.email,
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error ?? error?.message ?? t('booking.waitlist.failed', 'Could not join the waiting list'));
+      setWaitlist((w) => ({ ...w, joining: false }));
+      return;
+    }
+    setWaitlist((w) => ({ ...w, joining: false, joined: true }));
+  };
 
   // Auto-select service if only one
   useEffect(() => {
@@ -75,6 +98,7 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setWaitlist((w) => ({ ...w, joined: false }));
     setSelectedSlot(null);
   };
 
@@ -101,28 +125,38 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
     setIsSubmitting(true);
 
     try {
-      // Calculate end time based on service duration
-      const duration = selectedService?.duration_minutes || 60;
-      const [hours, minutes] = selectedSlot.split(':').map(Number);
-      const startTime = new Date(selectedDate);
-      startTime.setHours(hours, minutes, 0, 0);
-      const endTime = new Date(startTime.getTime() + duration * 60000);
+      // The end time is the service's duration, computed by the server.
+      // The slot carries its exact instant. Building a Date from "10:00" here would book
+      // 10:00 in the VISITOR's timezone — an hour off for anyone browsing from abroad.
+      const chosen = freeSlots?.slots.find((s) => s.time === selectedSlot);
+      if (!chosen) throw new Error('slot_unavailable: the chosen time is no longer offered');
+      const startTime = new Date(chosen.starts_at);
 
-      const { data: bookingData, error } = await supabase.from('bookings').insert({
-        service_id: selectedServiceId,
-        customer_name: formData.name,
-        customer_email: formData.email,
-        customer_phone: formData.phone || null,
-        notes: formData.notes || null,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        status: serviceRequiresPayment ? 'awaiting_payment' : 'pending',
-        metadata: {
+      // The visitor's door is an RPC, not the table. The direct insert read its own row back
+      // (.insert().select('id')) as an anonymous visitor with no read right, used a status the
+      // table does not allow ('awaiting_payment'), and walked past opening hours and overlap.
+      // request_booking returns the id, and the rules on the table (hours, blocked days, the
+      // past, double-booking under a lock) apply to it like to every other writer.
+      const rpcCall = supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: { booking_id?: string } | null; error: { message: string } | null }>;
+      const { data: requested, error } = await rpcCall('request_booking', {
+        p_service_id: selectedServiceId,
+        p_customer_name: formData.name,
+        p_customer_email: formData.email,
+        p_start_time: startTime.toISOString(),
+        p_customer_phone: formData.phone || null,
+        p_notes: formData.notes || null,
+        p_metadata: {
           source: 'smart_booking_block',
           block_id: blockId,
           page_id: pageId,
+          awaiting_payment: serviceRequiresPayment || undefined,
         },
-      }).select('id').single();
+      });
+      const bookingData = requested?.booking_id ? { id: requested.booking_id } : null;
+      if (!error && !bookingData) throw new Error('The booking was not created.');
 
       if (error) throw error;
 
@@ -262,7 +296,8 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
       toast.success('Booking request submitted!');
     } catch (error) {
       logger.error('Error submitting booking:', error);
-      toast.error('Failed to submit booking');
+      const message = (error as { message?: string } | null)?.message ?? '';
+      toast.error(/slot_unavailable/.test(message) ? 'That time is no longer available — please pick another.' : 'Failed to submit booking');
     } finally {
       setIsSubmitting(false);
     }
@@ -477,9 +512,39 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : availableSlots.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No available times for this date. Please select another day.
-                  </p>
+                  <div className="space-y-4 py-6 text-center">
+                    <p className="text-muted-foreground">
+                      {t('booking.noTimes', 'No available times for this date. Please select another day.')}
+                    </p>
+                    {selectedServiceId && (waitlist.joined ? (
+                      <p className="text-sm font-medium">
+                        {t('booking.waitlist.joined', 'You are on the waiting list — we will contact you if a time opens up.')}
+                      </p>
+                    ) : (
+                      <div className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row">
+                        <Input
+                          aria-label={t('booking.waitlist.name', 'Your name')}
+                          placeholder={t('booking.waitlist.name', 'Your name')}
+                          value={waitlist.name}
+                          onChange={(e) => setWaitlist((w) => ({ ...w, name: e.target.value }))}
+                        />
+                        <Input
+                          type="email"
+                          aria-label={t('booking.waitlist.email', 'Your e-mail')}
+                          placeholder={t('booking.waitlist.email', 'Your e-mail')}
+                          value={waitlist.email}
+                          onChange={(e) => setWaitlist((w) => ({ ...w, email: e.target.value }))}
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={joinWaitlist}
+                          disabled={waitlist.joining || !waitlist.name.trim() || !waitlist.email.trim()}
+                        >
+                          {t('booking.waitlist.join', 'Join the waiting list')}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                     {availableSlots.map((slot) => (
@@ -494,6 +559,11 @@ export function SmartBookingBlock({ data, blockId, pageId }: SmartBookingBlockPr
                         )}
                       >
                         {slot}
+                        {showPlacesLeft && (
+                          <span className="ml-1 text-xs opacity-70">
+                            · {freeSlots?.slots.find((s) => s.time === slot)?.places_left}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>

@@ -31,6 +31,7 @@
  *   --base-url=http://127.0.0.1:4173         use a running frontend instead of starting Vite
  *   --concurrency=3  --timeout=15000  --port=5199  --out=.view-sweep
  *   --keep-users                             leave the fixture users in place
+ *   VIEW_SWEEP_BROWSER=/path/to/chrome           use that binary instead of system Chrome
  *   --headed                                 watch it
  */
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
@@ -38,7 +39,7 @@ import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 import { Client } from 'pg';
 import { chromium, type Browser } from 'playwright-core';
-import { findNavMatch, isRouteAllowed } from '@/lib/admin-route-access';
+import { findNavMatch, findRouteOwner, isRouteAllowed } from '@/lib/admin-route-access';
 import type { AppRole } from '@/types/cms';
 import { discoverRoutes, fillPattern, type RouteArea } from './routes';
 import { resolveParams, type Resolution } from './params';
@@ -243,7 +244,13 @@ async function main(): Promise<number> {
       sessions.set(p.role, u);
     }
 
-    browser = await chromium.launch({ channel: 'chrome', headless: !arg('headed') });
+    // System Chrome by default; VIEW_SWEEP_BROWSER points at another Chromium
+    // binary (a cloud container has Playwright's bundled build and no Chrome).
+    const executablePath = process.env.VIEW_SWEEP_BROWSER || undefined;
+    browser = await chromium.launch({
+      ...(executablePath ? { executablePath } : { channel: 'chrome' }),
+      headless: !arg('headed'),
+    });
     const storageKey = storageKeyFor(cfg.supabaseUrl);
     const paramCache = new Map<string, Resolution>();
 
@@ -308,7 +315,10 @@ async function main(): Promise<number> {
         // that gate does not cover: isRouteAllowed() lets any path through that
         // no nav item claims. A restricted role being served such a page is
         // worth a line — the page either needs a nav home or its own guard.
-        if (plan.role.startsWith('staff:') && res.outcome === 'served' && res.finalPath?.startsWith('/admin/') && !findNavMatch(res.finalPath)) {
+        // ROUTE_OWNERS is the gate's second half: a route with an owner there IS
+        // in the matrix even without a nav item (template-live-preview read as
+        // "ungated" for exactly that reason, 2026-10-01).
+        if (plan.role.startsWith('staff:') && res.outcome === 'served' && res.finalPath?.startsWith('/admin/') && !findNavMatch(res.finalPath) && !findRouteOwner(res.finalPath)) {
           res.findings.push({
             kind: 'access-ungated',
             severity: 'warn',

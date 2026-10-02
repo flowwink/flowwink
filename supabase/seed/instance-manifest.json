@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261001004500",
-      "migrations_count": 634,
+      "migration_head": "20261001030000",
+      "migrations_count": 637,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2541,6 +2541,18 @@
         {
           "version": "20261001004500",
           "name": "tomma-tick-lamnar-ingen-journalrad"
+        },
+        {
+          "version": "20261001010000",
+          "name": "bokforingsmallarna-tar-den-aktiva-lokalen"
+        },
+        {
+          "version": "20261001020000",
+          "name": "avtalet-ses-genom-token-inte-tabellen"
+        },
+        {
+          "version": "20261001030000",
+          "name": "lonebeskedet-utan-anstallning-ar-en-tom-lista"
         }
       ]
     },
@@ -2555,7 +2567,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:028815534290171acc825d7a99be2271cc09ae1398113a7f0da59a34f19ad7d5",
+        "agent-execute": "sha256:b7b29b3720b913610dde28bd6fb8fe23c97fd80107fb49bbd8840123560a4780",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",
@@ -2587,7 +2599,7 @@
         "event-dispatcher": "sha256:9eefa58e2b6947f83bacf5c27fc1bc772a4ed0d0f92af47e6c9577a1dd62f4c6",
         "extract-pdf-text": "sha256:9d8ed1a360d9c8fb0ce7e7a391de53aa4764806d7fc4b87597e3ca9eaccc3906",
         "federation-invite-peer": "sha256:f75a07661700e2c926b972336df93b67f6d4d4180ff9f1d05e3ee26bedf5a4e1",
-        "flowpilot-heartbeat": "sha256:c9ec13a196d7bf6fd7004826331776069a586418c209233ca43e7f9245f5c0a5",
+        "flowpilot-heartbeat": "sha256:2095336465119d06039d6d8e05bfee8cc08ee62eb2693b383ee95f8efbc803b1",
         "flowpilot-lifecycle": "sha256:412427a0ce3c375a65136df3eb0f255b41d6551d1d507f935dbe2c59f806a33e",
         "gatewayapi-ingest": "sha256:ae5a2baedfe97730bbb80a1416e1db30730bee6c1e762a38376143d1b0549713",
         "generate-invoice-pdf": "sha256:4bd3a97682d1002144638f741e9b2f296513c5815c5b970f38ab3d50eba79fad",

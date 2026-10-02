@@ -288,7 +288,7 @@ To add a new template:
 ```
 src/
   components/
-    public/blocks/    # 65 public-facing block renderers
+    public/blocks/    # 67 public-facing block renderers
     admin/blocks/     # 70+ admin block editors
     admin/            # Domain admin components (crm/, blog/, hr/, invoices/, accounting/, ...)
     account/          # Customer portal components
@@ -299,7 +299,7 @@ src/
     account/          # ~15 customer portal pages
   hooks/              # 151 custom React hooks (TanStack Query)
   lib/
-    modules/          # 67 module definitions
+    modules/          # 68 module definitions
     module-def.ts     # Module definition type system
     module-bootstrap.ts
     module-registry.ts
@@ -313,7 +313,7 @@ src/
   integrations/       # Supabase client + generated types
 
 supabase/
-  functions/          # 100+ Deno edge functions
+  functions/          # 77 Deno edge functions (see docs/reference/edge-functions.md)
     _shared/          # Shared utilities
       pilot/          # FlowPilot ReAct engine
       skills/         # Skill Relevance Engine
@@ -534,13 +534,16 @@ process end to end against a local stack — a laptop (OrbStack) or a Claude clo
 (docs/operators/local-development.md, "The same stack in a Claude cloud container") — and a
 full green run stamps `scripts/process-battery/last-green.json`; the pulse guard turns every
 PR red when that stamp is older than a week or covers fewer processes than
-`docs/processes/` has. It refuses any non-local target, so CI never runs it. When a PR needs
-a run (a new process doc, a migration's first live execution), the handoff issue names WHO
-runs and stamps it — local or cloud, never both: on 2026-09-30 both ran on #597 and pushed
-stamps at each other until force-with-lease refused. Prefer the cloud container: it is a
-fresh install every time, and a long-lived laptop database carries battery residue that
-fails migration proofs and capped listings. A red check is the finding, not the stamp — fix
-the product, do not shrink the run.
+`docs/processes/` has. It refuses any non-local target, so PR CI never runs it — the
+**nightly fresh-install job** (`fresh-install-nightly.yml`, 02:37 UTC, fleet-only) does:
+a stack from zero on a GitHub runner, `npm run qa:prep`, the battery, `local:smoke`, the MCP
+regression and the view sweep, and a green battery commits the stamp to main. So the stamp
+is the night's, not a person's. When a PR needs a run before the night (a new process doc,
+a migration's first live execution), the handoff issue names WHO runs and stamps it — local
+or cloud, never both: on 2026-09-30 both ran on #597 and pushed stamps at each other until
+force-with-lease refused. Prefer the cloud container: it is a fresh install every time, and
+a long-lived laptop database carries battery residue that fails migration proofs and capped
+listings. A red check is the finding, not the stamp — fix the product, do not shrink the run.
 
 **OpenClaw** — the external MCP operator runs at `https://openclaw.liteit.se`
 (health: `GET /health` → `{"ok":true,"status":"live"}`). It operates FlowWink instances through the

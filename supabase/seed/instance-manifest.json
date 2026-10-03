@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261001030000",
-      "migrations_count": 637,
+      "migration_head": "20261002210000",
+      "migrations_count": 639,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2553,6 +2553,14 @@
         {
           "version": "20261001030000",
           "name": "lonebeskedet-utan-anstallning-ar-en-tom-lista"
+        },
+        {
+          "version": "20261002200000",
+          "name": "villkorslanken-far-ett-engelskt-standardvarde"
+        },
+        {
+          "version": "20261002210000",
+          "name": "namnet-bredvid-loggan-har-en-agare"
         }
       ]
     },
@@ -2567,7 +2575,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:b7b29b3720b913610dde28bd6fb8fe23c97fd80107fb49bbd8840123560a4780",
+        "agent-execute": "sha256:b70cc83b6bb944530270066e46e6c95d7ca1aaba2e5fc4bc8af561259468c523",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",

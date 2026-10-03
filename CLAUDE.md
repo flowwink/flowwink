@@ -357,11 +357,16 @@ supabase db push --project-ref <ref>
 
 ## Deployment
 
-> **Manifest discipline:** any commit touching `supabase/migrations/` or
-> `supabase/seed/` must regenerate `supabase/seed/instance-manifest.json`
-> (`npm run manifest:json`) — CI's freshness guardrail fails otherwise.
-> A pre-commit hook in `.githooks/` does this automatically; enable it with
-> `git config core.hooksPath .githooks` after cloning.
+> **Generated artifacts are the bot's, not the PR's.** Eight files are pure
+> functions of the source (`scripts/generated-artifacts.ts`: the skill, automation
+> and locale-pack bundles, their edge-runtime copies, the visitor-text catalogue's
+> edge copy, the skill→module map, the instance manifest). Never commit them from a branch — CI rebuilds them before
+> tests and build and FAILS a PR that carries them; `refresh-generated-artifacts.yml`
+> rebuilds and commits them on `main` after every merge; the nightly fresh install
+> proves `main` is fresh. Locally: `npm run artifacts:build` (stays in the working
+> tree). The pre-commit hook in `.githooks/` unstages them; enable it with
+> `git config core.hooksPath .githooks` after cloning. Before 2026-10-02 every PR
+> regenerated them, and every pair of parallel PRs conflicted in a hash line.
 
 
 Frontend (Vercel/Easypanel) auto-deploys from GitHub push.
@@ -397,13 +402,19 @@ Hard-won notes from reconciling the (since retired) Lovable-managed dev instance
 and making the MCP skill surface usable by an autonomous operator (OpenClaw). The
 managed-ledger lessons still apply to every fork's Supabase integration:
 
-- **Forward-date migrations for managed instances.** Lovable's migrate runner
-  applies migrations from its own `supabase_migrations` ledger; a repo migration
-  whose timestamp is **below the ledger HEAD is silently skipped**. Anything that
-  must reach a managed/forked instance has to be forward-dated (timestamp ≥ now)
-  and idempotent (`CREATE OR REPLACE`). This caused real gaps: missing functions,
-  a missing `refund_return(...,p_final)` overload, and an entire class of admin
-  functions stuck on pre-patch bodies.
+- **Forward-date migrations — and let the command do it.** `supabase db push`
+  (the fleet rail) refuses a pending migration dated below the remote's newest
+  applied version: *"Found local migration files to be inserted before the last
+  migration on remote database. Rerun the command with --include-all"* — one
+  back-dated file stops every deploy, and with the flag a live instance applies
+  it after everything else while a fresh install applies it by filename order.
+  The CI guard rejects such files; when main moves under your PR run
+  `npm run migrations:redate` (renames past the head, rewrites every reference)
+  instead of re-dating by hand (#313 was re-dated 27 times over 84 merges). The
+  retired Lovable ledger had the related failure of skipping such files
+  silently — missing functions, a missing `refund_return(...,p_final)`
+  overload, admin functions stuck on pre-patch bodies — which is why bodies
+  stay idempotent (`CREATE OR REPLACE`) too.
 - **Name-only existence checks miss body/signature drift.** `pg_proc` by name
   says a function exists, not that its body is current or that an overload is
   present. Verify behavior (live call) or the specific signature, not just the name.

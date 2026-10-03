@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useHeaderBlock } from '@/hooks/useGlobalBlocks';
+import { contrastForeground, effectiveDarkPrimary } from '@/lib/brand-color';
+import type { HeaderBlockData } from '@/types/cms';
 import { ImagePickerField } from '@/components/admin/ImagePickerField';
 import { useBrandingSettings, useUpdateBrandingSettings, useGeneralSettings, useUpdateGeneralSettings, type BrandingSettings } from '@/hooks/useSiteSettings';
 import { AVAILABLE_HEADING_FONTS, AVAILABLE_BODY_FONTS } from '@/providers/BrandingProvider';
@@ -31,6 +34,8 @@ export function BrandingSettingsContent({ embedded = false }: { embedded?: boole
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: savedSettings, isLoading } = useBrandingSettings();
+  // Logo visibility and size are header layout; the preview below reads them from the header block.
+  const { data: headerBlock } = useHeaderBlock();
   const { data: generalSettings } = useGeneralSettings();
   const updateSettings = useUpdateBrandingSettings();
   const updateGeneral = useUpdateGeneralSettings();
@@ -566,56 +571,29 @@ export function BrandingSettingsContent({ embedded = false }: { embedded?: boole
                 </CardContent>
               </Card>
 
-              {/* Header Display Settings */}
+              {/* Name next to the mark — identity. Logo visibility and size are
+                  header LAYOUT and are edited under Pages → Header; the preview
+                  reads them from there so it shows what the site shows. */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Header Display</CardTitle>
-                  <CardDescription>Control how logo and name appear in the public header</CardDescription>
+                  <CardTitle>Name in the header</CardTitle>
+                  <CardDescription>
+                    Whether the organisation name appears next to the mark in the public header.
+                    Logo visibility and size are header layout — set them under Pages → Header.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Show logo in header</Label>
-                        <p className="text-xs text-muted-foreground">Displays the logo if one is uploaded</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={settings.showLogoInHeader !== false}
-                        onChange={(e) => updateField('showLogoInHeader', e.target.checked)}
-                        className="h-4 w-4 rounded border-input"
-                      />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Show organization name next to logo</Label>
+                      <p className="text-xs text-muted-foreground">Shows the name even when the logo is displayed</p>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Show organization name next to logo</Label>
-                        <p className="text-xs text-muted-foreground">Shows the name even when the logo is displayed</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={settings.showNameWithLogo === true}
-                        onChange={(e) => updateField('showNameWithLogo', e.target.checked)}
-                        className="h-4 w-4 rounded border-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Logo size</Label>
-                    <Select
-                      value={settings.headerLogoSize || 'md'}
-                      onValueChange={(value) => updateField('headerLogoSize', value as 'sm' | 'md' | 'lg')}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sm">Small</SelectItem>
-                        <SelectItem value="md">Medium</SelectItem>
-                        <SelectItem value="lg">Large</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <input
+                      type="checkbox"
+                      checked={settings.showNameWithLogo === true}
+                      onChange={(e) => updateField('showNameWithLogo', e.target.checked)}
+                      className="h-4 w-4 rounded border-input"
+                    />
                   </div>
 
                   {/* Preview */}
@@ -624,9 +602,10 @@ export function BrandingSettingsContent({ embedded = false }: { embedded?: boole
                     <div className="border rounded-lg p-4 bg-card">
                       <div className="flex items-center gap-3">
                         {(() => {
-                          const showLogo = settings.showLogoInHeader !== false;
+                          const header = (headerBlock?.data ?? {}) as HeaderBlockData;
+                          const showLogo = header.showLogo !== false;
                           const showName = settings.showNameWithLogo === true;
-                          const logoSize = settings.headerLogoSize || 'md';
+                          const logoSize = header.logoSize || 'md';
                           const hasLogo = !!settings.logo;
                           const orgName = settings.organizationName || 'Organization';
                           
@@ -713,7 +692,7 @@ export function BrandingSettingsContent({ embedded = false }: { embedded?: boole
                     <div className="text-xs text-muted-foreground">vs auto text</div>
                     <ContrastBadge ratio={getContrastRatio(
                       settings.primaryColor || '220 100% 26%',
-                      parseFloat((settings.primaryColor || '220 100% 26%').split(/\s+/)[2] || '50') < 40 ? '0 0% 98%' : '0 0% 9%'
+                      contrastForeground(settings.primaryColor || '220 100% 26%')
                     )} />
 
                     <div className="pt-2 space-y-2 border-t">
@@ -721,22 +700,29 @@ export function BrandingSettingsContent({ embedded = false }: { embedded?: boole
                       <div className="flex items-center gap-3">
                         <input
                           type="color"
-                          value={hslToHex(settings.primaryColorDark || settings.primaryColor || '210 60% 60%')}
+                          value={hslToHex(effectiveDarkPrimary(settings.primaryColor || '220 100% 26%', settings.primaryColorDark) || '210 60% 60%')}
                           onChange={(e) => updateField('primaryColorDark', hexToHsl(e.target.value))}
                           className="h-9 w-9 rounded-lg border cursor-pointer"
                         />
                         <p className="text-xs text-muted-foreground flex-1">
-                          Used when the site renders dark. A deep brand blue that
-                          works in light theme often needs a lifted variant here —
-                          text color adapts automatically to whichever is active.
+                          Used when the site renders dark. Leave it unset and the
+                          light primary is lifted to a lightness that shows against
+                          a dark background (the swatch shows what the site will
+                          use); set it to pick the exact shade. Text color adapts
+                          automatically to whichever is active.
                         </p>
                       </div>
-                      {settings.primaryColorDark && (
-                        <ContrastBadge ratio={getContrastRatio(
-                          settings.primaryColorDark,
-                          parseFloat(settings.primaryColorDark.split(/\s+/)[2] || '50') < 40 ? '0 0% 98%' : '0 0% 9%'
-                        )} />
-                      )}
+                      {(() => {
+                        const dark = effectiveDarkPrimary(settings.primaryColor || '220 100% 26%', settings.primaryColorDark);
+                        return dark ? (
+                          <div className="flex items-center gap-2">
+                            <ContrastBadge ratio={getContrastRatio(dark, contrastForeground(dark))} />
+                            {!settings.primaryColorDark && (
+                              <span className="text-xs text-muted-foreground">derived from the light primary</span>
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
                   

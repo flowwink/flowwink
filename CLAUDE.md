@@ -227,6 +227,32 @@ The `/rest/execute` endpoint mirrors the MCP tool surface but over plain HTTP PO
 
 **`refund_return`** — supports **partial refunds**: each call adds `refund_cents` to the running total; the expected total is Σ(return_items qty × unit_refund_cents) − `restocking_fee_cents`. Over-refunds are rejected. The RMA closes when the total is reached or `p_final: true` is passed. Set the restocking fee via `inspect_return` (QC step, only valid in status `received`).
 
+**`manage_blog_posts` update** — edits the BODY too: `content` (markdown, converted
+exactly as `write_blog_post`) or `content_json` (the Tiptap doc `get` returns), one of
+the two. Never delete + rewrite to change a post's text — the id, slug, revisions and
+category survive an update.
+
+**`site_branding_update`** — non-destructive (only passed fields change) and
+theme-aware: `logo_dark_url` / `primary_color_dark` are what the header, footer and
+chat widget show in dark theme; `heading_font` / `body_font` split `font_family`.
+Empty string clears a dark override.
+
+**`sync_ad_metrics`** — the Paid Growth ad ledger's feed: campaign-level spend /
+impressions / clicks / conversions from the Meta ad account connected through
+Composio (toolkit `metaads`) into `ad_campaigns`. `dry_run: true` reports without
+writing. Nothing else writes `ad_campaigns.metrics`, so if the Growth dashboard
+shows zeros, this has not run (or Meta Ads is not connected). There is no
+`META_ADS_ACCESS_TOKEN`; a Composio-backed integration is configured when its
+connected account exists (`via: 'composio'` in `useIntegrations.tsx`).
+
+**`test_form_delivery`** — "if a visitor submits this form, who gets what?" without a
+submission, a lead or an email: `block_id` (or `page_slug` when the page has one form),
+`mode: dry_run` (default) reports every rail (storage, lead, webhook, notification email,
+job application) against live config; `send_test` also sends ONE [TEST] email to the
+notify address and HEAD-probes webhook URLs. The rails come from the same plan the
+public block runs (`_shared/forms/delivery-plan.ts`); email is judged by `email-send`'s
+own `dry_run: true`.
+
 **`manage_kb_article` get** — accepts `article_id`, `slug` or `title` (NOT `id`). Title resolves case-insensitively (exact, then unique prefix); ambiguous titles error with guidance. Safe pattern for certainty: `list`/search first, then `get` by slug.
 
 **`upload_document`** — binary mode requires `mime_type` alongside `content_base64`; text mode uses `content_text`.
@@ -369,7 +395,12 @@ supabase db push --project-ref <ref>
 > regenerated them, and every pair of parallel PRs conflicted in a hash line.
 
 
-Frontend (Vercel/Easypanel) auto-deploys from GitHub push.
+Frontend (Vercel/Easypanel) auto-deploys from GitHub push. On Vercel every page
+navigation is served by `api/html.ts`, which fills the brandless `index.html`
+head (title, description, OG/Twitter, canonical, hreflang) from `site_settings`
+and the page row — one document for every reader, no User-Agent list — and
+caches it on the Performance → Edge caching dial (`src/lib/seo-shell.ts`). The
+Docker image serves the static shell; react-helmet fills the head after hydration.
 
 Manual steps per Supabase project after migrations or new edge functions:
 ```bash

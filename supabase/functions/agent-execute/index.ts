@@ -22,6 +22,8 @@ import {
   closedToEquityCents,
 } from '../_shared/accounting/income-statement.ts';
 import { markdownToTiptap, inlineClean, parseInline } from '../_shared/markdown-to-tiptap.ts';
+import { planFormDelivery } from '../_shared/forms/delivery-plan.ts';
+import { isModuleEnabled } from '../_shared/modules.ts';
 import {
   type AuditContext,
   ACCOUNTING_AUDIT_TABLES,
@@ -1261,6 +1263,9 @@ serve(async (req) => {
 
       } else if (handler === 'internal:ad_optimize') {
         result = await executeAdOptimize(supabase, args);
+
+      } else if (handler === 'internal:sync_ad_metrics') {
+        result = await executeSyncAdMetrics(supabase, args, supabaseUrl, serviceKey);
 
       } else if (handler === 'internal:competitor_monitor') {
         result = await executeCompetitorMonitor(supabase, args, supabaseUrl, serviceKey);
@@ -6235,17 +6240,22 @@ async function executeDealsAction(
 ): Promise<unknown> {
   // ── deal_stale_check skill (MCP-exposed, agent-independent) ──
   if (skillName === 'deal_stale_check') {
-    const { days_threshold = 14 } = args as any;
+    // The skill declares stale_days and stage_filter; the handler read
+    // `days_threshold`, so a caller's threshold was ignored and 14 always won
+    // (found by the declared-vs-read guard, 2026-10-03).
+    const { stale_days = 14, stage_filter } = args as any;
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - Number(days_threshold));
+    cutoff.setDate(cutoff.getDate() - Number(stale_days));
 
-    const { data, error } = await supabase
+    let staleQuery = supabase
       .from('deals')
       .select('id, stage, value_cents, currency, lead_id, expected_close, updated_at, notes, product:products(name), lead:leads(id, name, email, company:companies(id, name))')
       .not('stage', 'in', '(closed_won,closed_lost)')
       .lt('updated_at', cutoff.toISOString())
       .order('updated_at', { ascending: true })
       .limit(50);
+    if (stage_filter) staleQuery = staleQuery.eq('stage', stage_filter);
+    const { data, error } = await staleQuery;
 
     if (error) throw new Error(`Stale deals query failed: ${error.message}`);
 
@@ -6927,6 +6937,27 @@ async function executeCompaniesAction(
 // Forms module handlers
 // =============================================================================
 
+/** Every Form block across pages — forms live in pages.content_json, there is no forms table. */
+async function collectFormBlocks(supabase: SupabaseClient): Promise<Array<{
+  block_id: string; title: string; page_id: string; page_slug: string; page_title: string; status: string;
+  data: Record<string, unknown>;
+}>> {
+  const { data: pages, error } = await supabase.from('pages').select('id, slug, title, status, content_json');
+  if (error) throw new Error(`Load pages failed: ${error.message}`);
+  type PageRow = { id: string; slug: string; title: string; status: string; content_json: unknown };
+  type FormBlockRow = { id?: string; type?: string; data?: { title?: string } & Record<string, unknown> };
+  const out: Array<{ block_id: string; title: string; page_id: string; page_slug: string; page_title: string; status: string; data: Record<string, unknown> }> = [];
+  for (const pg of (pages || []) as PageRow[]) {
+    const blocks = Array.isArray(pg.content_json) ? (pg.content_json as FormBlockRow[]) : [];
+    for (const b of blocks) {
+      if (b?.type === 'form' && b?.id) {
+        out.push({ block_id: b.id, title: b.data?.title || 'Untitled form', page_id: pg.id, page_slug: pg.slug, page_title: pg.title, status: pg.status, data: (b.data ?? {}) as Record<string, unknown> });
+      }
+    }
+  }
+  return out;
+}
+
 async function executeFormsAction(
   supabase: SupabaseClient,
   skillName: string,
@@ -6934,39 +6965,191 @@ async function executeFormsAction(
 ): Promise<unknown> {
   const { action = 'list' } = args as any;
 
+  // test_form_delivery — "if a visitor submits this, who gets what?" without a
+  // submission, a lead or an email. The rails come from the SAME plan the public
+  // block executes (_shared/forms/delivery-plan.ts); this adds the live config.
+  if (skillName === 'test_form_delivery') {
+    const { block_id, page_slug, mode = 'dry_run', sample_data } = args as { block_id?: string; page_slug?: string; mode?: string; sample_data?: Record<string, unknown> };
+    if (mode !== 'dry_run' && mode !== 'send_test') throw new Error(`mode "${mode}" is not one of dry_run, send_test`);
+    const forms = await collectFormBlocks(supabase);
+    let form = block_id ? forms.find((f) => f.block_id === block_id) : undefined;
+    if (!form && !block_id && page_slug) {
+      const onPage = forms.filter((f) => f.page_slug === page_slug);
+      if (onPage.length === 0) return { error: `No Form block on page "${page_slug}". manage_form(action:"list") shows every form.` };
+      if (onPage.length > 1) return { error: `Page "${page_slug}" has ${onPage.length} forms — pass block_id. Candidates: ${onPage.map((f) => `${f.block_id} ("${f.title}")`).join(', ')}` };
+      form = onPage[0];
+    }
+    if (!form) {
+      if (!block_id && !page_slug) throw new Error('block_id or page_slug is required (manage_form action:"list" to find them)');
+      return { error: `No form block found with id ${block_id}. manage_form(action:"list") shows every form.` };
+    }
+
+    const fields = Array.isArray(form.data.fields) ? (form.data.fields as Array<{ id: string; type: string; label: string; required?: boolean }>) : [];
+    const plan = planFormDelivery({
+      title: form.data.title as string | undefined,
+      fields,
+      notifyEmail: form.data.notifyEmail as string | undefined,
+      jobPostingId: form.data.jobPostingId as string | undefined,
+    });
+
+    // Sample values: operator-supplied by label, else by field type — the
+    // report and the test email show concrete content, never "undefined".
+    const samples: Record<string, string> = {};
+    for (const f of fields) {
+      const given = sample_data && typeof sample_data === 'object' ? (sample_data as Record<string, unknown>)[f.label] : undefined;
+      samples[f.label] = given !== undefined ? String(given)
+        : f.type === 'email' ? 'test@example.com'
+        : f.type === 'phone' ? '+46 70 000 00 00'
+        : f.type === 'file' ? '(file upload)'
+        : f.type === 'checkbox' ? 'yes'
+        : `Test ${f.label}`;
+    }
+
+    type RailStatus = 'ok' | 'inactive' | 'misconfigured' | 'sent' | 'probed';
+    const rails: Array<{ rail: string; status: RailStatus; detail: string; facts?: Record<string, unknown> }> = [];
+    const wouldDeliverTo: string[] = [];
+
+    for (const step of plan) {
+      if (!step.active) { rails.push({ rail: step.rail, status: 'inactive', detail: step.detail, facts: step.facts }); continue; }
+
+      if (step.rail === 'storage') {
+        rails.push({ rail: 'storage', status: 'ok', detail: step.detail, facts: step.facts });
+        wouldDeliverTo.push('form_submissions (admin inbox)');
+        continue;
+      }
+
+      if (step.rail === 'lead') {
+        const crmOn = await isModuleEnabled(supabase, 'crm');
+        rails.push({
+          rail: 'lead',
+          status: crmOn ? 'ok' : 'misconfigured',
+          detail: crmOn ? step.detail : `${step.detail} The CRM module is OFF, so the lead would be created but nobody sees it in the admin — enable CRM (manage_modules).`,
+          facts: { ...step.facts, crm_module_enabled: crmOn },
+        });
+        if (crmOn) wouldDeliverTo.push('CRM lead (ingest_form_lead)');
+        continue;
+      }
+
+      if (step.rail === 'webhook') {
+        type HookRow = { id: string; name: string; url: string };
+        type AutoRow = { id: string; name: string; skill_name: string | null; trigger_config: { event?: string; event_name?: string } | null };
+        const { data: hookRows } = await supabase.from('webhooks').select('id, name, url').eq('is_active', true).contains('events', ['form.submitted']);
+        const { data: autoRows } = await supabase.from('agent_automations').select('id, name, trigger_config, skill_name').eq('enabled', true).eq('trigger_type', 'event');
+        const hooks = (hookRows || []) as HookRow[];
+        const listening = ((autoRows || []) as AutoRow[]).filter((a) => (a.trigger_config?.event_name ?? a.trigger_config?.event) === 'form.submitted');
+        const probes: Array<{ url: string; status: number | string }> = [];
+        if (mode === 'send_test') {
+          for (const h of hooks) {
+            try {
+              const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 5000);
+              const res = await fetch(h.url, { method: 'HEAD', signal: ctrl.signal });
+              clearTimeout(timer);
+              probes.push({ url: h.url, status: res.status });
+            } catch (e) { probes.push({ url: h.url, status: `unreachable: ${e instanceof Error ? e.message : String(e)}` }); }
+          }
+        }
+        const n = hooks.length + listening.length;
+        rails.push({
+          rail: 'webhook',
+          status: n === 0 ? 'inactive' : mode === 'send_test' && hooks.length ? 'probed' : 'ok',
+          detail: n === 0
+            ? 'Nothing listens for form.submitted: no active webhook subscribes to it and no event automation is configured for it.'
+            : `form.submitted reaches ${hooks.length} webhook(s) and ${listening.length} event automation(s).`,
+          facts: {
+            webhooks: hooks.map((h) => ({ name: h.name, url: h.url })),
+            automations: listening.map((a) => ({ name: a.name, skill: a.skill_name })),
+            ...(probes.length ? { probes } : {}),
+          },
+        });
+        for (const h of hooks) wouldDeliverTo.push(`webhook "${h.name}" → ${h.url}`);
+        for (const a of listening) wouldDeliverTo.push(`automation "${a.name}"${a.skill_name ? ` (${a.skill_name})` : ''}`);
+        continue;
+      }
+
+      if (step.rail === 'notification_email') {
+        const to = String(step.facts?.to ?? '');
+        const formName = String(form.data.title || 'Contact Form');
+        const lines = Object.entries(samples).map(([k, v]) => `${k}: ${v}`).join('\n');
+        const body = mode === 'send_test'
+          ? `[TEST] This is a delivery test of the form "${formName}" run by an operator. No visitor submitted anything and no lead was created.\n\n${lines}`
+          : `A new form submission was received:\n\n${lines}`;
+        const html = body.split('\n').map((l) => (l.trim() === '' ? '<br>' : `<p>${l}</p>`)).join('');
+        const { data: mail, error: mailErr } = await supabase.functions.invoke('email-send', {
+          body: {
+            to,
+            subject: mode === 'send_test' ? `[TEST] New submission: ${formName}` : `New submission: ${formName}`,
+            html,
+            tags: { source: 'test_form_delivery', mode },
+            ...(mode === 'dry_run' ? { dry_run: true } : {}),
+          },
+        });
+        type MailResult = { provider?: string | null; simulated?: boolean; would_simulate?: boolean; providers_enabled?: Record<string, boolean> } | null;
+        const mailResult = (mail ?? null) as MailResult;
+        const provider = mailResult?.provider ?? null;
+        const blocked = !!mailErr;
+        const simulated = mailResult?.simulated === true || mailResult?.would_simulate === true;
+        rails.push({
+          rail: 'notification_email',
+          status: blocked || simulated ? 'misconfigured' : mode === 'send_test' ? 'sent' : 'ok',
+          detail: blocked
+            ? `The notification to ${to} would be withheld: ${mailErr?.message ?? 'email-send refused'} (allowlist or transport). Fix the email integration before launch.`
+            : simulated
+              ? `The notification to ${to} would reach nobody: no email provider is configured (Resend, SMTP or Composio) — a real send is only logged as "simulated".`
+              : mode === 'send_test'
+                ? `A test email was sent to ${to} via ${provider}.`
+                : `${step.detail} Provider: ${provider}.`,
+          facts: { to, provider, providers_enabled: mailResult?.providers_enabled ?? null, blocked, simulated },
+        });
+        if (!blocked && !simulated) wouldDeliverTo.push(`email → ${to} (${provider})`);
+        continue;
+      }
+
+      if (step.rail === 'job_application') {
+        const postingId = String(step.facts?.job_posting_id ?? '');
+        const hasFile = !!step.facts?.file_field;
+        const { data: posting } = await supabase.from('job_postings').select('id, title, status').eq('id', postingId).maybeSingle();
+        const ok = hasFile && !!posting;
+        rails.push({
+          rail: 'job_application',
+          status: ok ? 'ok' : 'misconfigured',
+          detail: !hasFile ? step.detail
+            : !posting ? `jobPostingId ${postingId} does not match any job posting — the CV would be uploaded but never reach recruitment.`
+            : `${step.detail} Posting: "${posting.title}" (${posting.status}).`,
+          facts: { ...step.facts, posting_found: !!posting, posting_title: posting?.title ?? null },
+        });
+        if (ok) wouldDeliverTo.push(`recruitment → "${posting!.title}"`);
+      }
+    }
+
+    const nobodyTold = !rails.some((r) => (r.rail === 'notification_email' || r.rail === 'webhook' || r.rail === 'lead') && (r.status === 'ok' || r.status === 'sent' || r.status === 'probed'));
+    const misconfigured = rails.filter((r) => r.status === 'misconfigured').map((r) => r.rail);
+    const summary = [
+      `Form "${form.title}" on /${form.page_slug}${form.status !== 'published' ? ` (page is ${form.status}, not published)` : ''}.`,
+      nobodyTold
+        ? 'A submission would be STORED but nobody would be told: no deliverable notification email, no webhook or automation, and no CRM lead.'
+        : `A submission would reach: ${wouldDeliverTo.join('; ')}.`,
+      misconfigured.length ? `Needs attention: ${misconfigured.join(', ')}.` : 'Every active rail is configured to deliver.',
+      mode === 'send_test' ? 'send_test: one marked test email was sent (if the rail is configured); webhooks were probed, not called. No submission or lead was created.' : 'Nothing was sent or created (dry_run).',
+    ].join(' ');
+
+    return {
+      form: { block_id: form.block_id, title: form.title, page: form.page_slug, page_status: form.status, fields: fields.map((f) => ({ label: f.label, type: f.type, required: !!f.required })) },
+      mode,
+      rails,
+      would_deliver_to: wouldDeliverTo,
+      sample: samples,
+      summary,
+    };
+  }
+
   // manage_form — forms are FormBlocks inside pages.content_json (there is no forms
   // table), so read the definitions from there. Gives agents form context: fields,
   // which page, submission counts, and submission→lead conversion.
   if (skillName === 'manage_form') {
-    const { data: pages, error: pErr } = await supabase
-      .from('pages')
-      .select('id, slug, title, status, content_json');
-    if (pErr) throw new Error(`Load pages failed: ${pErr.message}`);
-
-    type FormInfo = {
-      block_id: string; title: string; page_id: string; page_slug: string;
-      page_title: string; status: string;
-      fields: { label: string; type: string; required: boolean }[];
-    };
-    const forms: FormInfo[] = [];
-    for (const pg of pages || []) {
-      const blocks = Array.isArray((pg as any).content_json) ? (pg as any).content_json : [];
-      for (const b of blocks as any[]) {
-        if (b?.type === 'form' && b?.id) {
-          forms.push({
-            block_id: b.id,
-            title: b.data?.title || 'Untitled form',
-            page_id: (pg as any).id,
-            page_slug: (pg as any).slug,
-            page_title: (pg as any).title,
-            status: (pg as any).status,
-            fields: (b.data?.fields || []).map((f: any) => ({
-              label: f.label, type: f.type, required: !!f.required,
-            })),
-          });
-        }
-      }
-    }
+    const forms = (await collectFormBlocks(supabase)).map((f) => ({
+      block_id: f.block_id, title: f.title, page_id: f.page_id, page_slug: f.page_slug, page_title: f.page_title, status: f.status,
+      fields: ((f.data.fields as Array<{ label: string; type: string; required?: boolean }> | undefined) || []).map((x) => ({ label: x.label, type: x.type, required: !!x.required })),
+    }));
 
     // Submission counts per block_id (single query, counted in memory).
     const { data: subs } = await supabase.from('form_submissions').select('block_id');
@@ -7196,11 +7379,20 @@ async function executeBlogAction(
   // content_calendar_view — editorial calendar: drafts + scheduled + recently published.
   // Read-only. Previously fell through to write_blog_post and failed with "title required".
   if (skillName === 'content_calendar_view') {
-    const { limit = 50 } = args as any;
-    const { data, error } = await supabase.from('blog_posts')
-      .select('id, title, slug, status, published_at, updated_at')
+    // include_drafts and look_ahead_days were declared and ignored; limit was
+    // read and undeclared (declared-vs-read guard, 2026-10-03).
+    const { limit = 50, include_drafts = true, look_ahead_days } = args as any;
+    let calQuery = supabase.from('blog_posts')
+      .select('id, title, slug, status, published_at, scheduled_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(Math.min(Number(limit) || 50, 200));
+    if (include_drafts === false) calQuery = calQuery.neq('status', 'draft');
+    if (look_ahead_days !== undefined && look_ahead_days !== null) {
+      const horizon = new Date();
+      horizon.setDate(horizon.getDate() + Number(look_ahead_days));
+      calQuery = calQuery.or(`scheduled_at.is.null,scheduled_at.lte.${horizon.toISOString()}`);
+    }
+    const { data, error } = await calQuery;
     if (error) throw new Error(`Content calendar view failed: ${error.message}`);
     const posts = data || [];
     const by_status: Record<string, any[]> = {};
@@ -9258,7 +9450,7 @@ async function executeBlogPostsManagement(
   supabase: any,
   args: Record<string, unknown>,
 ): Promise<unknown> {
-  const { action = 'list', post_id, slug, status, title, excerpt, featured_image, category, published_at, limit = 20 } = args as any;
+  const { action = 'list', post_id, slug, status, title, excerpt, content, content_json, featured_image, category, published_at, limit = 20 } = args as any;
 
   if (action === 'list') {
     let query = supabase.from('blog_posts')
@@ -9292,6 +9484,22 @@ async function executeBlogPostsManagement(
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (title !== undefined) updates.title = title;
     if (excerpt !== undefined) updates.excerpt = excerpt;
+    // The body. Until 2026-10-03 update had no way to change a post's text, so an
+    // operator that wanted to fix a paragraph had to delete the post and write a
+    // new one — losing id, slug, revisions and category (Hermes on synclairvision).
+    // `content` is markdown and goes through the SAME conversion as write_blog_post;
+    // `content_json` is the Tiptap document `get` hands back, written as-is.
+    if (content !== undefined && content_json !== undefined) throw new Error('Pass content (markdown) OR content_json (Tiptap document), not both.');
+    if (content !== undefined) {
+      if (typeof content !== 'string' || !content.trim()) throw new Error('content must be a non-empty markdown string — to clear a post, archive it instead.');
+      updates.content_json = markdownToTiptap(content);
+    }
+    if (content_json !== undefined) {
+      if (!content_json || typeof content_json !== 'object' || Array.isArray(content_json) || (content_json as { type?: unknown }).type !== 'doc') {
+        throw new Error('content_json must be a Tiptap document: { type: "doc", content: [...] } — the shape `get` returns. For text, pass content (markdown).');
+      }
+      updates.content_json = content_json;
+    }
     // `status` was accepted, ignored, and answered with "updated" — the post stayed a draft
     // while the caller believed it was live. It is honoured now, and so is scheduled_at
     // (a post waiting for its time is `reviewing` + scheduled_at; publish_scheduled_content
@@ -9338,6 +9546,7 @@ async function executeBlogPostsManagement(
     const cat = category !== undefined ? await setBlogPostCategory(supabase, data.id, category) : undefined;
     // `status` is the POST's status, read back from the row — never the word "updated".
     return { post_id: data.id, updated: true, status: data.status, featured_image: data.featured_image, published_at: data.published_at,
+      ...(updates.content_json !== undefined ? { content_updated: true } : {}),
       ...(cat !== undefined ? { category: cat ? cat.slug : null } : {}) };
   }
 
@@ -9506,7 +9715,7 @@ async function executeDbAction(
       }
 
       if (skillName === 'site_branding_update') {
-        const { logo_url, primary_color, accent_color, font_family, favicon_url } = args as any;
+        const { logo_url, logo_dark_url, primary_color, primary_color_dark, accent_color, font_family, heading_font, body_font, favicon_url } = args as any;
         // The branding JSON the app READS uses logo / primaryColor / accentColor /
         // headingFont+bodyFont / favicon, with colors in HSL "H S% L%". The old handler
         // wrote logo_url/primary_color/accent_color (agent-shaped, hex) as separate keys
@@ -9535,11 +9744,23 @@ async function executeDbAction(
         const { data: existing } = await supabase.from('site_settings')
           .select('value').eq('key', 'branding').maybeSingle();
         const updated: Record<string, unknown> = { ...(existing?.value || {}) };
+        // Non-destructive: only the fields passed change; everything else in the
+        // branding JSON (radius, theme toggle, name-with-logo, …) survives the call.
+        // Theme-aware: the app has a dark logo (header/footer swap on theme) and a
+        // dark primary (chat widget, links — see brand-color.ts); until 2026-10-03
+        // an operator could set neither, so a black primary turned the dark theme
+        // into black-on-black (Hermes on synclairvision). Empty string clears a
+        // dark override, after which the light value is derived per theme again.
+        const clearable = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? '' : v);
         if (logo_url !== undefined) updated.logo = logo_url;
+        if (logo_dark_url !== undefined) updated.logoDark = clearable(logo_dark_url);
         if (favicon_url !== undefined) updated.favicon = favicon_url;
         if (primary_color !== undefined) updated.primaryColor = hexToHsl(primary_color);
+        if (primary_color_dark !== undefined) updated.primaryColorDark = primary_color_dark === '' ? '' : hexToHsl(primary_color_dark);
         if (accent_color !== undefined) updated.accentColor = hexToHsl(accent_color);
         if (font_family !== undefined) { updated.headingFont = font_family; updated.bodyFont = font_family; }
+        if (heading_font !== undefined) updated.headingFont = heading_font;
+        if (body_font !== undefined) updated.bodyFont = body_font;
         const { error } = await supabase.from('site_settings')
           .upsert({ key: 'branding', value: updated }, { onConflict: 'key' });
         if (error) throw new Error(`Branding update failed: ${error.message}`);
@@ -9662,12 +9883,16 @@ async function executeDbAction(
         return { task_id: data.id, title: data.title, created: true };
       }
       if (skillName === 'crm_task_list') {
-        const { lead_id, deal_id, include_completed = false, limit = 50 } = args as any;
+        // The skill declares show_completed and priority; the handler read
+        // include_completed and nothing for priority, so both declared filters
+        // were silently ignored (found by the declared-vs-read guard, 2026-10-03).
+        const { lead_id, deal_id, priority, show_completed = false, limit = 50 } = args as any;
         let query = supabase.from('crm_tasks')
           .select('id, title, description, priority, due_date, completed_at, lead_id, deal_id, created_at')
           .order('due_date', { ascending: true, nullsFirst: false })
           .limit(limit);
-        if (!include_completed) query = query.is('completed_at', null);
+        if (!show_completed) query = query.is('completed_at', null);
+        if (priority) query = query.eq('priority', priority);
         if (lead_id) query = query.eq('lead_id', lead_id);
         if (deal_id) query = query.eq('deal_id', deal_id);
         const { data, error } = await query;
@@ -16570,6 +16795,207 @@ async function executeAdCreativeGenerate(
   } catch { /* table/columns may vary — return the generated copy regardless */ }
 
   return { campaign: { id: campaignId, name: c.name }, creative_id: creativeId, ...creative };
+}
+
+// sync_ad_metrics — the ad ledger's feed. ad_campaigns.metrics / spent_cents /
+// external_id were never written by anything (#623): the Growth dashboard,
+// ad_performance_check and ad_optimize read them, so they showed zeros and
+// recommended on nothing. This reads campaign-level insights from the Meta ad
+// account connected through Composio (toolkit metaads — the same rail LinkedIn
+// publishing uses) and writes them. No Meta client, no token handling here.
+type ComposioEnvelope = { result?: unknown; error?: unknown } | null;
+
+async function composioExecuteTool(
+  supabaseUrl: string,
+  serviceKey: string,
+  toolkit: string,
+  actionName: string,
+  args: Record<string, unknown>,
+): Promise<{ ok: boolean; data: unknown; error?: string }> {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/composio-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
+      body: JSON.stringify({ action: 'execute', params: { action_name: actionName, toolkit, arguments: args } }),
+    });
+    const body = (await res.json().catch(() => null)) as ComposioEnvelope;
+    if (!res.ok) return { ok: false, data: body, error: String((body as { error?: unknown } | null)?.error ?? `composio-proxy ${res.status}`) };
+    // Composio v3 answers { data: {...}, successful, error }; the proxy wraps it in { result }.
+    const result = (body?.result ?? body) as { data?: unknown; successful?: boolean; error?: unknown } | null;
+    if (result && result.successful === false) return { ok: false, data: result, error: String(result.error ?? 'tool failed') };
+    return { ok: true, data: result?.data ?? result };
+  } catch (e) {
+    return { ok: false, data: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** Meta returns lists as { data: [...] } — sometimes one level deeper after the proxy. */
+function metaList(payload: unknown): Record<string, unknown>[] {
+  const p = payload as { data?: unknown } | unknown[] | null;
+  if (Array.isArray(p)) return p as Record<string, unknown>[];
+  const inner = (p as { data?: unknown } | null)?.data;
+  if (Array.isArray(inner)) return inner as Record<string, unknown>[];
+  const deeper = (inner as { data?: unknown } | null)?.data;
+  return Array.isArray(deeper) ? (deeper as Record<string, unknown>[]) : [];
+}
+
+const CONVERSION_ACTION_TYPES = new Set([
+  'lead', 'onsite_conversion.lead_grouped', 'onsite_conversion.lead', 'offsite_conversion.fb_pixel_lead',
+  'purchase', 'omni_purchase', 'offsite_conversion.fb_pixel_purchase',
+  'complete_registration', 'offsite_conversion.fb_pixel_complete_registration',
+  'contact', 'onsite_conversion.messaging_conversation_started_7d', 'submit_application',
+]);
+
+function sumConversions(actions: unknown): number {
+  if (!Array.isArray(actions)) return 0;
+  let n = 0;
+  for (const a of actions as Array<{ action_type?: string; value?: string | number }>) {
+    if (a?.action_type && CONVERSION_ACTION_TYPES.has(a.action_type)) n += Number(a.value ?? 0) || 0;
+  }
+  return n;
+}
+
+const META_OBJECTIVE_MAP: Record<string, string> = {
+  OUTCOME_AWARENESS: 'awareness', BRAND_AWARENESS: 'awareness', REACH: 'awareness',
+  OUTCOME_TRAFFIC: 'traffic', LINK_CLICKS: 'traffic',
+  OUTCOME_LEADS: 'leads', LEAD_GENERATION: 'leads',
+  OUTCOME_SALES: 'conversions', CONVERSIONS: 'conversions', OUTCOME_ENGAGEMENT: 'awareness',
+};
+const META_STATUS_MAP: Record<string, string> = { ACTIVE: 'active', PAUSED: 'paused', ARCHIVED: 'completed', DELETED: 'completed' };
+
+async function executeSyncAdMetrics(
+  supabase: SupabaseClient,
+  args: Record<string, unknown>,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<unknown> {
+  const { date_preset = 'last_30d', ad_account_id, dry_run = false } = args as { date_preset?: string; ad_account_id?: string; dry_run?: boolean };
+  const dryRun = dry_run === true;
+  const exec = (action: string, a: Record<string, unknown>) => composioExecuteTool(supabaseUrl, serviceKey, 'metaads', action, a);
+
+  // 1. Which ad account. Explicit arg → integration config → first the user can see.
+  let account = typeof ad_account_id === 'string' && ad_account_id.trim() ? ad_account_id.trim() : '';
+  if (!account) {
+    const { data: integ, error: integErr } = await supabase.from('site_settings').select('value').eq('key', 'integrations').maybeSingle();
+    // The configured account is a preference, not a requirement: on a read error
+    // fall through to "first account Meta lists" and say so in the result.
+    if (integErr) console.warn(`[sync_ad_metrics] integrations read failed, using the first ad account: ${integErr.message}`);
+    const cfg = ((integ?.value as Record<string, unknown> | null)?.meta_ads as { config?: { adAccountId?: string } } | undefined)?.config;
+    account = (cfg?.adAccountId ?? '').trim();
+  }
+  let accountName: string | null = null;
+  let currency: string | null = null;
+  const accountsRes = await exec('METAADS_GET_AD_ACCOUNTS', { limit: 25, fields: 'id,account_id,name,currency,account_status' });
+  if (!accountsRes.ok) {
+    const msg = accountsRes.error ?? 'unknown';
+    const notConnected = /no (active )?connected account|not connected|connected_account|auth config|api key not configured/i.test(msg);
+    return {
+      error: notConnected
+        ? 'No Meta Ads account connected. Connect it under Modules → Composio → Quick Connect → metaads (the Meta Ads integration card explains the one-time Meta app + auth config), then run again.'
+        : `Meta Ads lookup failed: ${msg}`,
+      status: 'failed',
+    };
+  }
+  const accounts = metaList(accountsRes.data) as Array<{ id?: string; account_id?: string; name?: string; currency?: string }>;
+  if (!account) {
+    if (accounts.length === 0) return { error: 'The connected Meta user has no ad accounts. Grant the account access in Business Manager, or pass ad_account_id.', status: 'failed' };
+    account = String(accounts[0].id ?? `act_${accounts[0].account_id}`);
+  }
+  if (!account.startsWith('act_')) account = `act_${account}`;
+  const matched = accounts.find((a) => a.id === account || `act_${a.account_id}` === account);
+  accountName = matched?.name ?? null;
+  currency = matched?.currency ?? null;
+
+  // 2. Campaign-level insights for the window.
+  const insightsRes = await exec('METAADS_GET_INSIGHTS', {
+    object_id: account,
+    level: 'campaign',
+    date_preset,
+    fields: 'campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,actions,objective',
+    limit: 200,
+  });
+  if (!insightsRes.ok) return { error: `Meta insights failed: ${insightsRes.error ?? 'unknown'}`, status: 'failed', ad_account: account };
+  const rows = metaList(insightsRes.data) as Array<Record<string, unknown>>;
+
+  // 3. Reconcile against the ledger by external_id.
+  const { data: existingRows, error: exErr } = await supabase
+    .from('ad_campaigns').select('id, name, external_id, platform, status, objective, metrics').eq('platform', 'meta');
+  if (exErr) throw new Error(`Ledger read failed: ${exErr.message}`);
+  const byExternal = new Map<string, { id: string; name: string; status: string | null; objective: string | null }>();
+  for (const r of (existingRows || []) as Array<{ id: string; name: string; external_id: string | null; status: string | null; objective: string | null }>) {
+    if (r.external_id) byExternal.set(String(r.external_id), r);
+  }
+
+  const syncedAt = new Date().toISOString();
+  const report: Array<Record<string, unknown>> = [];
+  let created = 0, updated = 0;
+  const totals = { spend_cents: 0, impressions: 0, clicks: 0, conversions: 0 };
+
+  for (const row of rows) {
+    const metaId = String(row.campaign_id ?? '');
+    if (!metaId) continue;
+    const spendCents = Math.round(Number(row.spend ?? 0) * 100) || 0;
+    const impressions = Number(row.impressions ?? 0) || 0;
+    const clicks = Number(row.clicks ?? 0) || 0;
+    const conversions = sumConversions(row.actions);
+    const ctr = row.ctr !== undefined ? Number(row.ctr) : (impressions > 0 ? (clicks / impressions) * 100 : 0);
+    const cpcCents = row.cpc !== undefined ? Math.round(Number(row.cpc) * 100) : (clicks > 0 ? Math.round(spendCents / clicks) : 0);
+    totals.spend_cents += spendCents; totals.impressions += impressions; totals.clicks += clicks; totals.conversions += conversions;
+
+    const metrics = { impressions, clicks, conversions, ctr: Number(ctr.toFixed(2)), cpc_cents: cpcCents, date_preset, synced_at: syncedAt, source: 'meta' };
+    const objective = META_OBJECTIVE_MAP[String(row.objective ?? '')] ?? undefined;
+
+    // Status comes from the campaign object, not insights — one small read per
+    // campaign (campaign counts are small); a failure leaves status untouched.
+    let metaStatus: string | undefined;
+    const obj = await exec('METAADS_GET_META_OBJECT', { object_id: metaId, fields: 'status,effective_status,objective,name' });
+    if (obj.ok) {
+      const o = (obj.data as { status?: string; effective_status?: string; objective?: string } | null) ?? {};
+      metaStatus = META_STATUS_MAP[String(o.effective_status ?? o.status ?? '')];
+    }
+
+    const existing = byExternal.get(metaId);
+    const entry: Record<string, unknown> = {
+      meta_campaign_id: metaId, name: row.campaign_name ?? existing?.name ?? metaId,
+      spend_cents: spendCents, impressions, clicks, conversions, ctr: metrics.ctr, cpc_cents: cpcCents,
+      ...(metaStatus ? { meta_status: metaStatus } : {}),
+    };
+    if (existing) {
+      entry.action = dryRun ? 'would_update' : 'updated';
+      entry.campaign_id = existing.id;
+      if (!dryRun) {
+        const patch: Record<string, unknown> = { metrics, spent_cents: spendCents, updated_at: syncedAt };
+        if (row.campaign_name) patch.name = row.campaign_name;
+        if (metaStatus) patch.status = metaStatus;
+        if (objective) patch.objective = objective;
+        const { error } = await supabase.from('ad_campaigns').update(patch).eq('id', existing.id);
+        if (error) { entry.action = 'error'; entry.error = error.message; } else updated++;
+      }
+    } else {
+      entry.action = dryRun ? 'would_create' : 'created';
+      if (!dryRun) {
+        const { data: ins, error } = await supabase.from('ad_campaigns').insert({
+          name: String(row.campaign_name ?? metaId), platform: 'meta', objective: objective ?? 'traffic',
+          status: metaStatus ?? 'active', budget_cents: 0, spent_cents: spendCents, currency: currency ?? 'SEK',
+          external_id: metaId, metrics, target_audience: {},
+        }).select('id').single();
+        if (error) { entry.action = 'error'; entry.error = error.message; } else { entry.campaign_id = ins?.id; created++; }
+      }
+    }
+    report.push(entry);
+  }
+
+  const summary = rows.length === 0
+    ? `Meta reported no campaigns with activity in ${date_preset} for ${accountName ?? account}.`
+    : dryRun
+      ? `${rows.length} campaign(s) on ${accountName ?? account} for ${date_preset}; nothing written (dry_run).`
+      : `${rows.length} campaign(s) on ${accountName ?? account} for ${date_preset}: ${created} created, ${updated} updated in the ad ledger.`;
+
+  return {
+    ad_account: account, ad_account_name: accountName, currency, date_preset, dry_run: dryRun,
+    campaigns: report, created, updated, totals, summary,
+    work_done: dryRun ? null : { created, updated },
+  };
 }
 
 // ad_optimize — rule-based campaign optimisation recommendations. Reads metrics

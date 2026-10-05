@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261005010100",
-      "migrations_count": 641,
+      "migration_head": "20261005020000",
+      "migrations_count": 642,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2569,11 +2569,15 @@
         {
           "version": "20261005010100",
           "name": "arendet-far-ett-svar-utan-brevlada"
+        },
+        {
+          "version": "20261005020000",
+          "name": "nyhetsbrevet-far-listor"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:16b1ad75bffff3fbbb91292dad31fb2ae5ccc2498fb51b67df622018890d2caf",
+      "seed_hash": "sha256:ae3e6299ae8f7e2d8ca830d2351bf915851d01cfebcb2e3caa02f2a8c53d6bdb",
       "skill_count": 618,
       "module_count": 68
     },
@@ -2583,7 +2587,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:ecef78b686f9cac842678b85a108337564efefee52e3f926bbce53b6740313e4",
+        "agent-execute": "sha256:9f94c9ba3ac3f17888fe8dfe5d42d3d70d3d0f797c8aac2a2a9f570f0aab7dea",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",
@@ -2630,7 +2634,7 @@
         "mcp-server": "sha256:b313f3696582d705944038f408163d33e621dd609f2faeb5478d8377b17fc692",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:163d9a8a447050186eb9226430a8edb675b7c918f87ce437a859a483d285e7fe",
-        "newsletter": "sha256:3700d8ab630710a2a7c25ebaafe79a89022570776f7c8baaa9cddd0c648b728c",
+        "newsletter": "sha256:dedb6d551d368c9f7dd23e0fc9f8bd5e9b48a908cc86fb0f94deb71f397b6ee6",
         "openclaw-responses": "sha256:91855c6a4deaa62297ed40169e5a5d4c102e4d6f229c0702b19e7f600a9d1061",
         "process-image": "sha256:b7a65c7cf8f1b80ec4ae22aec5ab2ec7521ead15ee3f96e08921da90ed41b985",
         "process-job-application": "sha256:25776893a0080b2bce6674c66d0c6539a0d0238a5eb18f1d0755c17248d0f900",

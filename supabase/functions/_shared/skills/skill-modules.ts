@@ -380,6 +380,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "manage_sla_policy": "sla",
   "manage_sla_remediation": "sla",
   "manage_sla_tier": "sla",
+  "manage_staff_calendar": "bookings",
   "manage_subscription_plan": "subscriptions",
   "manage_subsidiary": "multiCurrency",
   "manage_survey_template": "surveys",

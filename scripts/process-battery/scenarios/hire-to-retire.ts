@@ -41,6 +41,8 @@ async function run(s: Scenario): Promise<void> {
   const offerId = s.idOf(offer, 'offer');
   s.check('the offer letter names the salary', /42[\s,.]?000/.test(String((offer.offer as { body_markdown?: string })?.body_markdown ?? '')),
     String((offer.offer as { body_markdown?: string })?.body_markdown ?? '').slice(0, 200));
+  s.check('the offer letter has no unfilled merge field', !String((offer.offer as { body_markdown?: string })?.body_markdown ?? '').includes('{{'),
+    String((offer.offer as { body_markdown?: string })?.body_markdown).slice(0, 200));
   await s.must('the offer is sent', 'manage_job_offer', { p_action: 'send', p_offer_id: offerId });
   s.skip('the offer letter is e-mailed to the candidate', 'no e-mail integration locally');
   await s.must('the application moves to offer_sent', 'move_application_stage', { application_id: appId, to_stage: 'offer_sent' });
@@ -61,6 +63,16 @@ async function run(s: Scenario): Promise<void> {
   const strayId = (await s.one<{ employee_id: string | null }>('select employee_id from applications where id = $1', [rejected]))?.employee_id;
   if (strayId) await s.skill('manage_employee', { action: 'update', employee_id: strayId, status: 'terminated' }); // keep the stray hire off the payroll below
 
+  // A fresh install has neither template; the agent sets them up through skills
+  // (2026-10-05 — before, no skill could, and the two steps below were skipped).
+  await s.must('a default onboarding template is created', 'manage_onboarding_template', {
+    action: 'create', name: `Standard onboarding ${s.tag}`, is_default: true, is_active: true,
+    items: [{ title: 'IT setup', done: false }, { title: 'Meet the team', done: false }],
+  });
+  await s.must('a default employment contract template is created', 'manage_employment_contract_template', {
+    action: 'create', name: `Permanent employment ${s.tag}`, is_default: true, is_active: true, employment_type: 'permanent',
+    body_markdown: 'Employment agreement between the company and {{employee_name}} as {{title}}, starting {{start_date}}, at {{monthly_salary}} kr per month.',
+  });
   const templates = await s.one<{ contract: string; onboarding: string }>(
     `select (select count(*) from employment_contract_templates where is_active) as contract,
             (select count(*) from onboarding_templates where is_active) as onboarding`);
@@ -96,8 +108,18 @@ async function run(s: Scenario): Promise<void> {
   }
   if (Number(templates?.contract) === 0) {
     s.skip('the draft contract is rendered from a contract template', 'no employment contract template on a fresh install, and no skill creates one');
+  } else {
+    const draft = await s.one<{ id: string; template_id: string | null; body: string }>(
+      'select id, template_id, body_markdown as body from employment_contracts where employee_id = $1', [employeeId]);
+    s.check('the draft contract is rendered from the template', !!draft?.template_id && (draft?.body ?? '').includes('Employment agreement'), JSON.stringify(draft).slice(0, 200));
+    s.check('every merge field in the contract is filled', !(draft?.body ?? '').includes('{{'), String(draft?.body).slice(0, 200));
+    if (draft?.id) {
+      await s.must('the employer signs the contract', 'sign_employment_contract', { p_contract_id: draft.id, p_side: 'employer' });
+      await s.must('the employee signature is recorded', 'sign_employment_contract', { p_contract_id: draft.id, p_side: 'employee' });
+      const signed = await s.one<{ status: string; signed: boolean }>('select status, signed_at is not null as signed from employment_contracts where id = $1', [draft.id]);
+      s.equal('both sides signed → the contract is signed', `${signed?.status}/${signed?.signed}`, 'signed/true');
+    }
   }
-  s.skip('the employment contract is signed by both parties', 'no skill reaches employment_contracts — send_contract_for_signature works on the contracts table');
 
   await s.must('payroll data is completed on the employee', 'manage_employee', {
     action: 'update', employee_id: employeeId, monthly_salary_cents: SALARY, tax_rate_pct: 30, payroll_country: 'SE',

@@ -1264,6 +1264,9 @@ serve(async (req) => {
       } else if (handler === 'internal:ad_optimize') {
         result = await executeAdOptimize(supabase, args);
 
+      } else if (handler === 'internal:send_winback_campaign') {
+        result = await executeSendWinbackCampaign(supabase, args, supabaseUrl, serviceKey);
+
       } else if (handler === 'internal:sync_ad_metrics') {
         result = await executeSyncAdMetrics(supabase, args, supabaseUrl, serviceKey);
 
@@ -4537,17 +4540,18 @@ async function executePagesAction(
         const written = Object.keys(updates).filter((k) => k !== 'updated_at');
         if (written.length === 0) {
           return {
-            error: 'Nothing to update: send at least one of title, slug (with page_id), meta, blocks, show_in_menu, menu_order.',
+            error: 'Nothing to update: send at least one of title, slug (with page_id), meta, blocks, show_in_menu, menu_order, scheduled_at.',
           };
         }
         const { data, error } = await supabase.from('pages')
-          .update(updates).eq('id', page_id).select('id, title, slug, status, show_in_menu, menu_order').single();
+          .update(updates).eq('id', page_id).select('id, title, slug, status, show_in_menu, menu_order, scheduled_at').single();
         if (error) throw new Error(`Update page failed: ${error.message}`);
         // Read-back: echo what the row holds now, so a caller can verify the
         // write instead of trusting "updated".
         return {
           page_id: data.id, status: 'updated', updated_fields: written,
           show_in_menu: data.show_in_menu, menu_order: data.menu_order,
+          page_status: data.status, scheduled_at: data.scheduled_at,
         };
       }
 
@@ -6886,12 +6890,12 @@ async function executeCompaniesAction(
 
   if (action === 'create') {
     const { name, domain, industry, size, address, phone, website, notes,
-      org_number, vat_number, parent_company_id, employee_count,
+      org_number, vat_number, peppol_id, parent_company_id, employee_count,
       annual_revenue_cents, credit_limit_cents, account_owner, tags } = args as any;
     if (!name) throw new Error('name is required');
     const { data, error } = await supabase.from('companies').insert({
       name, domain, industry, size, address, phone, website, notes,
-      org_number, vat_number, parent_company_id, employee_count,
+      org_number, vat_number, peppol_id, parent_company_id, employee_count,
       annual_revenue_cents, credit_limit_cents, account_owner, tags,
     }).select('id, name, domain').single();
     if (error) throw new Error(`Create company failed: ${error.message}`);
@@ -7633,7 +7637,7 @@ async function executeBookingAction(
 ): Promise<unknown> {
   // check_availability — check available slots
   if (skillName === 'check_availability') {
-    const { date, service_id } = args as any;
+    const { date, service_id, employee_id } = args as any;
     if (!date) throw new Error('date is required');
 
     // Opening hours are wall-clock times with no zone: everything below is computed in the
@@ -7684,7 +7688,7 @@ async function executeBookingAction(
     // opening hours, blocked days, the platform timezone, the past, the service's buffers and
     // its capacity. This handler used to compute them a second time in TypeScript, without
     // buffers or capacity, so the agent could offer a time the table then refused.
-    const { data: free, error: freeErr } = await supabase.rpc('booking_free_slots', { p_service_id: service_id ?? null, p_date: date });
+    const { data: free, error: freeErr } = await supabase.rpc('booking_free_slots', { p_service_id: service_id ?? null, p_date: date, p_employee_id: employee_id ?? null });
     if (freeErr) throw new Error(`Availability check failed: ${freeErr.message}`);
     const freeAnswer = (free ?? {}) as { success?: boolean; error?: string; free_slots?: string[]; slots?: unknown[]; capacity?: number; buffer_before_minutes?: number; buffer_after_minutes?: number; slot_minutes?: number };
     if (freeAnswer.success === false) return { error: freeAnswer.error ?? 'Availability check failed' };
@@ -7707,6 +7711,9 @@ async function executeBookingAction(
       buffer_before_minutes: freeAnswer.buffer_before_minutes ?? 0,
       buffer_after_minutes: freeAnswer.buffer_after_minutes ?? 0,
       slot_minutes: slotMinutes,
+      // With a staff pool, a slot is free when one member is; places_left counts free staff.
+      employee_id: employee_id ?? null,
+      staff_pool_size: (freeAnswer as { staff_pool_size?: number }).staff_pool_size ?? 0,
       timezone: tz,
       existing_bookings: (bookings || []).length,
       booked_ranges: (bookings || []).map((b: any) => ({ start: b.start_time, end: b.end_time })),
@@ -7829,24 +7836,57 @@ async function executeNewsletterAction(
   args: Record<string, unknown>,
 ): Promise<unknown> {
   if (skillName === 'manage_newsletter_subscribers') {
-    const { action = 'list', search, status, email, limit = 50 } = args as any;
+    const { action = 'list', search, status, email, emails, list, lists, limit = 50 } = args as any;
+    // Lists (2026-10-05): a subscriber is on any number of lists; a newsletter
+    // targets one or more (newsletters.audience_lists). Names are normalised by
+    // the table trigger — lower-case, trimmed, deduped.
+    const listNames = (Array.isArray(lists) ? lists : (typeof list === 'string' && list.trim() ? [list] : []))
+      .map((l: unknown) => String(l).trim().toLowerCase()).filter(Boolean);
     if (action === 'list' || action === 'search') {
       let query = supabase.from('newsletter_subscribers')
-        .select('id, email, name, status, created_at, confirmed_at')
+        .select('id, email, name, status, lists, created_at, confirmed_at')
         .order('created_at', { ascending: false }).limit(limit);
       if (status) query = query.eq('status', status);
+      if (listNames.length) query = query.overlaps('lists', listNames);
       if (search) query = query.or(`email.ilike.%${sanitizeOrTerm(search)}%,name.ilike.%${sanitizeOrTerm(search)}%`);
       const { data, error } = await query;
       if (error) throw new Error(`List subscribers failed: ${error.message}`);
       return { subscribers: data || [] };
     }
     if (action === 'count') {
-      const { count, error } = await supabase.from('newsletter_subscribers')
+      let query = supabase.from('newsletter_subscribers')
         // 'active' is not a status this table has (pending | confirmed | unsubscribed | bounced):
         // the count was always 0. The people a send reaches are the CONFIRMED ones.
         .select('*', { count: 'exact', head: true }).eq('status', 'confirmed');
+      if (listNames.length) query = query.overlaps('lists', listNames);
+      const { count, error } = await query;
       if (error) throw new Error(`Count failed: ${error.message}`);
-      return { active_subscribers: count || 0, confirmed_subscribers: count || 0 };
+      return { active_subscribers: count || 0, confirmed_subscribers: count || 0, ...(listNames.length ? { lists: listNames } : {}) };
+    }
+    if (action === 'lists') {
+      const { data, error } = await supabase.rpc('newsletter_list_summary');
+      if (error) throw new Error(`List summary failed: ${error.message}`);
+      return { lists: data ?? [] };
+    }
+    if (action === 'add_to_list' || action === 'remove_from_list') {
+      const targets = (Array.isArray(emails) ? emails : (email ? [email] : [])).map((e: unknown) => String(e).trim().toLowerCase()).filter(Boolean);
+      if (targets.length === 0 || listNames.length === 0) throw new Error(`${action} needs email (or emails[]) and list (or lists[])`);
+      const { data: rows, error: readErr } = await supabase.from('newsletter_subscribers').select('id, email, lists').in('email', targets);
+      if (readErr) throw new Error(`Subscriber read failed: ${readErr.message}`);
+      const found = (rows ?? []) as Array<{ id: string; email: string; lists: string[] | null }>;
+      let changed = 0;
+      for (const r of found) {
+        const current = r.lists ?? [];
+        const next = action === 'add_to_list'
+          ? Array.from(new Set([...current, ...listNames]))
+          : current.filter((l) => !listNames.includes(l));
+        if (next.length === current.length && next.every((l) => current.includes(l))) continue;
+        const { error: upErr } = await supabase.from('newsletter_subscribers').update({ lists: next }).eq('id', r.id);
+        if (upErr) throw new Error(`List update failed for ${r.email}: ${upErr.message}`);
+        changed++;
+      }
+      const missing = targets.filter((t) => !found.some((r) => r.email.toLowerCase() === t));
+      return { action, lists: listNames, matched: found.length, changed, ...(missing.length ? { not_subscribed: missing } : {}) };
     }
     if (action === 'remove' && email) {
       // An address is one address in any letter case. `.eq` matched nothing for
@@ -7866,11 +7906,15 @@ async function executeNewsletterAction(
 
   // manage_newsletters — full CRUD on newsletters table
   if (skillName === 'manage_newsletters') {
-    const { action = 'list', newsletter_id, subject, content_html, status, schedule_at, limit = 20 } = args as any;
+    const { action = 'list', newsletter_id, subject, content_html, status, schedule_at, audience_lists, limit = 20 } = args as any;
+    // Empty/omitted audience = every confirmed subscriber (the pre-lists behaviour).
+    const audience = Array.isArray(audience_lists)
+      ? audience_lists.map((l: unknown) => String(l).trim().toLowerCase()).filter(Boolean)
+      : undefined;
 
     if (action === 'list') {
       let query = supabase.from('newsletters')
-        .select('id, subject, status, sent_count, open_count, click_count, scheduled_at, sent_at, created_at')
+        .select('id, subject, status, audience_lists, sent_count, open_count, click_count, scheduled_at, sent_at, created_at')
         .order('created_at', { ascending: false }).limit(limit);
       if (status) query = query.eq('status', status);
       const { data, error } = await query;
@@ -7885,7 +7929,12 @@ async function executeNewsletterAction(
         .select('*').eq('id', id).maybeSingle();
       if (error) throw new Error(`Get newsletter failed: ${error.message}`);
       if (!data) return { found: false, error: `Newsletter ${id} not found` };
-      return data;
+      // What happened to it: the delivery ledger's word — carriers, failed,
+      // bounced, complained, suppressed — the same summary the admin row shows.
+      const { data: summary, error: sumErr } = await supabase.rpc('newsletter_delivery_summary');
+      if (sumErr) console.warn('[manage_newsletters] delivery summary failed:', sumErr.message);
+      const mine = (Array.isArray(summary) ? summary : []).find((r: { newsletter_id: string }) => r.newsletter_id === id) ?? null;
+      return { ...data, delivery: mine };
     }
 
     if (action === 'create') {
@@ -7961,9 +8010,10 @@ Output ONLY the HTML content, no preamble or explanation.`;
         content_html: finalHtml || '',
         status: schedule_at ? 'scheduled' : 'draft',
         scheduled_at: schedule_at || null,
+        ...(audience !== undefined ? { audience_lists: audience } : {}),
       }).select().single();
       if (error) throw new Error(`Create newsletter failed: ${error.message}`);
-      return { newsletter_id: data.id, subject: data.subject, status: data.status, ai_generated: !!(finalHtml && !content_html) };
+      return { newsletter_id: data.id, subject: data.subject, status: data.status, audience_lists: data.audience_lists ?? [], ai_generated: !!(finalHtml && !content_html) };
     }
 
     if (action === 'update') {
@@ -7973,10 +8023,11 @@ Output ONLY the HTML content, no preamble or explanation.`;
       if (content_html !== undefined) updates.content_html = content_html;
       if (status !== undefined) updates.status = status;
       if (schedule_at !== undefined) updates.scheduled_at = schedule_at;
+      if (audience !== undefined) updates.audience_lists = audience;
       const { data, error } = await supabase.from('newsletters')
-        .update(updates).eq('id', newsletter_id).select('id, subject, status').single();
+        .update(updates).eq('id', newsletter_id).select('id, subject, status, audience_lists').single();
       if (error) throw new Error(`Update newsletter failed: ${error.message}`);
-      return { newsletter_id: data.id, subject: data.subject, status: data.status };
+      return { newsletter_id: data.id, subject: data.subject, status: data.status, audience_lists: data.audience_lists ?? [] };
     }
 
     if (action === 'delete') {
@@ -13150,6 +13201,10 @@ async function executeDbAction(
           issue_date: a.issue_date || new Date().toISOString().split('T')[0],
           payment_terms: a.payment_terms || null,
           notes: a.notes || null,
+          // The party the invoice goes to, and 'Er referens' (EN 16931 BT-10) — the
+          // e-invoice (UBL/Peppol) export needs both; see einvoice.
+          company_id: a.company_id || null,
+          buyer_reference: a.buyer_reference || null,
           status: a.status && VALID_INVOICE_STATUS.has(a.status) ? a.status : 'draft',
         };
         const { data, error } = await supabase.from('invoices').insert(insertData)
@@ -13161,7 +13216,7 @@ async function executeDbAction(
       if (action === 'update') {
         const { invoice_id, ...rest } = args as any;
         if (!invoice_id) throw new Error('invoice_id is required');
-        const allowed = ['customer_name', 'customer_email', 'line_items', 'tax_rate', 'currency', 'due_date', 'payment_terms', 'notes', 'status', 'deal_id', 'lead_id', 'project_id'];
+        const allowed = ['customer_name', 'customer_email', 'line_items', 'tax_rate', 'currency', 'due_date', 'payment_terms', 'notes', 'status', 'deal_id', 'lead_id', 'company_id', 'buyer_reference', 'project_id'];
         const updates: Record<string, unknown> = {};
         for (const k of allowed) if (rest[k] !== undefined) updates[k] = rest[k];
         if (updates.status && !VALID_INVOICE_STATUS.has(updates.status as string)) {
@@ -14079,6 +14134,10 @@ const GENERIC_CRUD_TABLES = new Set([
   'accounting_corrections',
   // HR onboarding (templates + per-employee checklists)
   'onboarding_templates', 'onboarding_checklists',
+  // Employment contract templates (hire_application renders the draft contract
+  // from the active default) — agent-creatable since 2026-10-05; before, a fresh
+  // install had none and no skill could make one.
+  'employment_contract_templates',
   // Sales quotes (CPQ)
   'quotes',
   // Pricelists (Odoo-style versioned pricing)
@@ -16995,6 +17054,96 @@ async function executeSyncAdMetrics(
     ad_account: account, ad_account_name: accountName, currency, date_preset, dry_run: dryRun,
     campaigns: report, created, updated, totals, summary,
     work_done: dryRun ? null : { created, updated },
+  };
+}
+
+// send_winback_campaign — the writer subscription_winback_sends never had.
+// The table (queued → sent → opened → converted) was in the schema and the
+// subscribe-to-renew doc said "send-tracking not yet wired to a writer";
+// outreach ran through ad-hoc email skills and nothing recorded who got which
+// offer (battery finding, 2026-10-05). This sends a campaign's mail to churned
+// subscriptions that have not had it yet and logs each send. Honest statuses:
+// `sent` when a provider took it, `simulated` when no provider is configured
+// (email-send logged it, nobody received it), `failed` with the reason.
+async function executeSendWinbackCampaign(
+  supabase: SupabaseClient,
+  args: Record<string, unknown>,
+  supabaseUrl: string,
+  serviceKey: string,
+): Promise<unknown> {
+  const { campaign_id, subscription_ids, limit = 50, dry_run = false } =
+    args as { campaign_id?: string; subscription_ids?: string[]; limit?: number; dry_run?: boolean };
+  if (!campaign_id) throw new Error('campaign_id is required (list_winback_campaigns shows them)');
+  const { data: campaign, error: cErr } = await supabase.from('subscription_winback_campaigns')
+    .select('id, name, active, email_subject, email_body, cta_url, discount_percent').eq('id', campaign_id).maybeSingle();
+  if (cErr) throw new Error(`Campaign read failed: ${cErr.message}`);
+  if (!campaign) return { error: `No win-back campaign ${campaign_id}`, status: 'failed' };
+  if (!campaign.active) return { error: `Campaign "${campaign.name}" is inactive — activate it with manage_winback_campaign first`, status: 'failed' };
+  if (!campaign.email_subject || !campaign.email_body) {
+    return { error: `Campaign "${campaign.name}" has no email_subject/email_body — set them with manage_winback_campaign`, status: 'failed' };
+  }
+
+  let q = supabase.from('subscriptions')
+    .select('id, customer_email, customer_name, status, canceled_at').eq('status', 'canceled').not('customer_email', 'is', null)
+    .order('canceled_at', { ascending: false }).limit(Math.min(Math.max(Number(limit) || 50, 1), 500));
+  if (Array.isArray(subscription_ids) && subscription_ids.length) q = q.in('id', subscription_ids);
+  const { data: subs, error: sErr } = await q;
+  if (sErr) throw new Error(`Subscriptions read failed: ${sErr.message}`);
+
+  const ids = (subs ?? []).map((x: { id: string }) => x.id);
+  const already = new Set<string>();
+  if (ids.length) {
+    const { data: prior, error: pErr } = await supabase.from('subscription_winback_sends')
+      .select('subscription_id').eq('campaign_id', campaign_id).in('subscription_id', ids);
+    if (pErr) throw new Error(`Send log read failed: ${pErr.message}`);
+    for (const r of (prior ?? []) as Array<{ subscription_id: string }>) already.add(r.subscription_id);
+  }
+  const targets = (subs ?? []).filter((x: { id: string }) => !already.has(x.id)) as Array<{ id: string; customer_email: string; customer_name: string | null }>;
+  if (dry_run) {
+    return { campaign: campaign.name, dry_run: true, would_send: targets.map((t) => ({ subscription_id: t.id, to: t.customer_email })), already_sent: already.size };
+  }
+
+  const fill = (text: string, name: string | null) => text
+    .replaceAll('{{customer_name}}', name || 'there')
+    .replaceAll('{{discount_percent}}', campaign.discount_percent != null ? String(campaign.discount_percent) : '')
+    .replaceAll('{{cta_url}}', campaign.cta_url || '');
+  const results: Array<{ subscription_id: string; to: string; status: string; error?: string }> = [];
+  for (const t of targets) {
+    const { data: row, error: insErr } = await supabase.from('subscription_winback_sends').insert({
+      campaign_id, subscription_id: t.id, customer_email: t.customer_email, channel: 'email', status: 'queued',
+    }).select('id').single();
+    if (insErr) { results.push({ subscription_id: t.id, to: t.customer_email, status: 'failed', error: insErr.message }); continue; }
+    let status = 'failed'; let error: string | undefined; let simulated = false;
+    try {
+      const body = fill(campaign.email_body, t.customer_name);
+      const res = await fetch(`${supabaseUrl}/functions/v1/email-send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
+        body: JSON.stringify({
+          to: t.customer_email, subject: fill(campaign.email_subject, t.customer_name),
+          html: body.split('\n').map((l) => (l.trim() ? `<p>${l}</p>` : '<br>')).join(''),
+          tags: { source: 'send_winback_campaign', campaign_id, subscription_id: t.id },
+        }),
+      });
+      const out = await res.json().catch(() => null) as { success?: boolean; simulated?: boolean; error?: string } | null;
+      if (res.ok && out?.success !== false) { simulated = out?.simulated === true; status = simulated ? 'simulated' : 'sent'; }
+      else error = out?.error ?? `email-send ${res.status}`;
+    } catch (e) { error = e instanceof Error ? e.message : String(e); }
+    const { error: upErr } = await supabase.from('subscription_winback_sends').update({
+      status, sent_at: status === 'sent' ? new Date().toISOString() : null,
+      metadata: { ...(error ? { error } : {}), ...(simulated ? { simulated: true } : {}) },
+    }).eq('id', row.id);
+    if (upErr) console.warn(`[send_winback_campaign] status write failed: ${upErr.message}`);
+    results.push({ subscription_id: t.id, to: t.customer_email, status, ...(error ? { error } : {}) });
+  }
+  const count = (st: string) => results.filter((r) => r.status === st).length;
+  return {
+    campaign: campaign.name, targeted: targets.length, already_sent: already.size,
+    sent: count('sent'), simulated: count('simulated'), failed: count('failed'), results,
+    summary: targets.length === 0
+      ? `No churned subscription is waiting for "${campaign.name}"${already.size ? ` (${already.size} already received it)` : ''}.`
+      : `"${campaign.name}" to ${targets.length} churned subscriber(s): ${count('sent')} sent, ${count('simulated')} simulated (no e-mail provider), ${count('failed')} failed.`,
+    work_done: { sent: count('sent'), simulated: count('simulated') },
   };
 }
 

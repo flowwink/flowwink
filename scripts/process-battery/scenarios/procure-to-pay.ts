@@ -269,6 +269,72 @@ async function run(s: Scenario): Promise<void> {
   await s.mustRefuse('a paid report cannot be paid twice', 'mark_expense_report_paid', { p_report_id: reportId }, /only booked/i);
 
   s.skip('the PO reaches the vendor by email', 'needs an email provider');
+
+  // ── Multi-step receiving: receive → QC → putaway (agent surface since 2026-10-05) ──
+  // Its own product so the stock checks above are untouched. One line passes QC, one fails;
+  // only the passed line becomes stock.
+  const qcProduct = s.idOf(await s.must('a product for inspected goods', 'manage_product', {
+    action: 'create', name: `Battery QC goods ${s.tag}`, price_cents: 5_000, cost_cents: 2_000, track_inventory: true,
+  }), 'product');
+  const shelf = await s.one<{ id: string }>(`select id from stock_locations where location_type = 'internal' order by created_at limit 1`);
+  const receipt = await s.must('goods arrive on a receipt that needs inspection', 'manage_inventory_receipt', {
+    p_action: 'create', p_vendor_id: vendorId,
+    p_lines: [{ product_id: qcProduct, quantity: 8, target_location_id: shelf?.id }, { product_id: qcProduct, quantity: 2, target_location_id: shelf?.id }],
+  });
+  const receiptId = String(receipt.receipt_id);
+  s.equal('the receipt starts as received with two lines', `${receipt.status}/${receipt.lines}`, 'received/2');
+  await s.must('the receipt moves to quality check', 'manage_inventory_receipt', { p_action: 'advance', p_receipt_id: receiptId, p_to_status: 'quality_check' });
+  const lines = await s.sql<{ id: string; quantity: string }>('select id, quantity from inventory_receipt_lines where receipt_id = $1 order by quantity desc', [receiptId]);
+  await s.must('eight units pass inspection', 'manage_inventory_receipt', { p_action: 'set_qc', p_line_id: lines[0]?.id, p_qc_status: 'passed' });
+  await s.must('two units fail inspection', 'manage_inventory_receipt', { p_action: 'set_qc', p_line_id: lines[1]?.id, p_qc_status: 'failed', p_qc_notes: 'crushed boxes' });
+  const putaway = await s.must('the inspected goods are put away', 'manage_inventory_receipt', { p_action: 'advance', p_receipt_id: receiptId, p_to_status: 'putaway' });
+  s.equal('one putaway move — the failed line stays out', putaway.putaway_moves, 1);
+  s.equal('only the eight that passed are stock', await onHand(s, qcProduct), 8);
+  await s.must('the receipt is closed', 'manage_inventory_receipt', { p_action: 'advance', p_receipt_id: receiptId, p_to_status: 'done' });
+  const listed = await s.must('open receipts are listed', 'manage_inventory_receipt', { p_action: 'list', p_status: 'done' });
+  s.check('the closed receipt is in the done list with its failed line counted',
+    ((listed.receipts as Array<{ id: string; failed_qc: number }>) ?? []).some((r) => r.id === receiptId && Number(r.failed_qc) === 1), JSON.stringify(listed).slice(0, 200));
+
+  // ── Blanket agreement and call-offs (since 2026-10-05) ──
+  // 100 units agreed at 42 kr. Call-offs are ordinary draft POs at the agreed
+  // price; what is left is the call-offs themselves, so a cancelled one gives
+  // its quantity back and nothing can be called past the ceiling.
+  const agreement = await s.must('a yearly agreement for 100 units at 42 kr is drafted', 'manage_purchase_agreement', {
+    p_action: 'create', p_vendor_id: vendorId,
+    p_lines: [{ product_id: productId, description: 'Coffee 1 kg — yearly agreement', quantity: 100, unit_price_cents: 4_200, tax_rate: 25 }],
+  });
+  const agreementId = String(agreement.agreement_id);
+  await s.mustRefuse('a draft agreement cannot be called off', 'call_off_purchase_agreement',
+    { p_agreement_id: agreementId, p_lines: [] }, /draft/);
+  await s.must('the agreement is activated', 'manage_purchase_agreement', { p_action: 'activate', p_agreement_id: agreementId });
+  const snap0 = await s.must('the agreement is readable with its line', 'manage_purchase_agreement', { p_action: 'get', p_agreement_id: agreementId });
+  const agreementLine = String((snap0.lines as Array<{ id: string }>)[0]?.id);
+  const callOff = await s.must('30 units are called off', 'call_off_purchase_agreement', {
+    p_agreement_id: agreementId, p_lines: [{ agreement_line_id: agreementLine, quantity: 30 }],
+  });
+  const callOffPo = String(callOff.purchase_order_id);
+  s.equal('the call-off is a draft PO at the agreed price (30 × 42 kr + 25 %)', `${await poStatus(s, callOffPo)}/${callOff.total_cents}`, 'draft/157500');
+  const afterFirst = (callOff.agreement as { lines: Array<{ remaining_quantity: number }> }).lines[0];
+  s.equal('70 are left on the agreement', afterFirst?.remaining_quantity, 70);
+  await s.mustRefuse('a call-off past what is left is refused', 'call_off_purchase_agreement',
+    { p_agreement_id: agreementId, p_lines: [{ agreement_line_id: agreementLine, quantity: 71 }] }, /exceeds agreement/);
+  await s.must('the call-off is sent like any order', 'send_purchase_order', { purchase_order_id: callOffPo });
+  const callOffLine = await s.one<{ id: string }>('select id from purchase_order_lines where purchase_order_id = $1', [callOffPo]);
+  await s.must('the called-off goods arrive', 'receive_purchase_order', {
+    purchase_order_id: callOffPo, lines: [{ po_line_id: callOffLine?.id, quantity_received: 30 }],
+  });
+  const secondCallOff = await s.must('a second call-off of 50 is placed', 'call_off_purchase_agreement', {
+    p_agreement_id: agreementId, p_lines: [{ agreement_line_id: agreementLine, quantity: 50 }],
+  });
+  await s.must('the second call-off is cancelled', 'update_purchase_order', { action: 'update', purchase_order_id: String(secondCallOff.purchase_order_id), status: 'cancelled' });
+  const snap = await s.must('the agreement shows its progress', 'manage_purchase_agreement', { p_action: 'get', p_agreement_id: agreementId });
+  const line = (snap.lines as Array<{ called_quantity: number; received_quantity: number; remaining_quantity: number }>)[0];
+  s.equal('the cancelled call-off gave its 50 back: 30 called, 30 received, 70 left',
+    `${line?.called_quantity}/${line?.received_quantity}/${line?.remaining_quantity}`, '30/30/70');
+  s.equal('both call-offs are listed on the agreement', (snap.call_offs as unknown[]).length, 2);
+  await s.must('the agreement is closed', 'manage_purchase_agreement', { p_action: 'close', p_agreement_id: agreementId });
+  await s.mustRefuse('a closed agreement takes no call-offs', 'call_off_purchase_agreement',
+    { p_agreement_id: agreementId, p_lines: [{ agreement_line_id: agreementLine, quantity: 1 }] }, /closed/);
 }
 
 const today = () => new Date().toISOString().slice(0, 10);

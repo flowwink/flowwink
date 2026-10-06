@@ -3,6 +3,8 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Scenario, ScenarioModule } from '../lib';
 
+const FN_URL = (process.env.BATTERY_FN_URL ?? 'http://127.0.0.1:54321/functions/v1').replace(/\/$/, '');
+
 /**
  * Content-to-Conversion: an article and a landing page are written, published,
  * withdrawn and scheduled; a knowledge-base article is published publicly and
@@ -119,17 +121,21 @@ async function run(s: Scenario): Promise<void> {
   }
 
   // ── Scheduled publishing ─────────────────────────────────────────────────
-  // FINDING 2026-09-19: no skill can schedule anything — manage_page and manage_blog_posts have no
-  // scheduled_at parameter; "scheduled" exists only in the admin UI. Played here as that UI.
+  // Scheduling goes through the skills now: manage_blog_posts took scheduled_at
+  // on 2026-09-19, manage_page on 2026-10-05. "Due yesterday" is a schedule an
+  // operator set yesterday — the skill takes the timestamp as given.
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString();
+  const nextMonth = new Date(Date.now() + 30 * 86_400_000).toISOString();
   const due = await s.must('a page due yesterday', 'manage_page', { action: 'create', title: `Schemalagd igår ${s.tag}`, show_in_menu: false });
   const later = await s.must('a page due next month', 'manage_page', { action: 'create', title: `Schemalagd senare ${s.tag}`, show_in_menu: false });
   const dueId = s.idOf(due, 'page');
   const laterId = s.idOf(later, 'page');
-  await s.asService(`update pages set status = 'reviewing', scheduled_at = now() - interval '1 day' where id = $1`, [dueId]);
-  await s.asService(`update pages set status = 'reviewing', scheduled_at = now() + interval '30 days' where id = $1`, [laterId]);
+  const dueSet = await s.must('manage_page schedules the page', 'manage_page', { action: 'update', page_id: dueId, scheduled_at: yesterday });
+  s.equal('a scheduled page waits in review', dueSet.page_status, 'reviewing');
+  await s.must('manage_page schedules the later page', 'manage_page', { action: 'update', page_id: laterId, scheduled_at: nextMonth });
   const scheduledPost = await s.must('an article due yesterday', 'write_blog_post', { title: `Schemalagd artikel ${s.tag}`, content: body });
-  await s.asService(`update blog_posts set status = 'reviewing', scheduled_at = now() - interval '1 day' where id = $1`, [scheduledPost.blog_post_id]);
-  s.skip('scheduling through a skill', 'no skill sets scheduled_at — played as the admin UI (finding)');
+  const postSet = await s.must('manage_blog_posts schedules the article', 'manage_blog_posts', { action: 'update', post_id: scheduledPost.blog_post_id, scheduled_at: yesterday });
+  s.equal('a scheduled article waits in review', postSet.status, 'reviewing');
 
   // FINDING 2026-09-19: publish_scheduled_pages crashes as soon as ONE page is due — it writes
   // v_page.id::text (and then the slug) into audit_logs.entity_id, which is uuid: "column entity_id
@@ -205,6 +211,41 @@ async function run(s: Scenario): Promise<void> {
   s.check('the count is the number of confirmed subscribers', Number(counted.active_subscribers) === Number(really?.n) && Number(really?.n) >= 1,
     `skill says ${String(counted.active_subscribers)}, the table has ${really?.n} confirmed`);
 
+  // ── Segments: mailing lists (2026-10-05) ─────────────────────────────────
+  // A newsletter used to reach every confirmed subscriber; Odoo targets mailing lists.
+  // Z signs up on the "kunder" list through the public subscribe; X is added to "partners"
+  // by the operator; V is on no list. A newsletter to "kunder" reaches Z alone.
+  await s.must('Z signs up for the customers list', 'newsletter_subscribe', { email: sub('z'), name: 'Zelda', lists: ['Kunder '] });
+  await s.must('V signs up with no list', 'newsletter_subscribe', { email: sub('v') });
+  const zRow = await s.one<{ lists: string[] }>('select lists from newsletter_subscribers where email = $1', [sub('z')]);
+  s.equal('the list name is normalised on the way in', (zRow?.lists ?? []).join(','), 'kunder');
+  const added = await s.must('X is put on the partners list', 'manage_newsletter_subscribers', { action: 'add_to_list', email: sub('x'), list: 'partners' });
+  s.equal('one subscriber changed', added.changed, 1);
+  const again = await s.must('…and again — nothing changes twice', 'manage_newsletter_subscribers', { action: 'add_to_list', email: sub('x'), list: 'PARTNERS' });
+  s.equal('adding to a list you are on changes nothing', again.changed, 0);
+  const summary = await s.must('the lists are summarised', 'manage_newsletter_subscribers', { action: 'lists' });
+  const kunder = ((summary.lists as Array<{ list: string; confirmed: number }>) ?? []).find((l) => l.list === 'kunder');
+  s.check('the customers list counts its confirmed subscribers', Number(kunder?.confirmed) >= 1, JSON.stringify(summary).slice(0, 200));
+  const kunderCount = await s.must('the audience of one list is counted', 'manage_newsletter_subscribers', { action: 'count', list: 'kunder' });
+  const kunderReally = await s.one<{ n: string }>(`select count(*) as n from newsletter_subscribers where status = 'confirmed' and lists && array['kunder']`);
+  s.equal('the list count is the confirmed subscribers on that list', Number(kunderCount.confirmed_subscribers), Number(kunderReally?.n));
+  const segmented = await s.must('a newsletter is drafted for the customers list', 'manage_newsletters', {
+    action: 'create', subject: `Bara för kunder ${s.tag}`, content_html: '<p>Kunderbjudande.</p>', audience_lists: ['KUNDER'],
+  });
+  s.equal('the audience is stored normalised', (segmented.audience_lists as string[] ?? []).join(','), 'kunder');
+  const segId = s.idOf(segmented, 'newsletter');
+  const segSent = await s.skill('execute_newsletter_send', { newsletter_id: segId });
+  const segLedger = await s.sql<{ recipient_email: string }>('select recipient_email from newsletter_deliveries where newsletter_id = $1', [segId]);
+  if (!segSent.ok && segLedger.length === 0) {
+    s.skip('the segmented send itself', `the mail hop is unavailable locally: ${segSent.error.slice(0, 160)}`);
+  } else {
+    const inSeg = (n: string) => segLedger.some((d) => d.recipient_email === sub(n));
+    s.check('the customers newsletter reaches Z', inSeg('z'), `${segLedger.length} deliveries`);
+    s.check('…and nobody off the list (X on partners, V on none)', !inSeg('x') && !inSeg('v'), `X:${inSeg('x')} V:${inSeg('v')}`);
+  }
+  const removed = await s.must('X leaves the partners list', 'manage_newsletter_subscribers', { action: 'remove_from_list', email: sub('x'), list: 'partners' });
+  s.equal('X is off the list', `${removed.changed}/${(await s.one<{ lists: string[] }>('select lists from newsletter_subscribers where email = $1', [sub('x')]))?.lists?.length}`, '1/0');
+
   // ── Distribute ───────────────────────────────────────────────────────────
   const nl = await s.must('the newsletter is drafted from the article', 'send_newsletter', {
     subject: `Nytt på bloggen: fem fallgropar ${s.tag}`, content: `<h2>Fem fallgropar</h2><p>Läs artikeln: <a href="https://example.test/blog/${slug}">här</a>.</p>`,
@@ -231,6 +272,40 @@ async function run(s: Scenario): Promise<void> {
     // (send_bulk_lead_email honours the same revocation; the newsletter does not.)
     s.check('W, whose newsletter consent is revoked, is NOT mailed', !got('w'), 'W is in the delivery ledger');
     s.equal('nobody is in the ledger twice', new Set(ledger.map((d) => d.recipient_email)).size, ledger.length);
+    // With Resend, SMTP and Composio all possible, "sent" alone no longer says what happened:
+    // every accepted delivery names its carrier. Locally no provider is active, so email-send
+    // simulates and the ledger says so — the Newsletter view then reads "simulated — reached nobody".
+    const carriers = await s.sql<{ provider: string | null; n: string }>(
+      'select provider, count(*) as n from newsletter_deliveries where newsletter_id = $1 and status = $2 group by provider', [newsletterId, 'sent']);
+    s.check('every accepted delivery says who carried it (locally: simulated)',
+      carriers.length > 0 && carriers.every((c) => !!c.provider), JSON.stringify(carriers));
+
+    // ── The provider reports back: a hard bounce (since 2026-10-05) ──
+    // Resend posts to email-webhook with the tags the send carried. The event lands
+    // on the delivery row, takes the subscriber out of the list, and the global
+    // suppression (auto_suppress_on_bounce) stops every other mail to the address.
+    const bounceRes = await fetch(`${FN_URL}/email-webhook`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'email.bounced', created_at: new Date().toISOString(),
+        data: { email_id: `re_${s.tag}`, to: [sub('x')], subject: 'x', tags: { source: 'newsletter-send', newsletter_id: newsletterId },
+                bounce: { type: 'hard', subType: 'general', message: 'The recipient address does not exist.' } },
+      }),
+    });
+    s.check('the provider webhook accepts a Resend-shaped hard bounce', bounceRes.ok, `HTTP ${bounceRes.status}`);
+    const bouncedRow = await s.one<{ status: string; bounce_type: string | null; note: string | null }>(
+      'select status, bounce_type, event_note as note from newsletter_deliveries where newsletter_id = $1 and lower(recipient_email) = $2', [newsletterId, sub('x').toLowerCase()]);
+    s.equal("X's delivery is marked bounced (hard) with the provider's reason", `${bouncedRow?.status}/${bouncedRow?.bounce_type}/${bouncedRow?.note}`, 'bounced/hard/The recipient address does not exist.');
+    s.equal('the subscriber is taken out of the list as bounced', (await s.one<{ status: string }>('select status from newsletter_subscribers where lower(email) = $1', [sub('x').toLowerCase()]))?.status, 'bounced');
+    s.equal('…and the address is on the global suppression list', (await s.one<{ n: string }>('select count(*) as n from email_suppressions where email = $1', [sub('x').toLowerCase()]))?.n, 1);
+
+    // The next newsletter never tries the address again — and says so, not "failed".
+    const again = await s.must('another newsletter is drafted', 'send_newsletter', { subject: `Uppföljning ${s.tag}`, content: '<p>Igen</p>' });
+    const againId = s.idOf(again, 'newsletter');
+    await s.skill('execute_newsletter_send', { newsletter_id: againId });
+    const xAgain = await s.one<{ status: string | null }>('select status from newsletter_deliveries where newsletter_id = $1 and lower(recipient_email) = $2', [againId, sub('x').toLowerCase()]);
+    s.check('X is not mailed again: no delivery, or one recorded as suppressed — never sent or failed',
+      xAgain == null || xAgain.status === 'suppressed', `status ${xAgain?.status ?? '(no row)'}`);
     const head = await s.one<{ status: string; sent_count: number }>('select status, sent_count from newsletters where id = $1', [newsletterId]);
     const delivered = ledger.filter((d) => d.status === 'sent').length;
     s.check('the newsletter is sent and sent_count equals the ledger', ['sent', 'partial'].includes(String(head?.status)) && Number(head?.sent_count) === delivered,

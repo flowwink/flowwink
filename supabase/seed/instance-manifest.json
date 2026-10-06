@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261005070000",
-      "migrations_count": 649,
+      "migration_head": "20261005080000",
+      "migrations_count": 650,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2601,11 +2601,15 @@
         {
           "version": "20261005070000",
           "name": "studsen-nar-nyhetsbrevet"
+        },
+        {
+          "version": "20261005080000",
+          "name": "motet-har-en-lank-och-fragorna-stalls-fore"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:b3366073c78a3785cf33e7a00272881b490d044539d95926fb0589aa6c814e2e",
+      "seed_hash": "sha256:21407fb2a94a66814f29b4c513bbe6681c901fc02799fe280a2e3a882cf09ad1",
       "skill_count": 623,
       "module_count": 68
     },
@@ -2615,7 +2619,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:8ef10cf2216d836e55a6b006c884d0068396169c4322bcc1bd4da3c5b98407c2",
+        "agent-execute": "sha256:765790022ae5badd661c471ed38aae7b3aea5bd7fd3138ccced838d9653d3bdd",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",
@@ -2624,7 +2628,7 @@
         "chat-completion": "sha256:14c698663a2a6ad4acfc0b80c57a0088c3356188a0e1ad31082a8085ab6b0e3d",
         "chat-stt": "sha256:b67dd50ab6cad26f061b911a366607620aca8647977b2be8d4331b2ec51c4aa6",
         "check-secrets": "sha256:d13a5f2052df4bdbdc422a362be61b99547245b1b009f47eedc7b5e12e2263e9",
-        "comms-send": "sha256:20dc5402d5de066cd4bec4c2c23e411475f66c7e934bef79340f896715390797",
+        "comms-send": "sha256:191bc321bf1aee282c6cdaa4f83931008b0dded844d305da8a1847ed712b9cc8",
         "composio-proxy": "sha256:0f84780d7016fe3318cb97543be8d56cf08c5fb0b5a3ac9390eadcab474135bd",
         "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:7f891dad970a77c2a72f7c88224f952ce082d8915ec544727a56cdc6b66a61b9",

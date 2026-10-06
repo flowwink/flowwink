@@ -3372,12 +3372,17 @@
                   },
                   "p_notes": {
                     "type": "string"
+                  },
+                  "p_intake": {
+                    "type": "object",
+                    "description": "Answers to the service's intake_fields keyed by field id, e.g. {\"topic\": \"Pension\"}. Required fields missing → intake_required error naming them.",
+                    "additionalProperties": true
                   }
                 }
               }
             }
           },
-          "instructions": "## book_appointment_slot (PREFERRED booking path)\n### Complete workflow\n1. browse_services → let the user pick (or default to the first) — note the service id.\n2. check_availability {date, service_id} → read **free_slots** (ready-to-offer start times on the service-duration grid).\n3. Book: combine the chosen date + free_slot into p_start_time as an ISO timestamp WITH timezone offset (e.g. 2026-07-03T10:00:00+02:00 for Swedish local time).\n### Parameters (exact RPC names — keep the p_ prefix)\n- **p_service_id**: UUID from browse_services. Required.\n- **p_customer_name** + **p_customer_email**: Required. Phone callers without email: ask once; if unavailable, use book_appointment instead (it derives a placeholder from p-phone).\n- **p_start_time**: ISO timestamp with offset. Required. End time is computed from the service duration — never pass an end.\n- **p_customer_phone**, **p_notes**: Optional but pass them when known (phone enables \"find my booking\" later).\n### Error recovery\n- **slot_unavailable** → the slot was taken between check and book: re-run check_availability and offer the nearest free_slots. Do NOT retry the same time.\n- Cancelled bookings free their slot; back-to-back (adjacent) bookings are allowed."
+          "instructions": "## book_appointment_slot (PREFERRED booking path)\n### Complete workflow\n1. browse_services → let the user pick (or default to the first) — note the service id.\n2. check_availability {date, service_id} → read **free_slots** (ready-to-offer start times on the service-duration grid).\n3. Book: combine the chosen date + free_slot into p_start_time as an ISO timestamp WITH timezone offset (e.g. 2026-07-03T10:00:00+02:00 for Swedish local time).\n### Parameters (exact RPC names — keep the p_ prefix)\n- **p_service_id**: UUID from browse_services. Required.\n- **p_customer_name** + **p_customer_email**: Required. Phone callers without email: ask once; if unavailable, use book_appointment instead (it derives a placeholder from p-phone).\n- **p_start_time**: ISO timestamp with offset. Required. End time is computed from the service duration — never pass an end.\n- **p_customer_phone**, **p_notes**: Optional but pass them when known (phone enables \"find my booking\" later).\n### Error recovery\n- **slot_unavailable** → the slot was taken between check and book: re-run check_availability and offer the nearest free_slots. Do NOT retry the same time.\n- Cancelled bookings free their slot; back-to-back (adjacent) bookings are allowed.\n### Video services and intake questions\n- A video service answers with meeting_url (an own WebMeet room /meet/… or the fixed link) — give it to the customer; the confirmation and reminder mails carry it too. Read the service (browse_services) for intake_fields and ask the customer those before booking; send them as p_intake."
         },
         {
           "name": "join_booking_waitlist",
@@ -3543,6 +3548,69 @@
                   },
                   "sort_order": {
                     "type": "integer"
+                  },
+                  "location_type": {
+                    "type": "string",
+                    "enum": [
+                      "in_person",
+                      "video",
+                      "phone"
+                    ],
+                    "description": "Where the service happens. video gives every booking a meeting link."
+                  },
+                  "video_provider": {
+                    "type": "string",
+                    "enum": [
+                      "webmeet",
+                      "url"
+                    ],
+                    "description": "video: webmeet = an own WebMeet room per booking (/meet/…), url = the fixed link in video_url (a Zoom/Teams room)"
+                  },
+                  "video_url": {
+                    "type": "string",
+                    "description": "The fixed meeting link when video_provider is url"
+                  },
+                  "intake_fields": {
+                    "type": "array",
+                    "description": "Questions asked before booking; answers land on the booking (intake_answers) keyed by id",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "snake_case key, e.g. topic"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "text",
+                            "textarea",
+                            "select",
+                            "checkbox",
+                            "email",
+                            "phone",
+                            "number"
+                          ]
+                        },
+                        "required": {
+                          "type": "boolean"
+                        },
+                        "options": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "select: the choices"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ]
+                    }
                   }
                 },
                 "required": [

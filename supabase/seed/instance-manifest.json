@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261007150000",
-      "migrations_count": 655,
+      "migration_head": "20261007172903",
+      "migrations_count": 657,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2625,11 +2625,19 @@
         {
           "version": "20261007150000",
           "name": "checklistan-ar-alltid-punkter"
+        },
+        {
+          "version": "20261007172835",
+          "name": "floden-sager-att-nagon-skrivit"
+        },
+        {
+          "version": "20261007172903",
+          "name": "ordern-som-skapades-tva-ganger"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:47238cc092771398b5be1f2c7375e4ac49a28bc3668b05a2001929c8ffb6024b",
+      "seed_hash": "sha256:4d9a055da0a38e83e335adc0aa0178efa52f937651b4c862822290f54348fd49",
       "skill_count": 628,
       "module_count": 68
     },
@@ -2639,7 +2647,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:400881cd2ac7de0865f3f0b7c62c0c1b9b70b4c38d20ba802c148c0bfc8eea25",
+        "agent-execute": "sha256:4d9e24b11cce339cdbbc32a2ca79a91322042df4293380eb94a975a979f415c1",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",

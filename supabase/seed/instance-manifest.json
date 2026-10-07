@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261007172903",
-      "migrations_count": 657,
+      "migration_head": "20261007180000",
+      "migrations_count": 658,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2633,6 +2633,10 @@
         {
           "version": "20261007172903",
           "name": "ordern-som-skapades-tva-ganger"
+        },
+        {
+          "version": "20261007180000",
+          "name": "agenten-har-en-agare"
         }
       ]
     },
@@ -2647,7 +2651,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:084ec868a978e2227a76e438e9a06bf547e5b2753c0e7ef01083831d0f12c84d",
+        "agent-execute": "sha256:dcdd91ccc130e6b25f82d9a055cabf32aaab463d02094d01b357f81a99d90aaa",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",
@@ -2679,7 +2683,7 @@
         "email-webhook": "sha256:55c393771311c65d2841fc988593923bc5dea9d253f847f875de2638ebecc239",
         "event-dispatcher": "sha256:9eefa58e2b6947f83bacf5c27fc1bc772a4ed0d0f92af47e6c9577a1dd62f4c6",
         "extract-pdf-text": "sha256:9d8ed1a360d9c8fb0ce7e7a391de53aa4764806d7fc4b87597e3ca9eaccc3906",
-        "federation-invite-peer": "sha256:f75a07661700e2c926b972336df93b67f6d4d4180ff9f1d05e3ee26bedf5a4e1",
+        "federation-invite-peer": "sha256:fbbb6d82f05c972d79953d186ceb081430a5d86e6918919a0d69c975f00c0c93",
         "flowpilot-heartbeat": "sha256:2095336465119d06039d6d8e05bfee8cc08ee62eb2693b383ee95f8efbc803b1",
         "flowpilot-lifecycle": "sha256:412427a0ce3c375a65136df3eb0f255b41d6551d1d507f935dbe2c59f806a33e",
         "gatewayapi-ingest": "sha256:ae5a2baedfe97730bbb80a1416e1db30730bee6c1e762a38376143d1b0549713",
@@ -2692,7 +2696,7 @@
         "invite-employee": "sha256:354d9ecbcc20ff402597a0e4c10875807c1a140ace0c5c06505ff8fc9fe13eb5",
         "knowledge-indexer": "sha256:9719ea8dfda56ca4fa126907806adef794ae492f44ab6ba9e97884637cb7ba36",
         "llms-txt": "sha256:0a8a132d383590b810617ff9cdcd4893980208233d0c26b65d6c17a80af4f452",
-        "mcp-server": "sha256:b313f3696582d705944038f408163d33e621dd609f2faeb5478d8377b17fc692",
+        "mcp-server": "sha256:a4f1f3df81d6f2e1980813b97482aad9f2db1993de134ec54902ae5864480b70",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:163d9a8a447050186eb9226430a8edb675b7c918f87ce437a859a483d285e7fe",
         "newsletter": "sha256:9db782ef4aa13044ffbe91d385ba05c5b512763bd3462a8b7788bf77dfab9d7f",

@@ -21191,7 +21191,7 @@
                   },
                   "checklist": {
                     "type": "array",
-                    "description": "The pieces of done: [{id, text, done}]. Send the whole list back when ticking an item.",
+                    "description": "The pieces of done: [{id, text, done}]. Send the whole list back when ticking an item, with each item's id. A plain string is stored as an unticked item (\"[x] text\" as a ticked one), and a string matching an existing item's text keeps that item's id and tick.",
                     "items": {
                       "type": "object",
                       "properties": {

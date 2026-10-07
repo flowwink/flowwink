@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261005110000",
-      "migrations_count": 653,
+      "migration_head": "20261007150000",
+      "migrations_count": 654,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2617,11 +2617,15 @@
         {
           "version": "20261005110000",
           "name": "utlagget-talar-valuta-och-vet-sin-inkopsorder"
+        },
+        {
+          "version": "20261007150000",
+          "name": "checklistan-ar-alltid-punkter"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:d1a42396363f7d4deeb1609b449c5fd54b665ce84ff9e238c4067cd2e68a2765",
+      "seed_hash": "sha256:a99e0fb4df9ca98f8580756c7c21fb457a8a7ee1c73551647fcc94acde9b6e29",
       "skill_count": 627,
       "module_count": 68
     },
@@ -2631,7 +2635,7 @@
       "functions": {
         "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
         "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:ea3b5a25c0d06f4cab8476acbeb3bf9f71ee2be6c4de8f5d99993e4ec5a29418",
+        "agent-execute": "sha256:e3561de8bad64502bb0d66ea9dba39c80f8e2eb9c6d459c322cfab6e006d5171",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",

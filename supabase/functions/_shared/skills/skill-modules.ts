@@ -410,6 +410,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "mark_voice_callback_done": "voice",
   "mark_webinar_attendance": "webinars",
   "match_consultant": "consultants",
+  "match_expense_to_po": "expenses",
   "match_internal_candidates": "recruitment",
   "match_invoice_to_receipt": "purchasing",
   "match_po_to_invoice": "purchasing",

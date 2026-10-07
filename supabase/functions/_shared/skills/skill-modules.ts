@@ -306,6 +306,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "manage_employee_skill": "hr",
   "manage_employment_contract_template": "hr",
   "manage_equipment": "maintenance",
+  "manage_expense_advance": "expenses",
   "manage_expense_policy": "expenses",
   "manage_expenses": "expenses",
   "manage_flowtable_base": "flowtable",

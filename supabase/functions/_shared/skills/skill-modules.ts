@@ -285,6 +285,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "manage_chart_of_accounts": "accounting",
   "manage_company": "companies",
   "manage_company_contacts": "companies",
+  "manage_compensation_revision": "hr",
   "manage_consent": "leads",
   "manage_consultant_assignment": "consultants",
   "manage_consultant_profile": "consultants",

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261008120000",
-      "migrations_count": 660,
+      "migration_head": "20261008130000",
+      "migrations_count": 661,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2645,6 +2645,10 @@
         {
           "version": "20261008120000",
           "name": "nyckeln-ligger-aldrig-i-klartext"
+        },
+        {
+          "version": "20261008130000",
+          "name": "wikin-sager-vilken-agent"
         }
       ]
     },
@@ -2655,9 +2659,9 @@
     },
     "edge_functions": {
       "count": 76,
-      "shared_hash": "sha256:217ab64653425287ae202ee74ad36b0e5eec8d1525046182c4f007650731f135",
+      "shared_hash": "sha256:2ae39bae8b1bff60b5ede4080e169cd71c9677f12c9c2a65867fd1bba8db2ca7",
       "functions": {
-        "agent-execute": "sha256:c2897645695e44cecbc5b9f96aee30c0080a7027b78bc37b538a6f50afab74c2",
+        "agent-execute": "sha256:3aa2304b7351da89fcc5a7821f829c197426f2b48a9c27bbc053de332e0dffb9",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",
@@ -2702,7 +2706,7 @@
         "invite-employee": "sha256:354d9ecbcc20ff402597a0e4c10875807c1a140ace0c5c06505ff8fc9fe13eb5",
         "knowledge-indexer": "sha256:9719ea8dfda56ca4fa126907806adef794ae492f44ab6ba9e97884637cb7ba36",
         "llms-txt": "sha256:0a8a132d383590b810617ff9cdcd4893980208233d0c26b65d6c17a80af4f452",
-        "mcp-server": "sha256:95c55042985d3a57c5c7ac7a247415cd9e39c00895f24d47da3c2cec82d996c9",
+        "mcp-server": "sha256:ed9c44019af327cb594fffd6de1628282b5c7503af2a016a3593024ab4bcde53",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:163d9a8a447050186eb9226430a8edb675b7c918f87ce437a859a483d285e7fe",
         "newsletter": "sha256:9db782ef4aa13044ffbe91d385ba05c5b512763bd3462a8b7788bf77dfab9d7f",

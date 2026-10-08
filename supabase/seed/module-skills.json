@@ -6026,7 +6026,7 @@
       "skills": [
         {
           "name": "get_customer_360",
-          "description": "Fetch the unified Customer 360 view for a customer — who they are (party master data: legal entity, addresses, terms, tax treatment, receivable balance) plus everything that has happened: deals, orders, invoices, quotes, tickets, bookings, subscriptions, chats, webinars, tasks, a merged timeline and lifetime-value KPIs. Look up by partner (preferred — it spans documents a lead never touched, such as a card payment from a guest), or by lead_id or email. Use when: an agent needs full context about a customer before answering a question, building a follow-up, or routing a ticket. NOT for: editing data — this is read-only.",
+          "description": "Fetch the unified Customer 360 view for a customer — who they are (party master data: legal entity, addresses, terms, tax treatment, receivable balance) plus everything that has happened: deals, orders, invoices, quotes, tickets, bookings, subscriptions, chats, webinars, tasks, a merged timeline and lifetime-value KPIs. Look up by partner (preferred — it spans documents a lead never touched, such as a card payment from a guest), or by lead_id or email. Use when: an agent needs full context about a customer before answering a question, building a follow-up, or routing a ticket. NOT for: editing data — this is read-only. Requires one of: partner, lead_id or email.",
           "category": "crm",
           "handler": "internal:get_customer_360",
           "scope": "internal",
@@ -6646,7 +6646,7 @@
         },
         {
           "name": "upload_document",
-          "description": "Upload a file to the workspace knowledge base. Stores a permanent, searchable document with extracted markdown so future workspace-chat queries can cite it. Use when: the agent has produced or received a file (PDF/text/markdown/notes/report) that should be archived and made searchable for humans and future agent sessions. NOT for: temporary scratch text used only inside the current conversation (use chat memory instead) or for binary blobs you want to share without making them searchable.",
+          "description": "Upload a file to the workspace knowledge base. Stores a permanent, searchable document with extracted markdown so future workspace-chat queries can cite it. Use when: the agent has produced or received a file (PDF/text/markdown/notes/report) that should be archived and made searchable for humans and future agent sessions. NOT for: temporary scratch text used only inside the current conversation (use chat memory instead) or for binary blobs you want to share without making them searchable. Requires title and exactly one of content_text or content_base64 (binary needs mime_type).",
           "category": "content",
           "handler": "internal:upload_document",
           "scope": "internal",
@@ -7408,7 +7408,7 @@
         },
         {
           "name": "manage_discount_code",
-          "description": "Manage checkout discount codes: list, get, create, update, deactivate. Codes give a percent or fixed-amount discount at checkout, with optional validity window, usage limit and minimum order. Use when: setting up a promotion or campaign code; deactivating an expired code; checking how often a code was used. NOT for: product pricing (manage_product); per-line quote/invoice discounts; loyalty programs.",
+          "description": "Manage checkout discount codes: list, get, create, update, deactivate. Codes give a percent or fixed-amount discount at checkout, with optional validity window, usage limit and minimum order. Use when: setting up a promotion or campaign code; deactivating an expired code; checking how often a code was used. NOT for: product pricing (manage_product); per-line quote/invoice discounts; loyalty programs. get requires p_code_id or p_code.",
           "category": "commerce",
           "handler": "rpc:manage_discount_code",
           "scope": "internal",
@@ -9340,7 +9340,7 @@
         },
         {
           "name": "manage_service_sla",
-          "description": "Set and track SLA targets (response/resolution deadlines) on service orders. Use when: an order must be answered or resolved within N hours; reviewing SLA breaches. NOT for: support-ticket SLAs (sla module), scheduling (manage_service_order).",
+          "description": "Set and track SLA targets (response/resolution deadlines) on service orders. Use when: an order must be answered or resolved within N hours; reviewing SLA breaches. NOT for: support-ticket SLAs (sla module), scheduling (manage_service_order). set requires p_order_id and p_response_hours and/or p_resolution_hours.",
           "category": "system",
           "handler": "rpc:manage_service_sla",
           "scope": "internal",
@@ -10564,7 +10564,7 @@
         },
         {
           "name": "list_flowtable_tables",
-          "description": "Discover the tables + field schema inside a Flowtable base (Airtable-style). Use when: an agent found a base (list_flowtable_bases) and needs to know which tables it holds + their field keys before querying. Returns each table with its record_count and fields [{key,name,type}]. The missing link between list_flowtable_bases and query_flowtable when table names are unknown.",
+          "description": "Discover the tables + field schema inside a Flowtable base (Airtable-style). Use when: an agent found a base (list_flowtable_bases) and needs to know which tables it holds + their field keys before querying. Returns each table with its record_count and fields [{key,name,type}]. The missing link between list_flowtable_bases and query_flowtable when table names are unknown. Requires one of: base_id or base_slug.",
           "category": "crm",
           "handler": "rpc:list_flowtable_tables",
           "scope": "internal",
@@ -10966,7 +10966,7 @@
         },
         {
           "name": "test_form_delivery",
-          "description": "Dry-run a website form: report every rail a submission would take (storage, CRM lead, form.submitted webhooks and automations, notification email, job application) against the live configuration — WITHOUT creating a submission or a lead. mode \"send_test\" additionally sends one clearly marked test email to the notify address and probes each webhook URL. Use when: a form was just built or changed; an operator asks \"will submissions reach us?\"; before launch; a notification is missing. NOT for: reading submissions (manage_form_submissions); listing forms (manage_form); sending real email (send_email).",
+          "description": "Dry-run a website form: report every rail a submission would take (storage, CRM lead, form.submitted webhooks and automations, notification email, job application) against the live configuration — WITHOUT creating a submission or a lead. mode \"send_test\" additionally sends one clearly marked test email to the notify address and probes each webhook URL. Use when: a form was just built or changed; an operator asks \"will submissions reach us?\"; before launch; a notification is missing. NOT for: reading submissions (manage_form_submissions); listing forms (manage_form); sending real email (send_email). Requires one of: block_id or page_slug.",
           "category": "crm",
           "handler": "module:forms",
           "scope": "internal",
@@ -13357,7 +13357,7 @@
         },
         {
           "name": "invoice_from_timesheets",
-          "description": "Generate invoice draft from billable time entries. Use when: user wants to invoice a client for logged hours, \"fakturera timmar\", \"invoice project X for last month\". NOT for: manual invoices (use manage_invoice), logging time (use log_time).",
+          "description": "Generate invoice draft from billable time entries. Use when: user wants to invoice a client for logged hours, \"fakturera timmar\", \"invoice project X for last month\". NOT for: manual invoices (use manage_invoice), logging time (use log_time). Requires one of: project_id or project_name.",
           "category": "commerce",
           "handler": "internal:invoice_from_timesheets",
           "scope": "internal",
@@ -13405,9 +13405,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "project_id"
-                ]
+                "required": []
               }
             }
           },
@@ -14055,7 +14053,7 @@
         },
         {
           "name": "enrich_company",
-          "description": "Scrape a company website to enrich its record with website, phone, and description. Use when: needing more details about a prospect; automatically populating company data. NOT for: researching individual prospects (prospect_research); basic company CRUD (manage_company).",
+          "description": "Scrape a company website to enrich its record with website, phone, and description. Use when: needing more details about a prospect; automatically populating company data. NOT for: researching individual prospects (prospect_research); basic company CRUD (manage_company). Requires one of: companyId or domain.",
           "category": "crm",
           "handler": "internal:enrich_company",
           "scope": "internal",
@@ -14861,7 +14859,7 @@
         },
         {
           "name": "predict_lead_score",
-          "description": "Predictive lead scoring: estimate a lead's win probability from historical closed outcomes (won vs lost) using attribute likelihoods — source, email domain type, phone/company presence, engagement level. Use when: prioritizing which leads to work, qualifying pipeline quality, updating scores from evidence rather than activity points. NOT for: activity-point scoring (qualify_lead) or enriching company data (enrich_company).",
+          "description": "Predictive lead scoring: estimate a lead's win probability from historical closed outcomes (won vs lost) using attribute likelihoods — source, email domain type, phone/company presence, engagement level. Use when: prioritizing which leads to work, qualifying pipeline quality, updating scores from evidence rather than activity points. NOT for: activity-point scoring (qualify_lead) or enriching company data (enrich_company). Requires one of: p_lead_id or p_email.",
           "category": "crm",
           "handler": "rpc:predict_lead_score",
           "scope": "internal",
@@ -14981,7 +14979,7 @@
         },
         {
           "name": "support_assign_conversation",
-          "description": "Assign or reassign a support conversation to an agent. Use when: a customer query needs agent attention; re-routing a conversation to a specialist; ensuring no support ticket is unassigned. NOT for: listing conversations (support_list_conversations); getting feedback (support_get_feedback).",
+          "description": "Assign or reassign a support conversation to an agent. Use when: a customer query needs agent attention; re-routing a conversation to a specialist; ensuring no support ticket is unassigned. NOT for: listing conversations (support_list_conversations); getting feedback (support_get_feedback). Requires conversation_id plus agent_id, status, or both.",
           "category": "communication",
           "handler": "rpc:support_assign_conversation",
           "scope": "internal",
@@ -19787,7 +19785,7 @@
         },
         {
           "name": "update_skill_instructions",
-          "description": "Apply a reviewed improvement to one skill's instructions (and optionally description) in the live skill catalog. Use when: a Skill Curator proposal was approved, an admin asks to fix a skill's guidance after repeated agent mistakes. NOT for: creating skills, changing handlers/parameters (code change), disabling skills (manage via admin UI).",
+          "description": "Apply a reviewed improvement to one skill's instructions (and optionally description) in the live skill catalog. Use when: a Skill Curator proposal was approved, an admin asks to fix a skill's guidance after repeated agent mistakes. NOT for: creating skills, changing handlers/parameters (code change), disabling skills (manage via admin UI). Requires skill_name plus instructions and/or description.",
           "category": "system",
           "handler": "internal:update_skill_instructions",
           "scope": "internal",
@@ -24911,7 +24909,7 @@
         },
         {
           "name": "prospect_fit_analysis",
-          "description": "Collect company data, related leads, and deals to evaluate prospect fit. Returns raw data for FlowPilot to analyze. Use when: evaluating a new prospect; scoring company fit before outreach; comparing prospects against ICP criteria. NOT for: researching a company (prospect_research); enriching company data (enrich_company).",
+          "description": "Collect company data, related leads, and deals to evaluate prospect fit. Returns raw data for FlowPilot to analyze. Use when: evaluating a new prospect; scoring company fit before outreach; comparing prospects against ICP criteria. NOT for: researching a company (prospect_research); enriching company data (enrich_company). Requires one of: company_id or company_name.",
           "category": "crm",
           "handler": "internal:prospect_fit_analysis",
           "scope": "internal",
@@ -25482,7 +25480,7 @@
         },
         {
           "name": "create_return_label",
-          "description": "Generate a return shipping label: creates a return-kind shipment linked to the original with a RET- tracking number and a label payload (customer address → merchant). Use when: an RMA/return needs a way back. NOT for: refunds (refund_return) or outbound parcels (manage_shipment).",
+          "description": "Generate a return shipping label: creates a return-kind shipment linked to the original with a RET- tracking number and a label payload (customer address → merchant). Use when: an RMA/return needs a way back. NOT for: refunds (refund_return) or outbound parcels (manage_shipment). Requires one of: p_shipment_id or p_order_id.",
           "category": "commerce",
           "handler": "rpc:create_return_label",
           "scope": "internal",
@@ -26007,7 +26005,7 @@
         },
         {
           "name": "manage_sla_tier",
-          "description": "Per-customer SLA tiers: define tiers with a threshold multiplier (0.5 = twice as fast for premium customers) and assign them to companies or customer emails. Use when: a customer has contractual SLAs different from the default. NOT for: policy thresholds themselves (manage_sla_policy).",
+          "description": "Per-customer SLA tiers: define tiers with a threshold multiplier (0.5 = twice as fast for premium customers) and assign them to companies or customer emails. Use when: a customer has contractual SLAs different from the default. NOT for: policy thresholds themselves (manage_sla_policy). assign requires p_tier_id and one of p_company_id or p_customer_email.",
           "category": "system",
           "handler": "rpc:manage_sla_tier",
           "scope": "internal",
@@ -26153,7 +26151,7 @@
         },
         {
           "name": "manage_service_credit",
-          "description": "Service-credit accounting for SLA breaches: accrue a credit (manually or via escalation), then apply it to the customer or waive it. Use when: contract promises compensation for missed SLAs. NOT for: refunds on returns (refund_return) or invoice credit notes.",
+          "description": "Service-credit accounting for SLA breaches: accrue a credit (manually or via escalation), then apply it to the customer or waive it. Use when: contract promises compensation for missed SLAs. NOT for: refunds on returns (refund_return) or invoice credit notes. accrue requires p_amount_cents and one of p_violation_id, p_company_id or p_customer_email.",
           "category": "system",
           "handler": "rpc:manage_service_credit",
           "scope": "internal",
@@ -26968,7 +26966,7 @@
         },
         {
           "name": "change_subscription",
-          "description": "Change quantity or unit price on a manual (invoice-billed) subscription with PRORATION: mid-period upgrades create a prorated adjustment invoice; downgrades record a credit (applied next cycle). Use when: customer adds/removes seats, plan price changes mid-period. NOT for: card subscriptions (change at the provider), cancellation (cancel_manual_subscription).",
+          "description": "Change quantity or unit price on a manual (invoice-billed) subscription with PRORATION: mid-period upgrades create a prorated adjustment invoice; downgrades record a credit (applied next cycle). Use when: customer adds/removes seats, plan price changes mid-period. NOT for: card subscriptions (change at the provider), cancellation (cancel_manual_subscription). Requires p_subscription_id plus p_new_quantity and/or p_new_unit_amount_cents.",
           "category": "commerce",
           "handler": "rpc:change_subscription",
           "scope": "internal",
@@ -28282,7 +28280,7 @@
         },
         {
           "name": "log_indirect_time",
-          "description": "Log indirect (non-project) time: PTO, sick, training or overhead hours. Books to the auto-created \"Internal (non-billable)\" project with the right category. Use when: \"Anna was sick Tuesday\", \"log 8h training for me\". NOT for: billable project work (log_time) or formal leave requests (leave/HR module).",
+          "description": "Log indirect (non-project) time: PTO, sick, training or overhead hours. Books to the auto-created \"Internal (non-billable)\" project with the right category. Use when: \"Anna was sick Tuesday\", \"log 8h training for me\". NOT for: billable project work (log_time) or formal leave requests (leave/HR module). Requires hours and category; called without a signed-in user (MCP/automation), also user_id or employee_id.",
           "category": "commerce",
           "handler": "rpc:log_indirect_time",
           "scope": "internal",

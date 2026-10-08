@@ -6246,8 +6246,10 @@ async function executeDealsAction(
   if (skillName === 'deal_stale_check') {
     // The skill declares stale_days and stage_filter; the handler read
     // `days_threshold`, so a caller's threshold was ignored and 14 always won
-    // (found by the declared-vs-read guard, 2026-10-03).
-    const { stale_days = 14, stage_filter } = args as any;
+    // (found by the declared-vs-read guard, 2026-10-03). days_threshold stays
+    // an alias: the Deals page and older callers still send it.
+    const { stale_days: staleArg, days_threshold, stage_filter } = args as any;
+    const stale_days = Number(staleArg ?? days_threshold ?? 14);
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - Number(stale_days));
 
@@ -6287,7 +6289,9 @@ async function executeDealsAction(
 
     const total_value = stale.reduce((sum, d) => sum + d.value_cents, 0);
     return {
-      threshold_days: days_threshold,
+      // This line still read the renamed variable after #620 — a ReferenceError
+      // on every call, which took the whole Deals page down (optic 2026-10-07).
+      threshold_days: stale_days,
       stale_count: stale.length,
       total_value_at_risk_cents: total_value,
       deals: stale,
@@ -9726,6 +9730,7 @@ const PURCHASE_ORDER_PARAMETERS: Record<string, { type: string; description?: st
   source_id: { type: 'string', description: 'The manufacturing order (or reorder rule) behind the PO' },
   lines: { type: 'array' },
   limit: { type: 'number' },
+  idempotency_key: { type: 'string', description: 'create: a key of your choosing for this order; the same key again returns the order already created instead of a duplicate (safe retries)' },
 };
 
 /** Agent-internal keys (trace_id, _approved_operation_id, …) are skipped by
@@ -9753,6 +9758,13 @@ async function executeDbAction(
   args: Record<string, unknown>,
   auditCtx?: AuditContext,
 ): Promise<unknown> {
+  // The vendor and purchase-order branches below fire send-webhook and
+  // composio-proxy with these two. They were never declared in this scope, so
+  // each call threw a ReferenceError inside its fire-and-forget try/catch —
+  // the vendor/PO webhooks and the PO e-mail to the vendor had been silently
+  // skipped since 2026-04 (found by `deno check`, 2026-10-07).
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   // Defensive normalize — guarantees `data:{}` is always unwrapped
   args = normalizeSkillArgs(args as Record<string, unknown>);
   switch (table) {
@@ -11975,7 +11987,7 @@ async function executeDbAction(
       if (action === 'list') {
         const { user_id, status, period } = args as any;
         let query = supabase.from('expenses')
-          .select('id, expense_date, description, amount_cents, vat_cents, currency, category, vendor, account_code, is_representation, attendees, receipt_url, receipt_analyzed, receipt_data, status, report_id, created_at')
+          .select('id, expense_date, description, amount_cents, vat_cents, currency, exchange_rate, base_currency, base_amount_cents, base_vat_cents, fx_rate_source, category, vendor, account_code, is_representation, attendees, receipt_url, receipt_analyzed, receipt_data, status, report_id, purchase_order_id, po_match_status, po_variance_cents, created_at')
           .order('expense_date', { ascending: false });
         if (user_id) query = query.eq('user_id', user_id);
         if (status) query = query.eq('status', status);
@@ -12002,6 +12014,7 @@ async function executeDbAction(
 
       if (action === 'create') {
         let { user_id, expense_date, description: desc, amount_cents, vat_cents, currency, category, vendor, account_code, is_representation, attendees, receipt_url, receipt_data } = args as any;
+        const { exchange_rate, purchase_order_id } = args as { exchange_rate?: number | string | null; purchase_order_id?: string | null };
         // An expense is a claim for money owed to a PERSON. The old fallback
         // picked "the first admin row in user_roles" when no user_id was given,
         // so every agent-created expense was booked on — and reimbursable to —
@@ -12031,11 +12044,17 @@ async function executeDbAction(
             receipt_url: receipt_url || null,
             receipt_analyzed: !!receipt_data,
             receipt_data: receipt_data || null,
+            // FX: a caller-given rate is the manual override the trigger honours; otherwise the
+            // trigger looks the rate up on expense_date (20261005110000). The PO link is
+            // evaluated by the same trigger; match_expense_to_po is the door that also refuses.
+            ...(exchange_rate !== undefined && exchange_rate !== null ? { exchange_rate: Number(exchange_rate) } : {}),
+            ...(purchase_order_id ? { purchase_order_id } : {}),
           })
-          .select('id')
+          .select('id, currency, exchange_rate, base_currency, base_amount_cents, base_vat_cents, fx_rate_source, po_match_status')
           .single();
         if (error) throw new Error(`Create expense failed: ${error.message}`);
-        return { created: true, expense_id: data.id };
+        return { created: true, expense_id: data.id, currency: data.currency, exchange_rate: data.exchange_rate, base_currency: data.base_currency,
+                 base_amount_cents: data.base_amount_cents, base_vat_cents: data.base_vat_cents, fx_rate_source: data.fx_rate_source, po_match_status: data.po_match_status };
       }
 
       if (action === 'update') {
@@ -12302,6 +12321,35 @@ async function executeDbAction(
         const { vendor_id, order_date, expected_delivery, notes, currency, exchange_rate, lines: poLines, source_type, source_id } = args as any;
         if (!vendor_id || !poLines?.length) throw new Error('vendor_id and lines are required');
 
+        // Idempotency (2026-10-07): the battery's second pass found a vendor with four orders
+        // for three creates — the first call wrote header and lines, the edge runtime shed
+        // the response, and the caller's retry created the order again. A caller that sends
+        // a key (idempotency_key, or the transport _idempotency_key the harness stamps on every
+        // call) gets the order already created for that key, never a second one.
+        const idemArgs = args as { idempotency_key?: unknown; _idempotency_key?: unknown };
+        const idemKey = typeof idemArgs.idempotency_key === 'string' && idemArgs.idempotency_key
+          ? idemArgs.idempotency_key
+          : (typeof idemArgs._idempotency_key === 'string' && idemArgs._idempotency_key ? idemArgs._idempotency_key : null);
+        const replayExisting = async () => {
+          if (!idemKey) return null;
+          const { data: prior, error: priorErr } = await supabase.from('purchase_orders')
+            .select('id, po_number, status, total_cents, currency, exchange_rate')
+            .eq('idempotency_key', idemKey).maybeSingle();
+          if (priorErr) throw new Error(`Idempotency lookup failed: ${priorErr.message}`);
+          if (!prior) return null;
+          const { count, error: countErr } = await supabase.from('purchase_order_lines').select('*', { count: 'exact', head: true }).eq('purchase_order_id', prior.id);
+          if (countErr) throw new Error(`Idempotency lookup failed: ${countErr.message}`);
+          const priorRate = Number(prior.exchange_rate ?? 1);
+          return {
+            purchase_order_id: prior.id, po_number: prior.po_number, status: prior.status,
+            total_cents: prior.total_cents, lines_count: count ?? 0, currency: prior.currency,
+            exchange_rate: priorRate, total_accounting_cents: Math.round(Number(prior.total_cents) * priorRate),
+            replayed: true, idempotency_key: idemKey,
+          };
+        };
+        const replayed = await replayExisting();
+        if (replayed) return replayed;
+
         let subtotalCents = 0;
         let taxCents = 0;
         for (const line of poLines) {
@@ -12314,39 +12362,8 @@ async function executeDbAction(
           taxCents += lineTax;
         }
 
-        const poInsert: Record<string, unknown> = {
-          vendor_id,
-          order_date: order_date || new Date().toISOString().split('T')[0],
-          expected_delivery: expected_delivery || null,
-          notes: notes || null,
-          subtotal_cents: subtotalCents,
-          tax_cents: taxCents,
-          total_cents: subtotalCents + taxCents,
-          status: 'draft',
-        };
-        // What raised the order — trigger_procurement_for_mo asks for it so a
-        // second run sees the PO already covering the shortage.
-        if (source_type) poInsert.source_type = String(source_type);
-        if (source_id) poInsert.source_id = String(source_id);
-        // Omit rather than guess: with no currency given, the DB trigger takes
-        // the vendor's own currency (Odoo's property_purchase_currency_id rule)
-        // and stamps the rate for the order date. A client-side `|| 'SEK'` here
-        // is the exact fallback class platform-fallbacks.ts forbids.
-        if (currency) poInsert.currency = String(currency).toUpperCase();
-        if (exchange_rate !== undefined && exchange_rate !== null) poInsert.exchange_rate = Number(exchange_rate);
-
-        const { data: po, error: poError } = await supabase.from('purchase_orders')
-          .insert(poInsert)
-          .select('id, po_number, status, total_cents, currency, exchange_rate').single();
-        if (poError) throw new Error(`Create PO failed: ${poError.message}`);
-
-        // A line with no price must trigger a LOOKUP, not a zero. `|| 0` made
-        // "nobody said a price" indistinguishable from "the price is nothing",
-        // and a purchase order at 0,00 receives goods that enter stock at zero
-        // cost — the same silent-cost class as the dropped currency, and it sits
-        // three lines below a comment about omitting rather than guessing.
-        // Order: the vendor's own price for this quantity (tier included), then
-        // the product's cost, then REFUSE. Never zero.
+        // Prices are resolved BEFORE the header is written: a missing price must leave no
+        // orphan draft behind (it did — PO-00011 on the 2026-10-07 second pass).
         for (const l of poLines as any[]) {
           if (l.unit_price_cents !== undefined && l.unit_price_cents !== null) continue;
           if (!l.product_id) {
@@ -12370,6 +12387,47 @@ async function executeDbAction(
           );
         }
 
+        const poInsert: Record<string, unknown> = {
+          vendor_id,
+          order_date: order_date || new Date().toISOString().split('T')[0],
+          expected_delivery: expected_delivery || null,
+          notes: notes || null,
+          subtotal_cents: subtotalCents,
+          tax_cents: taxCents,
+          total_cents: subtotalCents + taxCents,
+          status: 'draft',
+        };
+        // What raised the order — trigger_procurement_for_mo asks for it so a
+        // second run sees the PO already covering the shortage.
+        if (source_type) poInsert.source_type = String(source_type);
+        if (source_id) poInsert.source_id = String(source_id);
+        // Omit rather than guess: with no currency given, the DB trigger takes
+        // the vendor's own currency (Odoo's property_purchase_currency_id rule)
+        // and stamps the rate for the order date. A client-side `|| 'SEK'` here
+        // is the exact fallback class platform-fallbacks.ts forbids.
+        if (currency) poInsert.currency = String(currency).toUpperCase();
+        if (exchange_rate !== undefined && exchange_rate !== null) poInsert.exchange_rate = Number(exchange_rate);
+        if (idemKey) poInsert.idempotency_key = idemKey;
+
+        const { data: po, error: poError } = await supabase.from('purchase_orders')
+          .insert(poInsert)
+          .select('id, po_number, status, total_cents, currency, exchange_rate').single();
+        if (poError) {
+          // Two retries racing on the same key: the loser reads what the winner wrote.
+          if (poError.code === '23505' && idemKey) {
+            const raced = await replayExisting();
+            if (raced) return raced;
+          }
+          throw new Error(`Create PO failed: ${poError.message}`);
+        }
+
+        // A line with no price must trigger a LOOKUP, not a zero. `|| 0` made
+        // "nobody said a price" indistinguishable from "the price is nothing",
+        // and a purchase order at 0,00 receives goods that enter stock at zero
+        // cost — the same silent-cost class as the dropped currency, and it sits
+        // three lines below a comment about omitting rather than guessing.
+        // Order: the vendor's own price for this quantity (tier included), then
+        // the product's cost, then REFUSE. Never zero.
         const lineInserts = poLines.map((l: any, i: number) => ({
           purchase_order_id: po.id,
           product_id: l.product_id || null,

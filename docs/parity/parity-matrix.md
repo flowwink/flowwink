@@ -9,7 +9,7 @@ category: reference
 > **GENERATED FILE.** Run `bun run scripts/parity-report.ts` to refresh.
 > Edit `docs/parity/capabilities/<module>.json` to change scores.
 
-**Benchmarked modules:** 58  ·  **Mean parity:** 91%  ·  **Differentiators (no Odoo benchmark):** 11  ·  **Unscored:** 1
+**Benchmarked modules:** 58  ·  **Mean parity:** 92%  ·  **Differentiators (no Odoo benchmark):** 11  ·  **Unscored:** 1
 
 ## Scored modules
 
@@ -21,7 +21,6 @@ category: reference
 | **webmeet** | Discuss (video call channel) / Appointments video link | L2 → L3 | `██████░░░░` 64% | 5/1/3 | — |
 | **flowtable** | Studio (custom app builder) / Spreadsheet Dashboard | L1 → L2 | `███████░░░` 71% | 6/0/3 | — |
 | **manufacturing** | Manufacturing (mrp.production) | L2 → L4 | `████████░░` 80% | 15/0/4 | — |
-| **expenses** | Expenses (hr.expense) | L4 → L4 | `████████░░` 82% | 12/0/3 | — |
 | **newsletter** | Email Marketing (mailing.mailing) | L4 → L4 | `████████░░` 82% | 7/0/2 | — |
 | **analytics** | Website analytics / Dashboards | L3 → L4 | `████████░░` 83% | 4/0/1 | — |
 | **invoicing** | Invoicing (account.move) | L4 → L4 | `████████░░` 83% | 11/0/3 | — |
@@ -57,9 +56,10 @@ category: reference
 | **docs** | Knowledge (documentation) | L4 → L4 | `██████████` 100% | 5/0/0 | — |
 | **documents** | Documents (documents.document) | L3 → L4 | `██████████` 100% | 6/0/0 | — |
 | **email** | Mail / Discuss (outbound email) | L3 → L4 | `██████████` 100% | 8/0/0 | — |
+| **expenses** | Expenses (hr.expense) | L4 → L4 | `██████████` 100% | 15/0/0 | — |
 | **forms** | Website forms | L4 → L4 | `██████████` 100% | 7/0/0 | — |
 | **global-blocks** | Website building blocks/snippets | L3 → L4 | `██████████` 100% | 4/0/0 | — |
-| **hr** | Employees + Time Off + Attendances + Appraisals (hr.employee) | L3 → L4 | `██████████` 100% | 20/0/0 | — |
+| **hr** | Employees + Time Off + Attendances + Appraisals (hr.employee) | L3 → L4 | `██████████` 100% | 21/0/0 | — |
 | **kb** | Knowledge / Helpdesk KB | L3 → L4 | `██████████` 100% | 6/0/0 | — |
 | **media** | Website media library | L4 → L4 | `██████████` 100% | 6/0/0 | — |
 | **multi-currency** | Accounting multi-currency | L4 → L4 | `██████████` 100% | 10/0/0 | — |

@@ -40,7 +40,7 @@ type ExpensesOutput = z.infer<typeof expensesOutputSchema>;
 const EXPENSE_SKILLS: SkillSeed[] = [
   {
     name: 'manage_expenses',
-    description: 'Full lifecycle management for employee expenses: create individual expenses (with optional receipt data), submit monthly reports, approve/reject reports, and book approved reports as journal entries. Use when: employee adds an expense, FlowPilot processes monthly expense reports, admin approves/rejects expenses. NOT for: receipt image analysis (use analyze_receipt), journal entries not related to expenses (use manage_journal_entry).',
+    description: 'Full lifecycle management for employee expenses: create individual expenses (with optional receipt data, in any currency — converted to the base currency at the receipt date\'s rate), submit monthly reports, approve/reject reports, and book approved reports as journal entries. Use when: employee adds an expense, FlowPilot processes monthly expense reports, admin approves/rejects expenses. NOT for: receipt image analysis (use analyze_receipt), tying an expense to a purchase order (match_expense_to_po), journal entries not related to expenses (use manage_journal_entry).',
     category: 'commerce',
     handler: 'db:expenses',
     scope: 'internal',
@@ -61,7 +61,9 @@ const EXPENSE_SKILLS: SkillSeed[] = [
             description: { type: 'string' },
             amount_cents: { type: 'number' },
             vat_cents: { type: 'number' },
-            currency: { type: 'string' },
+            currency: { type: 'string', description: 'ISO code of the receipt (EUR, USD…). A foreign receipt is converted to the base currency at exchange_rates on expense_date; base_amount_cents / base_vat_cents / fx_rate_source come back on the row. No rate → fx_rate_source "missing" and the report cannot be booked until one exists (set_exchange_rate) or exchange_rate is given here' },
+            exchange_rate: { type: 'number', description: 'Manual rate (base-currency units per 1 unit of currency), e.g. 11.2 for EUR→SEK. Overrides the rate table for this receipt' },
+            purchase_order_id: { type: 'string', format: 'uuid', description: 'The purchase order this expense pays for — prefer match_expense_to_po, which checks what remains on the order' },
             category: { type: 'string', enum: ['travel', 'meals', 'office', 'software', 'representation', 'other'] },
             vendor: { type: 'string' },
             account_code: { type: 'string' },
@@ -76,7 +78,7 @@ const EXPENSE_SKILLS: SkillSeed[] = [
         },
       },
     },
-    instructions: 'Monthly workflow: 1) Employees create expenses throughout the month. 2) At month-end FlowPilot calls submit_report to bundle them. 3) Admin approves via approve_report. 4) FlowPilot calls book_report to create the journal entry autonomously. For representation: always require attendees with name and company. Account codes (BAS 2024): 5800 for travel, 5810 accommodation, 6110 office supplies, 6071 for deductible representation (6072 non-deductible), 6540 software; or let FlowPilot match from chart_of_accounts.',
+    instructions: 'Monthly workflow: 1) Employees create expenses throughout the month. 2) At month-end FlowPilot calls submit_report to bundle them. 3) Admin approves via approve_report. 4) FlowPilot calls book_report to create the journal entry autonomously. Currency: amount_cents/vat_cents are in the receipt\'s currency; the ledger, the report total, the payout and the policy caps are in the base currency (base_amount_cents). A receipt whose currency has no rate on its date is kept with fx_rate_source = missing — set_exchange_rate (multi-currency) or pass exchange_rate, then booking proceeds. For representation: always require attendees with name and company. Account codes (BAS 2024): 5800 for travel, 5810 accommodation, 6110 office supplies, 6071 for deductible representation (6072 non-deductible), 6540 software; or let FlowPilot match from chart_of_accounts.',
   },
   {
     name: 'analyze_receipt',
@@ -171,7 +173,7 @@ const EXPENSE_SKILLS: SkillSeed[] = [
     name: 'book_expense_report',
     requires_staging: true, // ledger perimeter: trust 'approve' and the staged envelope are ONE dial for accounting skills
     description:
-      'Admin-only. Posts a balanced journal entry for an approved expense report (Dt expense + VAT / Cr owed-to-employee) and marks the report as booked. Use when: an approved expense report needs to hit the general ledger. NOT for: paying out — use mark_expense_report_paid afterwards.',
+      'Admin-only. Posts a balanced journal entry for an approved expense report (Dt expense + VAT / Cr owed-to-employee) and marks the report as booked; an open expense advance the employee holds is settled against the liability at the same time (own entry Dt owed-to-employee / Cr employee advance; advance_settled_cents and to_pay_cents come back). Use when: an approved expense report needs to hit the general ledger. NOT for: paying out — use mark_expense_report_paid afterwards.',
     category: 'commerce',
     handler: 'rpc:book_expense_report',
     scope: 'internal',
@@ -199,7 +201,7 @@ const EXPENSE_SKILLS: SkillSeed[] = [
     name: 'mark_expense_report_paid',
     requires_staging: true, // ledger perimeter: trust 'approve' and the staged envelope are ONE dial for accounting skills
     description:
-      'Admin-only. Records a payout to the employee for a booked expense report. Posts Dt 2890 / Cr 1930 and creates an expense_payments row. Use when: confirming the bank transfer / Swish / SEPA payout has been made.',
+      'Admin-only. Records a payout to the employee for a booked expense report: the report total minus any advance settled at booking (paid_cents). Posts Dt 2890 / Cr 1930 and creates an expense_payments row; a report fully covered by an advance is marked paid with no bank movement. Use when: confirming the bank transfer / Swish / SEPA payout has been made.',
     category: 'commerce',
     handler: 'rpc:mark_expense_report_paid',
     scope: 'internal',
@@ -323,6 +325,67 @@ const EXPENSE_SKILLS: SkillSeed[] = [
       },
     },
   },
+  {
+    name: 'manage_expense_advance',
+    description:
+      'Expense (travel) advances: money paid to an employee BEFORE the trip, settled against their expense reports AFTER it. grant pays it out (Dt employee advance 1610 / Cr bank) and opens the advance; booking the employee\'s next expense report settles it automatically against what the report owes them (oldest advance first) and mark_expense_report_paid pays only the rest; repay records money the employee pays back when the advance exceeded the receipts. list / get show what is open per employee. Use when: "give Anna a 5 000 kr travel advance", "how much advance is out", "Bo paid back the 220 kr", "what did the Oslo advance cover". NOT for: salary advances deducted on payroll (manage_salary_advance); the receipts themselves (manage_expenses); the payout of a report (mark_expense_report_paid).',
+    category: 'commerce',
+    handler: 'rpc:manage_expense_advance',
+    scope: 'internal',
+    trust_level: 'approve',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'manage_expense_advance',
+        description: 'grant (posts the payout, opens the advance) / repay (posts the repayment; default = what remains) / get (with the reports it was settled against) / list (per employee or status, with open_cents)',
+        parameters: {
+          type: 'object',
+          required: ['p_action'],
+          properties: {
+            p_action: { type: 'string', enum: ['grant', 'repay', 'get', 'list'] },
+            p_advance_id: { type: 'string', format: 'uuid' },
+            p_user_id: { type: 'string', format: 'uuid', description: 'The employee who receives the money (profiles.id, the same id expenses.user_id carries). Required on grant — no default user' },
+            p_amount_cents: { type: 'integer', description: 'grant: the advance in cents, base currency; repay: the amount paid back (default = what remains)' },
+            p_purpose: { type: 'string', description: 'grant: what the money is for, e.g. "Conference trip Oslo"' },
+            p_method: { type: 'string', description: 'grant: how it was paid out (bankgiro, swish, cash…)' },
+            p_reference: { type: 'string', description: 'grant: bank reference' },
+            p_paid_at: { type: 'string', description: 'YYYY-MM-DD the money moved (default today)' },
+            p_notes: { type: 'string' },
+            p_status: { type: 'string', enum: ['open', 'closed'], description: 'list filter' },
+            p_limit: { type: 'integer' },
+          },
+        },
+      },
+    },
+    instructions:
+      'Amounts are cents in the base currency (the report total is too). An advance is settled when the employee\'s report is BOOKED, not when it is approved: book_expense_report applies open advances oldest-first against the liability, posts Dt 2890 / Cr 1610 and returns advance_settled_cents + to_pay_cents; mark_expense_report_paid then pays to_pay_cents (0 → marked paid, no bank entry). An advance larger than the receipts stays open with remaining_cents until the next report or a repay. repay refuses more than what remains. Needs the account role employee_advance (seeded for se-bas2024 as 1610); other locales add their own row in account_roles. Requires the expenses module (service role for the agent); employees read their own advances.',
+  },
+  {
+    name: 'match_expense_to_po',
+    description: 'Tie an employee expense to the purchase order it paid for — the employee took the company card for something that was ordered — so the order\'s remaining value shrinks and a vendor invoice for the same delivery is caught by the three-way match instead of being paid twice. Checks what remains on the order (ordered net minus vendor invoices and other matched expenses, in the base currency), refuses an order still in draft and a claim beyond what remains (outside the tolerance) unless forced; unlinks when no order is given. Use when: "this receipt is for PO-00012", "the consultant paid the order on her card", "unlink the expense from the PO". NOT for: matching a VENDOR INVOICE to an order (match_invoice_to_receipt); creating the expense itself (manage_expenses).',
+    category: 'commerce',
+    handler: 'rpc:match_expense_to_po',
+    scope: 'internal',
+    trust_level: 'notify',
+    tool_definition: {
+      type: 'function',
+      function: {
+        name: 'match_expense_to_po',
+        description: 'Link (or unlink) an expense to a purchase order; returns match_status matched / variance / over_claimed with what remained on the order',
+        parameters: {
+          type: 'object',
+          required: ['p_expense_id'],
+          properties: {
+            p_expense_id: { type: 'string', format: 'uuid' },
+            p_purchase_order_id: { type: 'string', format: 'uuid', description: 'The order; omit to unlink' },
+            p_tolerance_pct: { type: 'number', description: 'Over-claim tolerance in % of the order net (default 2)' },
+            p_force: { type: 'boolean', description: 'Record a claim beyond what remains as over_claimed instead of refusing' },
+          },
+        },
+      },
+    },
+    instructions: 'The expense must be draft or submitted and have a rate if foreign (fx_rate_source ≠ missing). The claim is the expense NET in the base currency (base_amount_cents − base_vat_cents) against purchase_orders.subtotal_cents minus po_invoiced_value_cents — the same reader the vendor-invoice match and the payment gate use, which now counts matched expenses too. A refusal names remaining / baseline / already claimed: unlink the other claim, correct the amount, or p_force. The status is recomputed when the expense amount changes.',
+  },
 ];
 
 const EXPENSE_AUTOMATIONS: AutomationSeed[] = [
@@ -364,7 +427,8 @@ export const expensesModule = defineModule<ExpensesInput, ExpensesOutput>({
     'evaluate_expense_policy',
   ],
   data: {
-    tables: ['expense_attachments', 'expense_payments', 'expenses', 'expense_reports'],
+    tables: ['expense_advance_settlements', 'expense_advances', 'expense_attachments', 'expense_payments', 'expenses', 'expense_reports'],
+    // expenses.purchase_order_id → purchasing is a soft link (ON DELETE SET NULL)
   },
   skillSeeds: EXPENSE_SKILLS,
   automations: EXPENSE_AUTOMATIONS,

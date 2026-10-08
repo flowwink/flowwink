@@ -4357,6 +4357,7 @@
           "category": "commerce",
           "handler": "internal:list_company_orders",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4382,6 +4383,7 @@
           "category": "commerce",
           "handler": "internal:list_company_invoices",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4407,6 +4409,7 @@
           "category": "commerce",
           "handler": "internal:request_company_return",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4450,6 +4453,7 @@
           "category": "commerce",
           "handler": "internal:approve_company_quote",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4478,6 +4482,7 @@
           "category": "crm",
           "handler": "internal:manage_company_contacts",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4526,6 +4531,7 @@
           "category": "commerce",
           "handler": "internal:reorder_company_order",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4554,6 +4560,7 @@
           "category": "commerce",
           "handler": "internal:request_company_quote",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",
@@ -4582,6 +4589,7 @@
           "category": "commerce",
           "handler": "internal:initiate_company_invoice_payment",
           "scope": "external",
+          "mcp_exposed": false,
           "trust_level": "auto",
           "tool_definition": {
             "type": "function",

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261008130000",
-      "migrations_count": 661,
+      "migration_head": "20261008150000",
+      "migrations_count": 662,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2649,19 +2649,23 @@
         {
           "version": "20261008130000",
           "name": "wikin-sager-vilken-agent"
+        },
+        {
+          "version": "20261008150000",
+          "name": "agentens-pdf-laggs-i-kon"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:92daa043a7bf23d7fb07cb89ae195561eaa72736e0674bd64dcd563a295f3fee",
+      "seed_hash": "sha256:8a340a854ba798066766b12372f13614c08639362119337c647fe597bb56657c",
       "skill_count": 626,
       "module_count": 68
     },
     "edge_functions": {
       "count": 76,
-      "shared_hash": "sha256:06c205661cc08c1b9e1ceb7ec2a25fb22562b9556f160a81bd4a8b785fc5ab11",
+      "shared_hash": "sha256:666b30bb07ff352a949cd15a30430cacac2392e345c2646a361414d90390e1f4",
       "functions": {
-        "agent-execute": "sha256:82e0491e7371b678cace2a646af8369bb5ac2d98ba8904d205233bebc113de9e",
+        "agent-execute": "sha256:eca07745df1f9a77d89cb8c773dc85e145bfe811621b0fb4c708531c9789caee",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",

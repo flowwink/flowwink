@@ -22,7 +22,7 @@ import { ownerModuleOf } from "../_shared/skills/skill-modules.ts";
 import { buildSkillCatalog } from "../_shared/skills/dispatch.ts";
 
 // Per-request context propagated through MCP handlers (cached transport bypasses Hono ctx)
-const requestContext = new AsyncLocalStorage<{ callerUserId: string | null; callerApiKeyId: string | null; peerGroups?: string[]; ownerUserId?: string | null }>();
+const requestContext = new AsyncLocalStorage<{ callerUserId: string | null; callerApiKeyId: string | null; peerGroups?: string[]; ownerUserId?: string | null; agentName?: string | null }>();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,12 +48,20 @@ function serviceClient() {
 
 // ---------- auth ----------
 
+// Clients whose connector UI cannot send an Authorization header. Keys minted
+// for them get a lifetime in federation-invite-peer; only they may use `?key=`.
+const QUERY_KEY_CLIENTS = new Set(["chatgpt"]);
+
 async function authenticateApiKey(
   authHeader: string | null,
   queryKey: string | null = null,
-): Promise<{ valid: boolean; transient?: boolean; keyId?: string; scopes?: string[]; createdBy?: string | null }> {
+): Promise<{ valid: boolean; transient?: boolean; queryKeyRefused?: boolean; keyId?: string; scopes?: string[]; createdBy?: string | null }> {
   // The bearer header is the norm. `?key=` exists for clients whose connector UI
-  // cannot send a header (ChatGPT): same key, same checks, same audit row.
+  // cannot send a header (ChatGPT): same key, same checks, same audit row — but
+  // a key in the URL lands in edge, proxy and browser logs, so the gateway
+  // accepts it ONLY for an agent connected as such a client (see
+  // QUERY_KEY_CLIENTS below); everyone else is told to use the header.
+  const viaQuery = !authHeader?.startsWith("Bearer ") && !!queryKey;
   const raw = authHeader?.startsWith("Bearer ") ? authHeader.replace("Bearer ", "").trim() : (queryKey ?? "").trim();
   if (!raw) {
     console.error("Auth: missing or malformed header");
@@ -93,6 +101,15 @@ async function authenticateApiKey(
 
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
     return { valid: false };
+  }
+
+  if (viaQuery) {
+    const { data: peer, error: peerErr } = await sb.from("a2a_peers").select("client_kind").eq("api_key_id", data.id).maybeSingle();
+    if (peerErr) console.error("Auth: client_kind lookup for ?key= failed — refusing the URL-borne key", peerErr.message);
+    if (!peer || !QUERY_KEY_CLIENTS.has(String(peer.client_kind ?? ""))) {
+      console.error("Auth: ?key= used by a client that can send a header — refused");
+      return { valid: false, queryKeyRefused: true };
+    }
   }
 
   sb.from("api_keys")
@@ -378,6 +395,10 @@ function scopeAllowsSkill(
 function ownerOf(c: { get: (key: never) => unknown }): string | null {
   return (c.get("apiKeyOwner" as never) as string | null | undefined) ?? null;
 }
+/** The connected agent's own name (a2a_peers.name) — what rows it writes are stamped with. */
+function agentNameOf(c: { get: (key: never) => unknown }): string | null {
+  return (c.get("apiKeyAgentName" as never) as string | null | undefined) ?? null;
+}
 
 // The agent behind a key: its toolset ceiling and the PERSON it acts for.
 // An agent with an owner is held to the owner's module access on every call
@@ -501,6 +522,7 @@ async function executeSkill(
   args: Record<string, unknown>,
   callerUserId?: string | null,
   callerApiKeyId?: string | null,
+  callerAgentName?: string | null,
 ): Promise<string> {
   const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/agent-execute`;
   const res = await fetch(url, {
@@ -515,6 +537,10 @@ async function executeSkill(
       agent_type: "mcp",
       caller_user_id: callerUserId ?? undefined,
       caller_api_key_id: callerApiKeyId ?? undefined,
+      // WHICH agent, not just which transport: rows the skill writes say
+      // "Peter via Hermes_peter", not "Peter via external agent". A wiki page a
+      // colleague is deciding whether to trust needs both halves.
+      caller_agent_name: callerAgentName ?? undefined,
     }),
   });
 
@@ -767,13 +793,13 @@ async function fetchResource(resourceKey: string): Promise<unknown> {
           .select("value")
           .eq("key", "operator")
           .maybeSingle(),
-        // Most recent inbound MCP federation peer (likely external operator if FlowPilot is off)
-        sb.from("federation_connections")
-          .select("last_activity_at, metadata, peer_id, a2a_peers!inner(name, slug)")
-          .eq("direction", "inbound")
-          .eq("transport", "mcp")
+        // The most recently active connected agent (the likely operator when FlowPilot is off).
+        // Read from the agent register itself — the connection ledger went with A2A (2026-10-08).
+        sb.from("a2a_peers")
+          .select("name, last_seen_at")
           .eq("status", "active")
-          .order("last_activity_at", { ascending: false, nullsFirst: false })
+          .not("api_key_id", "is", null)
+          .order("last_seen_at", { ascending: false, nullsFirst: false })
           .limit(1)
           .maybeSingle(),
       ]);
@@ -783,7 +809,7 @@ async function fetchResource(resourceKey: string): Promise<unknown> {
       const flowpilotEnabled = modulesRaw?.flowpilot?.enabled === true;
       const operatorOverride = (bOperatorSetting as any)?.data?.value ?? null;
       const inboundPeer = (bInboundPeer as any)?.data ?? null;
-      const inboundPeerName = inboundPeer?.a2a_peers?.name ?? inboundPeer?.a2a_peers?.slug ?? null;
+      const inboundPeerName = inboundPeer?.name ?? null;
 
       let operator: Record<string, unknown>;
       if (operatorOverride?.type) {
@@ -1156,7 +1182,7 @@ function registerDispatcherTools(server: McpServer, filterGroups?: string[]): vo
       }
       const reach = await ownerMayRun(match.name, ctx?.ownerUserId);
       if (!reach.ok) return { content: [{ type: "text" as const, text: JSON.stringify({ error: `Forbidden: ${reach.reason}` }) }] };
-      const result = await executeSkill(match.name, skillArgs, ctx?.callerUserId ?? null, ctx?.callerApiKeyId ?? null);
+      const result = await executeSkill(match.name, skillArgs, ctx?.callerUserId ?? null, ctx?.callerApiKeyId ?? null, ctx?.agentName ?? null);
       return { content: [{ type: "text" as const, text: result }] };
     },
   });
@@ -1199,7 +1225,7 @@ async function createMcpServer(filterGroups?: string[], openaiSafe = false, disp
           const ctx = requestContext.getStore();
           const reach = await ownerMayRun(skill.name, ctx?.ownerUserId);
           if (!reach.ok) return { content: [{ type: "text" as const, text: JSON.stringify({ error: `Forbidden: ${reach.reason}` }) }] };
-          const result = await executeSkill(skill.name, args, ctx?.callerUserId ?? null, ctx?.callerApiKeyId ?? null);
+          const result = await executeSkill(skill.name, args, ctx?.callerUserId ?? null, ctx?.callerApiKeyId ?? null, ctx?.agentName ?? null);
           return {
             content: [{ type: "text" as const, text: result }],
           };
@@ -1344,7 +1370,7 @@ async function createMcpServer(filterGroups?: string[], openaiSafe = false, disp
     { key: "health",      uri: "flowwink://health",      name: "Site Health",          description: "Current site statistics: pages, posts, leads, bookings, orders, products, active objectives" },
     { key: "skills",      uri: "flowwink://skills",      name: "Skill Registry",       description: "All FlowPilot skills with category, scope, trust level, and enabled status" },
     { key: "activity",    uri: "flowwink://activity",    name: "Recent Activity",      description: "Last 20 FlowPilot actions with skill name, status, duration, and timestamps" },
-    { key: "peers",       uri: "flowwink://peers",       name: "Federation Peers",     description: "Connected A2A/MCP peers with status, capabilities, and last seen time" },
+    { key: "peers",       uri: "flowwink://peers",       name: "Connected Agents",     description: "Agents connected over MCP — name, owner, status and last seen time" },
     { key: "identity",    uri: "flowwink://identity",    name: "FlowPilot Identity",   description: "FlowPilot's soul, identity, and agent configuration" },
     { key: "templates",   uri: "flowwink://templates",   name: "Site Templates",       description: "All available starter templates with SEO audit summaries" },
     { key: "objectives",  uri: "flowwink://objectives",  name: "Active Objectives",    description: "FlowPilot's active, pending and paused objectives with progress, success criteria, and lock status. Use to understand what the embedded agent is working towards and coordinate." },
@@ -1396,6 +1422,12 @@ app.use("/*", async (c, next) => {
       hint: "The instance's database did not answer the API-key lookup in time. Your key was NOT rejected — retry the same call in a moment.",
     }, 503);
   }
+  if (!auth.valid && auth.queryKeyRefused) {
+    return c.json({
+      error: "Key must be sent as a header",
+      hint: "`?key=` puts the key in the URL, where edge, proxy and browser logs can see it. It is accepted only for agents connected as a client that cannot send a header (ChatGPT). Send `Authorization: Bearer <key>` instead — or reconnect the agent as that client under Agents.",
+    }, 401);
+  }
   if (!auth.valid) {
     // Keys are per-instance: every deployment hashes its own. Sending a
     // perfectly good key to the wrong instance produced the same bare
@@ -1422,6 +1454,7 @@ app.use("/*", async (c, next) => {
   const peerIdentity = await resolvePeer(auth.keyId ?? null);
   c.set("apiKeyOwner" as never, peerIdentity.ownerUserId as never);
   c.set("apiKeyCreatedBy" as any, peerIdentity.ownerUserId ?? auth.createdBy);
+  c.set("apiKeyAgentName" as never, peerIdentity.name as never);
   return next();
 });
 
@@ -1714,7 +1747,7 @@ app.post("/rest/execute", async (c) => {
     }
     const restReach = await ownerMayRun(match.name, ownerOf(c));
     if (!restReach.ok) return c.json({ error: `Forbidden: ${restReach.reason}` }, 403);
-    const result = await executeSkill(match.name, skillArgs, callerUserId, callerApiKeyId);
+    const result = await executeSkill(match.name, skillArgs, callerUserId, callerApiKeyId, agentNameOf(c));
     try {
       return c.json({ ok: true, tool: name, result: JSON.parse(result) }, 200, corsHeaders);
     } catch {
@@ -1738,7 +1771,7 @@ app.post("/rest/execute", async (c) => {
   }
   const restReach = await ownerMayRun(match.name, ownerOf(c));
   if (!restReach.ok) return c.json({ error: `Forbidden: ${restReach.reason}` }, 403);
-  const result = await executeSkill(match.name, args || {}, callerUserId, callerApiKeyId);
+  const result = await executeSkill(match.name, args || {}, callerUserId, callerApiKeyId, agentNameOf(c));
   try {
     return c.json({ ok: true, tool, result: JSON.parse(result) }, 200, corsHeaders);
   } catch {
@@ -1790,7 +1823,7 @@ app.all("/*", async (c) => {
   const peerGroups = await resolvePeerGroups(callerApiKeyId);
   c.set("apiKeyPeerGroups" as any, peerGroups);
   const ownerUserId = ownerOf(c);
-  const response = await requestContext.run({ callerUserId, callerApiKeyId, peerGroups, ownerUserId }, () => handler(c.req.raw));
+  const response = await requestContext.run({ callerUserId, callerApiKeyId, peerGroups, ownerUserId, agentName: agentNameOf(c) }, () => handler(c.req.raw));
   const headers = new Headers(response.headers);
   for (const [k, v] of Object.entries(corsHeaders)) {
     headers.set(k, v);

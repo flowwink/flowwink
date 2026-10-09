@@ -2,7 +2,7 @@
  * Pilot — Built-in Tool Handlers
  * 
  * All handler functions for built-in tools (memory, objectives, skills,
- * automations, workflows, A2A, reflection, etc.)
+ * automations, workflows, specialist delegation, reflection, etc.)
  * 
  * Domain-agnostic: no CMS-specific logic here.
  */
@@ -759,7 +759,7 @@ export async function handleWorkflowExecute(
   };
 }
 
-// ─── A2A Delegation ───────────────────────────────────────────────────────────
+// ─── Delegation to internal specialists ───────────────────────────────────────────────────────────
 
 export async function handleDelegateTask(
   supabase: any, _supabaseUrl: string, _serviceKey: string,

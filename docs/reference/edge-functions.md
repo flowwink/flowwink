@@ -7,14 +7,12 @@ generated: true
 
 # Edge functions — the full surface
 
-> **Generated** by `scripts/generate-edge-function-docs.ts`. 78 functions: 37 core (always deployed), 41 module-bound (deployed when an owning module is enabled). The deploy map is `supabase/seed/edge-function-map.json`; the operator's mental model is [`../operators/edge-function-tiers.md`](../operators/edge-function-tiers.md).
+> **Generated** by `scripts/generate-edge-function-docs.ts`. 76 functions: 37 core (always deployed), 39 module-bound (deployed when an owning module is enabled). The deploy map is `supabase/seed/edge-function-map.json`; the operator's mental model is [`../operators/edge-function-tiers.md`](../operators/edge-function-tiers.md).
 
 **Audience column:** `public` = `verify_jwt = false` in `config.toml` — the function verifies its caller itself (see the guard `public-functions-verify-their-caller`); `JWT` = the gateway requires a signed-in caller.
 
 | Function | Tier | Audience | Purpose |
 |---|---|---|---|
-| `a2a` | module: federation | public | a2a — Unified router for all A2A federation traffic. |
-| `agent-card` | module: federation | default (JWT) | A2A agent card — the instance's identity and external-facing skills for federation peers. |
 | `agent-execute` | core | public | Skill executor — runs one skill (db/rpc/module/internal/edge handlers) with trust, staging and the agent audit trail. |
 | `agent-operate` | core | public | FlowPilot Operate — Interactive streaming agent |
 | `ai-task` | core | public | ai-task — Consolidated AI Task Hub |
@@ -47,7 +45,7 @@ generated: true
 | `email-webhook` | core | public | email-webhook — receive delivery/bounce/complaint events from ESPs (Resend/Mailgun-shaped) |
 | `event-dispatcher` | core | public | Event Dispatcher (Phase 3 — Platform Event Bus) |
 | `extract-pdf-text` | core | public | Input: { document_id } / { file_url } / { storage_path } — any of the shapes a |
-| `federation-invite-peer` | module: federation | public | Federation: peer-to-peer invitation |
+| `federation-invite-peer` | module: federation | public | Agents: connect an agent — mint its MCP key with an owner and a mission |
 | `flowpilot-heartbeat` | module: flowpilot | public | FlowPilot Heartbeat — Autonomous Loop |
 | `flowpilot-lifecycle` | core | default (JWT) | flowpilot-lifecycle — the autonomous operator's lifecycle cluster |
 | `gatewayapi-ingest` | module: liveSupport | public | GatewayAPI SMS channel adapter — inbound webhook + outbound send + test. |

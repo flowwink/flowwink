@@ -128,6 +128,8 @@ import bundledLocalePacks from "./_locale-packs.json" with { type: "json" };
 // reconciles the instance against it — no browser, no DATABASE_URL.
 import bundledModuleSkills from "./_module-skills.json" with { type: "json" };
 import bundledUiTextCatalog from "./_ui-text-catalog.json" with { type: "json" };
+import { slugify } from '../_shared/slugify.ts';
+import { isExtractablePdf } from '../_shared/documents/extractable.ts';
 // Supabase edge runtime: keeps a promise alive after the response is sent.
 // deno-lint-ignore no-explicit-any
 declare const EdgeRuntime: any;
@@ -400,6 +402,8 @@ interface ExecuteRequest {
   trace_id?: string;
   /** When called via MCP, the user who owns the api_key. Used for ownership/created_by. */
   caller_user_id?: string;
+  /** When called via MCP, the connected agent's name (a2a_peers.name). Stamps *_by_agent columns so a row says WHICH agent, not just "mcp". */
+  caller_agent_name?: string;
   /** When called via MCP, the api_key id (and inbound peer) that initiated the call. */
   caller_api_key_id?: string;
   /**
@@ -462,7 +466,7 @@ serve(async (req) => {
     // off) and is deployed --no-verify-jwt, so it MUST authenticate in-body or
     // it is an unauthenticated universal skill executor reachable from the
     // internet. Legitimate callers are exactly two: internal edge functions
-    // (mcp-server, voice-ingest, a2a, automation-dispatcher, send-webhook,
+    // (mcp-server, voice-ingest, automation-dispatcher, send-webhook,
     // run-autonomy-tests) which send Bearer <service_role key>, and the admin
     // UI which sends the logged-in user's JWT via functions.invoke.
     //
@@ -515,7 +519,7 @@ serve(async (req) => {
         status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const { skill_id, skill_name, arguments: rawArgs = {}, agent_type, conversation_id, scheduled, objective_context, trace_id, caller_user_id: bodyCallerUserId, caller_api_key_id, caller_email, company_id: callerCompanyId, company_role: callerCompanyRole } = body;
+    const { skill_id, skill_name, arguments: rawArgs = {}, agent_type, conversation_id, scheduled, objective_context, trace_id, caller_user_id: bodyCallerUserId, caller_api_key_id, caller_agent_name: bodyCallerAgentName, caller_email, company_id: callerCompanyId, company_role: callerCompanyRole } = body;
     // A verified admin JWT is the authoritative caller identity — internal edge
     // callers (service key) keep passing caller_user_id/caller_api_key_id in the body.
     const caller_user_id = gateUserId ?? bodyCallerUserId;
@@ -625,6 +629,7 @@ serve(async (req) => {
       await logActivity(supabase, {
         agent: agent_type, skill_id: skill.id, skill_name: skill.name,
         input: args, output: { error: 'Scope violation' },
+        trace_id: trace_id || undefined,
         status: 'failed', conversation_id, duration_ms: Date.now() - startTime,
         error_message: `Skill '${skill.name}' is internal-only, cannot run from public chat`,
       });
@@ -799,6 +804,7 @@ serve(async (req) => {
       const activityId = await logActivity(supabase, {
         agent: agent_type, skill_id: skill.id, skill_name: skill.name,
         input: args, output: {}, status: 'pending_approval',
+        trace_id: trace_id || undefined,
         conversation_id, duration_ms: Date.now() - startTime,
       });
 
@@ -881,6 +887,7 @@ serve(async (req) => {
         await logActivity(supabase, {
           agent: agent_type, skill_id: skill.id, skill_name: skill.name,
           input: args, output: { refused: verdict.reason, approval_request_id: verdict.requestId ?? null, claim: claimResult },
+          trace_id: trace_id || undefined,
           status: 'failed', conversation_id, duration_ms: Date.now() - startTime,
           error_message: verdict.message.slice(0, 500),
         });
@@ -912,6 +919,13 @@ serve(async (req) => {
     // provenance on rows (wiki created_by/_agent) read these two keys.
     (args as Record<string, unknown>)._effective_agent = effectiveAgent;
     if (caller_user_id) (args as Record<string, unknown>)._caller_user_id = caller_user_id;
+    // WHICH agent (the connected agent's own name), server-stamped like the two
+    // above so a model cannot claim to be someone else's agent. Only the gateway
+    // knows it; FlowPilot and the admin UI leave it unset and the surface
+    // ('flowpilot', 'mcp', …) stays the label.
+    const caller_agent_name = agent_type === 'mcp' && typeof bodyCallerAgentName === 'string' && bodyCallerAgentName.trim() ? bodyCallerAgentName.trim().slice(0, 120) : null;
+    if (caller_agent_name) (args as Record<string, unknown>)._caller_agent_name = caller_agent_name;
+    else delete (args as Record<string, unknown>)._caller_agent_name;
     let result: unknown;
     const handler = skill.handler as string;
 
@@ -975,6 +989,7 @@ serve(async (req) => {
         const table = handler.replace('db:', '');
         const auditCtx: AuditContext = {
           agent_type, caller_user_id, caller_api_key_id,
+          caller_agent_name: caller_agent_name ?? undefined,
           conversation_id, trace_id,
           skill_id: skill.id, skill_name: skill.name,
         };
@@ -986,10 +1001,6 @@ serve(async (req) => {
       } else if (handler.startsWith('responses:')) {
         const peerName = handler.replace('responses:', '');
         result = await executeOpenResponsesRequest(peerName, args);
-
-      } else if (handler.startsWith('a2a:')) {
-        const peerName = handler.replace('a2a:', '');
-        result = await executeA2ARequest(supabase, peerName, args);
 
       } else if (handler === 'internal:process_due_social_posts') {
         result = await executeProcessDueSocialPosts(supabase, args as Record<string, unknown>, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
@@ -3862,13 +3873,14 @@ async function executeOpenClawAction(
         .single();
       if (error) throw new Error(`Exchange failed: ${error.message}`);
 
-      // Actually send to ClawOne via A2A when direction is outbound
+      // Send to OpenClaw over its OpenResponses API (openclaw-responses) when the
+      // direction is outbound. The A2A transport this used to ride went 2026-10-08.
       let peerResponse: any = null;
       if (direction === 'flowpilot_to_openclaw') {
         try {
           const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
           const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-          const outboundRes = await fetch(`${supabaseUrl}/functions/v1/a2a/outbound`, {
+          const outboundRes = await fetch(`${supabaseUrl}/functions/v1/openclaw-responses`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -3876,21 +3888,20 @@ async function executeOpenClawAction(
             },
             body: JSON.stringify({
               peer_name: 'Clawone',
-              skill: 'message',
-              message: `[${message_type}] ${content}`,
+              prompt: `[${message_type}] ${content}`,
             }),
           });
           const outboundData = await outboundRes.json();
           peerResponse = outboundData;
 
-          // Extract text from A2A response
+          // The reply text, whichever field the OpenResponses function used
           let responseText = '';
-          if (outboundData?.result?.status?.message?.parts) {
-            responseText = outboundData.result.status.message.parts.map((p: any) => p.text).filter(Boolean).join('\n');
-          } else if (outboundData?.result?.artifacts) {
-            responseText = outboundData.result.artifacts.flatMap((a: any) => a.parts || []).map((p: any) => p.text).filter(Boolean).join('\n');
-          } else if (outboundData?.error?.message) {
-            responseText = `⚠️ ${outboundData.error.message}`;
+          // openclaw-responses answers { output: { status, response } } when it waited, and a 202 with message when it only dispatched
+          const candidate = outboundData?.output?.response ?? outboundData?.output?.message ?? outboundData?.response ?? outboundData?.message;
+          if (typeof candidate === 'string' && candidate.trim()) {
+            responseText = candidate;
+          } else if (outboundData?.error) {
+            responseText = `⚠️ ${typeof outboundData.error === 'string' ? outboundData.error : outboundData.error?.message ?? 'OpenClaw returned an error'}`;
           }
 
           // Log ClawOne's reply back as an inbound exchange
@@ -4451,7 +4462,7 @@ async function executePagesAction(
 
       if (action === 'create') {
         if (!title) throw new Error('title is required');
-        const baseSlug = (slug || title.toLowerCase().replace(/[^a-z0-9åäö]+/g, '-').replace(/(^-|-$)/g, ''));
+        const baseSlug = (slug || slugify(title));
         // Ensure unique slug by appending timestamp suffix if slug already exists
         const { count: slugExists } = await supabase
           .from('pages').select('id', { count: 'exact', head: true }).eq('slug', baseSlug);
@@ -5420,7 +5431,7 @@ async function executeKbAction(
   // The one KB slug shape: lowercase, [a-z0-9åäö] runs joined by hyphens.
   const kbSlugify = (value: unknown): string =>
     typeof value === 'string'
-      ? value.toLowerCase().replace(/[^a-z0-9åäö]+/g, '-').replace(/(^-|-$)/g, '')
+      ? slugify(value)
       : '';
 
   // One reader for "category string → kb_categories.id", shared by create and
@@ -5446,7 +5457,7 @@ async function executeKbAction(
     }
     {
       // Auto-create a default "General" category
-      const catSlug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'general';
+      const catSlug = slugify(category, { fallback: 'general' });
       const { data: newCat, error: catErr } = await supabase.from('kb_categories').insert({
         name: category || 'General',
         slug: catSlug,
@@ -5716,6 +5727,13 @@ async function executeKbAction(
 // Wiki module handlers
 // =============================================================================
 
+/** WHICH agent when the gateway knows (Hermes_peter), else the surface (mcp / flowpilot). Both server-stamped. */
+function agentStamp(args: Record<string, unknown>): string | null {
+  const name = args._caller_agent_name;
+  const surface = args._effective_agent;
+  return (typeof name === 'string' && name) ? name : (typeof surface === 'string' && surface) ? surface : null;
+}
+
 function toWikiSlug(input: string): string {
   return String(input || '')
     .normalize('NFKD')
@@ -5922,8 +5940,9 @@ async function executeWikiAction(
         // caller id travels with the re-invoke) and/or agent surface.
         created_by: (args as any)._caller_user_id ?? null,
         updated_by: (args as any)._caller_user_id ?? null,
-        created_by_agent: (args as any)._effective_agent ?? null,
-        updated_by_agent: (args as any)._effective_agent ?? null,
+        // WHICH agent when the gateway knows (Hermes_peter), else the surface (mcp/flowpilot).
+        created_by_agent: agentStamp(args),
+        updated_by_agent: agentStamp(args),
       })
       .select('slug, title, all_tags, updated_at')
       .single();
@@ -5991,7 +6010,7 @@ async function executeWikiAction(
     }
     if (Object.keys(patch).length === 0) throw new Error('nothing to update');
     patch.updated_by = (args as any)._caller_user_id ?? null;
-    patch.updated_by_agent = (args as any)._effective_agent ?? null;
+    patch.updated_by_agent = agentStamp(args);
     const { data, error } = await supabase
       .from('wiki_pages').update(patch).eq('slug', slug)
       .select('slug, title, all_tags, updated_at').single();
@@ -6366,7 +6385,21 @@ async function executeDealsAction(
   }
 
   if (action === 'create') {
-    const { value_cents = 0, currency = 'SEK', stage = 'proposal', product_id, expected_close, notes, company_id, company_name, lead_name, lead_email } = args as any;
+    const { value_cents = 0, currency = 'SEK', stage: requestedStage, product_id, expected_close, notes, company_id, company_name, lead_name, lead_email } = args as any;
+    // A new deal starts at the pipeline's FIRST open stage — the one the kanban
+    // shows leftmost — not at 'proposal' (60 %), which put every agent-created
+    // deal three steps into the funnel and inflated the weighted forecast
+    // (CRM-2, found 2026-08-05, still live on optic 2026-10-08).
+    // pipeline_stages is the one truth for the order; 'lead' when none is set.
+    let stage = requestedStage;
+    if (stage === undefined || stage === null || stage === '') {
+      const { data: firstOpen, error: stageErr } = await supabase.from('pipeline_stages')
+        .select('key').eq('entity_type', 'deal').eq('is_active', true)
+        .eq('is_won', false).eq('is_lost', false)
+        .order('sort_order', { ascending: true }).limit(1).maybeSingle();
+      if (stageErr) console.warn(`[manage_deal] pipeline_stages read failed — starting the deal at 'lead': ${stageErr.message}`);
+      stage = firstOpen?.key && VALID_DEAL_STAGES.has(firstOpen.key) ? firstOpen.key : 'lead';
+    }
     let { lead_id } = args as any;
     let auto_created_lead = false;
 
@@ -6415,7 +6448,7 @@ async function executeDealsAction(
           );
         }
         const baseName = lead_name || resolvedCompanyName || 'Auto-generated lead';
-        const safeSlug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'lead';
+        const safeSlug = slugify(baseName, { fallback: 'lead' });
         const fallbackEmail = lead_email || `deal-${safeSlug}-${Date.now()}@auto.flowwink.local`;
         const { data: newLead, error: leadErr } = await supabase
           .from('leads').insert({
@@ -7363,7 +7396,7 @@ async function executeBlogAction(
     if (action === 'create_category') {
       const { name, slug, description } = args as any;
       if (!name) throw new Error('name is required');
-      const catSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const catSlug = slug || slugify(name);
       const { data, error } = await supabase.from('blog_categories').insert({ name, slug: catSlug, description }).select('id, name, slug').single();
       if (error) throw new Error(`Create category failed: ${error.message}`);
       return { category_id: data.id, name: data.name, slug: data.slug };
@@ -7376,7 +7409,7 @@ async function executeBlogAction(
     if (action === 'create_tag') {
       const { name, slug } = args as any;
       if (!name) throw new Error('name is required');
-      const tagSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const tagSlug = slug || slugify(name);
       const { data, error } = await supabase.from('blog_tags').insert({ name, slug: tagSlug }).select('id, name, slug').single();
       if (error) throw new Error(`Create tag failed: ${error.message}`);
       return { tag_id: data.id, name: data.name, slug: data.slug };
@@ -7456,7 +7489,7 @@ async function executeBlogAction(
   }
   // An import keeps its original address when it is given one.
   const slugSource = typeof requestedSlug === 'string' && requestedSlug.trim() ? requestedSlug : resolvedTitle;
-  const baseSlug = slugSource.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `post-${Date.now()}`;
+  const baseSlug = slugify(slugSource, { fallback: `post-${Date.now()}` });
   const importedPublishedAt = blogPublishedAt(requestedPublishedAt);
   // blog_posts.slug is UNIQUE — a retried or same-titled post must get a
   // suffix, not a constraint violation (live failure on autoversio 2026-07-22).
@@ -8764,7 +8797,10 @@ async function executeLeadsAction(
 
   if (action === 'list') {
     let query = supabase.from('leads')
-      .select('id, email, name, phone, status, score, source, ai_summary, created_at, updated_at')
+      // company_id + the company's name: without them an operator saw every B2B
+      // lead as an orphan and had to `get` each one to learn who it belongs to
+      // (CRM-1, 2026-08-05). The DealsPage reads leads the same way.
+      .select('id, email, name, phone, status, score, source, ai_summary, company_id, company:companies(id, name), created_at, updated_at')
       .order('updated_at', { ascending: false }).limit(limit);
     if (normalizedStatus) query = query.eq('status', normalizedStatus);
     if (search) query = query.or(`email.ilike.%${sanitizeOrTerm(search)}%,name.ilike.%${sanitizeOrTerm(search)}%`);
@@ -9471,7 +9507,7 @@ async function executeSendInvoiceForOrder(
 async function setBlogPostCategory(supabase: SupabaseClient, postId: string, category: unknown): Promise<{ id: string; name: string; slug: string } | null> {
   const raw = typeof category === 'string' ? category.trim() : '';
   if (!raw) return null;
-  const slug = raw.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = slugify(raw);
   const { data: found, error: findErr } = await supabase.from('blog_categories')
     .select('id, name, slug').or(`slug.eq.${slug},name.ilike.${raw.replace(/[,()]/g, ' ')}`).limit(1).maybeSingle();
   if (findErr) throw new Error(`Category lookup failed: ${findErr.message}`);
@@ -14630,7 +14666,7 @@ async function executeGenericCrud(
         // and to a colleague deciding whether to trust a row, those are
         // different facts. Tables without the column fall through below.
         if (auditCtx?.agent_type && !cleanInsert.created_by_agent) {
-          cleanInsert.created_by_agent = auditCtx.agent_type;
+          cleanInsert.created_by_agent = auditCtx.caller_agent_name ?? auditCtx.agent_type;
         }
         let createdItem: any;
         try {
@@ -14676,7 +14712,7 @@ async function executeGenericCrud(
         const cleanUpdate = stripInternalFields(updateData);
         cleanUpdate.updated_at = new Date().toISOString();
         // Same reasoning as create: an agent's correction says whose it was.
-        if (auditCtx?.agent_type) cleanUpdate.updated_by_agent = auditCtx.agent_type;
+        if (auditCtx?.agent_type) cleanUpdate.updated_by_agent = auditCtx.caller_agent_name ?? auditCtx.agent_type;
         let updatedItem: any;
         try {
           const { data, error } = await supabase.from(table).update(cleanUpdate).eq('id', id).select().single();
@@ -15226,92 +15262,6 @@ async function executeOpenResponsesRequest(
 }
 
 // =============================================================================
-// A2A Federation — outbound requests to peer agents
-// =============================================================================
-
-async function executeA2ARequest(
-  _supabase: any,
-  peerName: string,
-  args: Record<string, unknown>,
-): Promise<unknown> {
-  // Delegate to the dedicated a2a-outbound edge function
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-  const { skill, message, ...skillArgs } = args as { skill?: string; message?: string; [key: string]: unknown };
-
-  // Allow either structured skill call OR raw message for natural language delegation
-  if (!skill && !message) {
-    // Auto-construct a message from the remaining args if neither is provided
-    const fallbackMessage = Object.keys(skillArgs).length > 0
-      ? JSON.stringify(skillArgs)
-      : 'ping';
-    return executeA2AOutbound(supabaseUrl, serviceKey, peerName, 'message', {}, fallbackMessage);
-  }
-
-  if (skill && skill !== 'message') {
-    return executeA2AOutbound(supabaseUrl, serviceKey, peerName, skill, skillArgs, undefined);
-  } else {
-    // Text message — always send as rawMessage so it reaches the peer as plain text
-    const textContent = message || (skillArgs as any)?.message || JSON.stringify(skillArgs);
-    return executeA2AOutbound(supabaseUrl, serviceKey, peerName, 'message', {}, textContent);
-  }
-}
-
-async function executeA2AOutbound(
-  supabaseUrl: string,
-  serviceKey: string,
-  peerName: string,
-  skill: string,
-  skillArgs: Record<string, unknown>,
-  rawMessage?: string,
-): Promise<unknown> {
-  try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/a2a/outbound`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({
-        peer_name: peerName,
-        skill,
-        arguments: skillArgs,
-        ...(rawMessage ? { message: rawMessage } : {}),
-      }),
-    });
-
-    // Distinguish between "peer is down" and actual errors
-    if (response.status === 502 || response.status === 503) {
-      const body = await response.json().catch(() => ({}));
-      return {
-        status: 'peer_unavailable',
-        peer: peerName,
-        message: `Peer '${peerName}' is currently unreachable. This is not a system error — the peer may be offline or restarting. Try again later.`,
-        detail: (body as any)?.error || 'No response from peer',
-      };
-    }
-
-    if (response.status === 404) {
-      return {
-        status: 'peer_not_found',
-        peer: peerName,
-        message: `Peer '${peerName}' not found or not active in federation registry.`,
-      };
-    }
-
-    return await response.json();
-  } catch (err: any) {
-    // Network-level failures (DNS, timeout) = peer unavailable, not a system bug
-    return {
-      status: 'peer_unavailable',
-      peer: peerName,
-      message: `Peer '${peerName}' is currently unreachable (${err.message}). This is expected if the peer is offline.`,
-    };
-  }
-}
-
-// =============================================================================
 // Activity logging
 // =============================================================================
 
@@ -15340,9 +15290,13 @@ async function logActivity(
     conversation_id: activity.conversation_id || null,
     duration_ms: activity.duration_ms,
     error_message: activity.error_message || null,
-    // Trace column mirrors input.trace_id so a harness run groups on an
-    // indexed column, not a jsonb path. See agent-harness.md §4.
-    trace_id: activity.trace_id || (activity.input?.trace_id as string | undefined) || null,
+    // The run a step belongs to comes from the call's ENVELOPE (body.trace_id,
+    // set by the reason loop, the heartbeat, the gateway) — never from the
+    // skill's own arguments. get_agent_trace takes `trace_id` as an ARGUMENT
+    // (the run to read), and the old `|| input.trace_id` fallback filed that
+    // read as a step OF the run it read: a 73-second heartbeat on optic showed
+    // as 2.6 hours because someone opened its trace (2026-10-08).
+    trace_id: activity.trace_id || null,
   }).select('id').single();
 
   if (error) console.error('Failed to log activity:', error);
@@ -15551,7 +15505,7 @@ async function executeUploadDocument(
 
   // ── Auto-fill file_name for text mode ────────────────────────────────────
   if (!fileName) {
-    const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'document';
+    const safeTitle = slugify(title, { maxLength: 60, fallback: 'document' });
     fileName = `${safeTitle}.md`;
   }
 
@@ -15618,11 +15572,18 @@ async function executeUploadDocument(
       extractionStatus = 'failed';
       extractionError = `Text decode failed: ${e.message}`;
     }
+  } else if (isExtractablePdf({ file_type: mt, file_name: fileName })) {
+    // A PDF is queued for the extraction sweep (knowledge-indexer, every 5 min)
+    // — the same path an admin upload takes. It used to be marked 'unsupported'
+    // here, and the sweep only picks up 'pending', so an agent's PDF was never
+    // read (optic, 2026-10-07).
+    extractionStatus = 'pending';
+    extractionError = null;
   } else {
-    // PDF/DOCX/etc — server-side parsing not available in this skill yet.
-    // Document is archived; an admin or future utility can re-extract.
+    // pptx/xlsx/docx…: the extractor is PDF-only. Say so now rather than queue
+    // something nobody will read.
     extractionStatus = 'unsupported';
-    extractionError = `No server-side parser for mime_type=${mt}. Use content_text mode if you can extract client-side.`;
+    extractionError = `No server-side parser for mime_type=${mt} (only PDF is extracted). Use content_text mode if you can extract client-side.`;
   }
 
   const { data: docId, error: rpcErr } = await supabase.rpc('create_agent_document', {
@@ -15649,6 +15610,9 @@ async function executeUploadDocument(
     extraction_status: extractionStatus,
     extraction_error: extractionError,
     searchable: extractionStatus === 'success',
+    ...(extractionStatus === 'pending'
+      ? { note: 'Queued: the extraction sweep reads PDFs within about 5 minutes — check manage_document get for extraction_status success before relying on the text.' }
+      : {}),
     mode: 'binary',
     storage_path: objectKey,
   };

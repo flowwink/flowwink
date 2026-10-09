@@ -1520,7 +1520,6 @@ export type Database = {
           id: string
           key_hash: string
           key_prefix: string
-          key_raw: string | null
           last_used_at: string | null
           name: string
           scopes: string[] | null
@@ -1532,7 +1531,6 @@ export type Database = {
           id?: string
           key_hash: string
           key_prefix: string
-          key_raw?: string | null
           last_used_at?: string | null
           name: string
           scopes?: string[] | null
@@ -1544,7 +1542,6 @@ export type Database = {
           id?: string
           key_hash?: string
           key_prefix?: string
-          key_raw?: string | null
           last_used_at?: string | null
           name?: string
           scopes?: string[] | null
@@ -21277,6 +21274,7 @@ export type Database = {
           action: string
           content_md: string
           edited_by: string | null
+          edited_by_agent: string | null
           id: string
           revised_at: string
           revision_no: number
@@ -21287,6 +21285,7 @@ export type Database = {
           action?: string
           content_md: string
           edited_by?: string | null
+          edited_by_agent?: string | null
           id?: string
           revised_at?: string
           revision_no: number
@@ -21297,6 +21296,7 @@ export type Database = {
           action?: string
           content_md?: string
           edited_by?: string | null
+          edited_by_agent?: string | null
           id?: string
           revised_at?: string
           revision_no?: number

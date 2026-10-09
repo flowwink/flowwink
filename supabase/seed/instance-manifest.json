@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261007180000",
-      "migrations_count": 658,
+      "migration_head": "20261008150000",
+      "migrations_count": 662,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2637,21 +2637,35 @@
         {
           "version": "20261007180000",
           "name": "agenten-har-en-agare"
+        },
+        {
+          "version": "20261008090000",
+          "name": "a2a-transporten-gar-mcp-stannar"
+        },
+        {
+          "version": "20261008120000",
+          "name": "nyckeln-ligger-aldrig-i-klartext"
+        },
+        {
+          "version": "20261008130000",
+          "name": "wikin-sager-vilken-agent"
+        },
+        {
+          "version": "20261008150000",
+          "name": "agentens-pdf-laggs-i-kon"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:4d9a055da0a38e83e335adc0aa0178efa52f937651b4c862822290f54348fd49",
-      "skill_count": 628,
+      "seed_hash": "sha256:8a340a854ba798066766b12372f13614c08639362119337c647fe597bb56657c",
+      "skill_count": 626,
       "module_count": 68
     },
     "edge_functions": {
-      "count": 78,
-      "shared_hash": "sha256:fe31ea0e6613caad41af51d3076e3f7b9da7b38a1f73a0bd081b20fef721e88b",
+      "count": 76,
+      "shared_hash": "sha256:666b30bb07ff352a949cd15a30430cacac2392e345c2646a361414d90390e1f4",
       "functions": {
-        "a2a": "sha256:0f4de74f6b9d1ac7c4b77af4bfcf1cb3ab47d56b3cfde9d62ec27071ae3551c2",
-        "agent-card": "sha256:9486e3f1a5360c2d0fcfb032e24760eb337757878c51f4eeac4adf786432cddb",
-        "agent-execute": "sha256:dcdd91ccc130e6b25f82d9a055cabf32aaab463d02094d01b357f81a99d90aaa",
+        "agent-execute": "sha256:eca07745df1f9a77d89cb8c773dc85e145bfe811621b0fb4c708531c9789caee",
         "agent-operate": "sha256:9edc79c928f9920a74d8cfbba484aeabe7b21fba0018ae2ec813031593a74798",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:2c5d2c230cc22a5bee87285f19c955149e5c49594bf043289aa7552def44b484",
@@ -2683,7 +2697,7 @@
         "email-webhook": "sha256:55c393771311c65d2841fc988593923bc5dea9d253f847f875de2638ebecc239",
         "event-dispatcher": "sha256:9eefa58e2b6947f83bacf5c27fc1bc772a4ed0d0f92af47e6c9577a1dd62f4c6",
         "extract-pdf-text": "sha256:9d8ed1a360d9c8fb0ce7e7a391de53aa4764806d7fc4b87597e3ca9eaccc3906",
-        "federation-invite-peer": "sha256:fbbb6d82f05c972d79953d186ceb081430a5d86e6918919a0d69c975f00c0c93",
+        "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",
         "flowpilot-heartbeat": "sha256:2095336465119d06039d6d8e05bfee8cc08ee62eb2693b383ee95f8efbc803b1",
         "flowpilot-lifecycle": "sha256:412427a0ce3c375a65136df3eb0f255b41d6551d1d507f935dbe2c59f806a33e",
         "gatewayapi-ingest": "sha256:ae5a2baedfe97730bbb80a1416e1db30730bee6c1e762a38376143d1b0549713",
@@ -2696,11 +2710,11 @@
         "invite-employee": "sha256:354d9ecbcc20ff402597a0e4c10875807c1a140ace0c5c06505ff8fc9fe13eb5",
         "knowledge-indexer": "sha256:9719ea8dfda56ca4fa126907806adef794ae492f44ab6ba9e97884637cb7ba36",
         "llms-txt": "sha256:0a8a132d383590b810617ff9cdcd4893980208233d0c26b65d6c17a80af4f452",
-        "mcp-server": "sha256:a4f1f3df81d6f2e1980813b97482aad9f2db1993de134ec54902ae5864480b70",
+        "mcp-server": "sha256:ed9c44019af327cb594fffd6de1628282b5c7503af2a016a3593024ab4bcde53",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
-        "migrate-page": "sha256:163d9a8a447050186eb9226430a8edb675b7c918f87ce437a859a483d285e7fe",
+        "migrate-page": "sha256:25771d465f4a3caa96821cc3a9b5c66df630184f1729b9d6176455a36324195d",
         "newsletter": "sha256:9db782ef4aa13044ffbe91d385ba05c5b512763bd3462a8b7788bf77dfab9d7f",
-        "openclaw-responses": "sha256:91855c6a4deaa62297ed40169e5a5d4c102e4d6f229c0702b19e7f600a9d1061",
+        "openclaw-responses": "sha256:4ad7e760a6dd64626addb30104c7b70fa35df059d3c7dfb96b94d0b6d0218001",
         "process-image": "sha256:b7a65c7cf8f1b80ec4ae22aec5ab2ec7521ead15ee3f96e08921da90ed41b985",
         "process-job-application": "sha256:25776893a0080b2bce6674c66d0c6539a0d0238a5eb18f1d0755c17248d0f900",
         "quote-expiry-reminders": "sha256:6d9b763668aefb9948af581d5d54f52879814f964f61f8cca345db4e57805034",
@@ -2726,7 +2740,7 @@
         "voice-recording": "sha256:41391de110f7f3e138df5c50b1901dd6c7928d2be18ad82fa5e166d48f66cca2",
         "web-scrape": "sha256:f0948362eb60ff2d597de407af0f3eedb3b0f892b75ce4acff960e0b6ebf146f",
         "web-search": "sha256:6002f6b14ad490cfa0b444129694f123fad021050234cc8f87ee04ebb16c5320",
-        "workspace-chat": "sha256:89fc570d9f672459c6ed70dd2b7abe2e2b6628ebb3bc3f8b89d7a1e2f7610823"
+        "workspace-chat": "sha256:1272eacfc0040388ab84f2ce26682c15092392b0d2318628b96f7c68a1f1ee3f"
       }
     },
     "frontend": {

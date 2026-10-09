@@ -21,6 +21,7 @@
  * function logic changes, mirror it here.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
+import { slugify } from '../slugify';
 
 type Row = Record<string, unknown>;
 
@@ -116,7 +117,9 @@ function runQuery(chain: any, st: MockState): Row[] {
  */
 async function createDeal(supabase: any, args: any) {
   const {
-    value_cents = 0, currency = 'SEK', stage = 'proposal',
+    // The backend starts a deal at the first open pipeline_stages row, 'lead' when
+    // none is configured; this mock has no pipeline_stages, so 'lead'.
+    value_cents = 0, currency = 'SEK', stage = 'lead',
     product_id, expected_close, notes,
     company_id, company_name, lead_name, lead_email,
   } = args;
@@ -153,7 +156,7 @@ async function createDeal(supabase: any, args: any) {
         );
       }
       const baseName = lead_name || resolvedCompanyName || 'Auto-generated lead';
-      const safeSlug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'lead';
+      const safeSlug = slugify(baseName, { fallback: 'lead' });
       const fallbackEmail = lead_email || `deal-${safeSlug}-${Date.now()}@auto.flowwink.local`;
       const { data: newLead, error: leadErr } = await supabase
         .from('leads').insert({

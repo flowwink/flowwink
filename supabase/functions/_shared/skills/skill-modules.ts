@@ -8,8 +8,6 @@
  * pseudo-module, are admin-only — fail closed, exactly as the executor does.
  */
 export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freeze({
-  "a2a_chat": "federation",
-  "a2a_request": "federation",
   "accounting_reports": "accounting",
   "ad_campaign_create": "paidGrowth",
   "ad_creative_generate": "paidGrowth",

@@ -1,7 +1,7 @@
 {
   "_comment": "Written by run.ts after a FULL process-battery run that held the ratchet. The pulse guard in src/lib/__tests__ goes red when this is older than a week. Never edit by hand — run the battery.",
-  "ran_at": "2026-10-12T09:43:06.878Z",
-  "head": "8e28245a68fc5b5a370487e5f2489e68bb59efc5",
+  "ran_at": "2026-10-14T08:00:27.036Z",
+  "head": "bb146c80422fe31247dd3f95fddf8b2e253f5c5a",
   "processes": 17,
   "pass": 1686,
   "red": 0,

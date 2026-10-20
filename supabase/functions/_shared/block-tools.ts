@@ -157,6 +157,45 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Background drifts slower than the page (transform-based parallax — works on iOS, unlike background-attachment: fixed)",
             "type": "boolean"
           },
+          "imageTreatment": {
+            "description": "Picture treatment: grayscale renders the photo black-and-white (a CSS filter — the source stays colour)",
+            "type": "string",
+            "enum": [
+              "none",
+              "grayscale"
+            ]
+          },
+          "imageEdge": {
+            "description": "A gradient from the page ground over one edge of the split-layout picture, so it dissolves into the section — dark on a dark page, light on a light band",
+            "type": "string",
+            "enum": [
+              "none",
+              "left",
+              "right",
+              "top",
+              "bottom"
+            ]
+          },
+          "imageFrame": {
+            "description": "\"hud\": four corner brackets in the accent colour, with imageLabel / imageMeta / imageMetaRight",
+            "type": "string",
+            "enum": [
+              "none",
+              "hud"
+            ]
+          },
+          "imageLabel": {
+            "description": "HUD label badge, bottom-left, printed uppercase (\"INTERCEPTOR\"). Only with imageFrame \"hud\"",
+            "type": "string"
+          },
+          "imageMeta": {
+            "description": "HUD readout, top-left, monospace (\"IR · 640×512\"). Only facts you have — never invented telemetry",
+            "type": "string"
+          },
+          "imageMetaRight": {
+            "description": "HUD readout, top-right",
+            "type": "string"
+          },
           "titleSize": {
             "description": "Title scale",
             "type": "string",
@@ -1012,7 +1051,7 @@ export const BLOCK_CREATION_TOOLS = [
     "type": "function",
     "function": {
       "name": "create_two_column_block",
-      "description": "Create a Two Column section: Side-by-side content and image layout with editorial styling: eyebrow label, display-size title, script-font accent text, CTA and rich image controls.",
+      "description": "Create a Two Column section: Side-by-side content and image layout with editorial styling: eyebrow label, display-size title, script-font accent text, optional spec rows (label / value list under the text), CTA and rich image controls. The \"image + title + spec rows + link\" section of a product or capability page is this block.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -1066,6 +1105,17 @@ export const BLOCK_CREATION_TOOLS = [
             "description": "Small print under the CTA",
             "type": "string"
           },
+          "specsTitle": {
+            "description": "Small heading over the spec rows, e.g. \"Key figures\"",
+            "type": "string"
+          },
+          "specs": {
+            "description": "Label / value rows under the text (a spec table, key figures, \"what you get\"): [{ label: \"GNSS-FREE NAVIGATION\", value: \"Visual-inertial\" }]. A figure belongs in a row, not in the prose — a number parsed back out of a sentence is where a model invents one.",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
           "imageSrc": {
             "description": "Image URL",
             "type": "string"
@@ -1113,6 +1163,45 @@ export const BLOCK_CREATION_TOOLS = [
               "xl",
               "full"
             ]
+          },
+          "imageTreatment": {
+            "description": "Picture treatment: grayscale renders the photo black-and-white (a CSS filter — the source stays colour)",
+            "type": "string",
+            "enum": [
+              "none",
+              "grayscale"
+            ]
+          },
+          "imageEdge": {
+            "description": "A gradient from the page ground over one edge, so the picture dissolves into the section — dark on a dark page, light on a light band",
+            "type": "string",
+            "enum": [
+              "none",
+              "left",
+              "right",
+              "top",
+              "bottom"
+            ]
+          },
+          "imageFrame": {
+            "description": "\"hud\": four corner brackets in the accent colour, with imageLabel / imageMeta / imageMetaRight",
+            "type": "string",
+            "enum": [
+              "none",
+              "hud"
+            ]
+          },
+          "imageLabel": {
+            "description": "HUD label badge, bottom-left, printed uppercase (\"INTERCEPTOR\"). Only with imageFrame \"hud\"",
+            "type": "string"
+          },
+          "imageMeta": {
+            "description": "HUD readout, top-left, monospace (\"IR · 640×512\"). Only facts you have — never invented telemetry",
+            "type": "string"
+          },
+          "imageMetaRight": {
+            "description": "HUD readout, top-right",
+            "type": "string"
           },
           "secondImageSrc": {
             "description": "Optional second, offset image for a collage feel",
@@ -2132,7 +2221,7 @@ export const BLOCK_CREATION_TOOLS = [
     "type": "function",
     "function": {
       "name": "create_embed_block",
-      "description": "Create a Embed section: Embed external content (Vimeo, Spotify, custom iframes).",
+      "description": "Create a Embed section: Embed external content — a YouTube or Vimeo VIDEO in the page flow, Spotify, maps, custom iframes. There is no \"video\" block type: an inline video is an embed; a video BEHIND the hero text is hero.backgroundType \"video\" + videoUrl.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -3001,45 +3090,72 @@ export const BLOCK_CREATION_TOOLS = [
     "type": "function",
     "function": {
       "name": "create_section_divider_block",
-      "description": "Create a Section Divider section: Decorative shape transition between two sections (wave, diagonal, curved, zigzag, triangle).",
+      "description": "Create a Section Divider section: Transition band between two sections: a shape (wave, diagonal, curved, zigzag, triangle) or a TEXTURE — an image band (grain, gradient, scan line) laid full-width over the next section's surface. The texture is what a dark→light \"paper\" transition is made of; import it web-sized with media_browse import_from_url and put it here, never as CSS in custom_scripts. Combine with sectionBackground on this block for the surface it sits on.",
       "parameters": {
         "type": "object",
         "properties": {
           "shape": {
-            "description": "Divider shape",
+            "description": "Divider shape, or \"texture\" for an image band (then set imageSrc)",
             "type": "string",
             "enum": [
               "wave",
               "diagonal",
               "curved",
               "zigzag",
-              "triangle"
+              "triangle",
+              "texture"
             ]
           },
           "color": {
-            "description": "Foreground color (CSS color)",
+            "description": "Foreground color (CSS color) — shapes only",
             "type": "string"
           },
           "bgColor": {
-            "description": "Background color (CSS color)",
+            "description": "Background color (CSS color) behind the shape or texture",
             "type": "string"
           },
           "height": {
-            "description": "Divider height",
+            "description": "Band height: 40 / 80 / 120 / 200 px",
             "type": "string",
             "enum": [
               "sm",
               "md",
-              "lg"
+              "lg",
+              "xl"
             ]
           },
           "flip": {
-            "description": "Flip vertically",
+            "description": "Mirror horizontally",
             "type": "boolean"
           },
           "invert": {
-            "description": "Invert colors",
+            "description": "Turn upside down (a top-fading texture becomes bottom-fading)",
             "type": "boolean"
+          },
+          "imageSrc": {
+            "description": "shape \"texture\": the image URL (a web-sized PNG with transparency, ≤ 1600 px wide — the url media_browse import_from_url returns)",
+            "type": "string"
+          },
+          "fit": {
+            "description": "shape \"texture\": cover crops the image to the band, contain letterboxes it",
+            "type": "string",
+            "enum": [
+              "cover",
+              "contain"
+            ]
+          },
+          "position": {
+            "description": "shape \"texture\": where a cover crop anchors",
+            "type": "string",
+            "enum": [
+              "top",
+              "center",
+              "bottom"
+            ]
+          },
+          "opacity": {
+            "description": "shape \"texture\": 0–1",
+            "type": "number"
           }
         },
         "required": [

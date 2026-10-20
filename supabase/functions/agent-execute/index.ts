@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { blocksShapeError, normalizeBlockData, normalizeBlocks, validateBlockData } from '../_shared/normalize-blocks.ts';
+import { decode as decodeImage, Image as ScriptImage } from 'https://deno.land/x/imagescript@1.3.0/mod.ts';
+import { planImport, readImageHeader } from '../_shared/media/import-plan.ts';
 import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { buildUnknownParameterBounce } from '../_shared/skills/parameter-contract.ts';
 import { isTransportKey } from '../_shared/skills/parameter-contract.ts';
@@ -52,6 +54,8 @@ import { executeSalesProfileSetup } from '../_shared/handlers/sales-profile-setu
 import { executeProspectResearch } from '../_shared/handlers/prospect-research.ts';
 import { executeParseResume } from '../_shared/handlers/parse-resume.ts';
 import { handleObjectiveComplete } from '../_shared/pilot/handlers.ts';
+import { ensureFlowPilotSoul } from '../_shared/pilot/ensure-soul.ts';
+import { importFromOdoo } from '../_shared/import/odoo.ts';
 import { executeGmailInboxScan } from '../_shared/handlers/gmail-inbox-scan.ts';
 import { executeIngestInboundEmail } from '../_shared/handlers/ingest-inbound-email.ts';
 import { executeVatReturnSe } from '../_shared/handlers/accounting-vat-return-se.ts';
@@ -1002,6 +1006,14 @@ serve(async (req) => {
         const peerName = handler.replace('responses:', '');
         result = await executeOpenResponsesRequest(peerName, args);
 
+      } else if (handler === 'internal:import_from_odoo') {
+        // Attachments take the same road as upload_document: storage + create_agent_document.
+        result = await importFromOdoo({
+          supabase,
+          callerUserId: caller_user_id ?? null,
+          uploadDocument: (a) => executeUploadDocument(supabase, a, { caller_user_id, caller_api_key_id }),
+        }, args as Record<string, unknown>);
+
       } else if (handler === 'internal:process_due_social_posts') {
         result = await executeProcessDueSocialPosts(supabase, args as Record<string, unknown>, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
 
@@ -1870,23 +1882,56 @@ async function executeModuleAction(
     case 'media': {
       const { action = 'list', folder, search, file_path, url, filename } = args as any;
 
-      if (action === 'import_from_url') {
-        if (!url || !/^https?:\/\//i.test(url)) {
-          throw new Error(`import_from_url requires a http(s) "url" — got: ${url}`);
+      if (action === 'import_from_url' || action === 'upload') {
+        // Two doors, one road. import_from_url fetches a public URL; upload
+        // takes the bytes (base64) — an agent that was HANDED a file by its
+        // human (a brand texture, a logo animation) had no way to put it in the
+        // library without first hosting it somewhere public (synclair,
+        // 2026-10-20: the resized texture could not get in). After this point
+        // both go through the same plan, store, optimize.
+        const isUpload = action === 'upload';
+        const allowedType = (ct: string) => ct.startsWith('image/') || ct === 'video/mp4' || ct === 'video/webm';
+        let bytes: Uint8Array;
+        let contentType: string;
+        let sourceUrl: string | null = null;
+        if (isUpload) {
+          const b64 = typeof (args as { content_base64?: unknown }).content_base64 === 'string' ? (args as { content_base64: string }).content_base64 : '';
+          const mime = typeof (args as { mime_type?: unknown }).mime_type === 'string' ? (args as { mime_type: string }).mime_type.split(';')[0].trim().toLowerCase() : '';
+          if (!b64) throw new Error('upload requires "content_base64" (the file, base64-encoded) together with "filename" and "mime_type"');
+          if (!filename) throw new Error('upload requires "filename" (e.g. "grain-band.png")');
+          if (!allowedType(mime)) throw new Error(`upload requires "mime_type" of an image or an mp4/webm video — got "${mime || 'unknown'}"`);
+          if (b64.length > 20 * 1024 * 1024 * 4 / 3) throw new Error('upload refused: the file is over 20 MB');
+          try {
+            const bin = atob(b64.replace(/^data:[^,]*,/, '').replace(/\s+/g, ''));
+            bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+          } catch {
+            throw new Error('upload: content_base64 is not valid base64');
+          }
+          contentType = mime;
+        } else {
+          if (!url || !/^https?:\/\//i.test(url)) {
+            throw new Error(`import_from_url requires a http(s) "url" — got: ${url}`);
+          }
+          const resp = await fetch(url, { redirect: 'follow' });
+          if (!resp.ok) throw new Error(`Source fetch failed: HTTP ${resp.status} for ${url}`);
+          contentType = resp.headers.get('content-type')?.split(';')[0]?.trim() || '';
+          // Images, and the two video formats a logo-mark animation or a hero
+          // background comes as — there is no other rail for an agent to bring an
+          // mp4 into the library (the header video script on synclair hotlinked).
+          if (!allowedType(contentType)) {
+            throw new Error(`Source is not an image or an mp4/webm video (content-type: ${contentType || 'unknown'}) — import_from_url sideloads images and short videos`);
+          }
+          bytes = new Uint8Array(await resp.arrayBuffer());
+          sourceUrl = url;
         }
-        const resp = await fetch(url, { redirect: 'follow' });
-        if (!resp.ok) throw new Error(`Source fetch failed: HTTP ${resp.status} for ${url}`);
-        const contentType = resp.headers.get('content-type')?.split(';')[0]?.trim() || '';
-        if (!contentType.startsWith('image/')) {
-          throw new Error(`Source is not an image (content-type: ${contentType || 'unknown'}) — import_from_url only sideloads images`);
-        }
-        const bytes = new Uint8Array(await resp.arrayBuffer());
-        const MAX_BYTES = 15 * 1024 * 1024;
-        if (bytes.byteLength > MAX_BYTES) {
-          throw new Error(`Image is ${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB — the 15 MB import cap protects storage and page weight`);
-        }
+        // The plan is decided from the header, before anything is stored — see
+        // _shared/media/import-plan.ts for why (a 7 MB, 8014 px texture went
+        // straight into synclair's pages because the import handed it back).
+        const header = readImageHeader(bytes, contentType);
+        const plan = planImport({ bytes: bytes.byteLength, contentType, header });
+        if (plan.verdict === 'refuse') throw new Error(`${action} refused: ${plan.reason}`);
         const targetFolder = (folder || 'imports').replace(/[^a-z0-9_-]/gi, '');
-        const urlBase = new URL(url).pathname.split('/').pop() || 'image';
+        const urlBase = sourceUrl ? (new URL(sourceUrl).pathname.split('/').pop() || 'image') : 'image';
         const safeName = (filename || urlBase)
           .replace(/[^a-zA-Z0-9._-]/g, '-')
           .replace(/-{2,}/g, '-')
@@ -1901,7 +1946,56 @@ async function executeModuleAction(
         const { data: { publicUrl } } = supabase.storage
           .from('cms-images')
           .getPublicUrl(path);
-        return { imported: true, path, url: publicUrl, bytes: bytes.byteLength, content_type: contentType, source_url: url };
+
+        // The web-sized copy IS the answer's url: the easy path is the right
+        // one. The original stays next to it (original_url) for provenance and
+        // for anyone who needs the full file. `optimize: false` keeps the old
+        // behaviour — the original is what comes back.
+        const wantOptimize = (args as { optimize?: unknown }).optimize !== false;
+        if (plan.verdict === 'optimize' && wantOptimize) {
+          try {
+            const decoded = await decodeImage(bytes);
+            if (!(decoded instanceof ScriptImage)) throw new Error('animated image');
+            const w = plan.targetWidth;
+            const h = Math.round((w / decoded.width) * decoded.height);
+            const resized = decoded.width > w ? decoded.resize(w, h) : decoded;
+            const out = plan.format === 'png' ? await resized.encode() : await resized.encodeJPEG(82);
+            const webPath = `${targetFolder}/variants/${safeName.replace(/\.[^.]+$/, '')}-web.${plan.format === 'png' ? 'png' : 'jpg'}`;
+            const webType = plan.format === 'png' ? 'image/png' : 'image/jpeg';
+            const { error: webErr } = await supabase.storage
+              .from('cms-images')
+              .upload(webPath, out, { contentType: webType, cacheControl: '31536000', upsert: true });
+            if (webErr) throw new Error(webErr.message);
+            const { data: { publicUrl: webUrl } } = supabase.storage.from('cms-images').getPublicUrl(webPath);
+            // Best effort: the library's own metadata row, so the admin sees the variant too.
+            const { error: metaErr } = await supabase.rpc('upsert_media_asset', {
+              p_storage_path: path, p_folder: targetFolder, p_filename: safeName, p_mime_type: contentType,
+              p_size_bytes: bytes.byteLength, p_width: header?.width ?? null, p_height: header?.height ?? null, p_alt_text: null,
+              p_variants: [{ label: 'web', width: resized.width, height: resized.height, storage_path: webPath, url: webUrl, size_bytes: out.byteLength }],
+              p_bucket: 'cms-images',
+            });
+            if (metaErr) console.warn('[media_browse] upsert_media_asset failed (variant stored anyway):', metaErr.message);
+            return {
+              imported: true, optimized: true,
+              url: webUrl, path: webPath, width: resized.width, height: resized.height, bytes: out.byteLength, content_type: webType,
+              original_url: publicUrl, original_path: path, original_bytes: bytes.byteLength, original_width: header?.width ?? null, original_height: header?.height ?? null,
+              source_url: sourceUrl,
+              note: `${plan.reason}. Use \`url\` in blocks; \`original_url\` is the full file.`,
+            };
+          } catch (e) {
+            // Fail forward: the original is stored and served; say what happened.
+            console.warn('[media_browse] optimize failed — original returned:', e instanceof Error ? e.message : String(e));
+            return {
+              imported: true, optimized: false, url: publicUrl, path, bytes: bytes.byteLength, content_type: contentType,
+              width: header?.width ?? null, height: header?.height ?? null, source_url: sourceUrl,
+              note: `Could not make a web-sized copy (${e instanceof Error ? e.message : 'decode failed'}); the original (${(bytes.byteLength / 1024).toFixed(0)} KB) is what pages will load. Resize it before importing if that is too heavy.`,
+            };
+          }
+        }
+        return {
+          imported: true, optimized: false, url: publicUrl, path, bytes: bytes.byteLength, content_type: contentType,
+          width: header?.width ?? null, height: header?.height ?? null, source_url: sourceUrl, note: plan.reason,
+        };
       }
 
       if (action === 'list') {
@@ -2540,6 +2634,7 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
   const settingsApplied: string[] = [];
   /** Result of the post-install skill reconcile (see 8b), or null when no module changed. */
   let skillsSynced: unknown = null;
+  let soulSeeded: unknown = null;
   if (applySettings) {
     const mergeSetting = async (key: string, value: any) => {
       if (!value || typeof value !== 'object') return;
@@ -2586,6 +2681,17 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
       skillsSynced = await executeSyncSkillsFromCode(supabase, {});
     } catch (err) {
       errors.push(`skill sync after module enable: ${err instanceof Error ? err.message : 'unknown error'}`);
+    }
+    // 8c. FlowPilot switched on by the template → it needs its soul and starter
+    //     objectives NOW, not on the next admin visit. The admin shell seeds
+    //     them in bootstrapModule('flowpilot'); this is the same seed from the
+    //     server side (insert-if-absent, so a re-install changes nothing).
+    try {
+      const { data: modRow, error: modErr } = await supabase.from('site_settings').select('value').eq('key', 'modules').maybeSingle();
+      if (modErr) errors.push(`flowpilot soul seed: could not read modules (${modErr.message})`);
+      else if ((modRow?.value as { flowpilot?: { enabled?: boolean } } | null)?.flowpilot?.enabled === true) soulSeeded = await ensureFlowPilotSoul(supabase);
+    } catch (err) {
+      errors.push(`flowpilot soul seed: ${err instanceof Error ? err.message : 'unknown error'}`);
     }
   }
 
@@ -2725,6 +2831,7 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
     // runs here so an installed template is never one manual click away from an
     // agent surface that cannot do the job the template promises.
     skills_synced: skillsSynced ?? undefined,
+    flowpilot_soul: soulSeeded ?? undefined,
     errors: errors.length ? errors : undefined,
     manifest,
     notes: [
@@ -3015,9 +3122,12 @@ async function executeSyncSkillsFromCode(supabase: any, args: Record<string, unk
 // reset_sandbox — the nightly destroy-and-rebuild for sandbox.flowwink.com.
 //
 // Sequence: sandbox_reset_wipe() (SQL, triple-gated, atomic) → tplInstall()
-// with the instance's configured sandbox template. FlowPilot's soul and
-// objectives are NOT seeded here on purpose — the flowpilot auto-bootstrap
-// owns those and re-seeds its defaults on the next heartbeat/app load.
+// with the instance's configured sandbox template → ensureFlowPilotSoul().
+// The last step is new (2026-10-20): the comment here used to say the
+// flowpilot auto-bootstrap "re-seeds its defaults on the next heartbeat/app
+// load" — the heartbeat only reported the missing keys, and the app-load
+// repair needs an admin to open the site. The public sandbox therefore ran
+// without a soul from 03:00 until someone logged in, some days all day.
 // The gate is checked here TOO (belt and braces with the SQL function): a
 // non-sandbox instance answers with a refusal, never a wipe.
 async function executeResetSandbox(supabase: any, args: Record<string, unknown>): Promise<unknown> {
@@ -3067,15 +3177,20 @@ async function executeResetSandbox(supabase: any, args: Record<string, unknown>)
     apply_settings: true,
   });
   const installFailed = (install as any)?.error;
+  // FlowPilot's soul and starter objectives, seeded here — not left to the next
+  // admin visit. Insert-if-absent; the template install may already have done it.
+  let soul: Awaited<ReturnType<typeof ensureFlowPilotSoul>> | { error: string };
+  try { soul = await ensureFlowPilotSoul(supabase); } catch (e) { soul = { error: e instanceof Error ? e.message : String(e) }; }
 
   return {
     reset: 'complete',
     wipe,
     template: templateId,
     install: installFailed ? { error: installFailed } : install,
+    flowpilot: soul,
     note: installFailed
       ? 'Wipe succeeded but the template install reported an error — the sandbox is empty; re-run install_template.'
-      : 'Sandbox rebuilt. FlowPilot objectives re-seed via auto-bootstrap on the next heartbeat.',
+      : "Sandbox rebuilt with FlowPilot's soul and starter objectives in place.",
   };
 }
 
@@ -9832,7 +9947,9 @@ async function executeDbAction(
       }
 
       if (skillName === 'site_branding_update') {
-        const { logo_url, logo_dark_url, primary_color, primary_color_dark, accent_color, font_family, heading_font, body_font, favicon_url } = args as any;
+        const { logo_url, logo_dark_url, primary_color, primary_color_dark, accent_color, font_family, heading_font, body_font, favicon_url,
+          default_theme, allow_theme_toggle, border_radius, heading_transform, heading_weight, heading_tracking,
+          logo_animation_url, logo_animation_dark_url, logo_animation, heading_color, heading_color_dark } = args as any;
         // The branding JSON the app READS uses logo / primaryColor / accentColor /
         // headingFont+bodyFont / favicon, with colors in HSL "H S% L%". The old handler
         // wrote logo_url/primary_color/accent_color (agent-shaped, hex) as separate keys
@@ -9878,6 +9995,46 @@ async function executeDbAction(
         if (font_family !== undefined) { updated.headingFont = font_family; updated.bodyFont = font_family; }
         if (heading_font !== undefined) updated.headingFont = heading_font;
         if (body_font !== undefined) updated.bodyFont = body_font;
+        // The theme and heading dials. Until 2026-10-20 an agent could set a
+        // font but not "dark site", "sharp corners" or "uppercase headings" —
+        // and the one that wanted them (Synclair's ChatGPT) painted them with
+        // 84 CSS rules in custom_scripts instead. Each value is checked against
+        // its option list so a typo is refused, never stored as a no-op.
+        const pick = (name: string, v: unknown, options: readonly string[]) => {
+          if (v === undefined) return undefined;
+          if (v === '' || v === null) return '';
+          if (!options.includes(String(v))) throw new Error(`${name} must be one of ${options.join(', ')} (got "${v}")`);
+          return String(v);
+        };
+        const defaultTheme = pick('default_theme', default_theme, ['light', 'dark', 'system']);
+        if (defaultTheme !== undefined) updated.defaultTheme = defaultTheme || undefined;
+        if (allow_theme_toggle !== undefined) updated.allowThemeToggle = allow_theme_toggle !== false && allow_theme_toggle !== 'false';
+        const radius = pick('border_radius', border_radius, ['none', 'sm', 'md', 'lg']);
+        if (radius !== undefined) updated.borderRadius = radius || undefined;
+        const transform = pick('heading_transform', heading_transform, ['none', 'uppercase']);
+        if (transform !== undefined) updated.headingTransform = transform || undefined;
+        const weight = pick('heading_weight', heading_weight, ['semibold', 'bold', 'black']);
+        if (weight !== undefined) updated.headingWeight = weight || undefined;
+        const tracking = pick('heading_tracking', heading_tracking, ['tight', 'normal', 'wide']);
+        if (tracking !== undefined) updated.headingTracking = tracking || undefined;
+        const hColor = pick('heading_color', heading_color, ['foreground', 'primary', 'accent']);
+        if (hColor !== undefined) updated.headingColor = hColor || undefined;
+        const hColorDark = pick('heading_color_dark', heading_color_dark, ['foreground', 'primary', 'accent']);
+        if (hColorDark !== undefined) updated.headingColorDark = hColorDark || undefined;
+        // The logo-mark animated, per surface like the logos. Empty string clears.
+        const videoUrl = (name: string, v: unknown) => {
+          if (v === undefined) return undefined;
+          if (v === '' || v === null) return '';
+          const s = String(v).trim();
+          if (!/^https?:\/\/.+\.(mp4|webm)(\?.*)?$/i.test(s)) throw new Error(`${name} must be an http(s) URL to an .mp4 or .webm file (got "${s.slice(0, 80)}") — sideload it with media_browse import_from_url first`);
+          return s;
+        };
+        const anim = videoUrl('logo_animation_url', logo_animation_url);
+        if (anim !== undefined) updated.logoAnimation = anim;
+        const animDark = videoUrl('logo_animation_dark_url', logo_animation_dark_url);
+        if (animDark !== undefined) updated.logoAnimationDark = animDark;
+        const animMode = pick('logo_animation', logo_animation, ['once', 'loop', 'off']);
+        if (animMode !== undefined) updated.logoAnimationMode = animMode || undefined;
         const { error } = await supabase.from('site_settings')
           .upsert({ key: 'branding', value: updated }, { onConflict: 'key' });
         if (error) throw new Error(`Branding update failed: ${error.message}`);
@@ -9904,6 +10061,31 @@ async function executeDbAction(
 
       // update (default)
       if (!key) throw new Error('key is required for update');
+      // custom_scripts is loaded in <head> on every public page. It is for a
+      // tag manager or an analytics snippet — a few KB. On synclair
+      // (2026-10-19) an agent that found no dial for section surfaces, dark
+      // theme and heading style put the whole design there: 664 KB at its
+      // peak, 546 CSS rules with !important hooked on hashed block ids and
+      // Tailwind class names, rewritten 35 times in 45 minutes with no sensor.
+      // That is the iPhone-second on every page view, and it breaks at the
+      // next deploy. Refuse past the cap and name the rails that exist.
+      if (key === 'custom_scripts' && value && typeof value === 'object') {
+        const CUSTOM_SCRIPTS_MAX_CHARS = 16_000;
+        const slots = Object.entries(value as Record<string, unknown>)
+          .filter(([, v]) => typeof v === 'string' && v.length > CUSTOM_SCRIPTS_MAX_CHARS)
+          .map(([k, v]) => `${k}: ${(v as string).length} chars`);
+        if (slots.length) {
+          throw new Error(
+            `custom_scripts refused — ${slots.join(', ')} exceeds ${CUSTOM_SCRIPTS_MAX_CHARS} chars per slot. ` +
+            'This setting is for a tag manager or an analytics snippet, not for styling the site. ' +
+            'The design has dials: site_branding_update (primary_color/_dark, logo_dark_url, heading_font, ' +
+            'heading_transform, heading_weight, heading_tracking, border_radius, default_theme), ' +
+            'sectionBackground on any block (none | muted | accent | dark — see describe_blocks), ' +
+            'hero.backgroundType (color | image | video) and cta/info-box backgroundColor. ' +
+            'What those cannot express is a product gap — report it with report_finding rather than painting over it.',
+          );
+        }
+      }
       const { data, error } = await supabase.from('site_settings')
         .upsert({ key, value }, { onConflict: 'key' })
         .select().single();

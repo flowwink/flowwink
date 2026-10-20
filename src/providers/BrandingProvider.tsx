@@ -81,6 +81,22 @@ export function applyBrandingToDocument(branding: BrandingSettings, doc: Documen
   if (branding.accentColor) {
     root.style.setProperty('--accent', branding.accentColor);
   }
+  // The inverse surface (sectionBackground "dark") is the OTHER theme's
+  // ground, so it needs the other theme's effective brand colours — the
+  // stylesheet's .surface-inverse rules read these and fall back to the
+  // defaults when branding sets nothing.
+  const inversePrimary = isDark
+    ? branding.primaryColor
+    : effectiveDarkPrimary(branding.primaryColor, branding.primaryColorDark);
+  if (inversePrimary) {
+    root.style.setProperty('--primary-inverse', inversePrimary);
+    root.style.setProperty('--primary-inverse-foreground', contrastForeground(inversePrimary));
+  } else {
+    root.style.removeProperty('--primary-inverse');
+    root.style.removeProperty('--primary-inverse-foreground');
+  }
+  if (branding.accentColor) root.style.setProperty('--accent-inverse', branding.accentColor);
+  else root.style.removeProperty('--accent-inverse');
   
   // Apply fonts
   if (branding.headingFont) {
@@ -91,6 +107,36 @@ export function applyBrandingToDocument(branding: BrandingSettings, doc: Documen
     loadGoogleFont(branding.bodyFont, doc);
     root.style.setProperty('--font-sans', `'${branding.bodyFont}', system-ui, sans-serif`);
   }
+
+  // Heading style — three dials the base stylesheet reads as variables
+  // (index.css, h1–h6). Unset clears the inline value so the stylesheet's
+  // defaults apply again; an agent that sets uppercase and later clears it
+  // must get the original headings back, not a stuck override.
+  const headingWeightMap: Record<string, string> = { semibold: '600', bold: '700', black: '800' };
+  const headingTrackingMap: Record<string, string> = { tight: '-0.025em', normal: '0', wide: '0.05em' };
+  const setOrClear = (name: string, value: string | undefined) =>
+    value ? root.style.setProperty(name, value) : root.style.removeProperty(name);
+  setOrClear('--heading-transform', branding.headingTransform === 'uppercase' ? 'uppercase' : undefined);
+  setOrClear('--heading-weight', branding.headingWeight ? headingWeightMap[branding.headingWeight] : undefined);
+  setOrClear('--heading-tracking', branding.headingTracking ? headingTrackingMap[branding.headingTracking] : undefined);
+  // Heading colour per surface; the stylesheet picks light/dark by theme and
+  // swaps them on an inverse section. 'foreground' clears → currentColor.
+  //
+  // CONCRETE values, never hsl(var(--primary)): a custom property declared on
+  // :root computes there — with :root's --primary, the current theme's — and
+  // that computed value is what the inverse band inherits. So the "light"
+  // heading colour on a dark site resolved to the DARK theme's primary (pale
+  // blue on the light band, synclair check page 2026-10-20) although the band
+  // had flipped --primary. Each side is resolved to its own theme's colour.
+  const lightPrimary = branding.primaryColor || '';
+  const darkPrimary = effectiveDarkPrimary(branding.primaryColor, branding.primaryColorDark) || '';
+  const headingColorFor = (choice: string | undefined, primary: string): string | undefined => {
+    if (choice === 'primary' && primary) return `hsl(${primary})`;
+    if (choice === 'accent' && branding.accentColor) return `hsl(${branding.accentColor})`;
+    return undefined;
+  };
+  setOrClear('--heading-color-light', headingColorFor(branding.headingColor, lightPrimary));
+  setOrClear('--heading-color-dark', headingColorFor(branding.headingColorDark, darkPrimary));
   
   // Apply border radius — BOTH scales from the same dial.
   //

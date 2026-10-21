@@ -17,9 +17,9 @@
  *   res.partner is_company            → companies (org_number, vat, address, tags, parent, lifecycle)
  *   res.partner person, type=contact  → leads (status customer/prospect, company_id) — needs an email
  *   crm.lead                          → leads (status by stage/type/active) + deals for opportunities
- *   crm.stage / crm.lost.reason       → FlowWink's fixed stages and lost_reason enum, by rule
+ *   crm.stage / crm.lost.reason       → FlowWink's fixed stages (relabelled with the Odoo names where 1:1) and lost_reason enum, by rule
  *   mail.message comment|email        → lead_activities (lead) / activities (company), body as text
- *   mail.activity (open to-dos)       → activities with due_at and assignee
+ *   mail.activity (open to-dos)       → crm_tasks on the contact (+ its deal) with type, due date, assignee; activities for companies
  *   ir.attachment on those records    → documents (via the same path upload_document takes)
  *
  * Odoo notifications ("stage changed") are noise and are skipped.
@@ -154,6 +154,46 @@ export function mapDealStage(stage: { name: string; is_won: boolean; index: numb
   return pos < 0.34 ? 'prospecting' : pos < 0.67 ? 'qualified' : 'proposal';
 }
 
+/** The names the seed gives FlowWink's deal stages. A stage the operator renamed is never overwritten. */
+export const SEED_DEAL_STAGE_NAMES: Record<DealStage, string> = {
+  lead: 'Lead', prospecting: 'Prospecting', qualified: 'Qualified', proposal: 'Proposal',
+  negotiation: 'Negotiation', closed_won: 'Closed Won', closed_lost: 'Closed Lost',
+};
+
+export interface StageRelabel { key: DealStage; from: string; to: string; stage_id: string }
+
+/**
+ * Recognition is the columns. Odoo's pipeline is one wall of opportunities in
+ * stages with the team's own names ("Nytt", "Kvalificerad", "Offert skickad");
+ * FlowWink's deal stages are a fixed set under configurable names. When exactly
+ * one Odoo stage maps onto a FlowWink stage, that stage can carry the Odoo name
+ * and the board reads as the pipeline the team has been looking at for years.
+ * Two Odoo stages on one key keep the FlowWink name (which one would win?), a
+ * renamed stage is left alone (the operator chose it), and won/lost keep their
+ * names unless Odoo's are different words for the same thing.
+ */
+export function planStageRelabels(
+  odooStages: Iterable<{ name: string; is_won: boolean; index: number; total: number }>,
+  fwStages: Array<{ id: string; entity_type: string; key: string; name: string }>,
+): { relabels: StageRelabel[]; shared: Array<{ key: DealStage; odoo: string[] }>; kept: Array<{ key: DealStage; name: string; odoo: string }> } {
+  const byKey = new Map<DealStage, string[]>();
+  for (const s of odooStages) {
+    const key = mapDealStage(s, false);
+    byKey.set(key, [...(byKey.get(key) ?? []), s.name.trim()]);
+  }
+  const relabels: StageRelabel[] = []; const shared: Array<{ key: DealStage; odoo: string[] }> = []; const kept: Array<{ key: DealStage; name: string; odoo: string }> = [];
+  for (const [key, names] of byKey) {
+    const fw = fwStages.find((f) => f.entity_type === 'deal' && f.key === key);
+    if (!fw) continue;
+    if (names.length > 1) { shared.push({ key, odoo: names }); continue; }
+    const to = names[0];
+    if (!to || to === fw.name) continue;
+    if (fw.name !== SEED_DEAL_STAGE_NAMES[key]) { kept.push({ key, name: fw.name, odoo: to }); continue; }
+    relabels.push({ key, from: fw.name, to, stage_id: fw.id });
+  }
+  return { relabels, shared, kept };
+}
+
 export interface ImportArgs {
   phase?: OdooPhase | 'all';
   dry_run?: boolean;
@@ -163,6 +203,8 @@ export interface ImportArgs {
   since?: string;
   /** A person or lead without an email gets `odoo-<model>-<id>@<domain>`; off by default — a leads row needs an email, so without this they are reported and skipped. */
   synthesize_missing_email?: boolean;
+  /** Give FlowWink's deal stages the names of the Odoo stages that map onto them, so the kanban columns read as the pipeline the team knows. On by default; only touches a stage that still carries its seed name, and only where exactly one Odoo stage maps onto it. */
+  relabel_stages?: boolean;
 }
 
 export interface PhaseReport {
@@ -544,8 +586,24 @@ async function phaseLeads(p: PhaseCtx): Promise<PhaseReport> {
   for (const m of ['res.partner', 'res.users', 'crm.lead', 'crm.lead#deal', 'crm.lead#note']) await p.links.preload(m);
   const stages = await stagesOf(p);
   if (p.cursor === 0) for (const [, s] of stages) note(r, `stage "${s.name}" → deal stage ${mapDealStage(s, false)}`);
-  const { data: fwStages, error: stErr } = await p.ctx.supabase.from('pipeline_stages').select('id, entity_type, key');
+  const { data: fwStages, error: stErr } = await p.ctx.supabase.from('pipeline_stages').select('id, entity_type, key, name');
   if (stErr) throw new Error(`pipeline_stages read: ${stErr.message}`);
+  // The columns should read as the pipeline the team knows: give a FlowWink
+  // deal stage the Odoo name when exactly one Odoo stage maps onto it and the
+  // stage still carries its seed name. Once, on the first page of the phase.
+  if (p.cursor === 0 && p.args.relabel_stages !== false) {
+    const plan = planStageRelabels(stages.values(), (fwStages ?? []) as Array<{ id: string; entity_type: string; key: string; name: string }>);
+    for (const rl of plan.relabels) {
+      if (!p.args.dry_run) {
+        const { error } = await p.ctx.supabase.from('pipeline_stages').update({ name: rl.to }).eq('id', rl.stage_id);
+        if (error) throw new Error(`pipeline_stages relabel ${rl.key}: ${error.message}`);
+        (fwStages ?? []).forEach((f: { id: string; name: string }) => { if (f.id === rl.stage_id) f.name = rl.to; });
+      }
+      note(r, `deal stage "${rl.from}" ${p.args.dry_run ? 'would be ' : ''}renamed "${rl.to}" (your Odoo stage)`);
+    }
+    for (const sh of plan.shared) note(r, `${sh.odoo.length} Odoo stages (${sh.odoo.join(', ')}) share deal stage ${sh.key}; its name is kept`);
+    for (const k of plan.kept) note(r, `deal stage ${k.key} keeps your name "${k.name}" (Odoo: "${k.odoo}")`);
+  }
   const stageId = (entity: string, key: string) => ((fwStages ?? []) as Array<{ id: string; entity_type: string; key: string }>).find((s) => s.entity_type === entity && s.key === key)?.id ?? null;
   const rows = await p.odoo.searchRead('crm.lead', [...sinceDomain(p.args.since)], LEAD_FIELDS, { limit: p.args.limit, afterId: p.cursor, context: { active_test: false } });
   const tagIds = [...new Set(rows.flatMap((x) => (Array.isArray(x.tag_ids) ? x.tag_ids as number[] : [])))];
@@ -579,7 +637,9 @@ async function phaseLeads(p: PhaseCtx): Promise<PhaseReport> {
     if (!email) { r.skipped++; note(r, `lead "${str(l.name)}" (#${l.id}) has no email and no partner email — skipped (synthesize_missing_email: true to invent one)`); continue; }
     const owner = m2oId(l.user_id) ? p.links.get('res.users', m2oId(l.user_id)!) : null;
     const lostName = m2oName(l.lost_reason_id);
+    const tagList = (Array.isArray(l.tag_ids) ? (l.tag_ids as number[]).map((t) => tags.get(t)).filter(Boolean) : []) as string[];
     const row: Rec = {
+      tags: tagList,
       name: str(l.contact_name) ?? (partner && partner.is_company !== true ? str(partner.name) : null) ?? partnerName ?? str(l.name),
       email,
       phone: str(l.phone) ?? str(l.mobile),
@@ -601,7 +661,6 @@ async function phaseLeads(p: PhaseCtx): Promise<PhaseReport> {
     if (personOdoo) await p.links.set('crm.lead', num(l.id), 'leads', leadId);
 
     const title = str(l.name) ?? 'Lead';
-    const tagList = (Array.isArray(l.tag_ids) ? (l.tag_ids as number[]).map((t) => tags.get(t)).filter(Boolean) : []) as string[];
     const desc = htmlToText(l.description);
     if (!p.links.get('crm.lead#note', num(l.id))) {
       await addLeadNote(p, leadId, [desc, tagList.length ? `Tags: ${tagList.join(', ')}` : '', m2oName(l.source_id) ? `Source: ${m2oName(l.source_id)}` : ''].filter(Boolean).join('\n\n') || `Imported from Odoo (${isOpp ? 'opportunity' : 'lead'}).`, `Odoo ${isOpp ? 'opportunity' : 'lead'}: ${title}`, odooDate(l.create_date), 'note', { odoo_lead_id: num(l.id), tags: tagList });
@@ -735,19 +794,35 @@ async function phaseTodos(p: PhaseCtx): Promise<PhaseReport> {
     if (!target) { r.skipped++; continue; }
     if (p.links.get('mail.activity', num(a.id))) { r.updated++; continue; }
     const kind = (m2oName(a.activity_type_id) ?? 'todo').toLowerCase();
-    const activityType = /call|ring|samtal/.test(kind) ? 'call' : /meet|möte/.test(kind) ? 'meeting' : /mail/.test(kind) ? 'email' : 'task';
+    const activityType = /call|ring|samtal/.test(kind) ? 'call' : /meet|möte/.test(kind) ? 'meeting' : /mail/.test(kind) ? 'email' : 'todo';
+    const title = str(a.summary) ?? m2oName(a.activity_type_id) ?? 'To-do';
+    const body = htmlToText(a.note) || null;
+    const due = str(a.date_deadline) ? `${str(a.date_deadline)}T09:00:00Z` : null;
+    const assignee = m2oId(a.user_id) ? p.links.get('res.users', m2oId(a.user_id)!) : null;
     r.created++;
     if (!p.args.dry_run) {
-      const { error } = await p.ctx.supabase.from('activities').insert({
-        entity_type: target.table === 'leads' ? 'lead' : 'company', entity_id: target.id, activity_type: activityType,
-        subject: str(a.summary) ?? m2oName(a.activity_type_id) ?? 'To-do', body: htmlToText(a.note) || null,
-        due_at: str(a.date_deadline) ? `${str(a.date_deadline)}T09:00:00Z` : null,
-        assigned_to: m2oId(a.user_id) ? p.links.get('res.users', m2oId(a.user_id)!) : null,
-        created_at: odooDate(a.create_date) ?? undefined, metadata: { source: SOURCE, odoo_activity_id: num(a.id), odoo_type: m2oName(a.activity_type_id) },
-      });
-      if (error) { note(r, `to-do #${a.id}: ${error.message}`); r.created--; r.skipped++; continue; }
+      if (target.table === 'leads') {
+        // An open activity on a person or an opportunity is the record's NEXT
+        // STEP: it goes where the kanban chip, the overdue stripe and the Tasks
+        // card read (crm_tasks), on the contact and on its deal when there is
+        // one — so Jan's wall shows the same planned / due / overdue dots here.
+        const dealId = str(a.res_model) === 'crm.lead' ? p.links.get('crm.lead#deal', num(a.res_id)) : null;
+        const { error } = await p.ctx.supabase.from('crm_tasks').insert({
+          lead_id: target.id, deal_id: dealId && !dealId.startsWith('dry-') ? dealId : null,
+          title, description: body, due_date: due, assigned_to: assignee, activity_type: activityType, priority: 'medium',
+          created_at: odooDate(a.create_date) ?? undefined,
+        });
+        if (error) { note(r, `to-do #${a.id}: ${error.message}`); r.created--; r.skipped++; continue; }
+      } else {
+        const { error } = await p.ctx.supabase.from('activities').insert({
+          entity_type: 'company', entity_id: target.id, activity_type: activityType === 'todo' ? 'task' : activityType,
+          subject: title, body, due_at: due, assigned_to: assignee,
+          created_at: odooDate(a.create_date) ?? undefined, metadata: { source: SOURCE, odoo_activity_id: num(a.id), odoo_type: m2oName(a.activity_type_id) },
+        });
+        if (error) { note(r, `to-do #${a.id}: ${error.message}`); r.created--; r.skipped++; continue; }
+      }
     }
-    await p.links.set('mail.activity', num(a.id), 'activities', target.id);
+    await p.links.set('mail.activity', num(a.id), target.table === 'leads' ? 'crm_tasks' : 'activities', target.id);
     if (outOfTime(p)) break;
   }
   r.complete = rows.length < (p.args.limit ?? 200) && !outOfTime(p);

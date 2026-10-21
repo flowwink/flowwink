@@ -2,6 +2,7 @@
 export const config = { runtime: 'edge' };
 
 import { pagePath, splitLanguagePrefix } from '../src/lib/language-path';
+import { resolveOgImage } from '../src/lib/og-card';
 import { injectHead, shellCacheControl } from '../src/lib/seo-shell';
 
 declare const process: { env: Record<string, string | undefined> };
@@ -104,6 +105,7 @@ export default async function handler(req: Request): Promise<Response> {
   let description = '';
   let image = '';
   let logoFallback = '';
+  let favicon = '';
   let twitter = '';
   let titleTemplate = '%s';
   let isArticle = false;
@@ -122,6 +124,7 @@ export default async function handler(req: Request): Promise<Response> {
     description = seo.defaultDescription || branding.brandTagline || '';
     image = seo.ogImage || '';
     logoFallback = branding.logo || '';
+    favicon = typeof branding.favicon === 'string' ? branding.favicon.trim() : '';
     twitter = seo.twitterHandle || '';
     titleTemplate = seo.titleTemplate || '%s';
 
@@ -237,6 +240,11 @@ export default async function handler(req: Request): Promise<Response> {
 
   // No SEO image configured: fall back to the brand logo so a share still
   // shows something recognisable rather than a bare link.
+  // No explicit image anywhere → the DERIVED card (api/og), drawn from the
+  // brand dials and the page's own title and picture. The logo-only
+  // "summary" card is what a site got before 2026-10-21; it stays as the
+  // fallback only when the derived card cannot be addressed (no origin).
+  if (!image && origin) image = resolveOgImage(null, origin, path);
   const usingLogo = !image && !!logoFallback;
   if (usingLogo) image = logoFallback;
 
@@ -309,7 +317,7 @@ export default async function handler(req: Request): Promise<Response> {
   const shell = await loadShell(origin, req);
   if (shell) {
     try {
-      return new Response(injectHead(shell, { tags, lang: pageLocale || null }), { headers });
+      return new Response(injectHead(shell, { tags, lang: pageLocale || null, icon: favicon || null }), { headers });
     } catch {
       // fall through to the head-only document
     }

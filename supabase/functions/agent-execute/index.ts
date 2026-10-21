@@ -1880,7 +1880,19 @@ async function executeModuleAction(
     }
 
     case 'media': {
-      const { action = 'list', folder, search, file_path, url, filename } = args as any;
+      const { action = 'list', folder, search, url, filename } = args as any;
+      // `path` is what this skill's own answers call the file (import_from_url,
+      // upload, get_url all return { path }), so an agent that reads one back
+      // and sends it as `path` is right — accept it as the alias of file_path.
+      const mediaArgs = args as Record<string, unknown>;
+      const file_path: string | undefined = typeof mediaArgs.file_path === 'string' ? mediaArgs.file_path : typeof mediaArgs.path === 'string' ? mediaArgs.path : undefined;
+      const MEDIA_ACTIONS = ['list', 'get_url', 'delete', 'clear_all', 'import_from_url', 'upload'];
+      if ((action === 'delete' || action === 'get_url') && !file_path) {
+        // Until 2026-10-21 this fell through to the unknown-action answer — a
+        // hint that sent the agent looking for another skill instead of the
+        // missing parameter.
+        return { error: `${action} needs file_path — the storage path a list/import answer returns, e.g. "imports/moss-final-loop.mp4" (folder/name, no bucket, no URL)` };
+      }
 
       if (action === 'import_from_url' || action === 'upload') {
         // Two doors, one road. import_from_url fetches a public URL; upload
@@ -2079,7 +2091,7 @@ async function executeModuleAction(
         return { action: 'clear_all', total_deleted: totalDeleted, folders_cleaned: targetFolders };
       }
 
-      return { error: `Unknown media action: ${action}` };
+      return { error: `Unknown media action: ${action} — one of ${MEDIA_ACTIONS.join(', ')}` };
     }
 
     case 'approvals': {
@@ -9949,7 +9961,8 @@ async function executeDbAction(
       if (skillName === 'site_branding_update') {
         const { logo_url, logo_dark_url, primary_color, primary_color_dark, accent_color, font_family, heading_font, body_font, favicon_url,
           default_theme, allow_theme_toggle, border_radius, heading_transform, heading_weight, heading_tracking,
-          logo_animation_url, logo_animation_dark_url, logo_animation, heading_color, heading_color_dark } = args as any;
+          logo_animation_url, logo_animation_dark_url, logo_animation, heading_color, heading_color_dark,
+          background_color, background_color_dark, gradient_highlight, section_alternation } = args as any;
         // The branding JSON the app READS uses logo / primaryColor / accentColor /
         // headingFont+bodyFont / favicon, with colors in HSL "H S% L%". The old handler
         // wrote logo_url/primary_color/accent_color (agent-shaped, hex) as separate keys
@@ -9992,6 +10005,13 @@ async function executeDbAction(
         if (primary_color !== undefined) updated.primaryColor = hexToHsl(primary_color);
         if (primary_color_dark !== undefined) updated.primaryColorDark = primary_color_dark === '' ? '' : hexToHsl(primary_color_dark);
         if (accent_color !== undefined) updated.accentColor = hexToHsl(accent_color);
+        // The page ground per theme and the pixel gradient's light tone — the
+        // three colours a brand manual names that had no dial until 2026-10-21
+        // (Synclair's agent forced `main{background:#000}` and uploaded the
+        // gradient as 3 MB textures instead). Empty string clears.
+        if (background_color !== undefined) updated.backgroundColor = background_color === '' ? '' : hexToHsl(background_color);
+        if (background_color_dark !== undefined) updated.backgroundColorDark = background_color_dark === '' ? '' : hexToHsl(background_color_dark);
+        if (gradient_highlight !== undefined) updated.gradientHighlight = gradient_highlight === '' ? '' : hexToHsl(gradient_highlight);
         if (font_family !== undefined) { updated.headingFont = font_family; updated.bodyFont = font_family; }
         if (heading_font !== undefined) updated.headingFont = heading_font;
         if (body_font !== undefined) updated.bodyFont = body_font;
@@ -10021,6 +10041,9 @@ async function executeDbAction(
         if (hColor !== undefined) updated.headingColor = hColor || undefined;
         const hColorDark = pick('heading_color_dark', heading_color_dark, ['foreground', 'primary', 'accent']);
         if (hColorDark !== undefined) updated.headingColorDark = hColorDark || undefined;
+        // The renderer's automatic band alternation — off for a flat design.
+        const alternation = pick('section_alternation', section_alternation, ['auto', 'none']);
+        if (alternation !== undefined) updated.sectionAlternation = alternation || undefined;
         // The logo-mark animated, per surface like the logos. Empty string clears.
         const videoUrl = (name: string, v: unknown) => {
           if (v === undefined) return undefined;

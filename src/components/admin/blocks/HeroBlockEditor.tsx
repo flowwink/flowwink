@@ -197,6 +197,13 @@ export function HeroBlockEditor({ data, onChange, isEditing }: HeroBlockEditorPr
                   <SelectItem value="bottom">Dissolve bottom</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={localData.imageEdgeStyle || 'smooth'} onValueChange={(v) => handleChange({ imageEdgeStyle: v as HeroBlockData['imageEdgeStyle'] })}>
+                <SelectTrigger><SelectValue placeholder="Edge style" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="smooth">Smooth fade</SelectItem>
+                  <SelectItem value="dither">Pixel grain</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={localData.imageFrame || 'none'} onValueChange={(v) => handleChange({ imageFrame: v as HeroBlockData['imageFrame'] })}>
                 <SelectTrigger><SelectValue placeholder="Frame" /></SelectTrigger>
                 <SelectContent>
@@ -674,6 +681,19 @@ export function HeroBlockEditor({ data, onChange, isEditing }: HeroBlockEditorPr
                 <SelectItem value="ghost">Ghost (text only)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Chips under the buttons</Label>
+            <Input
+              value={(localData.tags || []).join(', ')}
+              onChange={(e) => handleChange({ tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) })}
+              placeholder="01 Interceptor, 02 Deep strike, 03 ISR"
+            />
+            <Input
+              value={localData.tagsLabel || ''}
+              onChange={(e) => handleChange({ tagsLabel: e.target.value || undefined })}
+              placeholder="Lead-in (optional), e.g. Missions"
+            />
           </div>
           <div className="space-y-2">
             <Label>Secondary Button</Label>

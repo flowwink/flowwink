@@ -51,14 +51,23 @@ function loadGoogleFont(fontName: string, doc: Document = document) {
 // Exported so preview surfaces that render into their own document (the page
 // editor's device-preview iframe) can brand that document's root — the admin
 // parent has these variables deliberately reset.
-export function applyBrandingToDocument(branding: BrandingSettings, doc: Document = document) {
+export function applyBrandingToDocument(branding: BrandingSettings, doc: Document = document, theme?: 'light' | 'dark') {
   const root = doc.documentElement;
   
   // The document CARRIES its theme (next-themes stamps `dark` on <html>, and
   // PreviewFrame mirrors it into its own root) — so per-theme brand values
   // resolve from the doc we are painting, never from module state. Same rule
   // as useScrollAnimation's ownerDocument resolution.
-  const isDark = root.classList.contains('dark');
+  //
+  // …except in the ONE commit where both land: BrandingProvider's effect is a
+  // child of ThemeProvider's, so it runs BEFORE next-themes stamps a forced
+  // `dark` on <html>. Read then, the class said "light", every per-theme
+  // value went to the wrong side (the dark ground became the light band's,
+  // the dark primary the light theme's) and nothing re-ran, because the
+  // effect's theme dep was already 'dark' (synclair, 2026-10-21). The caller
+  // that knows the theme next-themes is about to apply passes it; the class
+  // is the fallback for a document painted without that knowledge.
+  const isDark = theme ? theme === 'dark' : root.classList.contains('dark');
 
   // A brand surface derives its own text color from its lightness (shared rule
   // in lib/brand-color), so black-on-dark-blue cannot be authored.
@@ -73,6 +82,13 @@ export function applyBrandingToDocument(branding: BrandingSettings, doc: Documen
   if (effectivePrimary) {
     root.style.setProperty('--primary', effectivePrimary);
     root.style.setProperty('--primary-foreground', contrastForeground(effectivePrimary));
+    // The theme's own primary, reachable from inside an inverse band
+    // (.surface-inverse .surface-inverse — the tile that flips back).
+    root.style.setProperty('--primary-ground', effectivePrimary);
+    root.style.setProperty('--primary-ground-foreground', contrastForeground(effectivePrimary));
+  } else {
+    root.style.removeProperty('--primary-ground');
+    root.style.removeProperty('--primary-ground-foreground');
   }
   if (branding.secondaryColor) {
     root.style.setProperty('--secondary', branding.secondaryColor);
@@ -137,6 +153,14 @@ export function applyBrandingToDocument(branding: BrandingSettings, doc: Documen
   };
   setOrClear('--heading-color-light', headingColorFor(branding.headingColor, lightPrimary));
   setOrClear('--heading-color-dark', headingColorFor(branding.headingColorDark, darkPrimary));
+  // The page ground per theme, and the OTHER theme's ground for the inverse
+  // band (.surface-inverse reads --background-inverse). Unset clears, so the
+  // stylesheet's own grounds apply again.
+  setOrClear('--background', isDark ? branding.backgroundColorDark : branding.backgroundColor);
+  setOrClear('--background-ground', isDark ? branding.backgroundColorDark : branding.backgroundColor);
+  setOrClear('--background-inverse', isDark ? branding.backgroundColor : branding.backgroundColorDark);
+  // The pixel gradient's light tone (lib/pixel-gradient) — a brand fact, set once.
+  setOrClear('--gradient-highlight', branding.gradientHighlight);
   
   // Apply border radius — BOTH scales from the same dial.
   //
@@ -191,6 +215,12 @@ function resetBrandingToDefaults() {
   root.style.removeProperty('--font-serif');
   root.style.removeProperty('--font-sans');
   root.style.removeProperty('--primary-foreground');
+  root.style.removeProperty('--background');
+  root.style.removeProperty('--background-ground');
+  root.style.removeProperty('--background-inverse');
+  root.style.removeProperty('--primary-ground');
+  root.style.removeProperty('--primary-ground-foreground');
+  root.style.removeProperty('--gradient-highlight');
   root.style.removeProperty('--radius');
   root.style.removeProperty('--radius-block');
 }
@@ -215,7 +245,7 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
     if (branding && !isAdminRoute) {
       // effectiveTheme i deps: per-tema-primären måste appliceras OM när temat
       // flippar — dokumentklassen är sanningen appliceringen läser.
-      applyBrandingToDocument(branding);
+      applyBrandingToDocument(branding, document, effectiveTheme);
       themeSetRef.current = false;
       
       // Toggle OFF: SiteThemeProvider applies the operator's default as a

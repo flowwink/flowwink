@@ -240,6 +240,16 @@ export interface FormBlockData {
   successMessage: string;
   // Styling
   variant: 'default' | 'card' | 'minimal';
+  /**
+   * split: the form card beside an intro column (eyebrow, title, intro
+   * paragraphs) — "Tell us about your platform" with the form on the right.
+   * stack (default): title and description above the form.
+   */
+  layout?: 'stack' | 'split';
+  /** split: small uppercase lead-in above the title. */
+  eyebrow?: string;
+  /** split: paragraphs beside the form (blank line = new paragraph). */
+  intro?: string;
   /** When set, each submission emails this address (submission notifications). */
   notifyEmail?: string;
   /**
@@ -337,9 +347,19 @@ export type HeaderVariant = 'clean' | 'sticky' | 'mega-menu';
 export type FooterVariant = 'minimal' | 'full' | 'enterprise';
 
 // Footer block data (stored in global_blocks.data)
+/**
+ * The footer's SURFACE. primary (default, as before) paints it in the brand
+ * colour — which on a dark site whose dark primary is the accent (Synclair:
+ * yellow) made the whole footer yellow, the one thing the manual forbids.
+ * ground = the page ground; inverse = the opposite surface (a light footer
+ * on a dark site); muted = the muted tint.
+ */
+export type FooterSurface = 'primary' | 'ground' | 'inverse' | 'muted';
+
 export interface FooterBlockData {
   // Variant determines overall layout/style
   variant?: FooterVariant;
+  surface?: FooterSurface;
   phone: string;
   email: string;
   address: string;
@@ -489,6 +509,10 @@ export interface HeroBlockData extends ImageTreatmentFields {
   eyebrowColor?: 'default' | 'primary' | 'muted';
   // Design System 2026: Stats row inside the hero
   heroStats?: { value: string; label: string }[];
+  /** A row of small outlined chips under the CTAs — a mission index ("01 Interceptor", "02 Deep strike"), a short capability list. */
+  tags?: string[];
+  /** Lead-in before the chips, e.g. "Missions". */
+  tagsLabel?: string;
 }
 
 export interface QuickLinksBlockData {
@@ -554,6 +578,8 @@ export interface TextBlockData {
    */
   content: RichTextContent;
   backgroundColor?: string;
+  /** Chip rows after the text — "Fits your autopilot: ArduPilot, PX4". */
+  tagGroups?: { label?: string; tags: string[] }[];
   // Design System 2026: Premium typography features
   eyebrow?: string;           // Small label above title (e.g., "SERVICES")
   eyebrowColor?: string;      // Color for eyebrow text
@@ -614,6 +640,8 @@ export interface ImageTreatmentFields {
   imageTreatment?: 'none' | 'grayscale';
   /** A gradient from the page ground over that edge, so the picture dissolves into it. */
   imageEdge?: 'none' | 'left' | 'right' | 'top' | 'bottom';
+  /** smooth (default) — a CSS fade; dither — the brand's pixel gradient as grain over that edge. */
+  imageEdgeStyle?: 'smooth' | 'dither';
   /** hud — accent corner brackets, a label badge and two small readouts. */
   imageFrame?: 'none' | 'hud';
   imageLabel?: string;
@@ -632,6 +660,8 @@ export interface TwoColumnBlockData extends ImageTreatmentFields {
   imagePosition: 'left' | 'right';
   /** Which column should be sticky when scrolling */
   stickyColumn?: 'none' | 'image' | 'text';
+  /** The TEXT column on its own panel, by token: muted, card, or inverse (the opposite surface). */
+  panel?: 'none' | 'muted' | 'card' | 'inverse';
   // Image sizing controls (Webflow/Squarespace parity)
   imageAspect?: ImageAspectRatio;
   imageFit?: ImageFit;
@@ -1000,11 +1030,21 @@ export interface FeatureItem {
   title: string;
   description: string;
   url?: string;
+  /** A picture on top of the card (a product card) — shown instead of the icon. */
+  image?: string;
+  imageAlt?: string;
+  /** Short line under the title — a tagline ("Development kit"). */
+  subtitle?: string;
+  /** Label/value rows under the description — the product card's key figures. Only real facts. */
+  specs?: { label: string; value: string }[];
+  /** This ONE card on the opposite surface (the black card beside the white one). */
+  inverse?: boolean;
 }
 
 // Design System 2026: Premium hover effects
 export type FeatureHoverEffect = 'none' | 'lift' | 'glow' | 'border';
-export type FeatureCardStyle = 'default' | 'glass' | 'gradient-border';
+/** inverse: the tile takes the OPPOSITE surface (black tiles on a light band, white on a dark one) — tokens, no colours. */
+export type FeatureCardStyle = 'default' | 'glass' | 'gradient-border' | 'inverse';
 
 export interface FeaturesBlockData {
   title?: string;
@@ -1019,6 +1059,10 @@ export interface FeaturesBlockData {
   staggeredReveal?: boolean;
   hoverEffect?: FeatureHoverEffect;
   cardStyle?: FeatureCardStyle;
+  /** Print 01, 02, 03 … in the accent colour above each item — a numbered sequence (navigate / acquire / track / guide). */
+  numbered?: boolean;
+  /** Chip rows under the grid — "Adapts to your mission: ISR, Interceptor, Strike". */
+  tagGroups?: { label?: string; tags: string[] }[];
 }
 
 // Workflow actions
@@ -1212,7 +1256,7 @@ export interface MarqueeBlockData {
   variant?: 'default' | 'gradient' | 'outlined';
 }
 
-export type EmbedProvider = 'vimeo' | 'spotify' | 'soundcloud' | 'codepen' | 'figma' | 'loom' | 'custom';
+export type EmbedProvider = 'video' | 'vimeo' | 'spotify' | 'soundcloud' | 'codepen' | 'figma' | 'loom' | 'custom';
 
 export interface EmbedBlockData {
   url: string;
@@ -1222,6 +1266,11 @@ export interface EmbedBlockData {
   maxWidth?: 'sm' | 'md' | 'lg' | 'full';
   caption?: string;
   variant?: 'default' | 'card' | 'minimal';
+  /** provider "video" (a direct mp4/webm file) — see EmbedBlock.tsx */
+  posterUrl?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  controls?: boolean;
 }
 
 export interface TableColumn {

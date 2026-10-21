@@ -5072,6 +5072,7 @@ export type Database = {
       crm_tasks: {
         Row: {
           assigned_to: string | null
+          activity_type: string
           completed_at: string | null
           completion_note: string | null
           created_at: string
@@ -5087,6 +5088,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          activity_type?: string
           completed_at?: string | null
           completion_note?: string | null
           created_at?: string
@@ -5102,6 +5104,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          activity_type?: string
           completed_at?: string | null
           completion_note?: string | null
           created_at?: string
@@ -8237,6 +8240,7 @@ export type Database = {
       }
       inbound_email_accounts: {
         Row: {
+          alias_domains: string[]
           composio_account_id: string | null
           created_at: string
           email_address: string
@@ -8253,6 +8257,7 @@ export type Database = {
           watch_expires_at: string | null
         }
         Insert: {
+          alias_domains?: string[]
           composio_account_id?: string | null
           created_at?: string
           email_address: string
@@ -8269,6 +8274,7 @@ export type Database = {
           watch_expires_at?: string | null
         }
         Update: {
+          alias_domains?: string[]
           composio_account_id?: string | null
           created_at?: string
           email_address?: string
@@ -10173,6 +10179,7 @@ export type Database = {
           source_id: string | null
           stage_id: string | null
           status: Database["public"]["Enums"]["lead_status"]
+          tags: string[]
           updated_at: string
           updated_by_agent: string | null
         }
@@ -10209,6 +10216,7 @@ export type Database = {
           source_id?: string | null
           stage_id?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[]
           updated_at?: string
           updated_by_agent?: string | null
         }
@@ -10245,6 +10253,7 @@ export type Database = {
           source_id?: string | null
           stage_id?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[]
           updated_at?: string
           updated_by_agent?: string | null
         }

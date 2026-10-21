@@ -48,11 +48,11 @@ importer stops itself at 90 and hands back the cursor.
 | `res.partner`, person, type contact | `leads` | status `customer` / `prospect`, company_id ← commercial partner; **needs an email** (see below) |
 | `crm.lead` | `leads` (+ `deals`) | status: `lost` when archived or a lost reason is set, `customer` when the stage is won, `opportunity` for type opportunity, else `lead`. Opportunities, won and lost leads also get a `deals` row: value ← expected_revenue, stage by the mapping below, expected_close, closed_at, lost_reason/lost_note |
 | `crm.lead.partner_name` with no partner | `companies` | created at import, as Odoo would at conversion; listed in the notes |
-| `crm.stage` | fixed stages | won → closed_won; by name (qualified, proposal, negotiation, prospecting, new); else by position. The dry run prints the mapping |
+| `crm.stage` | fixed stages, **relabelled** | won → closed_won; by name (qualified, proposal, negotiation, prospecting, new); else by position. The dry run prints the mapping. Where exactly one Odoo stage maps onto a FlowWink deal stage that still carries its seed name, the stage takes the Odoo name (`relabel_stages`, default on) — the kanban columns read as the team's own pipeline. Two Odoo stages on one key, or a stage the operator renamed, keep the FlowWink name; the notes say which |
 | `crm.lost.reason` | `lost_reason` enum | price / timing / competitor / no_response / other, the words in lost_note |
-| `crm.tag` | note on the lead | and `companies.tags` for companies |
+| `crm.tag` | `leads.tags` (+ the import note) | shown on the kanban and list cards; `companies.tags` for companies |
 | `mail.message` comment / email | `lead_activities` (person) or `activities` (company) | body as text, author, email_from; **notifications are skipped** |
-| `mail.activity` | `activities` | due_at, assignee, type call / meeting / email / task |
+| `mail.activity` | `crm_tasks` (contact + its deal), `activities` (company) | open activities become the record's next step: type call / email / meeting / todo, due date, assignee — the planned / due / overdue dot on the kanban card and the row in the Tasks card |
 | `ir.attachment` | `documents` | same path as `upload_document`; linked to the lead or company; 10 MB cap |
 
 After writing, `backfill_partners` runs so the partners backbone follows.
@@ -64,6 +64,27 @@ replies to those, mail to an alias. It does not hold what a seller wrote in
 Outlook or Gmail directly, unless they used Odoo's mail plug-in. The import
 brings exactly what Odoo has. Ask the customer how they worked before you
 promise "all history".
+
+## Recognition for the team
+
+Odoo's CRM is one wall: lead and opportunity are the same record, "Pipeline" is
+the opportunities in stages, and chatter, activities and the lost reason hang
+off the form. FlowWink shows the same records on two pages — **Leads** (the
+people and where they stand) and **Deals** (the money track in stages). Two
+things make the first week shorter:
+
+- **The columns keep their names.** See `crm.stage` above — after a real run the
+  Deals board has the Odoo stage names as column headers. Rename or reorder
+  later under Pipeline stages; the import never overwrites a renamed stage.
+- **The chatter has the same three verbs.** Discuss on the record is Log note
+  (Note, internal) and Send message (Email, from the company mailbox); Tasks is
+  Schedule activity — type, due date, assigned to — and the next one is the dot
+  on the kanban card. Open Odoo activities land there at import.
+- **"Coming from Odoo?"** — on Leads and Deals, an instance that has Odoo rows in
+  `import_links` shows a glossary card (Odoo word → where it lives here) until
+  each person dismisses it. Admin-read only on `import_links`, so a seller who
+  is not an admin does not see it; the glossary is the same list as in
+  `src/components/admin/crm/OdooLensCard.tsx`.
 
 ## Rules worth knowing
 

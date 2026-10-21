@@ -99,6 +99,29 @@ export interface BrandingSettings {
   primaryColorDark?: string;
   secondaryColor?: string;
   accentColor?: string;
+  /**
+   * The page GROUND per theme (HSL): `backgroundColor` where the page is light,
+   * `backgroundColorDark` where it is dark. Unset = the design system's own
+   * (near-white / dark navy). A manual whose dark ground is pure black sets
+   * the dark one; the inverse band of each theme takes the other's.
+   */
+  backgroundColor?: string;
+  backgroundColorDark?: string;
+  /**
+   * The light tone of the brand's PIXEL GRADIENT (HSL) — Synclair's frost
+   * blue, used only inside the gradient. Read by the pixel-gradient divider
+   * (--gradient-highlight); unset = the gradient runs ground → primary → ground.
+   */
+  gradientHighlight?: string;
+  /**
+   * The renderer's AUTOMATIC band alternation: every second plain block
+   * (not full-bleed, not self-styled, no sectionBackground of its own) gets
+   * a muted tint. auto (default) keeps it; none paints every plain block on
+   * the page ground — a flat design (Synclair's draft changes surface only
+   * through its pixel gradient) or a site that bands by hand. Until
+   * 2026-10-21 the only way off was sectionBackground "none" per block.
+   */
+  sectionAlternation?: 'auto' | 'none';
   
   // Typography
   headingFont?: string;

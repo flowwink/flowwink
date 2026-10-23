@@ -305,11 +305,12 @@ language exists, which is the worst possible time to discover it.
 | Chat launcher title/placeholder | `site_settings.chat` | fixed #514 — was `x \|\| 'English'`, the exact bypass |
 | Cookie banner categories | `cookie_consent_v2.categories` | fixed #514 |
 | Footer legal `terms`/`security`/`sla` | footer block | fixed #514 — the pack had no key, so the rule was a no-op |
+| Footer legal links with the operator's own labels | footer block `legalLinks[].label` | fixed 2026-10-23 — `labels: { <tag>: … }` overlay per link, read by `localizedLabel`; internal urls follow the language through `localizeHref`. Bit on synclair the day English became the default: the Swedish labels were read as the site's own words |
 | Brand tagline | `branding.brandTagline` | fixed #514 — hidden off the site's own language |
 | Opening-hours labels | code | fixed #514 — were hardcoded English |
 | Breadcrumb JSON-LD "Hem" | code | fixed #514 |
 | `TermsBlock` copy and dates | code | fixed #514 — was hardcoded Swedish + `sv-SE` |
-| **Footer quick links** | `pages`, unlocalized query | **OPEN** — the nav localizes this exact query (`siblingOf`), the footer does not, so a bilingual site gets BOTH languages listed, linking to raw slugs instead of the `/en/<slug>` form |
+| Footer quick links | `pages`, unlocalized query | fixed 2026-10-23 — `usePageSiblings` is the one rail (header menu and footer), pages swapped for the visitor's-language sibling and deduped per translation group; bit on synclair the day it became bilingual (fourteen links, half Swedish) |
 | **Mega-menu descriptions** | header block `customNavItems[].description` | **OPEN** — `localizeItem` rescues `label` (from the translated sibling page's title) and `url`, but prints `description` raw |
 | **Products, product categories, blog posts, booking services, webinars, handbook chapters** | tables with no `locale` | **OPEN** — a block placed on an English page renders them in the site language |
 | **String items inside arrays** | `translate-walk.ts` | **OPEN** — `collectTranslatable` only pushes a string when it is an object VALUE, so `FormField.options[]` and `PricingTier.features[]` are never offered to the translator; a translated form looks right until the dropdown |

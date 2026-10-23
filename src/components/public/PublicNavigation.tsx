@@ -11,8 +11,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { CartIndicator } from './CartIndicator';
 import { AccountIndicator } from './AccountIndicator';
 import { LanguageSwitcher, type PageTranslation } from './LanguageSwitcher';
-import { pickLocale } from '@/lib/pick-locale';
-import { pagePath } from '@/lib/language-path';
+import { usePageSiblings, localizeMenuPages, localizeHref } from '@/hooks/usePageSiblings';
 import { operatorText } from '@/lib/operator-text';
 import { SandboxBanner } from '@/components/SandboxBanner';
 import { useHeaderBlock, defaultHeaderData } from '@/hooks/useGlobalBlocks';
@@ -22,6 +21,7 @@ import { useStorefront } from '@/hooks/useStorefront';
 import type { HeaderNavItem } from '@/types/cms';
 import { menuColumns, menuPanelJustify, type MenuColumn } from '@/lib/menu-columns';
 import { BrandMark } from '@/components/public/BrandMark';
+import { safeHref } from '@/lib/safe-url';
 
 interface NavPage {
   id: string;
@@ -190,89 +190,15 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
     defaultBlogSettings.archiveTitle,
   );
 
-  // ── Navigationen följer besökarens språk ───────────────────────────────
-  // Utan det här landar en engelsk besökare som klickar "Tjänster" på den
-  // svenska sidan, och språkvalet varar exakt en sida. Frågan ställs BARA när
-  // sidan deklarerat ett språk, och den träffar bara sidor som faktiskt ingår
-  // i en översättningsgrupp — på en enspråkig instans finns inga sådana rader,
-  // så kostnaden där är noll.
-  const { data: siblings = [] } = useQuery({
-    queryKey: ['public-nav-translations'],
-    enabled: !!currentLocale,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pages')
-        .select('slug, title, locale, translation_group_id')
-        .eq('status', 'published')
-        .is('deleted_at', null)
-        .not('translation_group_id', 'is', null);
-      if (error) throw error;
-      return (data || []) as Array<{ slug: string; title: string; locale: string | null; translation_group_id: string | null }>;
-    },
-    staleTime: 1000 * 60 * 5,
-  });
-
-  /** The sibling of `slug` in the visitor's language, or null when there is none. */
-  const siblingOf = useMemo(() => {
-    if (!currentLocale || siblings.length === 0) return () => null as null | { slug: string; title: string; path: string };
-    const bySlug = new Map(siblings.map((p) => [p.slug, p]));
-    return (slug: string) => {
-      const source = bySlug.get(slug);
-      if (!source?.translation_group_id) return null;
-      const group = siblings.filter((p) => p.translation_group_id === source.translation_group_id);
-      const chosen = pickLocale({
-        available: group.map((p) => String(p.locale ?? '')),
-        wanted: currentLocale,
-      });
-      if (!chosen) return null;
-      const target = group.find((p) => String(p.locale ?? '') === chosen);
-      if (!target || target.slug === slug) return null;
-      const groupBase = group.find(
-        (p) => String(p.locale ?? '').toLowerCase().split('-')[0] === siteDefaultLanguage.split('-')[0],
-      )?.slug ?? null;
-      return {
-        slug: target.slug,
-        title: target.title,
-        // Adressformen: /en/<basslugg>, aldrig den egna -en-sluggen.
-        path: pagePath({
-          slug: target.slug, locale: String(target.locale ?? ''),
-          defaultLanguage: siteDefaultLanguage, baseSlug: groupBase,
-        }),
-      };
-    };
-  }, [siblings, currentLocale]);
+  // The visitor's-language sibling of a page: one rail shared with the footer.
+  const { siblingOf } = usePageSiblings(currentLocale);
 
   /** '/product/#privatai' → the same path against the sibling slug. */
-  const localizeUrl = (url: string): string => {
-    if (!url || !url.startsWith('/')) return url;
-    const [path, hash] = url.split('#');
-    const slug = path.replace(/^\//, '').replace(/\/$/, '');
-    const sibling = slug ? siblingOf(slug) : null;
-    if (!sibling) return url;
-    return `${sibling.path}${hash ? `#${hash}` : ''}`;
-  };
+  const localizeUrl = (url: string): string => localizeHref(url, siblingOf);
 
   // The menu is built from ALREADY localised data, so every renderer below —
   // desktop, mobile, mega-menu — stays exactly as it was.
-  const pages = useMemo(() => {
-    const localized = sourcePages.map((page) => {
-      const sibling = siblingOf(page.slug);
-      return sibling
-        ? { ...page, slug: sibling.slug, title: sibling.title, path: sibling.path }
-        : { ...page, path: page.slug === 'hem' ? '/' : `/${page.slug}` };
-    });
-    // En översättningsgrupp är EN menypost. show_in_menu frågar inte på språk,
-    // så en operatör som bockar i både /home och /home-en får båda i listan —
-    // och lokaliseringen ovan pekar då om båda till SAMMA syskon. Dubbletten
-    // syns som två identiska poster i besökarens meny. Dedupe på slutadressen
-    // löser båda formerna av felet på en gång.
-    const seen = new Set<string>();
-    return localized.filter((page) => {
-      if (seen.has(page.slug)) return false;
-      seen.add(page.slug);
-      return true;
-    });
-  }, [sourcePages, siblingOf]);
+  const pages = useMemo(() => localizeMenuPages(sourcePages, siblingOf), [sourcePages, siblingOf]);
 
   // Custom nav items from header settings
   const customNavItems = useMemo(() => {
@@ -427,7 +353,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
             {item.children.map((child) => (
               <a
                 key={child.id}
-                href={child.url}
+                href={safeHref(child.url)}
                 target={child.openInNewTab ? '_blank' : undefined}
                 rel={child.openInNewTab ? 'noopener noreferrer' : undefined}
                 className="group flex items-start gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
@@ -455,7 +381,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
           {item.url && item.url !== '#' && (
             <div className="mt-6 pt-6 border-t">
               <a 
-                href={item.url}
+                href={safeHref(item.url)}
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
                 View all {item.label.toLowerCase()}
@@ -505,7 +431,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
     return (
       <a
         key={item.id}
-        href={item.url}
+        href={safeHref(item.url)}
         target={item.openInNewTab ? '_blank' : undefined}
         rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
         className={getLinkClasses(false)}
@@ -542,7 +468,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
                 {item.children.map((child) => (
                   <a
                     key={child.id}
-                    href={child.url}
+                    href={safeHref(child.url)}
                     target={child.openInNewTab ? '_blank' : undefined}
                     rel={child.openInNewTab ? 'noopener noreferrer' : undefined}
                     className="group flex items-start gap-4 p-4 rounded-xl hover:bg-muted transition-colors"
@@ -572,7 +498,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
                 <div className="mt-6 pt-6 border-t flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{item.description}</span>
                   <a 
-                    href={item.url}
+                    href={safeHref(item.url)}
                     className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
                     onClick={() => setOpenMegaMenu(null)}
                   >
@@ -697,7 +623,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
             {!desktopHamburger && customNavItems.map((item) => renderNavItem(item))}
             {headerCta && (
               <a
-                href={headerCta.url}
+                href={safeHref(headerCta.url)}
                 className={cn(
                   'px-4 py-2 rounded-md text-sm font-medium transition-colors',
                   lightOnDark
@@ -930,7 +856,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
           <div className="flex items-center gap-3">
             {headerCta && (
               <a
-                href={headerCta.url}
+                href={safeHref(headerCta.url)}
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
@@ -956,7 +882,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
                 {col.title && (
                   <h2 className="mb-4 text-lg font-semibold">
                     {col.url ? (
-                      <a href={col.url} onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">{col.title}</a>
+                      <a href={safeHref(col.url)} onClick={() => setMobileMenuOpen(false)} className="hover:text-primary transition-colors">{col.title}</a>
                     ) : col.title}
                   </h2>
                 )}
@@ -964,7 +890,7 @@ export function PublicNavigation({ translations, currentLocale, onDarkSurface }:
                   {col.links.map((link) => (
                     <li key={link.id}>
                       <a
-                        href={link.url}
+                        href={safeHref(link.url)}
                         target={link.openInNewTab ? '_blank' : undefined}
                         rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                         onClick={() => setMobileMenuOpen(false)}

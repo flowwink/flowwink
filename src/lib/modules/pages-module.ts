@@ -205,6 +205,10 @@ Per-page summary with images_fixed count and the actual alt strings generated.
               type: 'integer',
               description: 'Position in the navigation menu, ascending from 0 (for create/update). list returns every page\'s menu_order — read it before choosing a slot. Omitted on create → 0; omitted on update → unchanged.',
             },
+            locale: {
+              type: 'string',
+              description: 'create: the language the page is written in, as the site declares it (site_languages.enabled, e.g. "sv", "en"). Omitted → the site\'s default language. On a site with more than one language, a page written in the other language MUST say so, or it is filed and served as the default language. Not for update — manage_page_translation set_locale moves an existing page.',
+            },
             scheduled_at: {
               type: 'string',
               description: 'update: ISO timestamp to publish the page at. Queues it (status reviewing) — publish_scheduled_content takes it live when the time passes. null takes it out of the queue.',
@@ -283,6 +287,13 @@ Full page lifecycle management: list, get, create, update, publish, archive, del
   that lists every sub-page is the failure mode. \`menu_order\` is ascending from 0; \`list\`
   returns every page's menu_order and show_in_menu, so read it before picking a slot.
   Omitted on update → unchanged. Omitted on create → in the menu, order 0.
+- **locale** (string, create only): the language the page is written in, as the site declares
+  it (\`site_languages.enabled\` — "sv", "en"…). Omitted → the site's default language. On a
+  site with more than one language, read the declaration first (manage_site_settings get
+  \`site_languages\`) and say which language you are writing: a Swedish page created without
+  \`locale\` on an English-default site is stamped "en", served at the English address and
+  offered to nobody as Swedish. A language the site does not declare is refused with the list.
+  An existing page is moved with manage_page_translation \`set_locale\`, never through update.
 - **scheduled_at** (update, ISO timestamp): publish later. The page waits as \`reviewing\` and
   \`publish_scheduled_content\` (every 15 minutes) takes it live once the time passes —
   the same contract as manage_blog_posts. \`null\` takes it out of the queue.
@@ -552,6 +563,10 @@ Reads current site branding settings: logo, colors, fonts, favicon.
             heading_font: {
               type: 'string',
               description: 'Font family for headings (overrides font_family for headings)',
+            },
+            brand_tagline: {
+              type: 'string',
+              description: 'The one-sentence line under the logo in the footer, written in the site\'s default language (it is one value; the footer shows it only on pages in that language). Empty string clears it. Rewrite it when the site\'s default language changes.',
             },
             body_font: {
               type: 'string',
@@ -1131,6 +1146,16 @@ Manages global blocks (header, footer, announcement bar, etc.): list, get, updat
   (e.g. "Contact" → /contact-us). Both or neither.
 - update MERGES block_data into the stored block at the top level: send only
   the fields you change. A nested field (customNavItems) is replaced whole.
+### Footer legal links (the row under the footer)
+- \`legalLinks: [{ id, label, url, enabled, labels? }]\` — \`label\` is written in the
+  site's DEFAULT language; \`labels\` carries the other languages by tag:
+  \`{ id: "privacy", label: "Privacy policy", labels: { sv: "Integritetspolicy" }, url: "/privacy", enabled: true }\`.
+  On a multilingual site give every link its \`labels\`, or visitors in the other
+  language read the default language's word. When the default language changes,
+  move the old label into \`labels\` and write \`label\` in the new default.
+- Internal urls ("/contact") are sent to the visitor's language version of the
+  page automatically; external urls are left as they are.
+- legalLinks is an array: update replaces it whole — send every link.
 ### Footer link columns
 - \`showMenuColumns: true\` on the footer's block_data shows the HEADER menu's groups
   (customNavItems with children) as link columns above the footer; menu items with no

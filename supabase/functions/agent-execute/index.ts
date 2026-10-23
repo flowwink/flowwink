@@ -7,7 +7,8 @@ import { planImport, readImageHeader, isGlb } from '../_shared/media/import-plan
 import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { buildUnknownParameterBounce } from '../_shared/skills/parameter-contract.ts';
 import { isTransportKey } from '../_shared/skills/parameter-contract.ts';
-import { bounceManagePageArgs, collectPageUpdateFields, parseMenuFields } from '../_shared/pages/manage-page-contract.ts';
+import { callWakesModule, moduleWakeAuditRow, moduleWakeNote } from '../_shared/modules/module-wake.ts';
+import { bounceManagePageArgs, collectPageUpdateFields, parseMenuFields, resolveCreateLocale, type SiteLanguagesDeclaration } from '../_shared/pages/manage-page-contract.ts';
 import { extractTextFromBlock } from '../_shared/chat-context.ts';
 import { retiredSkillResult } from '../_shared/skills/retired-skills.ts';
 import { isIdleScheduledRun, declaredWorkDone } from '../_shared/activity/work-done.ts';
@@ -986,8 +987,11 @@ serve(async (req) => {
 
       } else if (handler.startsWith('module:')) {
         const moduleName = handler.replace('module:', '');
-        await autoActivateModule(supabase, moduleName);
+        const woke = await autoActivateModule(supabase, moduleName, { skillName: skill.name, args });
         result = await executeModuleAction(supabase, moduleName, skill.name, args);
+        if (woke && result && typeof result === 'object' && !Array.isArray(result)) {
+          result = { ...(result as Record<string, unknown>), module_activated: { module: woke, note: moduleWakeNote(woke, skill.name) } };
+        }
 
       } else if (handler.startsWith('db:')) {
         const table = handler.replace('db:', '');
@@ -1549,9 +1553,13 @@ const MODULE_HANDLER_TO_SETTING: Record<string, string> = {
 async function autoActivateModule(
   supabase: any,
   moduleName: string,
-): Promise<void> {
+  ctx: { skillName: string; args?: Record<string, unknown> },
+): Promise<string | null> {
   const settingKey = MODULE_HANDLER_TO_SETTING[moduleName];
-  if (!settingKey) return;
+  if (!settingKey) return null;
+  // A read never wakes a module (synclair 2026-10-23: a morning orders "list"
+  // switched the shop — and its cart — back on every day). See module-wake.ts.
+  if (!callWakesModule(ctx.skillName, ctx.args)) return null;
 
   try {
     const { data: existing } = await supabase
@@ -1560,13 +1568,13 @@ async function autoActivateModule(
       .eq('key', 'modules')
       .maybeSingle();
 
-    if (!existing?.value) return;
+    if (!existing?.value) return null;
 
     const modules = existing.value as Record<string, any>;
     const moduleConfig = modules[settingKey];
     
     // Already enabled or doesn't exist in settings
-    if (!moduleConfig || moduleConfig.enabled) return;
+    if (!moduleConfig || moduleConfig.enabled) return null;
 
     // Enable the module
     modules[settingKey] = { ...moduleConfig, enabled: true };
@@ -1577,6 +1585,11 @@ async function autoActivateModule(
       .eq('key', 'modules');
 
     console.log(`[agent-execute] Auto-activated module: ${settingKey} (triggered by handler module:${moduleName})`);
+    // Visible, not just a console line: who switched what on, through which call.
+    const { error: auditErr } = await supabase.from('audit_logs').insert(
+      moduleWakeAuditRow(settingKey, { skillName: ctx.skillName, handler: `module:${moduleName}`, args: ctx.args }),
+    );
+    if (auditErr) console.error(`[agent-execute] audit row for auto-activated ${settingKey} failed: ${auditErr.message}`);
 
     // The module just went ON, so the skill registry's requirement just grew.
     // Nothing else in the chain notices — that gap is how an instance ends up
@@ -1588,9 +1601,11 @@ async function autoActivateModule(
         `[agent-execute] auto-activated ${settingKey} but ${missing} required skill(s) are still missing`,
       );
     }
+    return settingKey;
   } catch (err) {
     // Non-fatal — don't break skill execution
     console.error(`[agent-execute] Failed to auto-activate module ${settingKey}:`, err);
+    return null;
   }
 }
 
@@ -4641,6 +4656,12 @@ async function executePagesAction(
         // them. Omitted → the column default (in the menu), as before.
         const menu = parseMenuFields(args as Record<string, unknown>);
         if (menu.errors.length > 0) throw new Error(`${menu.errors.join('; ')}. Nothing was written.`);
+        // The language the page is born in: omitted → the trigger stamps the
+        // site's default; given → one the site declares, or refused with the list.
+        const { data: langRow, error: langErr } = await supabase.from('site_settings').select('value').eq('key', 'site_languages').maybeSingle();
+        if (langErr) throw new Error(`Could not read the site's languages (site_languages): ${langErr.message}. Nothing was written.`);
+        const born = resolveCreateLocale((args as { locale?: unknown }).locale, (langRow?.value ?? null) as SiteLanguagesDeclaration | null);
+        if (born.error) throw new Error(`${born.error}. Nothing was written.`);
         const { data, error } = await supabase.from('pages').insert({
           title,
           slug: pageSlug,
@@ -4648,7 +4669,8 @@ async function executePagesAction(
           content_json: pageBlocks,
           meta_json: meta || {},
           ...menu.fields,
-        }).select('id, title, slug, status, show_in_menu, menu_order').single();
+          ...(born.locale ? { locale: born.locale } : {}),
+        }).select('id, title, slug, status, show_in_menu, menu_order, locale').single();
         if (error) throw new Error(`Create page failed: ${error.message}`);
 
         // Only the FIRST page becomes the homepage. `<= 1` made the SECOND page
@@ -4671,6 +4693,7 @@ async function executePagesAction(
 
         return {
           page_id: data.id, slug: data.slug, title: data.title, status: 'draft',
+          locale: data.locale ?? null,
           show_in_menu: data.show_in_menu, menu_order: data.menu_order,
           set_as_homepage: setAsHomepage,
         };
@@ -7658,7 +7681,7 @@ async function executeBlogAction(
   // Derive excerpt if not provided
   let excerpt = rawExcerpt;
   if (!excerpt) {
-    const plainText = content.replace(/[#*_\[\]()>`-]/g, '').replace(/\n+/g, ' ').trim();
+    const plainText = content.replace(/[#*_[\]()>`-]/g, '').replace(/\n+/g, ' ').trim();
     excerpt = plainText.substring(0, 160) + (plainText.length > 160 ? '…' : '');
   }
 
@@ -9966,7 +9989,7 @@ async function executeDbAction(
         const { logo_url, logo_dark_url, primary_color, primary_color_dark, accent_color, font_family, heading_font, body_font, favicon_url,
           default_theme, allow_theme_toggle, border_radius, heading_transform, heading_weight, heading_tracking,
           logo_animation_url, logo_animation_dark_url, logo_animation, heading_color, heading_color_dark,
-          background_color, background_color_dark, gradient_highlight, section_alternation } = args as any;
+          background_color, background_color_dark, gradient_highlight, section_alternation, brand_tagline } = args as any;
         // The branding JSON the app READS uses logo / primaryColor / accentColor /
         // headingFont+bodyFont / favicon, with colors in HSL "H S% L%". The old handler
         // wrote logo_url/primary_color/accent_color (agent-shaped, hex) as separate keys
@@ -10019,6 +10042,14 @@ async function executeDbAction(
         if (font_family !== undefined) { updated.headingFont = font_family; updated.bodyFont = font_family; }
         if (heading_font !== undefined) updated.headingFont = heading_font;
         if (body_font !== undefined) updated.bodyFont = body_font;
+        // The one-sentence line under the logo in the footer. A single value in
+        // the site's own language (the footer hides it on other languages), so
+        // flipping the default language means rewriting it — through this dial,
+        // not by hand (synclair 2026-10-23: no parameter reached it).
+        if (brand_tagline !== undefined) {
+          if (typeof brand_tagline !== 'string') throw new Error('brand_tagline must be a string (empty string clears it)');
+          updated.brandTagline = brand_tagline.trim();
+        }
         // The theme and heading dials. Until 2026-10-20 an agent could set a
         // font but not "dark site", "sharp corners" or "uppercase headings" —
         // and the one that wanted them (Synclair's ChatGPT) painted them with
@@ -10175,7 +10206,7 @@ async function executeDbAction(
         const users = data || [];
         // Roles live in user_roles (multi-role). Join in a second query.
         const ids = users.map((u: any) => u.id);
-        let rolesByUser: Record<string, string[]> = {};
+        const rolesByUser: Record<string, string[]> = {};
         if (ids.length) {
           const { data: roleRows } = await supabase
             .from('user_roles')
@@ -13696,7 +13727,7 @@ async function resolveFlowtableTable(
   }
   if (!table) return { error: 'table_id or table (name/slug) is required' };
   const term = sanitizeOrTerm(table);
-  let query = supabase.from('flowtable_tables')
+  const query = supabase.from('flowtable_tables')
     .select('id, name, slug, base_id, flowtable_bases!inner(id, name, slug)')
     .or(`slug.eq.${term},name.ilike.${term}`);
   const { data: candidates, error } = await query.limit(10);

@@ -1,10 +1,11 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Linkedin, Twitter, Youtube, Shield } from 'lucide-react';
 import { useUiText, useUiTextLanguage } from '@/lib/ui-text';
-import { operatorText } from '@/lib/operator-text';
+import { operatorText, localizedLabel } from '@/lib/operator-text';
 import { useFooterBlock, useHeaderBlock, defaultFooterData } from '@/hooks/useGlobalBlocks';
 import { defaultBrandingSettings } from '@/hooks/useSiteSettings';
 import { useBranding } from '@/providers/BrandingProvider';
@@ -12,6 +13,8 @@ import { useEffectiveTheme } from '@/hooks/useEffectiveTheme';
 import { FooterSectionId, FooterVariant, type HeaderBlockData } from '@/types/cms';
 import { menuColumns as buildMenuColumns } from '@/lib/menu-columns';
 import { telHref } from '@/lib/tel-href';
+import { footerLogoFor } from '@/lib/footer-logo';
+import { usePageSiblings, localizeMenuPages, localizeHref } from '@/hooks/usePageSiblings';
 
 interface NavPage {
   id: string;
@@ -74,6 +77,11 @@ export function PublicFooter() {
      t() anropas med literaler: en nyckel bakom en variabel blir osynlig i
      besökartext-editorn. */
   const { lang, siteLang } = useUiTextLanguage();
+  // Quick links follow the visitor's language exactly as the header menu does:
+  // each page swapped for its sibling, one entry per translation group.
+  const { siblingOf } = usePageSiblings(lang);
+  const quickLinkPages = useMemo(() => localizeMenuPages(pages, siblingOf), [pages, siblingOf]);
+
   const legalPack: Record<string, string> = {
     privacy: t('footer.legal.privacy', 'Privacy Policy'),
     accessibility: t('footer.legal.accessibility', 'Accessibility'),
@@ -146,10 +154,8 @@ export function PublicFooter() {
     return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4';
   };
 
-  // Footer logo handling
-  const footerLogo = resolvedTheme === 'dark' 
-    ? (branding?.logo || branding?.logoDark)
-    : (branding?.logoDark || branding?.logo);
+  // The logo follows the surface the footer sits on (footer-logo.ts).
+  const footerLogo = footerLogoFor(settings?.surface, resolvedTheme, branding?.logo, branding?.logoDark);
   const hasFooterLogo = !!footerLogo;
 
   // Section components
@@ -189,10 +195,10 @@ export function PublicFooter() {
           <div key="quickLinks">
             {quickLinksHeading && <h3 className="font-serif font-bold text-lg mb-4">{quickLinksHeading}</h3>}
             <nav className="flex flex-col gap-2">
-              {pages.slice(0, 6).map((page) => (
+              {quickLinkPages.slice(0, 6).map((page) => (
                 <Link
                   key={page.id}
-                  to={page.slug === 'hem' ? '/' : `/${page.slug}`}
+                  to={page.path}
                   className="text-primary-foreground/80 hover:text-primary-foreground text-sm transition-colors"
                 >
                   {page.title}
@@ -392,10 +398,10 @@ export function PublicFooter() {
               {settings.legalLinks.filter(l => l.enabled).map((link) => (
                 <Link
                   key={link.id}
-                  to={link.url}
+                  to={localizeHref(link.url, siblingOf)}
                   className="hover:text-primary-foreground transition-colors"
                 >
-                  {operatorText(link.label, legalPack[link.id] ?? link.label, lang, siteLang,
+                  {localizedLabel(link.label, link.labels, legalPack[link.id] ?? link.label, lang, siteLang,
                     defaultFooterData.legalLinks.find((l) => l.id === link.id)?.label ?? null)}
                 </Link>
               ))}

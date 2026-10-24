@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261025000000",
-      "migrations_count": 676,
+      "migration_head": "20261025010000",
+      "migrations_count": 677,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2709,6 +2709,10 @@
         {
           "version": "20261025000000",
           "name": "inloggad-kund-ser-det-besokaren-ser"
+        },
+        {
+          "version": "20261025010000",
+          "name": "sidoversattningar-overlagget-foljer-sidan"
         }
       ]
     },
@@ -2719,7 +2723,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:acdd441707c1ebeb986923352d7c37acdb946db251320dab0700ac37c82f082b",
+      "shared_hash": "sha256:03ba0c077ea07d45e09686c29ee23490b9bbee13c0ceaef7f6efdb7203f84737",
       "functions": {
         "agent-execute": "sha256:d981a9f19228d79eeabe4eb2de75e54d459d39f803c6d339b2b5e49a740f6983",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
@@ -2758,7 +2762,7 @@
         "flowpilot-lifecycle": "sha256:412427a0ce3c375a65136df3eb0f255b41d6551d1d507f935dbe2c59f806a33e",
         "gatewayapi-ingest": "sha256:9f5c222b4e49a9d7eaeac08fd342ca09acab43c9d9b5e63da668cd1c4aef1ddb",
         "generate-invoice-pdf": "sha256:4bd3a97682d1002144638f741e9b2f296513c5815c5b970f38ab3d50eba79fad",
-        "get-page": "sha256:29eb67b2b03b57f65c68c681124330c7ef65371108422c6013beaa59cd1b8216",
+        "get-page": "sha256:84b975e6c36e75bcd7dc805dd35f71485aea01c690c0bbc23888d67c60d85271",
         "gmail-oauth-callback": "sha256:b851b5a37da669b8dc506d399417619361317d008a2ac17a3b3cfda4dfff0dea",
         "instance-health": "sha256:15fac01005e503ee8f7c4226890bea28ecdcd0b43ada818f8fc7697e9fbecc99",
         "integrations-account": "sha256:97349b1f66e6a4e628de49bd36473af4f5c19726174c30e3b47ff4c594d68e29",

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261023100000",
-      "migrations_count": 675,
+      "migration_head": "20261025000000",
+      "migrations_count": 676,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2705,6 +2705,10 @@
         {
           "version": "20261023100000",
           "name": "bilagan-renderas-avtalet-skickas-klart"
+        },
+        {
+          "version": "20261025000000",
+          "name": "inloggad-kund-ser-det-besokaren-ser"
         }
       ]
     },

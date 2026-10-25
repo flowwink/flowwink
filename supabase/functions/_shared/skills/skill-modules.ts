@@ -616,6 +616,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "timesheet_summary": "timesheets",
   "timesheet_utilization_report": "timesheets",
   "transfer_stock": "inventory",
+  "translate_content": "blog",
   "translate_page": "pages",
   "translate_site_into": "pages",
   "translate_ui_text": "platform",

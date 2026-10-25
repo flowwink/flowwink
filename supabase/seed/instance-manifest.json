@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261025020000",
-      "migrations_count": 678,
+      "migration_head": "20261025030000",
+      "migrations_count": 679,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2717,23 +2717,27 @@
         {
           "version": "20261025020000",
           "name": "sprakversionerna-kommer-fran-bada-modellerna"
+        },
+        {
+          "version": "20261025030000",
+          "name": "bloggen-far-sprak-overlagget-blir-generiskt"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:dae3e3dfed4c5ff1f713fccb57792a5f1e661fce67d65132bb5fe66515218564",
-      "skill_count": 631,
+      "seed_hash": "sha256:84d34ae5b4236fd281dd9f9a432e47e89a77beb4f5f5167678b0404f08c7a5c6",
+      "skill_count": 632,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:fd42050db30adde51dee61bd1c773884a4ffa8ce06572e58c312904da1f8f5a9",
+      "shared_hash": "sha256:b118153d5c6e8071b73985b78af6cae40e1153552fb38d6cf93e90998161174f",
       "functions": {
-        "agent-execute": "sha256:5be12c5652bba4ba8d89255e498959840c1dc3e7f72c3660d610ec06ef66fc19",
+        "agent-execute": "sha256:a0e17315a8505e5e3f957456eb96f34ebd60e4b11aaa593e66bb6c53fde9097e",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:5c3c94e038ef44fc38a391be296488325ff2c88ab9bcc3188ca4208094b937f3",
-        "blog-rss": "sha256:dd57f6386804f1e0a4b8e0db3cdb83abc386c5790a677c7fdfe145067ae51be6",
+        "blog-rss": "sha256:0edb1a4c2aa225b7b8358536539f0ac2b45ef47ca625329b754fe7e104bf0014",
         "browser-fetch": "sha256:762a956222c98ae99b4a361bec94c3d31fcbde6c0d96512755bd50caefa6d652",
         "chat-completion": "sha256:c40af02b0c008cdc4f4cdf5edbd08af22d5d154afefc002dfaf3e79d19c32bbb",
         "chat-stt": "sha256:b67dd50ab6cad26f061b911a366607620aca8647977b2be8d4331b2ec51c4aa6",
@@ -2742,7 +2746,7 @@
         "composio-proxy": "sha256:3a8304cb297fce88e7713e3f2a38dd679d53e9927f557fade7ea6423cc722988",
         "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:7f891dad970a77c2a72f7c88224f952ce082d8915ec544727a56cdc6b66a61b9",
-        "content-api": "sha256:64c03bcaa94f7e17575c9e36611830c049cdcf372747ed2af264eb03c70bce42",
+        "content-api": "sha256:563468a58f81811f45c17e547590c6e7a8b30060bfcf0e18a45bd3750a0be4ab",
         "contract-billing-cron": "sha256:bd4af2f1f3c05253ae5635af48686f9f662f40a55b1b3097001c1828b35f898a",
         "contract-sign": "sha256:44b97642a6e25d85e54866a6bea9d42967d5d0114c8ddc80803c66faaf8c7d1e",
         "create-checkout": "sha256:af57c2f401f7c9bac6658f7d26c5c28e43e8f32b2f9020b76a4766525a2c1317",
@@ -2766,7 +2770,7 @@
         "flowpilot-lifecycle": "sha256:412427a0ce3c375a65136df3eb0f255b41d6551d1d507f935dbe2c59f806a33e",
         "gatewayapi-ingest": "sha256:9f5c222b4e49a9d7eaeac08fd342ca09acab43c9d9b5e63da668cd1c4aef1ddb",
         "generate-invoice-pdf": "sha256:4bd3a97682d1002144638f741e9b2f296513c5815c5b970f38ab3d50eba79fad",
-        "get-page": "sha256:84b975e6c36e75bcd7dc805dd35f71485aea01c690c0bbc23888d67c60d85271",
+        "get-page": "sha256:3e42751911164c9d6c350b931a4e64a4824166a6bef8d02e526ad378c8f3921b",
         "gmail-oauth-callback": "sha256:b851b5a37da669b8dc506d399417619361317d008a2ac17a3b3cfda4dfff0dea",
         "instance-health": "sha256:15fac01005e503ee8f7c4226890bea28ecdcd0b43ada818f8fc7697e9fbecc99",
         "integrations-account": "sha256:97349b1f66e6a4e628de49bd36473af4f5c19726174c30e3b47ff4c594d68e29",
@@ -2785,13 +2789,13 @@
         "quote-pay": "sha256:f42a8accc1489304c32b0e3a2c5f30188faa898e48e9323698ed624ca9aea296",
         "quote-sign": "sha256:6f0e0aabc65a4d5375753109a8cc94992b3c56785bd341db925d446891e45d46",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:deb68fbb4300db6c105b13598010029a0de8b402429d4e4a321b5a7c2857354a",
+        "run-platform-tests": "sha256:2ab300d972ed965ae492a766809075f6b76b9cc10525c0b415646a6dcc07254f",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",
         "signal-dispatcher": "sha256:a76e992430f13d05003a0e00ba622c239006fc853531400d88a1f238310c90dc",
         "signal-ingest": "sha256:b7bf9c636845229394e12d2cec9b78da6657b3a321775f65063e53794eb0ea3d",
-        "sitemap": "sha256:311f0d7b5c8d21ce5e7d6a3f7b7bb3ae5373fc7def7339a7010fc6cda0802d7f",
+        "sitemap": "sha256:bbb960c91dea50a2087b96b1dcb15e4ca1802c0a8615b8023fce7f2423bddbf1",
         "stripe-webhook": "sha256:7be2d24d1a70818815e6aa829d6f7b1ed83877172a2f8ed50c98af98ae180072",
         "subscription-billing-cron": "sha256:d3a4089951cbc82379b1f667b1d5b98503961e4364ab811617b4c5d5a6036663",
         "subscriptions": "sha256:d3ac2a631b793a4507315d92f144c69a3697ffc6a0186b6bbc3d7cda05a46a33",

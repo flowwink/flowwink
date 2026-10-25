@@ -104,6 +104,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "content_calendar_view": "blog",
   "contract_renewal_check": "contracts",
   "conversion_report": "analytics",
+  "convert_translation_groups": "pages",
   "convert_uom": "ecommerce",
   "create_credit_note": "invoicing",
   "create_manual_subscription": "subscriptions",

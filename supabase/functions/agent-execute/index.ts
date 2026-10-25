@@ -68,6 +68,7 @@ import { executeReconciliation } from '../_shared/handlers/reconciliation.ts';
 import { handleEmailAdmins as hEmailAdmins } from '../_shared/handlers/email-admins.ts';
 import { handleDraftEmailReply } from '../_shared/handlers/draft-email-reply.ts';
 import { handleTranslatePage } from '../_shared/handlers/translate-page.ts';
+import { isDryRunRead } from '../_shared/skills/read-surface.ts';
 import { handleConvertTranslationGroups, handleEnableLanguage, handleListStaleTranslations, handlePublishTranslation, handleSetTranslation, type ConvertGroupsArgs, type EnableLanguageArgs, type ListStaleArgs, type PublishTranslationArgs, type SetTranslationArgs } from '../_shared/handlers/page-translations.ts';
 
 /**
@@ -830,6 +831,13 @@ serve(async (req) => {
       ? ticketArgs._approval_activity_id : undefined;
     delete ticketArgs._approval_request_id;
     delete ticketArgs._approval_activity_id;
+
+    // A dry run of a skill whose contract makes it a read (DRY_RUN_READS in
+    // _shared/skills/read-surface.ts) plans and writes nothing: it passes the
+    // human gate (as 'notify'), so the plan can be read before anyone is asked
+    // to approve it. A live run of the same skill still stops below.
+    const planOnly = isDryRunRead(skill.name, args as Record<string, unknown>);
+    if (planOnly && trustLevel === 'approve') trustLevel = 'notify';
 
     if (trustLevel === 'approve' && !bypassApproval) {
       const activityId = await logActivity(supabase, {

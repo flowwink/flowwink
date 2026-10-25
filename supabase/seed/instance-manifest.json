@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261025030000",
-      "migrations_count": 679,
+      "migration_head": "20261025040000",
+      "migrations_count": 680,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2721,6 +2721,10 @@
         {
           "version": "20261025030000",
           "name": "bloggen-far-sprak-overlagget-blir-generiskt"
+        },
+        {
+          "version": "20261025040000",
+          "name": "foretagets-valuta-och-tal-bor-i-databasen"
         }
       ]
     },
@@ -2731,9 +2735,9 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:5841057e9b146ec9ed992e9407a042cf8a206c529246208dcfb69bef77f005be",
+      "shared_hash": "sha256:47108e34bf44dffb4a666c27985e61bce4d481c98cce4fb490a87fd6e85e7c37",
       "functions": {
-        "agent-execute": "sha256:4d0f0333edcb2f1c1ab0ad68362b32bd3fbd5e72e4da82b2752afe8be2d95c10",
+        "agent-execute": "sha256:1cc80a16c4b0b772e402647704a1c98eb3c83960410d02e5a46c0ccbab7fed72",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:5c3c94e038ef44fc38a391be296488325ff2c88ab9bcc3188ca4208094b937f3",
@@ -2749,8 +2753,8 @@
         "content-api": "sha256:563468a58f81811f45c17e547590c6e7a8b30060bfcf0e18a45bd3750a0be4ab",
         "contract-billing-cron": "sha256:392fc24664ae07342f38931810ddfcee24a6f1d7493bbe21198fb21a4c5bd613",
         "contract-sign": "sha256:44b97642a6e25d85e54866a6bea9d42967d5d0114c8ddc80803c66faaf8c7d1e",
-        "create-checkout": "sha256:af57c2f401f7c9bac6658f7d26c5c28e43e8f32b2f9020b76a4766525a2c1317",
-        "create-invoice-payment": "sha256:917c78b89d0131f426ed5c6109eea67d8020604def81f1179eba2e5bb0c8bea6",
+        "create-checkout": "sha256:8e3654939e37f36b3fe8d87dfdc4267f36b7b8cb3c895a303c92ec00969b7a36",
+        "create-invoice-payment": "sha256:005af33156f2694956d965b322ac6d8017e2aa7444dd49c6e4020539ff402633",
         "create-user": "sha256:9f6d84e3e07c734a17b261551e1ca825cf84f4238c74d510c9e23de8b3805a61",
         "customer-signup": "sha256:a28e4a612842ca548e8dc645efdea5d9b16e209ceac2fa97177246d392a07724",
         "delete-user": "sha256:30ab94347450ac8d1664234057b39861e825e27af98f1688b21dbcb1262d8edb",
@@ -2759,7 +2763,7 @@
         "document-share": "sha256:31788ab9658ef27ccafe99fbc72662fed03ffd73ad335e7ad7bf7076d9638bda",
         "document-sign-request": "sha256:1df2d2989368c711d2ad0dbac629c754804bde795f0e081ae9c7892f0a193be3",
         "dunning-processor": "sha256:e05e55a6624859ed9f36f296aa5eccbb313f5d70f861a84067af4a4738b12679",
-        "einvoice": "sha256:4bedfc14a6fe80b53eaa340fcfcdacdd1b3d588dde7ce5eaf8354be4b16d4236",
+        "einvoice": "sha256:75eb9e0e1bf84e5fc7130ce8b782ffffab5ef5ec2c5acda0723a2e74664e0d96",
         "elks46-ingest": "sha256:b307030541f462e2617c918834e04f8649bd4d2f8b6b9e2c80d64b2b25a2cfc7",
         "email-send": "sha256:68c9f63e045c235c062af173d21738fa48e2356c06ca869cac26821a5e96706a",
         "email-webhook": "sha256:55c393771311c65d2841fc988593923bc5dea9d253f847f875de2638ebecc239",
@@ -2786,8 +2790,8 @@
         "process-image": "sha256:b7a65c7cf8f1b80ec4ae22aec5ab2ec7521ead15ee3f96e08921da90ed41b985",
         "process-job-application": "sha256:25776893a0080b2bce6674c66d0c6539a0d0238a5eb18f1d0755c17248d0f900",
         "quote-expiry-reminders": "sha256:6d9b763668aefb9948af581d5d54f52879814f964f61f8cca345db4e57805034",
-        "quote-pay": "sha256:f42a8accc1489304c32b0e3a2c5f30188faa898e48e9323698ed624ca9aea296",
-        "quote-sign": "sha256:1e1e611943ea94b4cc2e3ebfa036bddbfb5758c354ea0a7cfa9cebeaed8dbb7a",
+        "quote-pay": "sha256:9be4edf4b93c80e9dad8bbe2976a8f1a9de6945d44b7a4f675ac0d0d9c590629",
+        "quote-sign": "sha256:435c3eec20920e5e5d97aeee6a03ac49614576fe0dcf3b8a5bcef6dee9dfab34",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
         "run-platform-tests": "sha256:4d495505fe083940efb25ff4d94307be0dd7e62a904576422f8f88658846daac",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
@@ -2796,8 +2800,8 @@
         "signal-dispatcher": "sha256:a76e992430f13d05003a0e00ba622c239006fc853531400d88a1f238310c90dc",
         "signal-ingest": "sha256:b7bf9c636845229394e12d2cec9b78da6657b3a321775f65063e53794eb0ea3d",
         "sitemap": "sha256:bbb960c91dea50a2087b96b1dcb15e4ca1802c0a8615b8023fce7f2423bddbf1",
-        "stripe-webhook": "sha256:7be2d24d1a70818815e6aa829d6f7b1ed83877172a2f8ed50c98af98ae180072",
-        "subscription-billing-cron": "sha256:d3a4089951cbc82379b1f667b1d5b98503961e4364ab811617b4c5d5a6036663",
+        "stripe-webhook": "sha256:170a1ea0eaec02d8b59cd0ca0121ea25c49e86e28fd17a0391c52bfd81ab3092",
+        "subscription-billing-cron": "sha256:635a13846746187695a361f586125a59d61754c2eb950be3818a1c7258c8f48e",
         "subscriptions": "sha256:d3ac2a631b793a4507315d92f144c69a3697ffc6a0186b6bbc3d7cda05a46a33",
         "system-integrity-check": "sha256:02dd87d0fa5e610ceef45b843ada026fb8c860117005d9bbcb190e2847f27c08",
         "telegram-ingest": "sha256:d1a509622d71db0e42a6902da31ce346c3b57471a1350c240c7c5b37a50c9cbc",

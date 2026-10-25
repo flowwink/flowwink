@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261025010000",
-      "migrations_count": 677,
+      "migration_head": "20261025020000",
+      "migrations_count": 678,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2713,6 +2713,10 @@
         {
           "version": "20261025010000",
           "name": "sidoversattningar-overlagget-foljer-sidan"
+        },
+        {
+          "version": "20261025020000",
+          "name": "sprakversionerna-kommer-fran-bada-modellerna"
         }
       ]
     },
@@ -2723,7 +2727,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:cac8eed7a5e8614fb7e1117d6aff9011c55be413a267ee6b36769178bc0251d6",
+      "shared_hash": "sha256:dc61014b7ce656757984a9a1dce90f4ebf38a30d7cff3bc6b48e341f2ebc32f0",
       "functions": {
         "agent-execute": "sha256:4c1a98b16bf3a3b3a015bc008db889c08b4b42a9a9cc4316dd26708473574811",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
@@ -2787,7 +2791,7 @@
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",
         "signal-dispatcher": "sha256:a76e992430f13d05003a0e00ba622c239006fc853531400d88a1f238310c90dc",
         "signal-ingest": "sha256:b7bf9c636845229394e12d2cec9b78da6657b3a321775f65063e53794eb0ea3d",
-        "sitemap": "sha256:8173e345621b97184ce181684590e9389a952d473368c5c83c834bbc813e9180",
+        "sitemap": "sha256:311f0d7b5c8d21ce5e7d6a3f7b7bb3ae5373fc7def7339a7010fc6cda0802d7f",
         "stripe-webhook": "sha256:7be2d24d1a70818815e6aa829d6f7b1ed83877172a2f8ed50c98af98ae180072",
         "subscription-billing-cron": "sha256:d3a4089951cbc82379b1f667b1d5b98503961e4364ab811617b4c5d5a6036663",
         "subscriptions": "sha256:d3ac2a631b793a4507315d92f144c69a3697ffc6a0186b6bbc3d7cda05a46a33",

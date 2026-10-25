@@ -2725,15 +2725,15 @@
       ]
     },
     "skills": {
-      "seed_hash": "sha256:84d34ae5b4236fd281dd9f9a432e47e89a77beb4f5f5167678b0404f08c7a5c6",
-      "skill_count": 632,
+      "seed_hash": "sha256:b3f606f5f6a6040c7e5a04ff97b5d33489e0dc1ff64d1035902ad3685f237767",
+      "skill_count": 634,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:fba8ea418be01e3606185a011a29786858d0eee49b2524fd5d880dc390ac53b1",
+      "shared_hash": "sha256:5841057e9b146ec9ed992e9407a042cf8a206c529246208dcfb69bef77f005be",
       "functions": {
-        "agent-execute": "sha256:76691500639f325b6c934ee851cc21450495e060a12ac62d2764afd7b2538541",
+        "agent-execute": "sha256:4d0f0333edcb2f1c1ab0ad68362b32bd3fbd5e72e4da82b2752afe8be2d95c10",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:5c3c94e038ef44fc38a391be296488325ff2c88ab9bcc3188ca4208094b937f3",
@@ -2789,7 +2789,7 @@
         "quote-pay": "sha256:f42a8accc1489304c32b0e3a2c5f30188faa898e48e9323698ed624ca9aea296",
         "quote-sign": "sha256:1e1e611943ea94b4cc2e3ebfa036bddbfb5758c354ea0a7cfa9cebeaed8dbb7a",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:2ab300d972ed965ae492a766809075f6b76b9cc10525c0b415646a6dcc07254f",
+        "run-platform-tests": "sha256:4d495505fe083940efb25ff4d94307be0dd7e62a904576422f8f88658846daac",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

@@ -93,13 +93,11 @@ once (Law 4) and the readers select strict-first with a legacy fallback.
 ```sql
 create table page_translations (
   page_id        uuid not null references pages(id) on delete cascade,
-  locale         text not null,                       -- BCP-47, lowercased
-  status         text not null default 'draft',       -- 'draft' | 'published'
-  slug           text,                                -- per-language address, optional (§4)
-  title          text,
-  meta           jsonb not null default '{}',         -- meta_title, meta_description, og_* …
+  locale         text not null,                       -- BCP-47, lowercased (CHECK)
+  status         text not null default 'draft',       -- 'draft' | 'published' (CHECK)
+  slug           text,                                -- per-language address, optional (§4); unique per (locale, slug)
   strings        jsonb not null default '{}',         -- the overlay proper, see below
-  coverage       integer,                             -- translated units / total units, cached
+  coverage       integer,                             -- fresh units / total units, %, cached
   translated_at  timestamptz,
   translated_by  text,                                -- 'translate_page' | user id | 'conversion'
   created_at     timestamptz not null default now(),
@@ -108,32 +106,51 @@ create table page_translations (
 );
 ```
 
+Migration `20261025010000_sidoversattningar-overlagget-foljer-sidan.sql` (step
+2). The page's title and SEO meta are NOT separate columns: they are units
+too (`page.title`, `page.meta.<key>`) and live in `strings` — one mechanism,
+one staleness rule, one resolver. RLS: anon and signed-in users read a
+PUBLISHED overlay of a PUBLISHED page (the `pages` boundary); staff read and
+write everything; the migration proves lower-casing, the status check and
+the delete cascade on every apply.
+
 `strings` maps a **unit key** to an entry:
 
 ```json
 {
-  "blk_7f3a.title":                { "text": "Våra tjänster",      "source_hash": "9c1e…" },
-  "blk_7f3a.subtitle":             { "text": "Tre sätt att börja", "source_hash": "02ab…" },
-  "blk_7f3a.features[0].title":    { "text": "Rådgivning",         "source_hash": "d41d…" },
-  "blk_7f3a.features[0].description": { "text": "…",               "source_hash": "77be…" },
-  "blk_2c90.content":              { "doc": { "type": "doc", "content": [ … ] }, "source_hash": "f00d…" }
+  "page.title":                         { "text": "Tjänster",           "source_hash": "9c1e…" },
+  "page.meta.seoTitle":                 { "text": "Tjänster — Synclair", "source_hash": "4a7b…" },
+  "b7f3a.data.title":                   { "text": "Våra tjänster",      "source_hash": "02ab…" },
+  "b7f3a.data.items[0].title":          { "text": "Rådgivning",         "source_hash": "d41d…" },
+  "b7f3a.data.items[0].description":    { "text": "…",                  "source_hash": "77be…" },
+  "b2c90.data.content":                 { "doc": { "type": "doc", "content": [ … ] }, "source_hash": "f00d…" }
 }
 ```
 
-- **A unit is a field of a block** — `<block.id>.<field path>`. Block ids are
-  stable across reorders; array indices inside a block are not stable but are
-  bounded to that block, so moving a block costs nothing and reordering three
-  pricing tiers costs those three. *Never key by position in `content_json`*:
-  the walker's `path` today is `[3, 'title']`, and inserting one block above
-  would make every string on the page stale.
+- **A unit is a field of a block** — `<block.id>.<path inside the block>`,
+  dots for keys and brackets for indices (`b7f3a.data.items[0].title`); the
+  page's own fields are `page.title` and `page.meta.<key>`. Block ids are
+  stable across reorders (checked 2026-10-24: 451 template blocks and 276 live
+  blocks on www, none without an id); array indices inside a block are not
+  stable but are bounded to that block, so moving a block costs nothing and
+  reordering three pricing tiers costs those three. *Never key by position in
+  `content_json`*: the walker's `path` is `[3, 'data', 'title']`, and
+  inserting one block above would make every string on the page stale. A
+  block with no id (legacy data) is keyed `#<index>` so nothing is dropped —
+  the key then moves with the block, which is why the normaliser assigns ids.
 - **A rich-text field is one unit.** The Tiptap doc of a `rich-text` block, a
   `content` field, a testimonial quote with marks — the whole document is the
   entry (`doc`), not its individual text nodes. Half a translated paragraph is
   not a thing, and text-node paths change every time a sentence is split. The
-  translator receives and returns the doc; `structureSignature` is checked on
-  the doc, not on the page.
-- **`source_hash`** is `sha256` of the source unit (the string, or the
-  canonical JSON of the doc) *at the time the entry was written*. On read, a
+  unit's text is the doc's text nodes in order — marks, attrs and node ids are
+  not text, so a link moved or a paragraph id regenerated by the editor does
+  not stale the translation; a changed word does. Translating a doc still
+  happens node by node inside it (the existing walk); the doc is the unit of
+  storage and staleness, not of the model call.
+- **`source_hash`** is a fingerprint of the unit's text *at the time the entry
+  was written* — FNV-1a 64 as 16 hex chars (`unitHash`), synchronous and
+  identical in Deno and Node; it is a staleness check, not a credential, so a
+  cryptographic hash would buy nothing but an `await`. On read, a
   unit whose current source hash differs from the stored one is **stale**: the
   stored text is still shown (it is a translation of something very close, and
   better than the source language), but it is counted and listed. This is what
@@ -169,12 +186,19 @@ translated · 2 stale" on the language tab and the string list, and
 `list_stale_translations` returns the two. Hidden fallback is how a visitor
 finds the gap before the operator does.
 
-The resolver is ONE function, `resolvePageInLocale(page, overlay)`, in
-`_shared/i18n/` next to the walker, with a TypeScript twin for the admin
-preview (the edge bundle cannot reach `src/`, so the twin is pinned by the same
-fixture file, the `pagePath()` precedent). `get-page` grows `&lang=<locale>`
-and returns the resolved tree plus `{ locale, fallback_units: [...] }`; the
-cache key includes the language.
+The resolver is ONE function, `resolvePageInLocale(page, overlay)` in
+`_shared/i18n/resolve-page.ts` next to the walker — and one module, not a
+twin: `src/` already imports from `_shared/` directly
+(`forms/delivery-plan`, `email/sender-identity`), so the admin preview and
+PublicPage's DB fallback call the same code the edge runs. `get-page` takes
+`&lang=<locale>` (step 2): with the page's own language or no `lang` the
+response is byte-identical to before; with another language it returns the
+resolved tree plus `language: { requested, served, slug, coverage,
+fallback_units, stale_units }`, or `{ found: false, error: 'No published
+translation', requested_lang, page_lang, available }` when no published
+overlay exists — the caller (step 4) decides what that absence means. The
+cache key is `<slug>@<lang>`. An instance that has not applied the migration
+yet reads as "no overlays" (the fleet runs several schema versions at once).
 
 ### 2.4 Divergence is a page, not an overlay
 
@@ -198,17 +222,16 @@ and needs three changes, not a rewrite:
 
 | Function | Today | For the overlay |
 |---|---|---|
-| `collectTranslatable(root)` | flat `{path, key, text}[]`, index-based paths | emit `unit` (`<block.id>.<field>`) alongside `path`; treat rich-text docs as one unit |
+| `collectTranslatable(root)` | flat `{path, key, text}[]`, index-based paths | unchanged; `collectUnits(page)` in `translation-units.ts` builds on it — `unit` key, `hash`, rich-text docs as one unit (**built, step 1**) |
 | `applyTranslations(root, [{path, text}])` | deep copy with strings replaced | unchanged — the resolver feeds it from the overlay by unit |
 | `structureSignature(blocks)` | page-level block shape | per rich-text doc as well |
 | `isTranslatable(key, value)` | decides prose vs. identifier | unchanged — it IS the definition of "text, not layout" |
 
-The one OPEN gap in `language.md` moves from nice-to-have to prerequisite:
-`collectTranslatable` skips **string items inside arrays** (`FormField.options[]`,
-`PricingTier.features[]`). Under the row model a missed string meant one
-untranslated dropdown; under the overlay model it means a unit that can never
-be translated at all. Fix the walker first (unit key `…features[2]`, the
-string itself as the value); the guardrail test gets the fixture.
+The "string items inside arrays" gap `language.md` lists as OPEN was closed
+on 2026-10-23 (synclair's chips: `tags[0]`, `options[]`, `features[]` are now
+judged by the array's key) — under the overlay model a missed string would
+have been a unit that can never be translated, so this was a prerequisite and
+it is done. `language.md`'s table is stale on that row.
 
 The handler `_shared/handlers/translate-page.ts` keeps its loop — collect,
 batch (`batchStrings`, 40 items / 6 000 chars, max 24 batches), `translateAll`,
@@ -277,7 +300,7 @@ edited where the design lives.
 | Skill | Today | Proposed |
 |---|---|---|
 | `translate_page(slug \| source_slug + locale)` | finds or creates the sibling row, translates into it | `translate_page(slug, locale, publish?, dry_run?, context?)` — upserts missing and stale units of the `(page, locale)` overlay. Result: `{ translated, kept, stale_cleared, orphans_dropped, coverage }`. The `source_slug` form becomes the only form; "slug of the target row" has no referent. |
-| `translate_site_into(locale)` | copies every published page into drafts, adds the language | **`enable_language(locale, translate?: boolean)`** — adds to `site_languages`; with `translate` runs `translate_page` over published pages. Copies nothing. The old name stays as an alias one release, returning the new result. |
+| `translate_site_into(locale)` | copies every published page into drafts, adds the language | **`enable_language(locale, dry_run?)`** — adds to `site_languages` and returns the pages without a published overlay (the todo). Copies nothing, translates nothing itself: one `translate_page` per page keeps each call inside the 150 s wall clock. The old name is an alias. |
 | `list_stale_translations(min_hours)` | pages older than their freshest sibling | `list_stale_translations(locale?, page?)` → **units**: `{ page, locale, unit, source_text, stale: true \| missing: true }`. No threshold — a hash is exact. |
 | `manage_page_translation(create \| …)` | creates the sibling row in a group | **retired.** A separate page for a market is `manage_page create` with `locale` — the skill description names the two intents: *translate this page* (`translate_page`) vs *a different page for that market* (`manage_page`). |
 | `manage_page get` | the row | adds `translations: [{ locale, status, coverage, stale_units, slug }]` so an operator never edits blind |
@@ -350,27 +373,119 @@ and the operator is in the room.
 - **No automatic detection, no admin catalogue** — the deliberate omissions of
   `language.md` stand.
 
-## 8. Sequence
+## 8. Build plan
 
-Medium-sized. Each step ships green on its own and leaves the fleet working
-on the old model until step 5 runs on an instance.
+Decided 2026-10-24 ("kör på"). The decisions §2 left implicit, settled so the
+code has one answer each:
 
-1. **Walker**: unit keys, rich-text as one unit, array string items. Fixture +
-   guardrail. No behaviour change for `translate_page` yet.
-2. **Table + resolver**: `page_translations`, `resolvePageInLocale` (edge +
-   TypeScript twin, one fixture), `get-page ?lang=`. Nothing writes the table.
-3. **Writers**: `translate_page` writes the overlay when the page has no
-   sibling rows (new pages on converted or fresh sites), `set_translation`,
-   `publish_translation`, `enable_language`, `list_stale_translations` on
-   units. `translate_site_into` aliases.
-4. **Readers**: PublicPage, navigation (`siblingOf` → overlay title/slug),
-   switcher, `hreflang`, sitemap, admin pages list, the translation view in
-   the page editor. Legacy sibling rows still resolve through the old path.
-5. **Conversion**: `convert_translation_groups`, dry run on synclair, then
-   live; then www. `pagesInWorkingLanguage()` and the working-language
-   selector are removed when no instance has groups.
-6. **Retire**: `manage_page_translation`, `translation_group_id`, the `-en`
-   slug rule in `language.md` §2 and "What is deliberately not here".
+| Question | Decision | Why |
+|---|---|---|
+| Unit key | `<block.id>.<path>`, `page.title`, `page.meta.<key>`; `#<index>` for an id-less block | every block has an id (verified); position only as a visible fallback |
+| Arrays inside a block | index within the block, no item-id matching | reordering three tiers costs three units; matching list items by content is a heuristic that would guess |
+| Rich text | one unit; hash over text nodes in order | marks/attrs/ids churn on every save; words are what a translator translated |
+| Hash | FNV-1a 64, 16 hex, synchronous | a fingerprint; `crypto.subtle` is async and buys nothing |
+| Absence (`/en/<slug>` with no published overlay) | **redirect to the source address** — today's behaviour, kept in step 4 | the address then says what it shows; the 404 the first draft of this table chose would have changed live sites (synclair, www) in the same release as the readers. A `404` option can come as a setting once the overlay model is the only one |
+| Overlay publishing | `page_translations.status` per `(page, locale)`; the switcher lists published overlays only | a page has ONE tree with a status (no draft tree), so per-language publish lives on the overlay |
+| Translating a doc unit | node by node inside the doc, as today; the translated doc is stored whole | translation quality unchanged; storage granularity is what changes |
+| Stale text | shown, counted, listed | better than the source language; hidden fallback is how the visitor finds the gap first |
+| Who builds | the cloud session builds the PR sequence; the local session runs conversions on live instances with the operator present | one builder per step — the #597 double-stamp |
+| Tests | unit tests per step (no DB), a migration applied twice on a local stack, and one process-battery scenario for the nightly run (add a language → translate → switcher, hreflang, sitemap → conversion dry run) | PR CI is offline; a translation regression must fail the night, not a visitor |
+
+### Steps and acceptance
+
+Each step is one or two PRs, green on its own, behaviour-preserving until the
+step that says otherwise. Steps 1–2 change no visitor-facing behaviour and
+may land before the demo; 3–6 wait until it is done.
+
+1. **Units** *(built — this PR)*: `_shared/i18n/translation-units.ts` —
+   `collectUnits`, `unitHash`, `docText`, `diffOverlay`, `overlayReplacements`,
+   `applyOverlay`. `translate-walk.ts` untouched; `translate_page` unchanged.
+   Accepted when: `translation-units.test.ts` pins the key scheme, reorder
+   stability, doc-as-unit, hash semantics and the four diff buckets.
+2. **Table + resolver** *(built)*: migration `page_translations` (idempotent,
+   applied twice locally, self-proving), RLS (anon reads published overlays
+   of published pages; staff writes), `resolvePageInLocale(page, overlay)` in
+   `_shared/i18n/resolve-page.ts` — one module imported by edge and app, no
+   twin — and `get-page ?lang=` returning the resolved tree plus `language:
+   {…}`, cache key per language. Nothing writes the table. Accepted when:
+   `resolve-page.test.ts` pins no-overlay / complete / partial / stale /
+   orphan; `get-page` without `lang` is byte-identical to before. Found on
+   the way: #725 had narrowed `pages` (and `blog_posts`, `handbook_chapters`,
+   `profiles`) to `is_staff()` for authenticated — a signed-in customer saw an
+   empty menu; fixed first, generically (#744).
+3. **Writers** *(built)*: `translate_page(slug, locale)` upserts missing +
+   stale units (fresh ones untouched, orphans dropped and counted) when the
+   page has no sibling row in that language — a sibling row takes the legacy
+   path until the conversion runs; `set_translation`, `publish_translation`
+   (with `min_coverage` and the per-language `translated_slug`),
+   `enable_language` (adds the language, copies nothing, returns the todo
+   list), `list_stale_translations` on units with `legacy_siblings` from the
+   old RPC; `translate_site_into` is an alias of `enable_language`. The write
+   rule is pure (`_shared/i18n/overlay-write.ts`: plan → number → assemble)
+   and pinned by `overlay-write.test.ts`: a fresh entry is kept, a doc with one
+   node missing is not written half-done, an undelivered stale unit keeps its
+   old entry, every entry is stamped with the unit's own hash. Live proof on
+   sandbox is the acceptance: enable `en` → translate one page → every unit
+   fresh; edit one source string → exactly that unit stale; translate again →
+   only it rewritten.
+4. **Readers** — in two PRs.
+   **4a, public** *(built)*: `get_page_translations(slug)` returns versions
+   from BOTH models (`source: 'row' | 'overlay'`, an overlay carrying the
+   page's slug and its translated title); PublicPage resolves `/en/<slug>`
+   to `get-page ?lang=` for an overlay (DB fallback through the same
+   resolver) and `?lang=` to the prefixed address; `usePageSiblings` builds
+   its lookup from rows + published overlays (`siblingRowsFromModels`), so
+   nav and footer follow; the switcher and `hreflang` need no change (they
+   consume the version list); the sitemap lists an overlay at
+   `/<lang>/<slug>` with the full alternate set (`overlayUrls`);
+   `api/html.ts` reads title, meta, `lang` and alternates from the overlay.
+   Sibling rows keep resolving through the old path, unchanged. The
+   per-language `translated_slug` is STORED by `publish_translation` but not
+   yet honoured by the readers — every overlay lives at `/<lang>/<page slug>`
+   until 4b; honouring it means a per-version base in `pagePath`'s seven
+   consumers and belongs in one change.
+   **4b, admin** *(built)*: the pages list shows one chip per other language
+   on each source page (✓ published, N% draft, — missing; a click opens the
+   editor on that language), `PageTranslationsSheet` in the editor is the
+   translation view — units in document order, source | translation, stale
+   and missing marked, per-unit save through `set_translation` (fresh by
+   definition), "Translate missing" / retranslate-all through
+   `translate_page`, publish/unpublish through `publish_translation`; rich-text
+   units are shown whole with reset-then-retranslate. The Languages card shows
+   "N of M pages published · k draft" per language (`languageCoverage`) and
+   "Translate what is missing" runs `translate_page(publish: true)` per page
+   (one call per page, inside the wall clock) — the copy action is gone.
+   `manage_page get` returns `translations[]` from both models. The pure
+   state helpers are in `src/lib/page-translation-state.ts`, pinned by test.
+   **Not in 4b**: `translated_slug` honoured by the readers (moved to step 6
+   with the `-en` slug retirement: both are "the address per language" and
+   belong in one change).
+   Accepted when: a site with ONLY overlays and a site with ONLY sibling
+   rows both pass the view sweep and the battery scenario.
+5. **Conversion** *(built)*: `convert_translation_groups` (trust `approve`,
+   `dry_run` by default), pairing in `_shared/i18n/convert-siblings.ts`
+   (`pairSiblingUnits`, pinned by test). Text identical to the source (an
+   untranslated copy, or a brand name) is left out of the overlay — it shows
+   the source text either way. The source's `translation_group_id` is
+   cleared once every sibling is an overlay or its own page; the overlay
+   keeps the sibling's status (a draft sibling becomes a draft overlay).
+   **Rehearsed 2026-10-25** on a local copy of www's 16 groups: 0 blocked,
+   16 converted, 16 redirects (`/home-sv → /sv/home`); 15 of 16 Swedish
+   pages resolve byte-identical to the old sibling row; the 16th (flowpilot)
+   differs only where the Swedish row had OMITTED a field the English one
+   has (`accentText`) — it now shows the source text, listed as missing.
+   Per §6:
+   synclair first (operator present), then www (16 groups, home page expected
+   to hit step 4's finding). Accepted when: the dry run on www lists every
+   group with paired units and findings, nothing written; the live run leaves
+   `pagesInWorkingLanguage()` with nothing to group; redirects from every
+   `-en` slug resolve.
+6. **Retire**: `manage_page_translation`, `translation_group_id` readers,
+   `pagesInWorkingLanguage()` and the working-language selector; the `-en`
+   slug rule and this section's "proposed" status in `language.md`. Also
+   here: the address per language — `translated_slug` honoured by
+   `pagePath`'s consumers (switcher, nav, hreflang, sitemap, SEO shell,
+   PublicPage's resolution of `/en/<translated slug>`).
 
 A fresh install is born on the new model from step 3; the conversion exists
 for the sites that are already bilingual.

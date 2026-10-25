@@ -2,7 +2,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { blocksShapeError, normalizeBlockData, normalizeBlocks, validateBlockData } from '../_shared/normalize-blocks.ts';
-import { decode as decodeImage, Image as ScriptImage } from 'https://deno.land/x/imagescript@1.3.0/mod.ts';
 import { planImport, readImageHeader, isGlb } from '../_shared/media/import-plan.ts';
 import { normalizeSkillArgs } from '../_shared/skill-aliases.ts';
 import { buildUnknownParameterBounce } from '../_shared/skills/parameter-contract.ts';
@@ -69,10 +68,14 @@ import { executeReconciliation } from '../_shared/handlers/reconciliation.ts';
 import { handleEmailAdmins as hEmailAdmins } from '../_shared/handlers/email-admins.ts';
 import { handleDraftEmailReply } from '../_shared/handlers/draft-email-reply.ts';
 import { handleTranslatePage } from '../_shared/handlers/translate-page.ts';
+import { isDryRunRead } from '../_shared/skills/read-surface.ts';
+import { handleTranslateContent, translatePostEverywhere, type TranslateContentArgs } from '../_shared/handlers/translate-content.ts';
+import { listContentOverlays } from '../_shared/handlers/content-overlay.ts';
+import { blogPostPath } from '../_shared/i18n/blog-address.ts';
 import { handleConvertTranslationGroups, handleEnableLanguage, handleListStaleTranslations, handlePublishTranslation, handleSetTranslation, type ConvertGroupsArgs, type EnableLanguageArgs, type ListStaleArgs, type PublishTranslationArgs, type SetTranslationArgs } from '../_shared/handlers/page-translations.ts';
 
 /**
- * A page's language versions, from both models: overlays (page_translations,
+ * A page's language versions, from both models: overlays (content_translations,
  * with status and coverage) and legacy sibling rows (translation_group_id).
  * manage_page get carries them so a translator never edits blind.
  */
@@ -82,10 +85,10 @@ async function pageLanguageVersions(
 ): Promise<Array<Record<string, unknown>>> {
   type OverlayHead = { locale: string; status: string; coverage: number | null; slug: string | null; translated_at: string | null };
   type SiblingHead = { slug: string; locale: string | null; status: string };
-  const { data: overlayRows, error: overlayErr } = await supabase.from('page_translations')
-    .select('locale, status, coverage, slug, translated_at').eq('page_id', page.id);
+  const { data: overlayRows, error: overlayErr } = await supabase.from('content_translations')
+    .select('locale, status, coverage, slug, translated_at').eq('entity', 'page').eq('entity_id', page.id);
   // An instance without the table yet has no overlays; anything else is a real failure.
-  if (overlayErr && overlayErr.code !== '42P01') throw new Error(`Get page failed listing translations: ${overlayErr.message}`);
+  if (overlayErr && !['42P01', 'PGRST205'].includes(String(overlayErr.code))) throw new Error(`Get page failed listing translations: ${overlayErr.message}`);
   const { data: siblingRows, error: siblingErr } = page.translation_group_id
     ? await supabase.from('pages').select('slug, locale, status')
         .eq('translation_group_id', page.translation_group_id).neq('id', page.id).is('deleted_at', null)
@@ -161,6 +164,9 @@ import bundledLocalePacks from "./_locale-packs.json" with { type: "json" };
 import bundledModuleSkills from "./_module-skills.json" with { type: "json" };
 import bundledUiTextCatalog from "./_ui-text-catalog.json" with { type: "json" };
 import { slugify } from '../_shared/slugify.ts';
+import { homeFormat } from '../_shared/locale/home.ts';
+import { handleGetBusinessHome, handleSetBusinessHome, type SetBusinessHomeArgs } from '../_shared/handlers/business-home.ts';
+import { loadHome } from '../_shared/locale/load-home.ts';
 import { isExtractable } from '../_shared/documents/extractable.ts';
 // Supabase edge runtime: keeps a promise alive after the response is sent.
 // deno-lint-ignore no-explicit-any
@@ -832,6 +838,13 @@ serve(async (req) => {
     delete ticketArgs._approval_request_id;
     delete ticketArgs._approval_activity_id;
 
+    // A dry run of a skill whose contract makes it a read (DRY_RUN_READS in
+    // _shared/skills/read-surface.ts) plans and writes nothing: it passes the
+    // human gate (as 'notify'), so the plan can be read before anyone is asked
+    // to approve it. A live run of the same skill still stops below.
+    const planOnly = isDryRunRead(skill.name, args as Record<string, unknown>);
+    if (planOnly && trustLevel === 'approve') trustLevel = 'notify';
+
     if (trustLevel === 'approve' && !bypassApproval) {
       const activityId = await logActivity(supabase, {
         agent: agent_type, skill_id: skill.id, skill_name: skill.name,
@@ -1144,6 +1157,18 @@ serve(async (req) => {
         // The page's text walks through the platform, never through the agent's
         // context: structure preserved by construction, counts in the answer.
         result = await handleTranslatePage(supabase, args as any);
+
+      } else if (handler === 'internal:translate_content') {
+        // translate_page's engine for any overlaid content — a blog post's
+        // title, excerpt, meta and body as overlays per language.
+        result = await handleTranslateContent(supabase, args as TranslateContentArgs);
+
+      } else if (handler === 'internal:get_business_home') {
+        result = await handleGetBusinessHome(supabase);
+
+      } else if (handler === 'internal:set_business_home') {
+        // The same three facts the Site settings card writes, validated.
+        result = await handleSetBusinessHome(supabase, args as SetBusinessHomeArgs);
 
       } else if (handler === 'internal:set_translation') {
         result = await handleSetTranslation(supabase, args as SetTranslationArgs);
@@ -2030,6 +2055,11 @@ async function executeModuleAction(
         const wantOptimize = (args as { optimize?: unknown }).optimize !== false;
         if (plan.verdict === 'optimize' && wantOptimize) {
           try {
+            // Loaded on demand: imagescript fetches its zlib wasm from deno.land
+            // when the module is evaluated. A static import made EVERY cold start
+            // of agent-execute — all 600+ skills — wait on that fetch, and a
+            // deno.land outage (or a proxy that rejects it) failed them all.
+            const { decode: decodeImage, Image: ScriptImage } = await import('https://deno.land/x/imagescript@1.3.0/mod.ts');
             const decoded = await decodeImage(bytes);
             if (!(decoded instanceof ScriptImage)) throw new Error('animated image');
             const w = plan.targetWidth;
@@ -7674,7 +7704,8 @@ async function executeBlogAction(
     featured_image_alt: providedImageAlt,
     status: requestedStatus,
     tone,
-    language = 'en',
+    language,
+    languages: requestedLanguages,
     topic,
     slug: requestedSlug,
     published_at: requestedPublishedAt,
@@ -7762,8 +7793,20 @@ async function executeBlogAction(
     status,
     excerpt,
     content_json: tiptapDoc,
-    meta_json: { tone, language, generated_by: 'external_agent', topic },
+    meta_json: { tone, ...(language ? { language } : {}), generated_by: 'external_agent', topic },
   };
+  // The post's SOURCE language — only a language the site has enabled: a post
+  // "in en" on a Swedish-only site would live at an address the site does not
+  // serve. Otherwise the blog_posts_set_locale trigger gives it the site's
+  // language (never a hardcoded 'en': that default once claimed every post on
+  // four Swedish sites was English).
+  const { data: langRow, error: langErr } = await supabase.from('site_settings').select('value').eq('key', 'site_languages').maybeSingle();
+  const siteLangs = (langErr ? {} : langRow?.value ?? {}) as { default?: string; enabled?: string[] };
+  const siteDefault = String(siteLangs.default ?? 'en').toLowerCase();
+  const enabled = (Array.isArray(siteLangs.enabled) ? siteLangs.enabled : [siteDefault]).map((x) => String(x).toLowerCase());
+  const asked = typeof language === 'string' ? language.trim().toLowerCase() : '';
+  const sourceLocale = asked && enabled.includes(asked) ? asked : null;
+  if (sourceLocale) insertData.locale = sourceLocale;
   if (status === 'published') {
     insertData.published_at = importedPublishedAt ?? new Date().toISOString();
   }
@@ -7778,20 +7821,55 @@ async function executeBlogAction(
     insertData.author_id = _caller_user_id;
   }
 
-  const { data, error } = await supabase.from('blog_posts').insert(insertData).select().single();
+  let { data, error } = await supabase.from('blog_posts').insert(insertData).select().single();
+  if (error && insertData.locale !== undefined && /locale/.test(error.message)) {
+    // An instance that has not applied 20261025030000 has no locale column yet.
+    delete insertData.locale;
+    ({ data, error } = await supabase.from('blog_posts').insert(insertData).select().single());
+  }
   if (error) throw new Error(`Blog insert failed: ${error.message}`);
   const cat = await setBlogPostCategory(supabase, data.id, category);
-  return {
-    blog_post_id: data.id,
-    slug: data.slug,
-    title: data.title,
-    status: data.status,
-    published_at: data.published_at,
-    ...(cat ? { category: cat.slug } : {}),
-    url: `/blog/${data.slug}`,
-    has_featured_image: !!featuredImage,
-    image_status: imageStatus,
-  };
+
+  // Every language the site sells in, unless told otherwise: written once,
+  // translated server-side into overlays that go live with the post
+  // (page-translations.md §9). A translation failure never loses the post.
+  let translations: Array<Record<string, unknown>> = [];
+  let translationNote: string | undefined;
+  {
+    if (langErr) translationNote = `site_languages unreadable (${langErr.message}) — written in one language.`;
+    else if (asked && !sourceLocale) translationNote = `"${asked}" is not one of the site's languages (${enabled.join(', ')}) — the post was written as ${siteDefault}.`;
+    const own = String(data.locale ?? sourceLocale ?? siteDefault).toLowerCase();
+    const wanted: string[] = langErr ? [] : Array.isArray(requestedLanguages)
+      ? requestedLanguages.map((x: unknown) => String(x).trim().toLowerCase()).filter(Boolean)
+      : enabled;
+    const targets = [...new Set(wanted)].filter((l) => l !== own);
+    if (targets.length && data.locale !== undefined) {
+      try {
+        const r = await translatePostEverywhere(supabase, data.id, { languages: targets, publish: true });
+        translations = r.translations;
+        if (r.skipped) translationNote = r.skipped;
+      } catch (err) {
+        translationNote = `Translation failed: ${(err as Error).message}. The post exists; translate_content(entity: "blog_post", slug: "${data.slug}", languages: "all", publish: true) retries.`;
+      }
+    } else if (targets.length) {
+      translationNote = 'This instance has no blog_posts.locale yet (migration 20261025030000) — the post was written in one language.';
+    }
+    const path = (l: string, slug: string) => blogPostPath(slug, l, siteDefault);
+    return {
+      blog_post_id: data.id,
+      slug: data.slug,
+      title: data.title,
+      status: data.status,
+      published_at: data.published_at,
+      ...(data.locale ? { locale: data.locale } : {}),
+      ...(cat ? { category: cat.slug } : {}),
+      url: path(own, data.slug),
+      has_featured_image: !!featuredImage,
+      image_status: imageStatus,
+      ...(translations.length ? { translations: translations.map((t) => ({ ...t, url: path(String(t.locale), data.slug) })) } : {}),
+      ...(translationNote ? { translation_note: translationNote } : {}),
+    };
+  }
 }
 
 // --- Unsplash helper: multi-pass keyword search with Swedish/English fallback ---
@@ -9617,8 +9695,9 @@ async function executeSendInvoiceForOrder(
       publicToken = inv?.public_token;
     }
     const invoiceUrl = origin && publicToken ? `${origin.replace(/\/$/, '')}/invoice/${publicToken}` : '';
-    const fmt = (cents: number) =>
-      new Intl.NumberFormat('sv-SE', { style: 'currency', currency: order.currency || 'SEK' }).format(cents / 100);
+    // English mail, the business's way of writing money.
+    const home = homeFormat(await loadHome(supabase), 'en');
+    const fmt = (cents: number) => home.money(cents, order.currency);
 
     // A FRAGMENT, not a document — email-send wraps it in the operator's
     // branded shell, so the invoice mail finally looks like the company's other
@@ -9761,7 +9840,7 @@ async function executeBlogPostsManagement(
   supabase: any,
   args: Record<string, unknown>,
 ): Promise<unknown> {
-  const { action = 'list', post_id, slug, status, title, excerpt, content, content_json, featured_image, category, published_at, limit = 20 } = args as any;
+  const { action = 'list', post_id, slug, status, title, excerpt, content, content_json, featured_image, category, published_at, locale, retranslate, limit = 20 } = args as any;
 
   if (action === 'list') {
     let query = supabase.from('blog_posts')
@@ -9781,7 +9860,12 @@ async function executeBlogPostsManagement(
     const { data, error } = await query.maybeSingle();
     if (error) throw new Error(`Get post failed: ${error.message}`);
     if (!data) return { found: false, error: `Blog post not found (${post_id ? 'id ' + post_id : 'slug ' + slug})` };
-    return data;
+    // The post's languages, so an operator never edits blind (manage_page get does the same).
+    const { rows } = await listContentOverlays(supabase, 'blog_post', { ids: [data.id], columns: 'entity_id, locale, status, coverage, slug' })
+      .catch(() => ({ rows: [] as Array<{ locale: string; status: string; coverage: number | null; slug: string | null }> }));
+    return rows.length
+      ? { ...data, translations: rows.map((r) => ({ locale: r.locale, status: r.status, coverage: r.coverage, slug: r.slug })) }
+      : data;
   }
 
   // Resolve post_id from slug if needed
@@ -9851,13 +9935,34 @@ async function executeBlogPostsManagement(
         updates.featured_image = featured_image;
       }
     }
+    // The post's source language: which address it lives at, which overlays
+    // translate out of it.
+    if (locale !== undefined) {
+      const l = String(locale ?? '').trim().toLowerCase();
+      if (!/^[a-z]{2}(-[a-z0-9]{2,8})?$/.test(l)) throw new Error(`locale "${locale}" is not a language tag — use "sv", "en", "en-GB".`);
+      updates.locale = l;
+    }
     const { data, error } = await supabase.from('blog_posts')
       .update(updates).eq('id', resolvedPostId).select('id, title, status, featured_image, published_at').single();
     if (error) throw new Error(`Update post failed: ${error.message}`);
     const cat = category !== undefined ? await setBlogPostCategory(supabase, data.id, category) : undefined;
+    // Translations follow the edit: only the units whose source changed are
+    // translated, in the languages the post already has (§9).
+    const textChanged = title !== undefined || excerpt !== undefined || updates.content_json !== undefined || updates.locale !== undefined;
+    let translations: Array<Record<string, unknown>> | undefined;
+    if (textChanged && retranslate !== false) {
+      try {
+        const r = await translatePostEverywhere(supabase, data.id);
+        if (r.translations.length) translations = r.translations;
+      } catch (err) {
+        translations = [{ success: false, error: (err as Error).message }];
+      }
+    }
     // `status` is the POST's status, read back from the row — never the word "updated".
     return { post_id: data.id, updated: true, status: data.status, featured_image: data.featured_image, published_at: data.published_at,
       ...(updates.content_json !== undefined ? { content_updated: true } : {}),
+      ...(updates.locale !== undefined ? { locale: updates.locale } : {}),
+      ...(translations ? { translations } : {}),
       ...(cat !== undefined ? { category: cat ? cat.slug : null } : {}) };
   }
 

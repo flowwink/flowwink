@@ -489,3 +489,103 @@ may land before the demo; 3–6 wait until it is done.
 
 A fresh install is born on the new model from step 3; the conversion exists
 for the sites that are already bilingual.
+
+## 9. Step 7 — blog posts on the overlay model (build contract)
+
+Proposed 2026-10-25 (local session, Magnus). **Built 2026-10-25** (cloud
+session, one PR) — see "As built" at the end of this section for the choices
+the table below left open. **Why:** an agent writes a post once and
+it exists in every language the site sells in, kept in sync — what in-page
+browser translation cannot give (search and answer engines index only what the
+server sends; link previews and the site's own terms follow the language) and
+what WPML/Weglot give only as a per-post workflow or a paid proxy. Today
+`blog_posts` has no language at all: nordbrygg (default `en`, `sv` enabled)
+lists its Swedish posts on the English site.
+
+| Question | Decision |
+|---|---|
+| Table | **Generic** `content_translations (entity, entity_id, locale, status, slug, strings, coverage, translated_at, translated_by)`, key `(entity, entity_id, locale)`. `page_translations` becomes `entity = 'page'` through a view or a one-time move with a compatibility view — KB articles, products and handbook chapters (the OPEN rows in `language.md`) follow without a new table each. |
+| Units | The same walker: `page.title` → `post.title`, `post.excerpt`, `post.meta.<key>`, the body as ONE doc unit (`post.content`), `post.featured_image_alt`. `collectUnits` gets an entity-aware root, not a second walker. |
+| Source language | **Per post**, a `locale` column born from `site_languages.default` by trigger (the pages rule). nordbrygg has 13 Swedish and 3 English posts — mixed sources are real. |
+| Address | `/blog/<slug>` in the site language, `/<lang>/blog/<slug>` otherwise, through `pagePath`'s rules (one owner of the address form). The archive is `/<lang>/blog`. Overlay `slug` (per-language slug) honoured here from day one. |
+| Writers | `write_blog_post` gains `languages` (default: every enabled language but the source) and fills the overlays after creating the source; `manage_blog_posts update` re-translates only stale units; `translate_page`'s engine generalised to `translate_content(entity, id, locale)`. |
+| Readers | BlogPostPage, BlogArchivePage, BlogCategoryPage, BlogTagPage, BlogAuthorPage, LatestPostsBlock, sitemap, content-api, `api/html.ts` (/blog/*), RSS. A list in language L shows the post's L title/excerpt, the source where the overlay is missing (visible, counted). A post with no published L overlay is absent from L's lists. |
+
+**Acceptance (nordbrygg):** one `write_blog_post` call yields a post at
+`/blog/<slug>` (en) and `/sv/blog/<slug>` (sv), hreflang both ways in the
+sitemap and the SEO shell; the Swedish archive and the Swedish home's
+LatestPostsBlock show Swedish titles; editing one paragraph of the source
+marks exactly that unit stale; a battery check in content-to-conversion pins
+it nightly.
+
+**Who builds what (agreed 2026-10-25, cloud + local):** ONE fresh cloud
+session builds all the code in one PR — `content_translations` + the
+compatibility view, entity-aware units, `translate_content`,
+`write_blog_post` languages, every reader in the table above and the battery
+check. Readers and writers are not split across branches: they meet in the
+same files (BlogPostPage, sitemap, `api/html.ts`, `usePageSiblings`). The
+local session owns everything that needs the live fleet: (1) before merge, a
+read-only inventory of nordbrygg's 16 posts' real source languages (13 sv,
+3 en) to check the trigger default and the backfill against; (2) after merge +
+deploy, correcting each existing post's `locale` where the default is wrong;
+(3) backfilling overlays with `translate_content` and publishing them; (4) the
+acceptance run above on nordbrygg; (5) the same read-only check on optic and
+www. The cloud session tells Magnus when the PR is up; local runs (1) against it.
+
+### As built
+
+- **Table.** Migration `20261025030000_bloggen-far-sprak-overlagget-blir-generiskt.sql`
+  creates `content_translations` (entity `page` | `blog_post`, CHECKed — a
+  new entity is a migration that also teaches the public-read policy its
+  source table), moves every `page_translations` row in as `entity = 'page'`,
+  and replaces the table with a `security_invoker` VIEW of the same columns.
+  The view is for READING: the Vercel frontend (PublicPage, usePageSiblings,
+  `api/html.ts`'s page path) still reads it, so a frontend deployed before or
+  after the migration both work. Everything that writes — and every edge
+  reader — uses `content_translations`. No foreign key can point at two
+  tables: `AFTER DELETE` triggers on `pages` and `blog_posts` cascade.
+- **Source language.** `blog_posts.locale`, stamped by `blog_posts_set_locale`
+  (insert, or an update that sets it). Every existing post is backfilled to
+  the site's language — the local inventory (1) corrects the ones written in
+  another (`manage_blog_posts update locale`). `write_blog_post`'s `language`
+  argument now IS the source language; omitted, the trigger decides (it used
+  to default to a hardcoded `'en'` in `meta_json`).
+- **Units.** `collectPostUnits` / `collectEntityUnits` in
+  `translation-units.ts`: `post.title`, `post.excerpt`, `post.meta.<key>`,
+  `post.content` (one doc), `post.featured_image_alt`; a legacy block-array
+  body is keyed per block under `post.content.<id>`. Resolver:
+  `resolveContentInLocale(entity, row, overlay)`.
+- **Writers.** `_shared/handlers/content-overlay.ts` is the one store and the
+  one engine (`translateContentIntoOverlay`); `translate_page`'s overlay path
+  is a wrapper over it. `translate_content` (blog module; `entity: "page"`
+  routes to translate_page) takes `locale` or `languages` (`"all"`).
+  `set_translation`, `publish_translation` and `list_stale_translations` take
+  `entity: "blog_post"`. `write_blog_post` translates into `languages`
+  (default: every enabled language but the source) and PUBLISHES each overlay
+  that comes back complete — the post's own status still gates visibility, so
+  publishing the post later publishes it in every language. A translation
+  failure never loses the post (`translation_note`). `manage_blog_posts
+  update` re-translates the stale units of the overlays that exist
+  (`retranslate: false` skips), and `get` returns `translations[]`.
+- **Readers.** One rule, `postInLanguage` (`_shared/i18n/post-language.ts`):
+  own language → the post; published overlay → the post with its text,
+  missing units in the source language; neither → absent. One address owner,
+  `_shared/i18n/blog-address.ts` (`blogPostPath`, `blogIndexPath`,
+  `postVersions`, `postAlternates`), re-exported by `src/lib/language-path.ts`.
+  Lists filter through the RPC `blog_posts_in_language(p_lang)` (SETOF
+  `blog_posts`, SECURITY INVOKER — embeds and pagination unchanged). Routes
+  `/:lang/blog`, `/:lang/blog/:slug`, `/:lang/blog/{category,tag,author}/:slug`;
+  a post with no version in the requested language redirects to its own
+  address (the pages rule, §8). The sitemap lists every published version with
+  the full alternate set; `api/html.ts` serves title, description, `lang`,
+  canonical and hreflang for `/blog/*` and `/<lang>/blog/*`; RSS and
+  content-api take a language — REST `?lang=`, GraphQL `blogPosts(lang:)` /
+  `blogPost(slug:, lang:)` with `language` and `path` on every post, so a
+  headless client (a mobile app) reads the blog in the visitor's language. A one-language site lists every post as
+  before — the language filter only applies when more than one is enabled.
+- **Battery.** `postInAnotherLanguage` in `content-to-conversion`: written in
+  the site language → hand overlay → anon reads (draft hidden, RPC, content-api
+  `?lang`, sitemap hreflang) → one paragraph edited → exactly `post.content`
+  stale, the title's translation intact.
+- **Not built.** A per-language blog SEGMENT (`/sv/blogg`); the admin translation view for posts
+  (the editor has no language tab yet — the skills are the surface).

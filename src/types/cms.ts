@@ -786,12 +786,17 @@ export interface SeparatorBlockData {
 }
 
 export interface GalleryBlockData {
+  title?: string;
   images: { src: string; alt: string; caption?: string }[];
   layout: 'grid' | 'carousel' | 'masonry';
   columns: 2 | 3 | 4;
   /** 'cover' fills the box and crops; 'contain' shows the whole image — for product renders, drawings and logos. Default 'cover'. */
   imageFit?: ImageFit;
+  /** Spacing between images. Default 'md' (the gallery's spacing before the field was read). */
+  gap?: GalleryGap;
 }
+
+export type GalleryGap = 'sm' | 'md' | 'lg';
 
 export type StatsAnimationStyle = 'count-up' | 'fade-in' | 'slide-up' | 'typewriter';
 
@@ -1199,6 +1204,18 @@ export interface BlogPost {
   categories?: BlogCategory[];
   tags?: BlogTag[];
   
+  // Language (page-translations.md §9). `locale` is the source language;
+  // the rest is set by the public readers when the post is shown in a language.
+  locale?: string | null;
+  /** The language the text is in as served — the source's, or an overlay's. */
+  served_locale?: string;
+  /** The slug in the served language (an overlay may have its own). */
+  served_slug?: string;
+  /** Where this post lives in the served language: /blog/x or /sv/blog/x. */
+  href?: string;
+  /** Units shown in the source language because the overlay lacks them. */
+  fallback_units?: string[];
+
   // Tracking
   created_by: string | null;
   updated_by: string | null;

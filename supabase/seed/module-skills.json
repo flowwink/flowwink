@@ -1331,7 +1331,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "ISO code, default SEK"
+                    "description": "ISO code. Defaults to the business currency (get_business_home)"
                   }
                 },
                 "required": [
@@ -2077,7 +2077,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "Defaults to SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "reason": {
                     "type": "string"
@@ -5445,7 +5445,7 @@
                   },
                   "p_currency": {
                     "type": "string",
-                    "description": "Default SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   }
                 }
               }
@@ -5606,7 +5606,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "ISO 4217, defaults to SEK"
+                    "description": "ISO 4217. Defaults to the business currency (get_business_home)"
                   },
                   "notes": {
                     "type": "string",
@@ -5768,7 +5768,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "ISO 4217, defaults to SEK."
+                    "description": "ISO 4217. Defaults to the business currency (get_business_home)"
                   },
                   "renewal_type": {
                     "type": "string",
@@ -6916,7 +6916,7 @@
               }
             }
           },
-          "instructions": "## manage_product\n### What\nManages products in the catalog: list, get, create, update, archive, delete.\n### When to use\n- Admin asks to add, edit or retire products\n- E-commerce setup workflows\n### Parameters\n- **action**: Required. list, get, create, update, archive, delete.\n- **product_id**: Identifies the product for get/update/archive/delete. A unique **name** works too.\n- **name**: Product name (create/update).\n- **price_cents**: Price in cents (create/update).\n- **description**: Product description.\n- **weight_grams**: Weight in grams (create/update). null/omitted = non-shippable service or digital product; set it for physical goods so checkout can offer weight-based delivery options.\n- **track_inventory / stock_quantity / low_stock_threshold / allow_backorder / cost_cents / barcode / category_id**: accepted on create as well as update — a physical product should be born stocked rather than created and patched.\n### Edge cases\n- Price is in cents (e.g., 9900 = $99.00 or 99 SEK).\n- track_inventory defaults to false. A product created without it is untracked: it never shows in list_stock, never triggers a low-stock alert and is never a reorder candidate.\n- allow_backorder=false (the default) makes order lines above the on-hand quantity fail with the available number in the error. Set it true to accept backorders — stock_quantity then goes negative, and the negative IS the backorder depth.\n- archive sets is_active=false: the product leaves browse_products, list_stock and the low-stock loop, but every order line, stock move and quote keeps its reference. Reactivate with update + is_active:true.\n- delete is a HARD delete for a product with no history (a typo, a duplicate, a test row). Once the product appears in order lines, stock moves, quotes, purchase orders, returns, POS sales, subscriptions or manufacturing orders the delete is refused with the counts — archive instead.\n- SKU lives on variants, not products — use manage_variant (p_sku) for it.\n- weight_grams drives shipping at checkout: carts with any weighted product require a delivery address and get carrier options from the shipping_rates weight bands.\n- Use manage_inventory for stock levels."
+          "instructions": "## manage_product\n### What\nManages products in the catalog: list, get, create, update, archive, delete.\n### When to use\n- Admin asks to add, edit or retire products\n- E-commerce setup workflows\n### Parameters\n- **action**: Required. list, get, create, update, archive, delete.\n- **product_id**: Identifies the product for get/update/archive/delete. A unique **name** works too.\n- **name**: Product name (create/update).\n- **price_cents**: Price in cents (create/update).\n- **description**: Product description.\n- **weight_grams**: Weight in grams (create/update). null/omitted = non-shippable service or digital product; set it for physical goods so checkout can offer weight-based delivery options.\n- **track_inventory / stock_quantity / low_stock_threshold / allow_backorder / cost_cents / barcode / category_id**: accepted on create as well as update — a physical product should be born stocked rather than created and patched.\n### Edge cases\n- Price is in hundredths of the currency in every currency (9900 = 99.00).\n- track_inventory defaults to false. A product created without it is untracked: it never shows in list_stock, never triggers a low-stock alert and is never a reorder candidate.\n- allow_backorder=false (the default) makes order lines above the on-hand quantity fail with the available number in the error. Set it true to accept backorders — stock_quantity then goes negative, and the negative IS the backorder depth.\n- archive sets is_active=false: the product leaves browse_products, list_stock and the low-stock loop, but every order line, stock move and quote keeps its reference. Reactivate with update + is_active:true.\n- delete is a HARD delete for a product with no history (a typo, a duplicate, a test row). Once the product appears in order lines, stock moves, quotes, purchase orders, returns, POS sales, subscriptions or manufacturing orders the delete is refused with the counts — archive instead.\n- SKU lives on variants, not products — use manage_variant (p_sku) for it.\n- weight_grams drives shipping at checkout: carts with any weighted product require a delivery address and get carrier options from the shipping_rates weight bands.\n- Use manage_inventory for stock levels."
         },
         {
           "name": "manage_variant",
@@ -7295,7 +7295,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "ISO currency code, default SEK"
+                    "description": "ISO currency code. Defaults to the business currency (get_business_home)"
                   },
                   "notes": {
                     "type": "string",
@@ -7360,7 +7360,7 @@
               }
             }
           },
-          "instructions": "## place_order\n### What\nPlaces an order as a customer. Accepts snake_case and camelCase. Resolves products server-side by product_id (UUID) or product_name (fuzzy). Computes total cart weight from products.weight_grams (NULL = non-shippable, excluded from sum) and wires shipping when the cart has any weighted product.\n### Shipping selection\n- If **shipping_rate_id** is provided → validated against shipping_rates (must be active and weight band must cover total weight).\n- Otherwise → calls list_shipping_options(total_weight, currency, country) and auto-selects the cheapest option.\n- If no options exist → order is created without shipping (graceful degrade).\n- Weightless / service carts → no shipping fields written (unchanged).\n### Order total\ntotal_cents = Σ(price × qty) + shipping_cost_cents. shipping_cost_cents and shipping_method are written to the order row and returned in the response so the caller can verify the math.\n### Parameters\n- **customer_email** (required), **customer_name**\n- **items[]**: {product_id | product_name, quantity}\n- **currency**: default SEK\n- **shipping_address**: {name, line1, line2, postal_code, city, country, phone}\n- **shipping_rate_id**: UUID from shipping_rates (optional; overrides auto-cheapest)\n### Response\nReturns order_id, total_cents, total_weight_grams, shipping_method, shipping_cost_cents."
+          "instructions": "## place_order\n### What\nPlaces an order as a customer. Accepts snake_case and camelCase. Resolves products server-side by product_id (UUID) or product_name (fuzzy). Computes total cart weight from products.weight_grams (NULL = non-shippable, excluded from sum) and wires shipping when the cart has any weighted product.\n### Shipping selection\n- If **shipping_rate_id** is provided → validated against shipping_rates (must be active and weight band must cover total weight).\n- Otherwise → calls list_shipping_options(total_weight, currency, country) and auto-selects the cheapest option.\n- If no options exist → order is created without shipping (graceful degrade).\n- Weightless / service carts → no shipping fields written (unchanged).\n### Order total\ntotal_cents = Σ(price × qty) + shipping_cost_cents. shipping_cost_cents and shipping_method are written to the order row and returned in the response so the caller can verify the math.\n### Parameters\n- **customer_email** (required), **customer_name**\n- **items[]**: {product_id | product_name, quantity}\n- **currency**: defaults to the business currency (get_business_home)\n- **shipping_address**: {name, line1, line2, postal_code, city, country, phone}\n- **shipping_rate_id**: UUID from shipping_rates (optional; overrides auto-cheapest)\n### Response\nReturns order_id, total_cents, total_weight_grams, shipping_method, shipping_cost_cents."
         },
         {
           "name": "check_order_status",
@@ -11767,7 +11767,7 @@
                   },
                   "p_currency": {
                     "type": "string",
-                    "default": "SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "p_employee_id": {
                     "type": "string",
@@ -16637,7 +16637,7 @@
                   },
                   "p_timezone": {
                     "type": "string",
-                    "description": "IANA zone the organizer thinks in, e.g. Europe/Stockholm. Default UTC."
+                    "description": "IANA zone the organizer thinks in, e.g. Europe/Stockholm. Defaults to the business time zone."
                   },
                   "p_policy": {
                     "type": "string",
@@ -16993,7 +16993,7 @@
                   },
                   "p_quote_currency": {
                     "type": "string",
-                    "default": "SEK"
+                    "description": "ISO code. Defaults to the business currency (get_business_home)"
                   },
                   "p_amount_cents": {
                     "type": "integer",
@@ -18713,7 +18713,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "Currency code (default SEK)"
+                    "description": "Currency code. Defaults to the business currency (get_business_home)"
                   },
                   "target_audience": {
                     "type": "object",
@@ -21280,7 +21280,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "ISO currency, defaults to SEK"
+                    "description": "ISO currency. Defaults to the business currency (get_business_home)"
                   },
                   "valid_from": {
                     "type": "string",
@@ -21455,7 +21455,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "default": "SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "at": {
                     "type": "string",
@@ -23625,7 +23625,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "Defaults to SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "valid_until": {
                     "type": "string",
@@ -24710,7 +24710,7 @@
                   },
                   "p_currency": {
                     "type": "string",
-                    "description": "Default SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "p_start_date": {
                     "type": "string",
@@ -26756,7 +26756,7 @@
                   },
                   "p_currency": {
                     "type": "string",
-                    "description": "Default SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "p_reason": {
                     "type": "string"
@@ -27178,7 +27178,7 @@
                   },
                   "currency": {
                     "type": "string",
-                    "description": "Default SEK"
+                    "description": "Defaults to the business currency (get_business_home)"
                   },
                   "billing_interval": {
                     "type": "string",

@@ -199,8 +199,7 @@
           "description": "Every Friday afternoon, summarise traffic, leads, and top content, then log to activity.",
           "trigger_type": "cron",
           "trigger_config": {
-            "cron": "0 16 * * 5",
-            "timezone": "UTC"
+            "cron": "0 16 * * 5"
           },
           "skill_name": "weekly_business_digest",
           "skill_arguments": {}
@@ -388,11 +387,10 @@
       "automations": [
         {
           "name": "Daily Briefing",
-          "description": "Platform automation. Generates the daily business briefing every morning at 07:00 UTC and posts it to admin FlowChat. Runs deterministically (no ReAct).",
+          "description": "Platform automation. Generates the daily business briefing every morning at 07:00 on the business's clock (Where the business is) and posts it to admin FlowChat. Runs deterministically (no ReAct).",
           "trigger_type": "cron",
           "trigger_config": {
-            "cron": "0 7 * * *",
-            "timezone": "UTC"
+            "cron": "0 7 * * *"
           },
           "skill_name": "run_daily_briefing",
           "skill_arguments": {

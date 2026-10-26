@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261026120000",
-      "migrations_count": 692,
+      "migration_head": "20261026130000",
+      "migrations_count": 693,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2773,19 +2773,23 @@
         {
           "version": "20261026120000",
           "name": "rakenskapsaret-far-en-modell"
+        },
+        {
+          "version": "20261026130000",
+          "name": "bokforingens-halsokontroll"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:35081a058947afb98e63adf833a4724814cb1313aa2f4bf7390a4b4b1ec361ee",
-      "skill_count": 635,
+      "seed_hash": "sha256:d35f04051df03ebc1bef9da7ceb45c79e0e10395bbe3044d636d855584c4dd73",
+      "skill_count": 637,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:6762fea46c4aae95bcff284f55eb3a00ae69eb8fb3c779a87485867d732a10bf",
+      "shared_hash": "sha256:aa9bccfaacc019e0c387577ba2f74c64b966031c98eff5b0461c0307430f69c1",
       "functions": {
-        "agent-execute": "sha256:11e2d68bd951eea4785a95519285938c966618fb64cf1f6424b8d8a1789542ac",
+        "agent-execute": "sha256:27d7dbc5e799f3bc74cdddf25a5d3f3c016af118cc4475e06506ccbc331ae842",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2819,7 +2823,7 @@
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",
         "flowpilot-heartbeat": "sha256:660103dab54155cf63be4e77054a48b7db3888ae5ac7543b828f4c22feda8b8b",
-        "flowpilot-lifecycle": "sha256:3dbf4b2c72c5ccb73f66092411c237b0e11e76743a90178993f84e6cc3f80b7b",
+        "flowpilot-lifecycle": "sha256:145fa0ba8e81182e3e8720b388d9030d70bb08bc57ae71328edf9f7fd10307b6",
         "gatewayapi-ingest": "sha256:9f5c222b4e49a9d7eaeac08fd342ca09acab43c9d9b5e63da668cd1c4aef1ddb",
         "generate-invoice-pdf": "sha256:788baea5630795df69dd7b69f4177b12fd1432a061dca2e0bf2cc562fb6ffb2d",
         "get-page": "sha256:3e42751911164c9d6c350b931a4e64a4824166a6bef8d02e526ad378c8f3921b",
@@ -2830,7 +2834,7 @@
         "invite-employee": "sha256:231bbdf7367f710fb487d25101c2ca726a0563e319ca48ec221bed27098146b9",
         "knowledge-indexer": "sha256:9719ea8dfda56ca4fa126907806adef794ae492f44ab6ba9e97884637cb7ba36",
         "llms-txt": "sha256:0a8a132d383590b810617ff9cdcd4893980208233d0c26b65d6c17a80af4f452",
-        "mcp-server": "sha256:c6439bbebc838d3e6c87dd05c6e403747a024600fb673316835b98bd2ddd3415",
+        "mcp-server": "sha256:4588e96240d5ccd55f25d5466fb2ccfd4bef17095e3fbee41e65d8269582e99c",
         "media-optimize": "sha256:ddaa5868b1f154561a900e133ab64c6ffd0ebef9751098b2a42c03684c34d496",
         "migrate-page": "sha256:a2a3227fb67dc2ef1cccb95abf159be80a61506a6f73d26add4073a47f3b6902",
         "newsletter": "sha256:f26b9d5adbf543ee242ce7cae3267b01c61bdaad40494ea71addf1d3f13eae44",
@@ -2841,7 +2845,7 @@
         "quote-pay": "sha256:9be4edf4b93c80e9dad8bbe2976a8f1a9de6945d44b7a4f675ac0d0d9c590629",
         "quote-sign": "sha256:7f09589ccd4c61062f7c9c8d77b4762d31cc8c8fe09797534ffb640b8cfe020c",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:589f5f13439d39c2d464bc43d0a46f2b3961ac89188b644713c618fc335be392",
+        "run-platform-tests": "sha256:591a638f1db94b9ba380014e733f1bd08646ac14651abe95daff04e5d170a522",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

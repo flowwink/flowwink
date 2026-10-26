@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261026130000",
-      "migrations_count": 693,
+      "migration_head": "20261026140000",
+      "migrations_count": 694,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2777,11 +2777,15 @@
         {
           "version": "20261026130000",
           "name": "bokforingens-halsokontroll"
+        },
+        {
+          "version": "20261026140000",
+          "name": "regeln-foreslas-och-syns"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:d35f04051df03ebc1bef9da7ceb45c79e0e10395bbe3044d636d855584c4dd73",
+      "seed_hash": "sha256:c9ea3945d71ad5b02c2ef34dc1ad9982ba89e45e1ca16233139414e44b2b0a15",
       "skill_count": 637,
       "module_count": 68
     },
@@ -2789,7 +2793,7 @@
       "count": 77,
       "shared_hash": "sha256:aa9bccfaacc019e0c387577ba2f74c64b966031c98eff5b0461c0307430f69c1",
       "functions": {
-        "agent-execute": "sha256:27d7dbc5e799f3bc74cdddf25a5d3f3c016af118cc4475e06506ccbc331ae842",
+        "agent-execute": "sha256:e10955701be7c9d181d226b50e9b2a05430e6ddca0b5ea0c1e2eecfccba036f7",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",

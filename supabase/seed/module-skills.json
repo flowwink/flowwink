@@ -407,6 +407,24 @@
                   },
                   "reference_number": {
                     "type": "string"
+                  },
+                  "remember_counterparty": {
+                    "type": "boolean",
+                    "description": "create with bank_transaction_id only — the rule loop. true = the person said \"book this counterparty like this next time\": a template rule is created (reconciliation_rules) and wins the next proposal. false = this one only, nothing is learned. Omitted = legacy: the counterparty's vendor default learns silently. Never pass true without a person's yes."
+                  },
+                  "rule_id": {
+                    "type": "string",
+                    "description": "The reconciliation rule the proposal came from (propose_bookkeeping rule_id) — the booking is counted on that rule."
+                  },
+                  "match_source": {
+                    "type": "string",
+                    "enum": [
+                      "rule",
+                      "vendor-default",
+                      "keyword",
+                      "manual"
+                    ],
+                    "description": "How the template was chosen (provenance on the entry). \"rule\" and \"vendor-default\" mean a standing decision was followed; anything else answers with rule_suggestion."
                   }
                 },
                 "required": [
@@ -420,7 +438,7 @@
               }
             }
           },
-          "instructions": "APPROVAL: when an approval rule or chain for \"journal_entry\" applies to the amount, a MANUAL entry you create is held by the table as a DRAFT with an approval request — the answer then says status:\"draft\", approval_required:true and approval_request_id; it is NOT in the books until approved and posted with post_journal_entry. Double-entry bookkeeping. lines = [{account_code, account_name, debit_cents, credit_cents}] (integer cents); total debits MUST equal total credits.\nPREFERRED ONE-CALL FLOW (templates): find the template via manage_accounting_template action=list (or let matching pick one from description), then call {action:'create', template_id, amount_cents: <NET amount in öre/cents>, description, auto_confirm:true}. Percentage lines (debit_pct/credit_pct) expand from amount_cents — a 25%-VAT sale with amount_cents=100000 books 1510:125000 / 3010:100000 / 2610:25000. Zero-amount entries are rejected.\nBANK EVENTS: when booking a bank transaction (from propose_bookkeeping / list_unmatched_transactions / an imported feed), ALWAYS pass bank_transaction_id in the create payload. It links the entry to the event (removes it from the \"events to book\" queue, audit trail) AND is the idempotency key — re-booking an already-linked event is refused with {already_booked:true} instead of creating a duplicate. Booking bank events WITHOUT bank_transaction_id leaves them in the queue and risks double-booking.\nSTAGED OPERATION (only on an instance that has turned this skill's trust dial to \"approve\" — a new instance books directly): create then returns {staged:true, operation_id, ...} for review — this is NOT a failure and NOT a permission error. To execute: (1) call approve_pending_operation with {p_id: <operation_id>}, then (2) re-invoke manage_journal_entry with the SAME args plus _approved_operation_id: <operation_id>. The entry is only booked after step 2.\nCORRECTING A MISTAKE (action=void): it does not delete and it does not hide. The original stays posted and keeps counting; a mirror entry dated TODAY cancels it, and the response gives you both ids. Two consequences to plan around: (1) a June entry reversed in August leaves June's VAT return exactly as it was filed and puts the correction in August's — that is correct, not a bug, and you should say so rather than trying to backdate; (2) reversing twice is refused, because the second reversal would put the books off by the same amount in the other direction — if the correction itself was wrong, book a NEW entry. Entries still in draft can be deleted outright; posted ones never can.\nRouting rules in order: (1) vendor.default_account_code wins; (2) keyword-match against accounting_templates ordered by usage_count DESC; (3) only fall back to manual account selection if no template scores ≥0.6 and the vendor has no default. Always include template_id and vendor_id in the create payload when known. Locale-specific guidance: Use BAS 2024 account codes (4-digit). Ensure debits equal credits. For sales invoices: Debit 1510 Kundfordringar, Credit 3010 Försäljning + Credit 2610 Utgående moms 25%. Match accounting templates by keywords when possible."
+          "instructions": "APPROVAL: when an approval rule or chain for \"journal_entry\" applies to the amount, a MANUAL entry you create is held by the table as a DRAFT with an approval request — the answer then says status:\"draft\", approval_required:true and approval_request_id; it is NOT in the books until approved and posted with post_journal_entry. Double-entry bookkeeping. lines = [{account_code, account_name, debit_cents, credit_cents}] (integer cents); total debits MUST equal total credits.\nPREFERRED ONE-CALL FLOW (templates): find the template via manage_accounting_template action=list (or let matching pick one from description), then call {action:'create', template_id, amount_cents: <NET amount in öre/cents>, description, auto_confirm:true}. Percentage lines (debit_pct/credit_pct) expand from amount_cents — a 25%-VAT sale with amount_cents=100000 books 1510:125000 / 3010:100000 / 2610:25000. Zero-amount entries are rejected.\nBANK EVENTS: when booking a bank transaction (from propose_bookkeeping / list_unmatched_transactions / an imported feed), ALWAYS pass bank_transaction_id in the create payload. It links the entry to the event (removes it from the \"events to book\" queue, audit trail) AND is the idempotency key — re-booking an already-linked event is refused with {already_booked:true} instead of creating a duplicate. Booking bank events WITHOUT bank_transaction_id leaves them in the queue and risks double-booking.\nSTAGED OPERATION (only on an instance that has turned this skill's trust dial to \"approve\" — a new instance books directly): create then returns {staged:true, operation_id, ...} for review — this is NOT a failure and NOT a permission error. To execute: (1) call approve_pending_operation with {p_id: <operation_id>}, then (2) re-invoke manage_journal_entry with the SAME args plus _approved_operation_id: <operation_id>. The entry is only booked after step 2.\nCORRECTING A MISTAKE (action=void): it does not delete and it does not hide. The original stays posted and keeps counting; a mirror entry dated TODAY cancels it, and the response gives you both ids. Two consequences to plan around: (1) a June entry reversed in August leaves June's VAT return exactly as it was filed and puts the correction in August's — that is correct, not a bug, and you should say so rather than trying to backdate; (2) reversing twice is refused, because the second reversal would put the books off by the same amount in the other direction — if the correction itself was wrong, book a NEW entry. Entries still in draft can be deleted outright; posted ones never can.\nRouting rules in order: (0) a bookkeeping RULE with a template (reconciliation_rules; propose_bookkeeping gives you its rule_id — pass it on with match_source \"rule\"); (1) vendor.default_account_code wins; (2) keyword-match against accounting_templates ordered by usage_count DESC; (3) only fall back to manual account selection if no template scores ≥0.6 and the vendor has no default. Always include template_id and vendor_id in the create payload when known.\nTHE RULE LOOP (bank events): a booking that no rule or vendor default decided answers with rule_suggestion {counterparty, template_id, accept}. Put the question to the person (\"book <counterparty> like this next time?\"); on yes, create the rule (manage_reconciliation_rule, or re-book with remember_counterparty: true); on no, do nothing — a one-off booking must not become a rule. Pass remember_counterparty: false when the person already said no, so nothing is learned silently. Locale-specific guidance: Use BAS 2024 account codes (4-digit). Ensure debits equal credits. For sales invoices: Debit 1510 Kundfordringar, Credit 3010 Försäljning + Credit 2610 Utgående moms 25%. Match accounting templates by keywords when possible."
         },
         {
           "name": "accounting_reports",
@@ -24227,7 +24245,7 @@
         },
         {
           "name": "propose_bookkeeping",
-          "description": "Propose a double-entry booking for unbooked bank transactions: for each event it ranks the best accounting template (counterparty + description), derives the NET base from the GROSS bank amount, and returns the proposed debit/credit lines + a confidence (auto ≥95 / propose ≥70 / escalate <70). Use when: building the \"Händelser att bokföra\" review queue, batch-proposing bookings for a bank feed, letting an agent pre-fill bookings for human review. NOT for: actually posting (that is manage_journal_entry), invoice/expense/order events (booked by their own pipeline).",
+          "description": "Propose a double-entry booking for unbooked bank transactions: for each event it picks the template — a bookkeeping RULE with a template wins (routing rule #0, 90% + ramp), then the counterparty's learned vendor default (88% + ramp), then keyword scoring — derives the NET base from the GROSS bank amount, and returns the proposed debit/credit lines + a confidence (auto ≥95 / propose ≥70 / escalate <70) and, for a rule-backed proposal, rule_id/rule_name. Use when: building the \"Händelser att bokföra\" review queue, batch-proposing bookings for a bank feed, letting an agent pre-fill bookings for human review. NOT for: actually posting (that is manage_journal_entry), invoice/expense/order events (booked by their own pipeline).",
           "category": "commerce",
           "handler": "db:propose_bookkeeping",
           "scope": "internal",
@@ -24255,11 +24273,11 @@
               }
             }
           },
-          "instructions": "Read-only. To BOOK a proposal, call manage_journal_entry { action: \"create\", template_id: suggested_template_id, amount_cents: suggested_amount_cents, description, reference_number, bank_transaction_id, auto_confirm: true } — passing bank_transaction_id links the entry to the event and removes it from the queue. suggested_amount_cents is the NET base (already derived from the gross bank amount) — pass it verbatim. Only auto-book status=\"auto\" (confidence ≥95); surface status=\"propose\" for human review; status=\"escalate\" needs a manual template or a new one via manage_accounting_template."
+          "instructions": "Read-only. To BOOK a proposal, call manage_journal_entry { action: \"create\", template_id: suggested_template_id, amount_cents: suggested_amount_cents, description, reference_number, bank_transaction_id, auto_confirm: true } — passing bank_transaction_id links the entry to the event and removes it from the queue. When the proposal carries rule_id, pass it on with match_source: \"rule\" so the rule is credited; match_details tells you the source (\"rule:<name>\", \"vendor-default\", or keyword terms). A booking nothing decided for answers with rule_suggestion — ask the person before making it a rule (remember_counterparty: true on the booking, or manage_reconciliation_rule create). suggested_amount_cents is the NET base (already derived from the gross bank amount) — pass it verbatim. Only auto-book status=\"auto\" (confidence ≥95); surface status=\"propose\" for human review; status=\"escalate\" needs a manual template or a new one via manage_accounting_template."
         },
         {
           "name": "manage_reconciliation_rule",
-          "description": "Manage auto-categorisation rules for bank transactions (match counterparty/reference/description → suggested account + category). Use when: setting up recurring-payment rules, automating bank coding. NOT for: running the rules (apply_reconciliation_rules) or matching to invoices (auto_match_transactions).",
+          "description": "Manage bookkeeping rules for bank transactions: match counterparty/reference/description (contains|equals|regex) → EITHER the accounting template to book with (p_suggested_template_id — the rule then wins propose_bookkeeping outright, routing rule #0) OR a suggested account + category (tags only). Use when: a person said \"book this counterparty like this next time\" (p_source learned/agent), setting up recurring-payment rules, listing or retiring rules. NOT for: running the tag-only rules (apply_reconciliation_rules), matching to invoices (auto_match_transactions), booking (manage_journal_entry).",
           "category": "commerce",
           "handler": "rpc:manage_reconciliation_rule",
           "scope": "internal",
@@ -24320,12 +24338,26 @@
                   },
                   "p_priority": {
                     "type": "number"
+                  },
+                  "p_suggested_template_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The accounting template a matching bank event is booked with. A rule with a template is a bookkeeping decision: propose_bookkeeping proposes it at 90% confidence (auto after two confirmed bookings of the counterparty)."
+                  },
+                  "p_source": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "learned",
+                      "agent"
+                    ],
+                    "description": "Who decided: manual = the rules panel, learned = the person accepted \"book like this next time?\" after a booking, agent = an operator created it (ask the person first)."
                   }
                 }
               }
             }
           },
-          "instructions": "Lower priority wins first. After editing rules, run apply_reconciliation_rules to tag unmatched transactions."
+          "instructions": "A rule needs a template (books) or an account code (tags). Creating a rule whose field/type/pattern already exists UPDATES that rule instead of duplicating it. Lower priority wins first. `list` returns suggested_template_name, source, times_applied and last_applied_at — a rule applied 0 times in months is a candidate to retire. The fastest way to make a rule from a booking: manage_journal_entry create with remember_counterparty: true. A tag-only rule (account code, no template) is applied with apply_reconciliation_rules."
         },
         {
           "name": "apply_reconciliation_rules",

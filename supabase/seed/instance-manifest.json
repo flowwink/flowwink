@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261025040000",
-      "migrations_count": 680,
+      "migration_head": "20261026010000",
+      "migrations_count": 681,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2725,6 +2725,10 @@
         {
           "version": "20261025040000",
           "name": "foretagets-valuta-och-tal-bor-i-databasen"
+        },
+        {
+          "version": "20261026010000",
+          "name": "mallar-och-mottagare-far-sitt-sprak"
         }
       ]
     },
@@ -2735,9 +2739,9 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:47108e34bf44dffb4a666c27985e61bce4d481c98cce4fb490a87fd6e85e7c37",
+      "shared_hash": "sha256:32dd456f31b8e178b32835b0048156c6c3486856a4ec122c1326acb90ddb4c4d",
       "functions": {
-        "agent-execute": "sha256:1cc80a16c4b0b772e402647704a1c98eb3c83960410d02e5a46c0ccbab7fed72",
+        "agent-execute": "sha256:b7ea8b84544fcc90d21db4e903d68bf1e661eeee9dacc8226b44f8dcbf6ccd35",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:5c3c94e038ef44fc38a391be296488325ff2c88ab9bcc3188ca4208094b937f3",
@@ -2765,7 +2769,7 @@
         "dunning-processor": "sha256:e05e55a6624859ed9f36f296aa5eccbb313f5d70f861a84067af4a4738b12679",
         "einvoice": "sha256:75eb9e0e1bf84e5fc7130ce8b782ffffab5ef5ec2c5acda0723a2e74664e0d96",
         "elks46-ingest": "sha256:b307030541f462e2617c918834e04f8649bd4d2f8b6b9e2c80d64b2b25a2cfc7",
-        "email-send": "sha256:68c9f63e045c235c062af173d21738fa48e2356c06ca869cac26821a5e96706a",
+        "email-send": "sha256:9d5045cf1937ba7e32800847b8099044a85adea074728fee741f9735aae7368d",
         "email-webhook": "sha256:55c393771311c65d2841fc988593923bc5dea9d253f847f875de2638ebecc239",
         "event-dispatcher": "sha256:9eefa58e2b6947f83bacf5c27fc1bc772a4ed0d0f92af47e6c9577a1dd62f4c6",
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261026050000",
-      "migrations_count": 685,
+      "migration_head": "20261026070000",
+      "migrations_count": 687,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2745,6 +2745,14 @@
         {
           "version": "20261026050000",
           "name": "nummerserier-pa-foretagets-datum"
+        },
+        {
+          "version": "20261026060000",
+          "name": "sidan-far-sin-adress-per-sprak"
+        },
+        {
+          "version": "20261026070000",
+          "name": "villkorslanken-foljer-avtalets-sprak"
         }
       ]
     },
@@ -2755,7 +2763,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:e51939e8675476bc7fce4cea012f62bbb918d4d85c03d9d9599aadcfcc80df94",
+      "shared_hash": "sha256:3086a67994b5ad7180c07112abeaf3debbae014a69cff480de38dfcd04f407ac",
       "functions": {
         "agent-execute": "sha256:ec5a44b50bc2ba0ad303695e779954d0cb6776e582251d04a5412906795dc4cf",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
@@ -2819,7 +2827,7 @@
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",
         "signal-dispatcher": "sha256:a76e992430f13d05003a0e00ba622c239006fc853531400d88a1f238310c90dc",
         "signal-ingest": "sha256:b7bf9c636845229394e12d2cec9b78da6657b3a321775f65063e53794eb0ea3d",
-        "sitemap": "sha256:ed3bd3faa933c52416c0b3ee69efab95d5ecc4b63c690e4ae8a1481559e327de",
+        "sitemap": "sha256:cae857d14065abbd7064c4e111bb5bcc95522420d675b6aa9b4d293f5415e213",
         "stripe-webhook": "sha256:9d884c8dd68c9c41e64a4c01cdb18070244b675fc6d79047cd3d94065cb2153e",
         "subscription-billing-cron": "sha256:635a13846746187695a361f586125a59d61754c2eb950be3818a1c7258c8f48e",
         "subscriptions": "sha256:a79be41a49c863086ee5e73ae5ff803c4369f5fa7a93550ff8efa03a0772972e",

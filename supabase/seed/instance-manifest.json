@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261026090000",
-      "migrations_count": 689,
+      "migration_head": "20261026100000",
+      "migrations_count": 690,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2761,11 +2761,15 @@
         {
           "version": "20261026090000",
           "name": "mejlen-pa-mottagarens-sprak"
+        },
+        {
+          "version": "20261026100000",
+          "name": "forsaljningen-bokfors-i-bolagets-valuta"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:14ca76bf34d0dd0486c336d10baeb352e0a1b8e3031dd154ad885370e8082895",
+      "seed_hash": "sha256:c8df3538ae770b2572d857992ba7275d72147dc2e585e1ec59d61e41a7a059fc",
       "skill_count": 634,
       "module_count": 68
     },
@@ -2773,7 +2777,7 @@
       "count": 77,
       "shared_hash": "sha256:bb1106d370d3368d5b101674b3a4cc6678b408f50213404900d5dbc91447e1b6",
       "functions": {
-        "agent-execute": "sha256:ec5a44b50bc2ba0ad303695e779954d0cb6776e582251d04a5412906795dc4cf",
+        "agent-execute": "sha256:f39ab904568f034fb829da3c2aff534d8961bb92f0824aa41781fcb6890b8244",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2809,7 +2813,7 @@
         "flowpilot-heartbeat": "sha256:660103dab54155cf63be4e77054a48b7db3888ae5ac7543b828f4c22feda8b8b",
         "flowpilot-lifecycle": "sha256:3dbf4b2c72c5ccb73f66092411c237b0e11e76743a90178993f84e6cc3f80b7b",
         "gatewayapi-ingest": "sha256:9f5c222b4e49a9d7eaeac08fd342ca09acab43c9d9b5e63da668cd1c4aef1ddb",
-        "generate-invoice-pdf": "sha256:d33e38e9ce8f9edbdb254073966611541ac40f398c32275781f76070fab640ee",
+        "generate-invoice-pdf": "sha256:788baea5630795df69dd7b69f4177b12fd1432a061dca2e0bf2cc562fb6ffb2d",
         "get-page": "sha256:3e42751911164c9d6c350b931a4e64a4824166a6bef8d02e526ad378c8f3921b",
         "gmail-oauth-callback": "sha256:b851b5a37da669b8dc506d399417619361317d008a2ac17a3b3cfda4dfff0dea",
         "instance-health": "sha256:15fac01005e503ee8f7c4226890bea28ecdcd0b43ada818f8fc7697e9fbecc99",

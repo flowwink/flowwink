@@ -13664,7 +13664,8 @@
                     "format": "uuid"
                   },
                   "p_amount_cents": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "In the INVOICE's currency (hundredths). The ledger converts to the business currency at the payment-date rate; the difference against the booked receivable is realised exchange gain/loss."
                   },
                   "p_method": {
                     "type": "string",

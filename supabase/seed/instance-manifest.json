@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261026110000",
-      "migrations_count": 691,
+      "migration_head": "20261026120000",
+      "migrations_count": 692,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2769,19 +2769,23 @@
         {
           "version": "20261026110000",
           "name": "inkopen-bokfors-i-bolagets-valuta"
+        },
+        {
+          "version": "20261026120000",
+          "name": "rakenskapsaret-far-en-modell"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:c8df3538ae770b2572d857992ba7275d72147dc2e585e1ec59d61e41a7a059fc",
-      "skill_count": 634,
+      "seed_hash": "sha256:f49d7664952d8c0c06d739697201aabd6bf1454b6d6a95ffcf0a5befd4d69234",
+      "skill_count": 635,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:bb1106d370d3368d5b101674b3a4cc6678b408f50213404900d5dbc91447e1b6",
+      "shared_hash": "sha256:a765d805fdeef8cc9f620eae08db8e3843f95349d162a9ccc20de8a78ec98db0",
       "functions": {
-        "agent-execute": "sha256:0b123df6f34c13001b5994ed895c271cb16071f036f2116022bdd8b02f1e6e83",
+        "agent-execute": "sha256:6a9274adf6302a3cf28fe68a4d549e47462f772b112388b7d877a8238bd845d6",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2837,7 +2841,7 @@
         "quote-pay": "sha256:9be4edf4b93c80e9dad8bbe2976a8f1a9de6945d44b7a4f675ac0d0d9c590629",
         "quote-sign": "sha256:7f09589ccd4c61062f7c9c8d77b4762d31cc8c8fe09797534ffb640b8cfe020c",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:4d495505fe083940efb25ff4d94307be0dd7e62a904576422f8f88658846daac",
+        "run-platform-tests": "sha256:589f5f13439d39c2d464bc43d0a46f2b3961ac89188b644713c618fc335be392",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

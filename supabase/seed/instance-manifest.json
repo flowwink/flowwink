@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261026100000",
-      "migrations_count": 690,
+      "migration_head": "20261026110000",
+      "migrations_count": 691,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2765,6 +2765,10 @@
         {
           "version": "20261026100000",
           "name": "forsaljningen-bokfors-i-bolagets-valuta"
+        },
+        {
+          "version": "20261026110000",
+          "name": "inkopen-bokfors-i-bolagets-valuta"
         }
       ]
     },

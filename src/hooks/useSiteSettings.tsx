@@ -513,6 +513,11 @@ function useUpdateSiteSettings<T>(key: string, successMessage: string) {
     },
     onSuccess: (settings) => {
       queryClient.setQueryData(['site-settings', key], settings);
+      // Narrower readers of the same row (useSiteLanguages' declared-or-not
+      // query) live under longer keys — refetch those, keep the one just set.
+      queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey.length > 2 && q.queryKey[0] === 'site-settings' && q.queryKey[1] === key,
+      });
       // The business's home is read from four keys at once.
       if ((HOME_SETTING_KEYS as readonly string[]).includes(key)) {
         queryClient.invalidateQueries({ queryKey: BUSINESS_HOME_QUERY_KEY });
@@ -724,7 +729,19 @@ const FALLBACK: SiteLanguages = { default: 'en', enabled: ['en'] };
  * would put a door in the switcher that opens onto nothing.
  */
 export function useSiteLanguages() {
-  const query = useSiteSettings<SiteLanguages>('site_languages', FALLBACK);
+  // Read the ROW, not the merged-with-defaults value: the generic settings
+  // hook answers a missing row with its default, which made isDeclared true
+  // on every site (the very optictunnels bug the flag exists for). The key
+  // extends ['site-settings','site_languages'], so saving still invalidates it.
+  const query = useQuery({
+    queryKey: ['site-settings', 'site_languages', 'declared'],
+    queryFn: async (): Promise<SiteLanguages | null> => {
+      const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'site_languages').maybeSingle();
+      if (error) throw error;
+      return data?.value ? { ...FALLBACK, ...(data.value as unknown as SiteLanguages) } : null;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
   const value = query.data ?? FALLBACK;
   const enabled = value.enabled?.length ? value.enabled : [value.default || 'en'];
   return {
@@ -745,7 +762,7 @@ export function useSiteLanguages() {
      * the query answered with zero rows rather than an error. A guess that
      * looks like knowledge is the whole problem.
      */
-    isDeclared: !!query.data,
+    isDeclared: query.data != null,
   };
 }
 
@@ -802,6 +819,7 @@ export interface BlogSettings {
   showReadingTime: boolean;
   showReviewer: boolean;
   archiveTitle: string;
+  /** @deprecated Never read: the blog lives at /blog (a fixed system route). docs/architecture/addresses.md */
   archiveSlug: string;
   rssEnabled: boolean;
   rssTitle: string;
@@ -1010,7 +1028,8 @@ export interface AutonomyScheduleSettings {
 }
 
 export const defaultAutonomyScheduleSettings: AutonomyScheduleSettings = {
-  timezone: 'Europe/Stockholm',
+  // Retired: the schedule runs on the business's time zone (Where the business is).
+  timezone: '',
   heartbeatEnabled: true,
   heartbeatHours: [0, 12],
   briefingEnabled: true,
@@ -1077,6 +1096,18 @@ export interface AccountingPreferences {
   fiscalYearStartMonth: number;
   /** Rounding mode for VAT / template expansion. */
   rounding: 'half-up' | 'half-even' | 'down';
+  /**
+   * How often the VAT return is filed, as registered with the tax agency.
+   * The statutory calendar (statutory_deadlines, check_books) and the VAT
+   * declaration tab's default period read it.
+   */
+  vatReturnPeriod: 'monthly' | 'quarterly' | 'yearly';
+  /**
+   * The legal form, a declared fact: the income tax return and annual report
+   * deadlines depend on it. Empty = not set, and the calendar says so instead
+   * of guessing a company form.
+   */
+  legalForm: '' | 'limited_company' | 'sole_trader' | 'partnership' | 'other';
 }
 
 export const defaultAccountingPreferences: AccountingPreferences = {
@@ -1088,6 +1119,8 @@ export const defaultAccountingPreferences: AccountingPreferences = {
   dateFormat: 'YYYY-MM-DD',
   fiscalYearStartMonth: 1,
   rounding: 'half-up',
+  vatReturnPeriod: 'quarterly',
+  legalForm: '',
 };
 
 export function useAccountingPreferences() {

@@ -11,6 +11,8 @@ import { bounceManagePageArgs, collectPageUpdateFields, parseMenuFields, resolve
 import { extractTextFromBlock } from '../_shared/chat-context.ts';
 import { retiredSkillResult } from '../_shared/skills/retired-skills.ts';
 import { isIdleScheduledRun, declaredWorkDone } from '../_shared/activity/work-done.ts';
+import { stampAgentError } from '../_shared/agent-errors.ts';
+import { classifySkillModule } from '../_shared/mcp/groups.ts';
 import { readAllRows } from '../_shared/read-all-rows.ts';
 import { claimIsRequired, interpretApprovalClaim, type ClaimResult } from '../_shared/approval-claim.ts';
 import { applyIdentityPolicy, installIdentityPolicy } from '../_shared/site-identity.ts';
@@ -164,7 +166,8 @@ import bundledLocalePacks from "./_locale-packs.json" with { type: "json" };
 import bundledModuleSkills from "./_module-skills.json" with { type: "json" };
 import bundledUiTextCatalog from "./_ui-text-catalog.json" with { type: "json" };
 import { slugify } from '../_shared/slugify.ts';
-import { homeFormat } from '../_shared/locale/home.ts';
+import { businessDateIn, businessPeriod, dateInZone, homeFormat, startOfBusinessDay, wallClockToInstant } from '../_shared/locale/home.ts';
+import { businessToday, loadHomeCached } from '../_shared/locale/load-home.ts';
 import { handleGetBusinessHome, handleSetBusinessHome, type SetBusinessHomeArgs } from '../_shared/handlers/business-home.ts';
 import { loadHome } from '../_shared/locale/load-home.ts';
 import { isExtractable } from '../_shared/documents/extractable.ts';
@@ -396,6 +399,10 @@ function acctScoreTemplates(
 // param per field. The rpc: dispatcher forwards `{ args: {...} }` for these.
 // Keep in sync with `select proname from pg_proc where
 // pg_get_function_identity_arguments(oid)='args jsonb'`.
+// Skills whose answers carry the ledger context (agent_context) first:
+// classified by owning module, the way the MCP ?groups= filter does.
+const FINANCE_MODULES = new Set<string>(['accounting', 'invoicing', 'purchasing', 'expenses']);
+
 const JSONB_ARG_RPCS = new Set<string>([
   'mcp_register_fixed_asset',
   'mcp_dispose_fixed_asset',
@@ -698,19 +705,20 @@ serve(async (req) => {
         try {
           const d = new Date(dateStr);
           if (!isNaN(d.getTime())) {
-            const { data: per } = await supabase
-              .from('accounting_periods')
-              .select('status')
-              .eq('fiscal_year', d.getFullYear())
-              .eq('period_month', d.getMonth() + 1)
-              .maybeSingle();
-            periodStatus = (per?.status as string) ?? 'open';
+            // The period on the FISCAL calendar (a July–June year), not the calendar year's.
+            const { data: per, error: perErr } = await supabase.rpc('period_status_for_date', { p_date: d.toISOString().slice(0, 10) });
+            if (perErr) console.warn('[agent-execute] period status unreadable:', perErr.message);
+            periodStatus = (per as string | null) ?? 'open';
           }
         } catch { /* ignore */ }
       }
 
+      // The skill's own declaration (tool_definition.risk) wins; the name list
+      // is the fallback for skills that have not declared one.
+      const declaredRisk = (skill as { tool_definition?: { risk?: unknown } })?.tool_definition?.risk;
       const riskLevel: 'low'|'medium'|'high' =
-        ['close_accounting_period','close_pos_session_v2','record_accounting_correction'].includes(skill.name) ? 'high'
+        declaredRisk === 'low' || declaredRisk === 'medium' || declaredRisk === 'high' ? declaredRisk
+        : ['close_accounting_period','close_pos_session_v2','record_accounting_correction'].includes(skill.name) ? 'high'
         : 'medium';
 
       const { data: opRow, error: opErr } = await supabase
@@ -872,7 +880,8 @@ serve(async (req) => {
           p_agent: agent_type,
           p_conversation_id: conversation_id ?? null,
           p_amount_cents: amountCents,
-          p_currency: (typeof a?.currency === 'string' ? (a.currency as string) : 'SEK'),
+          // No currency from the call: the RPC's default, the business's.
+          p_currency: typeof a?.currency === 'string' ? (a.currency as string) : undefined,
           p_reason: `Skill "${skill.name}" requires approval before execution`,
         });
         if (reqErr) {
@@ -1478,6 +1487,27 @@ serve(async (req) => {
       // Normalize all handler exceptions to {error: string} format
       console.error(`[agent-execute] Handler '${handler}' threw:`, handlerErr.message);
       result = { error: `Handler exception: ${handlerErr.message || 'Unknown error'}`, status: 'failed' };
+    }
+
+    // 4b. The agent envelope. A failure carries a stable `code`, `retryable`
+    // and a `hint` (PERIOD_LOCKED is never retried; MISSING_EXCHANGE_RATE is,
+    // after the rate is set) so the next turn branches instead of guessing.
+    // A finance answer carries `context` first — today, the currency, the
+    // fiscal year, today's period status, what waits for approval — the way
+    // every Accounted result starts with the company it speaks for. Both are
+    // additive: no handler's own keys move.
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      if ((result as { error?: unknown }).error) {
+        result = stampAgentError(result as Record<string, unknown>);
+      } else if (FINANCE_MODULES.has(classifySkillModule(skill.name, skill.handler) ?? '') && !('context' in (result as object))) {
+        try {
+          const { data: ctx, error: ctxErr } = await supabase.rpc('agent_context');
+          if (ctxErr) console.warn('[agent-execute] agent_context unreadable:', ctxErr.message);
+          else if (ctx && typeof ctx === 'object') result = { context: ctx, ...(result as Record<string, unknown>) };
+        } catch (ctxCatch) {
+          console.warn('[agent-execute] agent_context skipped:', (ctxCatch as Error)?.message);
+        }
+      }
     }
 
     // 5. Log activity (with objective context and trace_id if provided)
@@ -2345,6 +2375,14 @@ async function executeCalendarAction(
   }
   const start = a.start;
   const end = a.end;
+  // Bookings are instants: a bare date means the whole day on the business's
+  // clock. As UTC midnights, bookings 00:00–02:00 Stockholm fell on the
+  // previous day, and start=end=today (the natural "what's on today")
+  // returned nothing — lte stopped at 00:00Z.
+  const tz = (await loadHomeCached(supabase)).timeZone;
+  const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const startTs = isDate(start) ? wallClockToInstant(`${start}T00:00`, tz) ?? start : start;
+  const endTs = isDate(end) ? wallClockToInstant(`${end}T23:59:59`, tz) ?? end : end;
   const wanted = (a.sources && a.sources.length) ? new Set(a.sources) : null;
   const include = (id: string) => !wanted || wanted.has(id);
 
@@ -2354,8 +2392,8 @@ async function executeCalendarAction(
     const { data } = await supabase
       .from('bookings')
       .select('id, customer_name, start_time, end_time, status')
-      .gte('start_time', start)
-      .lte('start_time', end)
+      .gte('start_time', startTs)
+      .lte('start_time', endTs)
       .order('start_time', { ascending: true })
       .limit(500);
     for (const r of data ?? []) {
@@ -3719,7 +3757,7 @@ async function executeTimesheetsAction(
           user_id: resolvedUserId,
           employee_id: employee_id ?? null,
           project_id: resolvedProjectId,
-          entry_date: entry_date || new Date().toISOString().slice(0, 10),
+          entry_date: entry_date || (await businessToday(supabase)),
           hours,
           description,
           is_billable: is_billable ?? true,
@@ -3739,15 +3777,15 @@ async function executeTimesheetsAction(
         return { success: true };
       }
 
-      // list (default)
-      const now = new Date();
-      const day = now.getDay();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + (week_offset as number) * 7);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      const ws = monday.toISOString().slice(0, 10);
-      const we = sunday.toISOString().slice(0, 10);
+      // list (default) — the week on the business's calendar (on Monday 00:30
+      // in Stockholm the UTC week was still last week).
+      const thisWeek = businessPeriod((await loadHomeCached(supabase)).timeZone, 'this_week');
+      const shift = (iso: string, days: number) => {
+        const [yy, mm, dd] = iso.split('-').map(Number);
+        return new Date(Date.UTC(yy, mm - 1, dd + days)).toISOString().slice(0, 10);
+      };
+      const ws = shift(thisWeek.start, (week_offset as number) * 7);
+      const we = shift(thisWeek.end, (week_offset as number) * 7);
 
       let query = supabase.from('time_entries').select('*, projects(name, color, client_name)').gte('entry_date', ws).lte('entry_date', we).order('entry_date');
       if (user_id) query = query.eq('user_id', user_id);
@@ -3768,7 +3806,7 @@ async function executeTimesheetsAction(
           description: description || null,
           color: color || '#6366f1',
           hourly_rate_cents: hourly_rate_cents || 0,
-          currency: currency || 'SEK',
+          currency: currency || undefined, // the column default is the business's
           is_billable: is_billable ?? true,
         }]).select().single();
         if (error) return { error: error.message };
@@ -3810,39 +3848,19 @@ async function executeTimesheetsAction(
       const include_revenue = a.include_revenue;
 
       let ws: string, we: string;
-      const now = new Date();
+      // Periods on the business's calendar, not the UTC clock.
+      const homeTz = (await loadHomeCached(supabase)).timeZone;
 
       switch (period) {
-        case 'this_week': {
-          const day = now.getDay();
-          const monday = new Date(now);
-          monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-          const sunday = new Date(monday);
-          sunday.setDate(monday.getDate() + 6);
-          ws = monday.toISOString().slice(0, 10);
-          we = sunday.toISOString().slice(0, 10);
-          break;
-        }
-        case 'last_week': {
-          const day = now.getDay();
-          const monday = new Date(now);
-          monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) - 7);
-          const sunday = new Date(monday);
-          sunday.setDate(monday.getDate() + 6);
-          ws = monday.toISOString().slice(0, 10);
-          we = sunday.toISOString().slice(0, 10);
+        case 'this_week':
+        case 'last_week':
+        case 'last_month': {
+          ({ start: ws, end: we } = businessPeriod(homeTz, period));
           break;
         }
         case 'this_month': {
-          ws = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-          we = now.toISOString().slice(0, 10);
-          break;
-        }
-        case 'last_month': {
-          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
-          ws = lastMonth.toISOString().slice(0, 10);
-          we = lastDay.toISOString().slice(0, 10);
+          ws = businessPeriod(homeTz, 'this_month').start;
+          we = dateInZone(homeTz);
           break;
         }
         case 'custom':
@@ -3868,9 +3886,10 @@ async function executeTimesheetsAction(
 
       // Group by project
       const byProject = new Map<string, { project_id: string; name: string; hours: number; billable_hours: number; revenue_cents: number; currency: string }>();
+      const homeCurrency = (await loadHomeCached(supabase)).currency;
       for (const e of entries || []) {
         const key = e.project_id;
-        const existing = byProject.get(key) || { project_id: key, name: e.projects?.name || 'Unknown', hours: 0, billable_hours: 0, revenue_cents: 0, currency: e.projects?.currency || 'SEK' };
+        const existing = byProject.get(key) || { project_id: key, name: e.projects?.name || 'Unknown', hours: 0, billable_hours: 0, revenue_cents: 0, currency: e.projects?.currency || homeCurrency };
         existing.hours += Number(e.hours);
         if (e.is_billable) {
           existing.billable_hours += Number(e.hours);
@@ -4478,7 +4497,7 @@ async function executeApprovalsAction(
   }
 
   if (action === 'request') {
-    const { entity_type, entity_id, amount_cents, currency = 'SEK', reason, required_role = 'admin', context, rule_id } = a;
+    const { entity_type, entity_id, amount_cents, currency, reason, required_role = 'admin', context, rule_id } = a;
     if (!entity_type || !entity_id) throw new Error('entity_type and entity_id are required');
     // Who asked is half the approval record. It was never written, which is
     // also why self-approval could not be detected downstream.
@@ -4573,7 +4592,7 @@ async function executeApprovalsAction(
   }
 
   if (action === 'create_rule') {
-    const { name, description, entity_type, amount_threshold_cents, currency = 'SEK', required_role = 'admin', priority = 0 } = a;
+    const { name, description, entity_type, amount_threshold_cents, currency, required_role = 'admin', priority = 0 } = a;
     if (!name || !entity_type) throw new Error('name and entity_type are required');
     const { data, error } = await supabase.from('approval_rules').insert({
       name, description: description ?? null, entity_type,
@@ -6635,7 +6654,7 @@ async function executeDealsAction(
   }
 
   if (action === 'create') {
-    const { value_cents = 0, currency = 'SEK', stage: requestedStage, product_id, expected_close, notes, company_id, company_name, lead_name, lead_email } = args as any;
+    const { value_cents = 0, currency, stage: requestedStage, product_id, expected_close, notes, company_id, company_name, lead_name, lead_email } = args as any;
     // A new deal starts at the pipeline's FIRST open stage — the one the kanban
     // shows leftmost — not at 'proposal' (60 %), which put every agent-created
     // deal three steps into the funnel and inflated the weighted forecast
@@ -6925,7 +6944,7 @@ async function executeProductsAction(
 
   if (action === 'create') {
     const {
-      name, description, price_cents, currency = 'SEK', type = 'one_time',
+      name, description, price_cents, currency, type = 'one_time',
       image_url, stripe_price_id, weight_grams,
       // Inventory fields. Omitting these from the create allowlist meant a
       // product could never be BORN stocked: an agent had to create it, then
@@ -7962,7 +7981,7 @@ function zonedTimeToUtc(date: string, time: string, tz: string): Date {
 
 async function platformTimezone(supabase: SupabaseClient): Promise<string> {
   const { data, error } = await supabase.rpc('platform_timezone');
-  return !error && typeof data === 'string' && data ? data : 'Europe/Stockholm';
+  return !error && typeof data === 'string' && data ? data : (await loadHomeCached(supabase)).timeZone;
 }
 
 async function executeBookingAction(
@@ -8468,7 +8487,8 @@ async function placeOrderShared(
   const customer_email = a.customer_email ?? a.customerEmail;
   const customer_name = a.customer_name ?? a.customerName;
   const items = a.items;
-  const currency = a.currency ?? 'SEK';
+  // No currency from the call: the business's (locale-and-formatting.md §3b).
+  const currency = a.currency ?? (await loadHomeCached(supabase)).currency;
   const notes = a.notes;
   const shipping_address = a.shipping_address ?? a.shippingAddress ?? null;
   const shipping_rate_id = a.shipping_rate_id ?? a.shippingRateId ?? null;
@@ -8791,7 +8811,7 @@ async function executeOrdersAction(
       if (period === 'week') since.setDate(since.getDate() - 7);
       else if (period === 'month') since.setMonth(since.getMonth() - 1);
       else if (period === 'quarter') since.setMonth(since.getMonth() - 3);
-      else since.setHours(0, 0, 0, 0);
+      else since.setTime(startOfBusinessDay((await loadHomeCached(supabase)).timeZone).getTime());
 
       const { data } = await supabase.from('orders')
         .select('id, total_cents, currency, status, fulfillment_status, created_at')
@@ -9602,7 +9622,7 @@ async function executeSendInvoiceForOrder(
         tax_rate: effectiveTaxRate,
         tax_cents: taxCents,
         total_cents: totalCents,
-        currency: order.currency || 'SEK',
+        currency: order.currency || undefined,
       },
     };
   }
@@ -9617,7 +9637,9 @@ async function executeSendInvoiceForOrder(
     // document series), so it collided with and diverged from the real customer
     // series — a sequential-numbering hazard (SE fortlöpande fakturanummer).
     // Found by order-to-delivery QA 2026-07-09 (INV-0032 vs INV-2026-000NN).
-    const yr = new Date().getFullYear();
+    // The series year is the business's: on 1 Jan 00:30 in Stockholm the UTC
+    // year was still last year, numbering a 2027 invoice into the 2026 series.
+    const yr = Number((await businessToday(supabase)).slice(0, 4));
     const { data: lastInv } = await supabase.from('invoices')
       .select('invoice_number').ilike('invoice_number', `INV-${yr}-%`)
       .order('invoice_number', { ascending: false }).limit(1).maybeSingle();
@@ -9625,7 +9647,7 @@ async function executeSendInvoiceForOrder(
     const lm = String(lastInv?.invoice_number || '').match(/INV-\d{4}-(\d+)/);
     if (lm) nextNum = parseInt(lm[1], 10) + 1;
     const invoiceNumber = `INV-${yr}-${String(nextNum).padStart(5, '0')}`;
-    const dueDate = new Date(Date.now() + due_days * 86400000).toISOString().slice(0, 10);
+    const dueDate = businessDateIn((await loadHomeCached(supabase)).timeZone, Number(due_days) || 0);
 
     const { data: created, error: createErr } = await supabase
       .from('invoices')
@@ -9638,7 +9660,7 @@ async function executeSendInvoiceForOrder(
         tax_rate: effectiveTaxRate,
         tax_cents: taxCents,
         total_cents: totalCents,
-        currency: order.currency || 'SEK',
+        currency: order.currency || undefined,
         due_date: dueDate,
         payment_terms: payment_terms || `Net ${due_days}`,
         // The note stays for human readability; it is no longer load-bearing.
@@ -9759,7 +9781,7 @@ async function executeSendInvoiceForOrder(
       order_id,
       invoice_number: invoice.invoice_number,
       total_cents: totalCents,
-      currency: order.currency || 'SEK',
+      currency: order.currency || undefined,
       customer_email: order.customer_email,
       email: emailResult,
     },
@@ -9782,7 +9804,7 @@ async function executeSendInvoiceForOrder(
     // above describes what a new invoice would have said, not what the customer
     // owes on the document that exists.
     total_cents: reusedExisting ? (invoice.total_cents ?? totalCents) : totalCents,
-    currency: order.currency || 'SEK',
+    currency: order.currency || undefined,
     customer_email: order.customer_email,
     reused_existing_invoice: reusedExisting,
     ...(reusedExisting ? { note: `Order ${order_id} was already invoiced as ${invoice.invoice_number} — reused, no second invoice was created.` } : {}),
@@ -10006,7 +10028,7 @@ async function executeBookingsManagement(
 
   if (action === 'list') {
     const since = new Date();
-    if (period === 'today') since.setHours(0, 0, 0, 0);
+    if (period === 'today') since.setTime(startOfBusinessDay((await loadHomeCached(supabase)).timeZone).getTime());
     else if (period === 'week') since.setDate(since.getDate() - 7);
     else since.setMonth(since.getMonth() - 1);
 
@@ -10322,7 +10344,7 @@ async function executeDbAction(
       const now = new Date();
       const since = new Date(now);
       switch (period) {
-        case 'today': since.setHours(0, 0, 0, 0); break;
+        case 'today': since.setTime(startOfBusinessDay((await loadHomeCached(supabase)).timeZone).getTime()); break;
         case 'week': since.setDate(now.getDate() - 7); break;
         case 'month': since.setMonth(now.getMonth() - 1); break;
         case 'quarter': since.setMonth(now.getMonth() - 3); break;
@@ -10498,7 +10520,7 @@ async function executeDbAction(
       const now = new Date();
       const since = new Date(now);
       switch (period) {
-        case 'today': since.setHours(0, 0, 0, 0); break;
+        case 'today': since.setTime(startOfBusinessDay((await loadHomeCached(supabase)).timeZone).getTime()); break;
         case 'week': since.setDate(now.getDate() - 7); break;
         case 'month': since.setMonth(now.getMonth() - 1); break;
       }
@@ -10579,6 +10601,12 @@ async function executeDbAction(
             description: p.description || p.counterparty || 'Bank event',
             bank_transaction_id: p.bank_transaction_id,
             auto_confirm: true,
+            // Provenance: a rule-backed booking counts on its rule; the sweep
+            // never learns a rule by itself (that is a person's "yes").
+            match_source: p.rule_id ? 'rule'
+              : (Array.isArray(p.match_details) && p.match_details.includes('vendor-default')) ? 'vendor-default'
+              : 'keyword',
+            ...(p.rule_id ? { rule_id: p.rule_id } : {}),
           }, auditCtx);
           booked++;
         } catch (e) {
@@ -10600,12 +10628,11 @@ async function executeDbAction(
       //     lapsed → renewal invoice. Idempotent: invoiced time entries and
       //     renewed periods drop out of the next run. Drafts are NOT sent —
       //     sending stays behind its own skill/approval (dial-preserving).
-      const now2 = new Date();
-      const defStart = new Date(now2.getFullYear(), now2.getMonth() - 1, 1);
-      const defEnd = new Date(now2.getFullYear(), now2.getMonth(), 0);
-      const iso = (d: Date) => d.toISOString().slice(0, 10);
-      const startDate = (args as any).start_date || iso(defStart);
-      const endDate = (args as any).end_date || iso(defEnd);
+      // Last month on the business's calendar — a run at 00:30 on the 1st in
+      // Stockholm is the new month, not the month before last.
+      const lastMonth = businessPeriod((await loadHomeCached(supabase)).timeZone, 'last_month');
+      const startDate = (args as any).start_date || lastMonth.start;
+      const endDate = (args as any).end_date || lastMonth.end;
 
       // Dial inheritance — a leg whose inner skill is approve-gated is skipped
       // (queued for a human-initiated run), never silently bypassed.
@@ -10714,6 +10741,33 @@ async function executeDbAction(
         (vendorRows || []).map((v: any) => [String(v.name).toLowerCase().trim(), v.last_used_template_id]),
       );
 
+      // Routing rule #0: a RULE with a template wins outright. A rule is a
+      // decision somebody made — accepted from "book <counterparty> like this
+      // next time?" after a booking, written in the rules panel, or created by
+      // an operator — so it outranks the silently learned vendor default and
+      // the keyword scorer. Same field/type semantics as
+      // apply_reconciliation_rules, same priority order, first match wins.
+      type TemplateRule = { id: string; name: string; match_field: string; match_type: string; pattern: string; suggested_template_id: string };
+      const { data: ruleRows, error: ruleErr } = await supabase.from('reconciliation_rules')
+        .select('id, name, match_field, match_type, pattern, suggested_template_id, priority, created_at')
+        .eq('is_active', true)
+        .not('suggested_template_id', 'is', null)
+        .order('priority', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (ruleErr) console.warn(`[propose_bookkeeping] rules unreadable (proposing without them): ${ruleErr.message}`);
+      const templateRules: TemplateRule[] = (ruleRows || []) as TemplateRule[];
+      const ruleMatches = (rule: TemplateRule, ev: { counterparty?: string | null; reference?: string | null; description?: string | null }): boolean => {
+        const field = rule.match_field === 'counterparty' ? ev.counterparty
+          : rule.match_field === 'reference' ? ev.reference
+          : ev.description;
+        const value = String(field || '');
+        const pat = String(rule.pattern || '');
+        if (!pat) return false;
+        if (rule.match_type === 'equals') return value.trim().toLowerCase() === pat.trim().toLowerCase();
+        if (rule.match_type === 'regex') { try { return new RegExp(pat, 'i').test(value); } catch { return false; } }
+        return value.toLowerCase().includes(pat.toLowerCase());
+      };
+
       // Graduated counterparty confidence (Accounted-style trust ramp): a set
       // default starts at 88 (review lane), +5 per CONFIRMED booking of this
       // counterparty, capped 98 — after two confirmations it books itself.
@@ -10773,6 +10827,37 @@ async function executeDbAction(
             suggested_amount_cents: grossCents, proposed_lines: [], top_candidates: [] };
         }
         const scored = acctScoreTemplates(directionCompatible, searchTerms);
+
+        // Routing rule #0: a rule with a template (if direction-compatible).
+        // Its confidence rides the same counterparty ramp as a vendor default,
+        // from 90: a fresh rule is proposed, after two confirmed bookings of
+        // the counterparty it books itself.
+        const rule = templateRules.find((r) => ruleMatches(r, ev)) ?? null;
+        const ruleTpl = rule ? directionCompatible.find((t: { id: string }) => t.id === rule.suggested_template_id) ?? null : null;
+        if (rule && ruleTpl) {
+          const isPctR = acctIsPctTemplate(ruleTpl.template_lines);
+          const netBaseR = isPctR ? acctNetBaseFromGross(ruleTpl.template_lines, grossCents) : grossCents;
+          const confirmedR = confirmedByCounterparty.get(String(ev.counterparty || '').toLowerCase().trim()) || 0;
+          const ruleConfidence = Math.min(98, 90 + 4 * confirmedR);
+          return {
+            ...base,
+            status: ruleConfidence >= 95 ? 'auto' : 'propose',
+            confidence: ruleConfidence,
+            suggested_template_id: ruleTpl.id,
+            suggested_template_name: ruleTpl.template_name,
+            suggested_amount_cents: netBaseR,
+            rule_id: rule.id,
+            rule_name: rule.name,
+            match_details: [`rule:${rule.name}`, `booked ${confirmedR} time(s) before for this counterparty`],
+            proposed_lines: isPctR
+              ? acctExpandTemplateLines(ruleTpl.template_lines, netBaseR, grossCents)
+              : ruleTpl.template_lines,
+            top_candidates: [
+              { template_id: ruleTpl.id, name: ruleTpl.template_name, confidence: ruleConfidence },
+              ...scored.filter((s) => s.template.id !== ruleTpl.id).slice(0, 2).map((s) => ({ template_id: s.template.id, name: s.template.template_name, confidence: s.confidence })),
+            ],
+          };
+        }
 
         // Routing rule #1: vendor default wins (if direction-compatible).
         const vendorTplId = vendorDefaults.get(String(ev.counterparty || '').toLowerCase().trim());
@@ -10991,7 +11076,9 @@ async function executeDbAction(
         // the verifikat-IB approach was rejected: it pollutes the journal and
         // makes the IB|movement|UB three-column report impossible).
         // Fiscal year = year of the report's end date (BR is an as-of report).
-        const fiscalYearForIB = new Date(untilDate || new Date().toISOString()).getFullYear();
+        const { data: ibYear, error: ibYearErr } = await supabase.rpc('fiscal_year_of', { p_date: String(untilDate || (await businessToday(supabase))).slice(0, 10) });
+        if (ibYearErr) console.warn('[agent-execute] fiscal year lookup failed — falling back to the calendar year:', ibYearErr.message);
+        const fiscalYearForIB = Number(ibYear ?? new Date(untilDate || new Date().toISOString()).getFullYear());
         const { data: ibRows } = await supabase.from('opening_balances')
           .select('account_code, account_name, amount_cents, balance_type')
           .eq('fiscal_year', fiscalYearForIB);
@@ -11215,7 +11302,7 @@ async function executeDbAction(
             // Today, not the original's date: you do not rewrite a period you
             // have already declared. A June entry reversed in August belongs in
             // August's return as a correction.
-            entry_date: new Date().toISOString().split('T')[0],
+            entry_date: (await businessToday(supabase)),
             description: `Reversal: ${original.description}`,
             reference_number: `REV-${original.reference_number || entry_id.slice(0, 8)}`,
             status: 'posted',
@@ -11444,20 +11531,18 @@ async function executeDbAction(
       // Explicit period-lock check (sweep finding #B3). The DB trigger
       // guard_journal_entries_period() is the backstop; checking here gives
       // agents a clear, actionable error instead of a raw trigger exception.
-      const effectiveDate = entry_date || bankTxDate || new Date().toISOString().split('T')[0];
+      const effectiveDate = entry_date || bankTxDate || (await businessToday(supabase));
       {
         const d = new Date(effectiveDate);
         if (!isNaN(d.getTime())) {
-          const { data: per } = await supabase
-            .from('accounting_periods')
-            .select('status')
-            .eq('fiscal_year', d.getFullYear())
-            .eq('period_month', d.getMonth() + 1)
-            .maybeSingle();
-          if (per && per.status !== 'open') {
+          // The period on the FISCAL calendar (a July–June year), not the calendar year's.
+          const { data: per, error: perErr } = await supabase.rpc('period_status_for_date', { p_date: d.toISOString().slice(0, 10) });
+          if (perErr) console.warn('[agent-execute] period status unreadable:', perErr.message);
+          const periodState = (per as string | null) ?? 'open';
+          if (periodState !== 'open') {
             throw new Error(
-              `Accounting period ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')} is ${per.status} — ` +
-              `entries cannot be posted into a ${per.status} period. Use reopen_accounting_period (admin) or book in the current open period.`
+              `Accounting period ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')} is ${periodState} — ` +
+              `entries cannot be posted into a ${periodState} period. Use reopen_accounting_period (admin) or book in the current open period.`
             );
           }
         }
@@ -11556,6 +11641,8 @@ async function executeDbAction(
       // (the "Händelser att bokföra" queue), link it so the event leaves the
       // queue and gains an audit trail back to its posted verification.
       const bankTxId = (args as any).bank_transaction_id;
+      let ruleCreated: { rule_id: string | null; name: string; counterparty: string; template_id: string } | null = null;
+      let ruleSuggestion: Record<string, unknown> | null = null;
       if (bankTxId) {
         // Atomic claim (review finding H2): the early guard is read-then-write —
         // two concurrent calls could both read journal_entry_id=NULL and both
@@ -11581,10 +11668,43 @@ async function executeDbAction(
           };
         }
 
-        // LEARNING LOOP (Accounted-style): every confirmed booking of a bank
-        // event teaches the counterparty its template. Next proposal for this
-        // counterparty rides the vendor-default trust ramp (88 + 5×confirmed).
-        if (bankTxCounterparty && explicitTemplateId) {
+        // THE RULE LOOP. `remember_counterparty` is what the caller decided:
+        //   true   → make it a rule (reconciliation_rules, a template rule that
+        //            wins the next proposal) — the "yes" of "book <counterparty>
+        //            like this next time?"
+        //   false  → this one only — the "not now"; nothing is learned
+        //   absent → the legacy silent ramp: a caller that has not adopted the
+        //            prompt (an older agent) still teaches the vendor default.
+        // A booking that FOLLOWED a rule (rule_id) counts on that rule, and a
+        // booking nothing decided for carries `rule_suggestion` so the caller
+        // can ask the person.
+        const ruleArgs = args as { remember_counterparty?: unknown; rule_id?: unknown; match_source?: unknown; _caller_user_id?: unknown };
+        const rememberCounterparty = ruleArgs.remember_counterparty;
+        const followedRuleId = typeof ruleArgs.rule_id === 'string' && ruleArgs.rule_id ? ruleArgs.rule_id : null;
+        const matchSourceArg = String(ruleArgs.match_source || '');
+        if (followedRuleId) {
+          const { error: bumpErr } = await supabase.rpc('note_reconciliation_rule_applied', { p_rule_id: followedRuleId });
+          if (bumpErr) console.warn(`[accounting] rule ${followedRuleId} not counted: ${bumpErr.message}`);
+        }
+        if (bankTxCounterparty && explicitTemplateId && rememberCounterparty === true) {
+          const { data: tplRow } = await supabase.from('accounting_templates')
+            .select('template_name').eq('id', explicitTemplateId).maybeSingle();
+          const ruleName = `${bankTxCounterparty} → ${tplRow?.template_name ?? 'template'}`;
+          const { data: ruleRes, error: ruleErr } = await supabase.rpc('manage_reconciliation_rule', {
+            p_action: 'create',
+            p_name: ruleName,
+            p_match_field: 'counterparty',
+            p_match_type: 'equals',
+            p_pattern: bankTxCounterparty,
+            p_suggested_template_id: explicitTemplateId,
+            p_source: ruleArgs._caller_user_id ? 'learned' : 'agent',
+          });
+          if (ruleErr) console.warn(`[accounting] rule not remembered: ${ruleErr.message}`);
+          else ruleCreated = { rule_id: (ruleRes as { rule_id?: string } | null)?.rule_id ?? null, name: ruleName, counterparty: bankTxCounterparty, template_id: explicitTemplateId };
+        } else if (bankTxCounterparty && explicitTemplateId && rememberCounterparty === undefined) {
+          // LEARNING LOOP (Accounted-style): every confirmed booking of a bank
+          // event teaches the counterparty its template. Next proposal for this
+          // counterparty rides the vendor-default trust ramp (88 + 5×confirmed).
           const { data: existingVendor } = await supabase.from('vendors')
             .select('id').ilike('name', bankTxCounterparty).maybeSingle();
           if (existingVendor) {
@@ -11599,6 +11719,19 @@ async function executeDbAction(
               notes: 'Auto-learned from agentic bookkeeping (counterparty → template).',
             });
           }
+        }
+        if (bankTxCounterparty && explicitTemplateId && rememberCounterparty !== true && !followedRuleId
+            && matchSourceArg !== 'rule' && matchSourceArg !== 'vendor-default') {
+          ruleSuggestion = {
+            counterparty: bankTxCounterparty,
+            template_id: explicitTemplateId,
+            question: `Book "${bankTxCounterparty}" with this template next time too?`,
+            accept: {
+              skill: 'manage_reconciliation_rule',
+              args: { p_action: 'create', p_name: `${bankTxCounterparty} → <template name>`, p_match_field: 'counterparty', p_match_type: 'equals', p_pattern: bankTxCounterparty, p_suggested_template_id: explicitTemplateId, p_source: 'agent' },
+            },
+            note: 'Ask the person before creating the rule; a one-off booking should not become a rule. Alternatively re-book with remember_counterparty: true.',
+          };
         }
       }
 
@@ -11627,6 +11760,8 @@ async function executeDbAction(
         documents_attached,
         entry_id: entry.id,
         bank_transaction_id: bankTxId || null,
+        ...(ruleCreated ? { rule_created: ruleCreated } : {}),
+        ...(ruleSuggestion ? { rule_suggestion: ruleSuggestion } : {}),
         entry_date: effectiveDate,
         total_debit_cents: totalDebit,
         total_credit_cents: totalCredit,
@@ -12048,7 +12183,7 @@ async function executeDbAction(
         if (insertData.valid_days !== undefined) {
           const days = Number(insertData.valid_days) || 30;
           delete insertData.valid_days;
-          insertData.valid_until = new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+          insertData.valid_until = businessDateIn((await loadHomeCached(supabase)).timeZone, days);
         }
         if (!insertData.lead_id && !insertData.deal_id && !insertData.customer_email) {
           throw new Error('Quote needs at least one of: lead_id, deal_id, customer_email');
@@ -12235,10 +12370,10 @@ async function executeDbAction(
           customer_email: a.customer_email || null,
           lead_id: a.lead_id || null,
           deal_id: a.deal_id || null,
-          currency: tpl.currency || 'SEK',
+          currency: tpl.currency || undefined,
           intro_text: tpl.intro_text || null,
           terms_text: tpl.terms_text || null,
-          valid_until: new Date(Date.now() + (tpl.default_valid_days || 30) * 86400000).toISOString().split('T')[0],
+          valid_until: businessDateIn((await loadHomeCached(supabase)).timeZone, tpl.default_valid_days || 30),
         };
         if (!insertData.lead_id && !insertData.deal_id && !insertData.customer_email) {
           throw new Error('Quote needs at least one of: lead_id, deal_id, customer_email');
@@ -12290,7 +12425,9 @@ async function executeDbAction(
         const totalCents = Number(quote.total_cents) > 0 ? Number(quote.total_cents) : subtotal + taxCents;
         // Same INV-YYYY-NNNNN series the invoices handler uses (it's scoped to
         // that case block, so regenerate here).
-        const yr = new Date().getFullYear();
+        // The series year is the business's: on 1 Jan 00:30 in Stockholm the UTC
+    // year was still last year, numbering a 2027 invoice into the 2026 series.
+    const yr = Number((await businessToday(supabase)).slice(0, 4));
         const { data: lastInv } = await supabase.from('invoices')
           .select('invoice_number').ilike('invoice_number', `INV-${yr}-%`)
           .order('invoice_number', { ascending: false }).limit(1).maybeSingle();
@@ -12309,8 +12446,8 @@ async function executeDbAction(
           tax_rate: taxRate,
           tax_cents: taxCents,
           total_cents: totalCents,
-          currency: quote.currency || 'SEK',
-          issue_date: new Date().toISOString().split('T')[0],
+          currency: quote.currency || undefined,
+          issue_date: (await businessToday(supabase)),
           status: 'draft',
         }).select('id, invoice_number, total_cents').single();
         if (invErr) throw new Error(`Create invoice from quote failed: ${invErr.message}`);
@@ -12478,11 +12615,11 @@ async function executeDbAction(
         const { data, error } = await supabase.from('expenses')
           .insert({
             user_id,
-            expense_date: expense_date || new Date().toISOString().split('T')[0],
+            expense_date: expense_date || (await businessToday(supabase)),
             description: desc || '',
             amount_cents: amount_cents || 0,
             vat_cents: vat_cents || 0,
-            currency: currency || 'SEK',
+            currency: currency || undefined, // the column default is the business's
             category: category || 'other',
             vendor: vendor || null,
             account_code: account_code || null,
@@ -12647,7 +12784,7 @@ async function executeDbAction(
         // Create journal entry
         const { data: entry, error: jeErr } = await supabase.from('journal_entries')
           .insert({
-            entry_date: new Date().toISOString().split('T')[0],
+            entry_date: (await businessToday(supabase)),
             description: `Expense report ${report.period}`,
             reference_number: `EXP-${report.period}`,
             status: 'posted',
@@ -12718,7 +12855,7 @@ async function executeDbAction(
         const { name, email, phone, payment_terms, currency, address, notes } = args as any;
         if (!name) throw new Error('name is required');
         const { data, error } = await supabase.from('vendors')
-          .insert({ name, email, phone, payment_terms: payment_terms || 'net30', currency: currency || 'SEK', address, notes })
+          .insert({ name, email, phone, payment_terms: payment_terms || 'net30', currency: currency || undefined, address, notes })
           .select('id, name').single();
         if (error) throw new Error(`Create vendor failed: ${error.message}`);
         // Fire webhook
@@ -12836,7 +12973,7 @@ async function executeDbAction(
 
         const poInsert: Record<string, unknown> = {
           vendor_id,
-          order_date: order_date || new Date().toISOString().split('T')[0],
+          order_date: order_date || (await businessToday(supabase)),
           expected_delivery: expected_delivery || null,
           notes: notes || null,
           subtotal_cents: subtotalCents,
@@ -12963,15 +13100,17 @@ async function executeDbAction(
                   .select('description, quantity, unit_price_cents, line_total_cents')
                   .eq('purchase_order_id', purchase_order_id);
 
+                // A supplier reads this: the business's grouping and decimals.
+                const poFmt = homeFormat(await loadHomeCached(supabase), 'en');
                 const lineItems = (lines || []).map((l: any) =>
-                  `• ${l.description}: ${l.quantity}x @ ${(l.unit_price_cents / 100).toFixed(2)} ${po.currency} = ${(l.line_total_cents / 100).toFixed(2)} ${po.currency}`
+                  `• ${l.description}: ${l.quantity}x @ ${poFmt.money(l.unit_price_cents, po.currency)} = ${poFmt.money(l.line_total_cents, po.currency)}`
                 ).join('\n');
 
                 const emailBody = [
                   `Purchase Order: ${po.po_number}`, `Date: ${po.order_date}`,
                   po.expected_delivery ? `Expected Delivery: ${po.expected_delivery}` : '',
                   '', 'Items:', lineItems, '',
-                  `Total: ${(po.total_cents / 100).toFixed(2)} ${po.currency}`,
+                  `Total: ${poFmt.money(po.total_cents, po.currency)}`,
                   po.notes ? `\nNotes: ${po.notes}` : '',
                 ].filter(Boolean).join('\n');
 
@@ -13033,7 +13172,7 @@ async function executeDbAction(
           purchase_order_id,
           // The column is received_date, not receipt_date — the old name made
           // every receipt through this path fail at the header.
-          received_date: receipt_date || new Date().toISOString().split('T')[0],
+          received_date: receipt_date || (await businessToday(supabase)),
           notes: notes || null,
         }).select('id').single();
       if (grErr) throw new Error(`Create goods receipt failed: ${grErr.message}`);
@@ -13199,8 +13338,7 @@ async function executeDbAction(
               if (tier?.unit_price_cents != null) it.unit_price_cents = tier.unit_price_cents;
             }
             const maxLead = Math.max(...items.map((i: any) => i.lead_time_days || 7));
-            const expectedDelivery = new Date();
-            expectedDelivery.setDate(expectedDelivery.getDate() + maxLead);
+            const expectedDelivery = businessDateIn((await loadHomeCached(supabase)).timeZone, maxLead);
 
             // purchase_order_lines.tax_rate is a PERCENT (column default
             // 25.00). This wrote 0.25 — a quarter of one percent — on 25 live
@@ -13225,8 +13363,8 @@ async function executeDbAction(
             const { data: po, error: poErr } = await supabase.from('purchase_orders').insert({
               vendor_id: vendorId,
               status: 'draft',
-              order_date: new Date().toISOString().split('T')[0],
-              expected_delivery: expectedDelivery.toISOString().split('T')[0],
+              order_date: (await businessToday(supabase)),
+              expected_delivery: expectedDelivery,
               subtotal_cents: subtotal,
               tax_cents: taxCents,
               total_cents: subtotal + taxCents,
@@ -13427,13 +13565,12 @@ async function executeDbAction(
       // contract_renewal_check — find expiring contracts grouped by urgency
       if (skillName === 'contract_renewal_check') {
         const { days_ahead = 30, include_auto_renew = true } = args as any;
-        const now = new Date();
-        const horizon = new Date(now.getTime() + Number(days_ahead) * 24 * 60 * 60 * 1000);
+        const horizon = businessDateIn((await loadHomeCached(supabase)).timeZone, Number(days_ahead) || 30);
         let q = supabase.from('contracts')
           .select('id, title, counterparty_name, status, end_date, renewal_type, renewal_notice_days, value_cents, currency')
           .eq('status', 'active')
           .not('end_date', 'is', null)
-          .lte('end_date', horizon.toISOString().split('T')[0])
+          .lte('end_date', horizon)
           .order('end_date', { ascending: true });
         if (!include_auto_renew) q = q.neq('renewal_type', 'auto');
         const { data, error } = await q;
@@ -13537,7 +13674,7 @@ async function executeDbAction(
           renewal_type: a.renewal_type || 'none',
           renewal_notice_days: a.renewal_notice_days ?? 30,
           value_cents: a.value_cents ?? 0,
-          currency: a.currency || 'SEK',
+          currency: a.currency || undefined,
           notes: a.notes || null,
           body_markdown: a.body_markdown || null,
           file_url: a.file_url || null,
@@ -13613,7 +13750,9 @@ async function executeDbAction(
         return { subtotal_cents: subtotal, tax_cents: tax, total_cents: subtotal + tax };
       };
       const generateInvoiceNumber = async (): Promise<string> => {
-        const yr = new Date().getFullYear();
+        // The series year is the business's: on 1 Jan 00:30 in Stockholm the UTC
+    // year was still last year, numbering a 2027 invoice into the 2026 series.
+    const yr = Number((await businessToday(supabase)).slice(0, 4));
         const { data } = await supabase.from('invoices')
           .select('invoice_number')
           .ilike('invoice_number', `INV-${yr}-%`)
@@ -13664,7 +13803,7 @@ async function executeDbAction(
         // "expected overdue, got sent"). The UPDATE covers every matching row;
         // the count is exact; the listing says when it is truncated.
         const { auto_flag = true, limit = 200 } = args as any;
-        const today = new Date().toISOString().split('T')[0];
+        const today = (await businessToday(supabase));
         let flagged = 0;
         if (auto_flag !== false) {
           const { count: fCount, error: fErr } = await supabase.from('invoices')
@@ -13721,9 +13860,9 @@ async function executeDbAction(
           line_items: items,
           tax_rate: taxRate,
           ...totals,
-          currency: a.currency || 'SEK',
+          currency: a.currency || undefined,
           due_date: a.due_date || null,
-          issue_date: a.issue_date || new Date().toISOString().split('T')[0],
+          issue_date: a.issue_date || (await businessToday(supabase)),
           payment_terms: a.payment_terms || null,
           notes: a.notes || null,
           // The party the invoice goes to, and 'Er referens' (EN 16931 BT-10) — the
@@ -14949,7 +15088,7 @@ async function executeGenericCrud(
       reject: { status: 'rejected' },
     },
     employees: {
-      deactivate: { status: 'terminated', end_date: new Date().toISOString().slice(0, 10) },
+      deactivate: { status: 'terminated', end_date: (await businessToday(supabase)) },
     },
     // manage_project advertised close, manage_project_task complete and move —
     // all three answered "Unknown action" (process battery, 2026-09-22).
@@ -16238,6 +16377,15 @@ async function executeRequestReturn(
 // company-level analog of request_return's own-record enforcement: a contact of
 // company A can never list company B's orders/invoices. Read-only, trust=auto.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * An amount as a customer (or the agent) reads it: the business's way and
+ * exact — never toFixed(0), never a literal SEK. locale-and-formatting.md.
+ */
+async function moneyFormatter(supabase: unknown): Promise<(cents: number | null | undefined, currency?: string | null) => string> {
+  const fmt = homeFormat(await loadHomeCached(supabase), 'en');
+  return (cents, currency) => fmt.money(cents ?? 0, currency);
+}
+
 async function executeListCompanyRecords(
   supabase: any,
   args: Record<string, unknown>,
@@ -16260,11 +16408,12 @@ async function executeListCompanyRecords(
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) return { success: false, error: `Could not list company orders: ${error.message}` };
+    const money = await moneyFormatter(supabase);
     return {
       success: true, company_id: companyId, count: (data ?? []).length,
       orders: (data ?? []).map((o: any) => ({
         id: o.id, short_id: o.id.slice(0, 8), status: o.status,
-        total: `${((o.total_cents ?? 0) / 100).toFixed(0)} ${o.currency || 'SEK'}`,
+        total: money(o.total_cents, o.currency),
         placed_by: o.customer_name || o.customer_email, created_at: o.created_at,
       })),
     };
@@ -16279,11 +16428,12 @@ async function executeListCompanyRecords(
     .limit(limit);
   if (error) return { success: false, error: `Could not list company invoices: ${error.message}` };
   const rows = data ?? [];
+  const money = await moneyFormatter(supabase);
   return {
     success: true, company_id: companyId, count: rows.length,
     invoices: rows.map((i: any) => ({
       id: i.id, invoice_number: i.invoice_number, status: i.status,
-      total: `${((i.total_cents ?? 0) / 100).toFixed(0)} ${i.currency || 'SEK'}`,
+      total: money(i.total_cents, i.currency),
       due_date: i.due_date, unpaid: !['paid', 'cancelled'].includes(i.status),
     })),
     note: rows.length === 0 ? 'No invoices linked to this company yet.' : undefined,
@@ -16606,7 +16756,7 @@ async function executeReorderCompanyOrder(
       company_id: companyId,                              // stamped — stays in scope
       status: 'pending',
       total_cents: source.total_cents,
-      currency: source.currency || 'SEK',
+      currency: source.currency || undefined,
       metadata: { reorder_of: source.id, placed_via: 'company_assistant' },
     })
     .select('id')
@@ -16626,7 +16776,7 @@ async function executeReorderCompanyOrder(
 
   return {
     success: true, order_id: created.id, items_copied: (items ?? []).length,
-    total: `${((source.total_cents ?? 0) / 100).toFixed(0)} ${source.currency || 'SEK'}`,
+    total: (await moneyFormatter(supabase))(source.total_cents, source.currency),
     message: `Reorder placed as a pending order ${created.id.slice(0, 8)} (${(items ?? []).length} line items, same as order ${source.id.slice(0, 8)}). Our team will confirm it — no payment has been taken.`,
   };
 }
@@ -16686,7 +16836,7 @@ async function executeRequestCompanyQuote(
       customer_email: callerEmail || null,
       line_items: [],                                     // staff price it up — the customer never authors amounts
       subtotal_cents: 0, tax_rate: 0, tax_cents: 0, total_cents: 0,
-      currency: 'SEK',
+      // currency: the column default, the business's.
     })
     .select('id, quote_number')
     .single();
@@ -16743,13 +16893,14 @@ async function executeInitiateCompanyInvoicePayment(
     return { success: false, error: `Invoice ${invoice.invoice_number} has no payment link yet — ask our team to send it.` };
   }
 
+  const amount = (await moneyFormatter(supabase))(invoice.total_cents, invoice.currency);
   return {
     success: true,
     invoice_number: invoice.invoice_number,
-    amount: `${((invoice.total_cents ?? 0) / 100).toFixed(0)} ${invoice.currency || 'SEK'}`,
+    amount,
     due_date: invoice.due_date,
     payment_page: `/invoice/${invoice.public_token}`,
-    message: `Invoice ${invoice.invoice_number} (${((invoice.total_cents ?? 0) / 100).toFixed(0)} ${invoice.currency || 'SEK'}) is open. Pay it securely here: /invoice/${invoice.public_token} — payment is completed on that page, not in this chat.`,
+    message: `Invoice ${invoice.invoice_number} (${amount}) is open. Pay it securely here: /invoice/${invoice.public_token} — payment is completed on that page, not in this chat.`,
   };
 }
 
@@ -17489,7 +17640,7 @@ async function executeSyncAdMetrics(
       if (!dryRun) {
         const { data: ins, error } = await supabase.from('ad_campaigns').insert({
           name: String(row.campaign_name ?? metaId), platform: 'meta', objective: objective ?? 'traffic',
-          status: metaStatus ?? 'active', budget_cents: 0, spent_cents: spendCents, currency: currency ?? 'SEK',
+          status: metaStatus ?? 'active', budget_cents: 0, spent_cents: spendCents, currency: currency ?? undefined,
           external_id: metaId, metrics, target_audience: {},
         }).select('id').single();
         if (error) { entry.action = 'error'; entry.error = error.message; } else { entry.campaign_id = ins?.id; created++; }
@@ -17702,17 +17853,16 @@ async function executeInvoiceFromTimesheets(
   if (!projectId) return { error: 'project_id (or a matching project_name) is required', status: 'failed' };
 
   // Resolve the period to start/end dates.
-  const iso = (dt: Date) => dt.toISOString().split('T')[0];
   let start = a.start_date, end = a.end_date;
   const period = String(a.period || (start && end ? 'custom' : 'this_month'));
   if (period !== 'custom') {
-    const now = new Date();
+    // On the business's calendar (the runtime's month is UTC).
+    const tz = (await loadHomeCached(supabase)).timeZone;
     if (period === 'last_month') {
-      start = iso(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-      end = iso(new Date(now.getFullYear(), now.getMonth(), 0));
-    } else { // this_month
-      start = iso(new Date(now.getFullYear(), now.getMonth(), 1));
-      end = iso(now);
+      ({ start, end } = businessPeriod(tz, 'last_month'));
+    } else { // this_month, up to today
+      start = businessPeriod(tz, 'this_month').start;
+      end = dateInZone(tz);
     }
   }
   if (!start || !end) return { error: 'start_date and end_date required for period=custom', status: 'failed' };

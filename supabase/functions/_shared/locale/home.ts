@@ -236,7 +236,7 @@ export function formatLocale(home: Home, language?: string | null): string {
 export interface HomeFormat {
   locale: string;
   timeZone: string;
-  /** An amount in MINOR units of `currency` (öre, cents …). */
+  /** An amount in hundredths of `currency` (*_cents — 100 per unit, JPY and ISK included). */
   money: (amountMinor: number | null | undefined, currency?: string | null) => string;
   /** A date-only value ("2026-07-03") — never shifted by a zone. */
   date: (dateOnly: string | Date | null | undefined, options?: Omit<Intl.DateTimeFormatOptions, 'timeZone'>) => string;
@@ -277,7 +277,9 @@ export function homeFormat(home: Home, language?: string | null, opts: { audienc
     money(amountMinor, currency) {
       if (amountMinor == null || Number.isNaN(amountMinor)) return '—';
       const cur = (str(currency) || home.currency).toUpperCase();
-      const major = amountMinor / Math.pow(10, minorDigits(locale, cur));
+      // *_cents is hundredths in EVERY currency (locale-and-formatting.md §3b);
+      // the currency only decides how many decimals are shown.
+      const major = amountMinor / 100;
       const digits = opts.audience !== 'admin' || home.amountDecimals === 'auto' ? {} : { minimumFractionDigits: home.amountDecimals, maximumFractionDigits: home.amountDecimals };
       try {
         return new Intl.NumberFormat(locale, { ...digits, style: 'currency', currency: cur }).format(major);
@@ -305,4 +307,107 @@ export function homeFormat(home: Home, language?: string | null, opts: { audienc
       return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', ...options, timeZone }).format(d);
     },
   };
+}
+
+/**
+ * Stripe's zero-decimal currencies: `amount` is whole units there. ISK and UGX
+ * are NOT here — Stripe keeps them two-decimal for backward compatibility.
+ * https://docs.stripe.com/currencies#zero-decimal
+ */
+export const STRIPE_ZERO_DECIMAL: ReadonlySet<string> = new Set([
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'VND', 'VUV', 'XAF', 'XOF', 'XPF',
+]);
+
+/** *_cents (hundredths) → the `amount` Stripe expects for `currency`. */
+export function toStripeAmount(cents: number, currency: string): number {
+  return STRIPE_ZERO_DECIMAL.has(String(currency).toUpperCase()) ? Math.round(cents / 100) : Math.round(cents);
+}
+
+/** A Stripe `amount` → *_cents (hundredths). */
+export function fromStripeAmount(amount: number, currency: string): number {
+  return STRIPE_ZERO_DECIMAL.has(String(currency).toUpperCase()) ? Math.round(amount) * 100 : Math.round(amount);
+}
+
+/**
+ * The calendar date (YYYY-MM-DD) at `at` on `timeZone`'s clock — what "today"
+ * means for a document the business dates. The runtime is UTC: at 00:30 on
+ * 1 November in Stockholm, toISOString() still says 31 October, and a
+ * verification booked "today" landed in the closed month.
+ */
+export function dateInZone(timeZone: string, at: Date = new Date()): string {
+  const zone = isTimeZone(timeZone) ? timeZone : 'UTC';
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(at);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function zoneOffsetMs(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(new Date(instant));
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second')) - instant;
+}
+
+/**
+ * A wall-clock time on the business's clock ("2026-07-03T10:00", what a
+ * <input type="datetime-local"> holds) → the instant, as ISO. Sending the raw
+ * string to a timestamptz column made Postgres read it as UTC: a 10:00 webinar
+ * in Stockholm was stored as 10:00Z and shown — and reminded — at 12:00.
+ * DST-safe (the offset is re-checked at the result).
+ */
+export function wallClockToInstant(local: string | null | undefined, timeZone: string): string | null {
+  const m = String(local ?? '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return null;
+  const zone = isTimeZone(timeZone) ? timeZone : 'UTC';
+  const asUtc = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
+  let instant = asUtc - zoneOffsetMs(asUtc, zone);
+  instant = asUtc - zoneOffsetMs(instant, zone);
+  return new Date(instant).toISOString();
+}
+
+/** An instant → "YYYY-MM-DDTHH:mm" on the business's clock (a datetime-local value). */
+export function instantToWallClock(ts: string | Date | null | undefined, timeZone: string): string {
+  if (ts == null || ts === '') return '';
+  const d = ts instanceof Date ? ts : new Date(ts);
+  if (Number.isNaN(d.getTime())) return '';
+  const zone = isTimeZone(timeZone) ? timeZone : 'UTC';
+  const local = new Date(d.getTime() + zoneOffsetMs(d.getTime(), zone));
+  return local.toISOString().slice(0, 16);
+}
+
+/** The instant the business's calendar day containing `at` began (its local midnight). */
+export function startOfBusinessDay(timeZone: string, at: Date = new Date()): Date {
+  return new Date(wallClockToInstant(`${dateInZone(timeZone, at)}T00:00`, timeZone) ?? at.toISOString());
+}
+
+/**
+ * Monday–Sunday or month bounds on the business's calendar, as YYYY-MM-DD —
+ * what "this week" / "last month" mean to a person, not to the UTC clock (on
+ * Monday 00:30 in Stockholm, the UTC week was still last week).
+ */
+export function businessPeriod(
+  timeZone: string,
+  period: 'this_week' | 'last_week' | 'this_month' | 'last_month',
+  at: Date = new Date(),
+): { start: string; end: string } {
+  const [y, m, d] = dateInZone(timeZone, at).split('-').map(Number);
+  const day = (yy: number, mm: number, dd: number) => new Date(Date.UTC(yy, mm - 1, dd)).toISOString().slice(0, 10);
+  if (period === 'this_month') return { start: day(y, m, 1), end: day(y, m + 1, 0) };
+  if (period === 'last_month') return { start: day(y, m - 1, 1), end: day(y, m, 0) };
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  const monday = d - (dow === 0 ? 6 : dow - 1) - (period === 'last_week' ? 7 : 0);
+  return { start: day(y, m, monday), end: day(y, m, monday + 6) };
+}
+
+/** A date-only value N days on (YYYY-MM-DD) — on the date parts, so no zone shifts it. */
+export function addDaysToDate(ymd: string, days: number): string {
+  const [y, m, d] = ymd.slice(0, 10).split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** N days from today on the business's calendar — a due date, a validity date, a horizon. */
+export function businessDateIn(timeZone: string, days: number, at: Date = new Date()): string {
+  return addDaysToDate(dateInZone(timeZone, at), days);
 }

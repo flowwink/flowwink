@@ -197,7 +197,7 @@ export function SettingsTab() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Fiscal year</div>
-                  <div className="text-lg font-mono">Starts {MONTHS[draft.fiscalYearStartMonth - 1]}</div>
+                  <div className="text-lg font-mono">{fiscalYearRange(fiscalYearOf(businessToday(), draft.fiscalYearStartMonth), draft.fiscalYearStartMonth).label}</div>
                 </div>
               </div>
             </div>
@@ -216,7 +216,13 @@ export function SettingsTab() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">January = calendar year. Change if your business runs on a broken fiscal year.</p>
+                <p className="text-xs text-muted-foreground">
+                  {draft.fiscalYearStartMonth === 1
+                    ? 'January = calendar year.'
+                    : `A year named ${new Date().getFullYear()} runs ${MONTHS[draft.fiscalYearStartMonth - 1]} ${new Date().getFullYear() - 1} – ${MONTHS[draft.fiscalYearStartMonth - 2]} ${new Date().getFullYear()}.`}{' '}
+                  Reports, period locks, opening balances, voucher numbering and the SIE export follow it.
+                  VAT periods stay on the calendar, as the tax agency counts them.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -230,6 +236,46 @@ export function SettingsTab() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">Used when VAT/percentage templates are expanded.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>VAT return period</Label>
+                <Select
+                  value={draft.vatReturnPeriod ?? 'quarterly'}
+                  onValueChange={(v) => patch({ vatReturnPeriod: v as AccountingPreferences['vatReturnPeriod'] })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="yearly">Yearly (whole fiscal year)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  As registered with the tax agency. The filing calendar on the Overview and in the daily briefing
+                  counts the due dates from it; the VAT declaration tab opens on this period.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Legal form</Label>
+                <Select
+                  value={draft.legalForm || 'unset'}
+                  onValueChange={(v) => patch({ legalForm: (v === 'unset' ? '' : v) as AccountingPreferences['legalForm'] })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unset">Not set</SelectItem>
+                    <SelectItem value="limited_company">Limited company (aktiebolag)</SelectItem>
+                    <SelectItem value="sole_trader">Sole trader (enskild firma)</SelectItem>
+                    <SelectItem value="partnership">Partnership (handelsbolag)</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  The income tax return and annual report deadlines depend on it. Left unset, the calendar
+                  lists VAT and employer declarations only and says why.
+                </p>
               </div>
             </div>
 
@@ -251,6 +297,9 @@ export function SettingsTab() {
           </CardContent>
         </Card>
       )}
+
+      {draft && <FiscalYearsCard startMonth={draft.fiscalYearStartMonth} />}
+      <ControlDialsCard />
 
       {selectedInfo && (
         <Card>
@@ -279,6 +328,10 @@ export function SettingsTab() {
 // ============================================================
 
 import { LOCALE_PACKS } from '@/lib/locale-packs';
+import { FiscalYearsCard } from './FiscalYearsCard';
+import { ControlDialsCard } from './ControlDialsCard';
+import { fiscalYearOf, fiscalYearRange } from '@/lib/fiscal-year';
+import { businessToday } from '@/lib/platform-fallbacks';
 
 function getAccountsForLocale(locale: string) {
   const pack = LOCALE_PACKS[locale];

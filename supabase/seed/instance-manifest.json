@@ -2813,7 +2813,7 @@
       "count": 77,
       "shared_hash": "sha256:1d71dbc30aa845e52f2d308b9cef7b321fae80038fa9913427423c24725202ee",
       "functions": {
-        "agent-execute": "sha256:49a28d5ccaad44ba47b1663b1f3ea5f2a764ed73bd6b15f361e567d399135f11",
+        "agent-execute": "sha256:e5fb5a1786e4a26cfc19fcc9b87f45af18f894f4dca9ed1b2a16a02b4e76c191",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2847,7 +2847,7 @@
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",
         "flowpilot-heartbeat": "sha256:660103dab54155cf63be4e77054a48b7db3888ae5ac7543b828f4c22feda8b8b",
-        "flowpilot-lifecycle": "sha256:145fa0ba8e81182e3e8720b388d9030d70bb08bc57ae71328edf9f7fd10307b6",
+        "flowpilot-lifecycle": "sha256:8f3f471cd5c25d535df8c0d35962f9d38532f1f17cb997a66702ac401f269786",
         "gatewayapi-ingest": "sha256:9f5c222b4e49a9d7eaeac08fd342ca09acab43c9d9b5e63da668cd1c4aef1ddb",
         "generate-invoice-pdf": "sha256:788baea5630795df69dd7b69f4177b12fd1432a061dca2e0bf2cc562fb6ffb2d",
         "get-page": "sha256:3e42751911164c9d6c350b931a4e64a4824166a6bef8d02e526ad378c8f3921b",

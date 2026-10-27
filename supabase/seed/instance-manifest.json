@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261027160000",
-      "migrations_count": 700,
+      "migration_head": "20261027170000",
+      "migrations_count": 701,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2805,19 +2805,23 @@
         {
           "version": "20261027160000",
           "name": "variantetiketterna-far-sprak"
+        },
+        {
+          "version": "20261027170000",
+          "name": "driften-far-sin-uppmarksamhetslista"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:acc0dfce90e1f7f435e5782ba0dc3ef7e4a01c6ac25ad519ad987332ab4870a5",
-      "skill_count": 641,
+      "seed_hash": "sha256:05dd9da956c973660868a0a3909832ed10dccd9c586caa7e37ddfde3fd8eeaa8",
+      "skill_count": 642,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:2277564d7af5054c6a9edbbc9dee891a824f92b3d6e2f8c62171b43264e0d390",
+      "shared_hash": "sha256:9d7857d49cdf8c51954bd67a455693a9b214426af4f211d4acfaac4c6491e267",
       "functions": {
-        "agent-execute": "sha256:725a13b1cc70a2290d7f6c6272c9c64e50ebab479bcfad3860c71e8deba992d4",
+        "agent-execute": "sha256:91a7ccd45be273bd9da7fc05235fc1a118d4b5884545def2c7628f40b1f566f2",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2851,7 +2855,7 @@
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",
         "flowpilot-heartbeat": "sha256:660103dab54155cf63be4e77054a48b7db3888ae5ac7543b828f4c22feda8b8b",
-        "flowpilot-lifecycle": "sha256:8f3f471cd5c25d535df8c0d35962f9d38532f1f17cb997a66702ac401f269786",
+        "flowpilot-lifecycle": "sha256:d95e8b3d914a9ccdf3a3e8a71aa0445c81127e5f98424ea28f369f9914603a39",
         "gatewayapi-ingest": "sha256:9f5c222b4e49a9d7eaeac08fd342ca09acab43c9d9b5e63da668cd1c4aef1ddb",
         "generate-invoice-pdf": "sha256:788baea5630795df69dd7b69f4177b12fd1432a061dca2e0bf2cc562fb6ffb2d",
         "get-page": "sha256:3e42751911164c9d6c350b931a4e64a4824166a6bef8d02e526ad378c8f3921b",
@@ -2873,7 +2877,7 @@
         "quote-pay": "sha256:9be4edf4b93c80e9dad8bbe2976a8f1a9de6945d44b7a4f675ac0d0d9c590629",
         "quote-sign": "sha256:7f09589ccd4c61062f7c9c8d77b4762d31cc8c8fe09797534ffb640b8cfe020c",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:469eedf151c37c8674cba0ffb180e58e35695da6f764d72c0f7ec67614606cb1",
+        "run-platform-tests": "sha256:2f0106b89850ca2a504a8ef678415f9467db9f4e4a12fae99f00fc71234f0510",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

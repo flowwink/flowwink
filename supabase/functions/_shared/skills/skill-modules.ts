@@ -81,6 +81,7 @@ export const SKILL_OWNER_MODULE: Readonly<Record<string, string>> = Object.freez
   "check_books": "accounting",
   "check_integrations": "platform",
   "check_mo_availability": "manufacturing",
+  "check_operations": "platform",
   "check_order_status": "ecommerce",
   "check_technician_availability": "fieldService",
   "close_accounting_period": "accounting",

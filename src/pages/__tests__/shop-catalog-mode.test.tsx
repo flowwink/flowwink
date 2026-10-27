@@ -13,6 +13,7 @@ let storefront: boolean | undefined = false;
 vi.mock('@/hooks/useSiteSettings', () => ({
   useStoreSettings: () => ({ data: { storefront }, isLoading: false }),
   useSeoSettings: () => ({ data: { siteTitle: 'Marine Jet Power' } }),
+  useSiteLanguages: () => ({ defaultLanguage: 'en', languages: ['en'], isMultilingual: false, isLoading: false }),
 }));
 vi.mock('@/hooks/useModules', () => ({ useIsModuleEnabled: () => true }));
 vi.mock('@/hooks/useProducts', () => ({
@@ -22,8 +23,9 @@ vi.mock('@/hooks/useCustomerFormat', () => ({
   useCustomerFormat: () => ({ locale: 'sv-SE', formatPrice: (c: number, cur: string) => `${c / 100} ${cur}` }),
 }));
 vi.mock('@/hooks/useProductVariants', () => ({ useVariantProductIds: () => ({ data: new Set() }) }));
+vi.mock('@/hooks/useProductCategories', () => ({ useProductCategories: () => ({ data: [], isLoading: false }) }));
 vi.mock('@/contexts/CartContext', () => ({ useCart: () => ({ addItem: vi.fn(), items: [] }) }));
-vi.mock('@/lib/ui-text', () => ({ useUiText: () => (_k: string, f: string) => f }));
+vi.mock('@/lib/ui-text', () => ({ useUiText: () => (_k: string, f: string) => f, useSetUiTextLang: () => () => {} }));
 vi.mock('@/components/public/PublicNavigation', () => ({ PublicNavigation: () => null }));
 vi.mock('@/components/public/PublicFooter', () => ({ PublicFooter: () => null }));
 

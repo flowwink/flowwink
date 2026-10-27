@@ -96,7 +96,7 @@ FlowPilot is not a chatbot, a copilot, or a content suggester. It is an **autono
 
 ## Modules — 66 integrated domains
 
-FlowWink follows an **Odoo-inspired modular architecture** where each module owns its data, views, and skill seeds. Modules register via `defineModule()` with typed contracts.
+FlowWink has a **modular architecture where each module owns its data, skills and UI** (tables, views and skill seeds). Modules register via `defineModule()` with typed contracts.
 
 | Category | Modules |
 |----------|---------|
@@ -461,7 +461,6 @@ Start at **[docs/start-here.md](docs/start-here.md)** — the curated entry poin
 
 - **Hosted Skill Pack Registry** — Import community skill packs from a manifest URL
 - **Workflow Visualization** — Admin UI to view and edit DAG steps visually
-- **Multi-Tenant Mode** — Run FlowWink as a SaaS with per-tenant agent isolation
 - **Agent Marketplace** — Shareable FlowPilot configurations (soul + skills + workflows)
 - **FlowWink as MCP client** — purchasing negotiating price and volume with suppliers' agents, many at once
 
@@ -485,6 +484,10 @@ Cross-references inside this repo:
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
+
+## Trademarks and independence
+
+Odoo is a trademark of Odoo S.A.; Salesforce, HubSpot, Shopify, NetSuite, ERPNext and the other product names in this README are trademarks of their respective owners. FlowWink is an independent project, not affiliated with or endorsed by any of them, and contains no code from them. Other products are named only to compare capabilities and to support migration. How we benchmark: [`docs/contributing/benchmarking-policy.md`](docs/contributing/benchmarking-policy.md).
 
 ---
 

@@ -71,7 +71,7 @@ import { handleEmailAdmins as hEmailAdmins } from '../_shared/handlers/email-adm
 import { handleDraftEmailReply } from '../_shared/handlers/draft-email-reply.ts';
 import { handleTranslatePage } from '../_shared/handlers/translate-page.ts';
 import { isDryRunRead } from '../_shared/skills/read-surface.ts';
-import { handleTranslateContent, translatePostEverywhere, type TranslateContentArgs } from '../_shared/handlers/translate-content.ts';
+import { handleTranslateContent, translatePostEverywhere, translateEntityEverywhere, type TranslateContentArgs } from '../_shared/handlers/translate-content.ts';
 import { listContentOverlays } from '../_shared/handlers/content-overlay.ts';
 import { blogPostPath } from '../_shared/i18n/blog-address.ts';
 import { handleConvertTranslationGroups, handleEnableLanguage, handleListStaleTranslations, handlePublishTranslation, handleSetTranslation, type ConvertGroupsArgs, type EnableLanguageArgs, type ListStaleArgs, type PublishTranslationArgs, type SetTranslationArgs } from '../_shared/handlers/page-translations.ts';
@@ -118,6 +118,7 @@ import { executeDescribeBlocks } from '../_shared/handlers/describe-blocks.ts';
 import { executeInspectRenderedPage } from '../_shared/handlers/inspect-rendered-page.ts';
 import { executeAgentTrace } from '../_shared/handlers/agent-trace.ts';
 import { buildCrudErrorHint } from '../_shared/crud-error-hint.ts';
+import { resolveProjectTask } from '../_shared/project-task-resolve.ts';
 
 // Former standalone functions whose serve() bodies moved verbatim. They still
 // read a Request and return a Response; this adapter closes the gap so the
@@ -164,6 +165,7 @@ import bundledLocalePacks from "./_locale-packs.json" with { type: "json" };
 // three: the edge deploy carries its skill payload, and sync_skills_from_code
 // reconciles the instance against it — no browser, no DATABASE_URL.
 import bundledModuleSkills from "./_module-skills.json" with { type: "json" };
+import { SKILL_OWNER_MODULE_OVERRIDES } from "../_shared/skills/owner-module.ts";
 import bundledUiTextCatalog from "./_ui-text-catalog.json" with { type: "json" };
 import { slugify } from '../_shared/slugify.ts';
 import { businessDateIn, businessPeriod, dateInZone, homeFormat, startOfBusinessDay, wallClockToInstant } from '../_shared/locale/home.ts';
@@ -188,41 +190,12 @@ for (const mod of (bundledModuleSkills as { modules: Array<{ moduleId: string; s
   for (const s of mod.skills) SKILL_OWNER_MODULE[s.name] = mod.moduleId;
 }
 
-// ─── Felhemmade skapare: modulen som äger EFFEKTEN, inte den som äger koden ──
-// Matrisens andra svep fann en hel klass av samma bugg: skills som ställer ut en
-// SKARP kundfaktura — fakturanummer ur serien, rader i huvudboken — men som är
-// seedade i den modul vars process råkade utlösa dem. Ägarkartan ovan läser bara
-// var seedet står, så grinden hamnade på fel modul: `sales` har `ecommerce` och
-// kunde därmed skapa en riktig faktura via send_invoice_for_order utan att
-// någonsin ha beviljats `invoicing`. Modulratten var påslagen — men inte den för
-// det som faktiskt hände.
-//
-// Regeln: ett skill auktoriseras av modulen som äger DET SOM BLIR TILL, inte av
-// modulen vars arbetsflöde startade det. Fakturaskapande är `invoicing`, vare sig
-// avsändaren är en butiksorder, ett serviceuppdrag, ett avtal, en kassaförsäljning
-// eller en prenumeration. Åtkomst till källobjektet kräver fortfarande sin egen
-// modul via RLS — överskrivningen LÄGGER TILL ett krav, den byter inte ut ett.
-//
-// Överskrivningen står här och inte i modulseedet med flit: `moduleId` i
-// src/lib/modules/* styr också navigering, katalogisering och sync:skills, och
-// skill:et hör verkligen hemma i sin processmodul. Det är AUKTORISATIONEN som ska
-// följa effekten, inte katalogiseringen.
-//
-// EJ i listan: initiate_company_invoice_payment (companies). Verifierat
-// 2026-08-20 — den SKAPAR ingen faktura. Den slår upp en av det egna företagets
-// redan utställda obetalda fakturor inom company-scope och returnerar
-// betalningslänken (/invoice/<public_token>); ingen state skrivs. Den bär sin egen
-// enforcement via companyScopeGuard(args, 'buyer') på rung 3 och nås genom
-// kundportalens chat-completion-väg med service-nyckeln (isServiceCaller), så
-// modulgrinden nedan gäller den ändå aldrig. Att flytta den till `invoicing` hade
-// varit teater på en yta där den riktiga grinden är företagstillhörighet.
-const SKILL_OWNER_MODULE_OVERRIDES: Record<string, string> = {
-  send_invoice_for_order: 'invoicing',        // seedad i ecommerce (products-module)
-  service_order_to_invoice: 'invoicing',      // seedad i fieldService
-  generate_contract_invoice: 'invoicing',     // seedad i contracts
-  pos_sale_to_invoice: 'invoicing',           // seedad i pos
-  generate_subscription_invoice: 'invoicing', // seedad i subscriptions
-};
+// ─── Modulen som äger EFFEKTEN, inte den som äger koden ──────────────────
+// Tabellen ligger i _shared/skills/owner-module.ts, så att gatewayn
+// (ownerMayRun) och workspace-chat läser SAMMA svar som grinden här: till
+// 2026-10-27 stod den bara i den här filen, och en ägd agent kunde ställa ut
+// en avtalsfaktura via MCP utan `invoicing`. Appliceras EFTER artefaktloopen,
+// så att en regenerering aldrig skriver över den.
 for (const [name, moduleId] of Object.entries(SKILL_OWNER_MODULE_OVERRIDES)) {
   SKILL_OWNER_MODULE[name] = moduleId;
 }
@@ -1139,22 +1112,35 @@ serve(async (req) => {
         result = await executeResetSandbox(supabase, args as Record<string, unknown>);
 
       } else if (handler === 'internal:comment_on_task') {
-        const taskId = String((args as any).task_id ?? '').trim();
         const bodyText = String((args as any).body ?? '').trim();
         const kind = ['step', 'question', 'decision', 'comment'].includes(String((args as any).kind)) ? String((args as any).kind) : 'step';
-        if (!taskId || !bodyText) {
-          result = { success: false, error: 'task_id and body are required' };
+        if (!bodyText) {
+          result = { success: false, error: 'body is required' };
         } else {
-          const { data: t, error: tErr } = await supabase.from('project_tasks').select('id, project_id').eq('id', taskId).maybeSingle();
-          if (tErr || !t) {
-            result = { success: false, error: tErr ? tErr.message : `no task ${taskId}` };
+          // The id is resolved, never trusted as sent: a garbled uuid (the
+          // right prefix, an improvised tail — optic's heartbeat on
+          // "Revisionsberättelse", 2026-10-21/27) answers with the task it
+          // meant instead of `no task <id>`, and an invalid uuid never
+          // reaches Postgres. task_title is accepted only when it names
+          // exactly one open task. See _shared/project-task-resolve.ts.
+          const resolved = await resolveProjectTask(supabase, args as any, { allowTitle: true });
+          if (!resolved.ok) {
+            const { ok: _ok, ...failure } = resolved;
+            result = { success: false, ...failure };
           } else {
+            const taskId = resolved.id;
             const authorType = agent_type === 'flowpilot' ? 'flowpilot' : 'agent';
             const { data: row, error: cErr } = await supabase.from('project_task_comments').insert({
-              task_id: taskId, project_id: t.project_id, body: bodyText, kind,
+              task_id: taskId, project_id: resolved.task.project_id, body: bodyText, kind,
               author_type: authorType, author_name: String((args as any).author_name ?? '').trim() || (authorType === 'flowpilot' ? 'FlowPilot' : agent_type),
             }).select('id, created_at').single();
-            result = cErr ? { success: false, error: cErr.message } : { success: true, comment_id: row?.id, task_id: taskId, kind, note: 'On the card\'s thread; a question shows as one to whoever opens it.' };
+            result = cErr
+              ? { success: false, error: cErr.message }
+              : {
+                  success: true, comment_id: row?.id, task_id: taskId, task_title: resolved.task.title, kind,
+                  ...(resolved.matched_by === 'title' ? { matched_by: 'title', resolution_note: 'Resolved by task_title; send task_id next time.' } : {}),
+                  note: 'On the card\'s thread; a question shows as one to whoever opens it.',
+                };
           }
         }
 
@@ -1303,6 +1289,9 @@ serve(async (req) => {
         // Multi-skill router: dispatches on the skill name (the edge function
         // used the _skill field the edge: dispatch injected for the same purpose).
         result = await executeContactCenter(supabase, args, skill.name);
+
+      } else if (handler === 'internal:verify_document_integrity') {
+        result = await executeVerifyDocumentIntegrity(supabase, args);
 
       } else if (handler === 'internal:upload_document') {
         result = await executeUploadDocument(supabase, args, { caller_user_id, caller_api_key_id });
@@ -1882,10 +1871,29 @@ async function executeModuleAction(
       if (action === 'list') {
         const lim = Math.min(Math.max(Number(a.limit) || 50, 1), 200);
         const { data, error } = await supabase.from('agent_automations')
-          .select('id, name, description, trigger_type, trigger_config, skill_name, enabled, executor, created_at')
+          .select('id, name, description, trigger_type, trigger_config, skill_name, enabled, executor, created_at, last_triggered_at, next_run_at, last_work_at, run_count, idle_run_count, last_error')
           .order('created_at', { ascending: false }).limit(lim);
         if (error) throw new Error(`List automations failed: ${error.message}`);
-        return { automations: data || [], count: (data || []).length };
+        // The verdict on a job is read against ITS schedule, never against the
+        // calendar: a weekday sweep looked at on a Sunday last ran Friday and is
+        // on_schedule, not stalled (Hermes on Nordbrygg, 2026-10-25, reported
+        // three "stalled sweeps" that were exactly that). overdue = the next
+        // run the dispatcher promised is more than 15 minutes in the past.
+        const now = Date.now();
+        type AutomationRow = { enabled: boolean; trigger_type: string; last_triggered_at: string | null; next_run_at: string | null } & Record<string, unknown>;
+        const automations = ((data || []) as AutomationRow[]).map((r) => {
+          const next = r.next_run_at ? new Date(r.next_run_at).getTime() : null;
+          const state = !r.enabled ? 'disabled'
+            : r.trigger_type !== 'cron' ? 'waiting'
+            : !r.last_triggered_at && !next ? 'never_ran'
+            : next !== null && next < now - 15 * 60 * 1000 ? 'overdue'
+            : 'on_schedule';
+          return { ...r, state };
+        });
+        return {
+          automations, count: automations.length,
+          state_legend: 'on_schedule = last run matches the schedule and the next run is ahead; overdue = the promised next_run_at is more than 15 min in the past (the dispatcher is not firing it); never_ran; waiting = event/signal/manual trigger; disabled. Judge by state, not by how old last_triggered_at looks.',
+        };
       }
 
       if (action === 'enable' || action === 'disable') {
@@ -2272,6 +2280,10 @@ async function executeModuleAction(
 
     case 'openclaw': {
       return await executeOpenClawAction(supabase, skillName, args);
+    }
+
+    case 'feedback': {
+      return await executeFeedbackAction(supabase, skillName, args);
     }
 
     case 'handbook': {
@@ -4021,6 +4033,186 @@ async function resolveReportedBy(
   if (claimed && authLower.includes(claimed)) return claimed;
   // Otherwise the authenticated identity wins (rejects impersonation).
   return slugifyAgentName(authName);
+}
+
+// ─── Feedback module: the board, and the ping ─────────────────────────────
+// By default an instance SENDS (endpoint www.flowwink.com); an instance whose
+// endpoint names itself RECEIVES. Both halves live here so the admin page and
+// an agent run the same code. The site URL of a receiver proxies /api/feedback
+// to its content-api; a functions URL ending in /content-api is taken as is.
+const FEEDBACK_DEFAULT_ENDPOINT = 'https://www.flowwink.com';
+const FEEDBACK_BOARDS = new Set(['bug', 'feature', 'template', 'question']);
+const FEEDBACK_STATUSES = new Set(['open', 'planned', 'in_progress', 'done', 'declined']);
+
+async function feedbackVersion(supabase: SupabaseClient): Promise<{ app: string; skills_sha: string; modules_enabled: string[]; module_count: number }> {
+  const raw = JSON.stringify(bundledModuleSkills);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+  const skills_sha = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  const { data: modRow, error: modErr } = await supabase.from('site_settings').select('value').eq('key', 'modules').maybeSingle();
+  if (modErr) throw new Error(`modules read failed: ${modErr.message}`);
+  const mods = (modRow?.value ?? {}) as Record<string, { enabled?: boolean }>;
+  const modules_enabled = Object.entries(mods).filter(([, v]) => v?.enabled === true).map(([k]) => k).sort();
+  return { app: 'flowwink', skills_sha, modules_enabled, module_count: modules_enabled.length };
+}
+
+async function feedbackInstanceId(supabase: SupabaseClient): Promise<string> {
+  const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'instance_identity').maybeSingle();
+  if (error) throw new Error(`instance_identity read failed: ${error.message}`);
+  const existing = (data?.value as { id?: string } | null)?.id;
+  if (existing) return String(existing);
+  const id = crypto.randomUUID();
+  await supabase.from('site_settings').upsert({ key: 'instance_identity', value: { id, created_at: new Date().toISOString() } }, { onConflict: 'key' });
+  return id;
+}
+
+function feedbackHost(u: string | null | undefined): string {
+  try { return new URL(String(u ?? '')).host.toLowerCase(); } catch { return ''; }
+}
+
+async function executeFeedbackAction(
+  supabase: SupabaseClient,
+  skillName: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  const { data: setRow, error: setErr } = await supabase.from('site_settings').select('value').eq('key', 'feedback').maybeSingle();
+  if (setErr) throw new Error(`feedback settings read failed: ${setErr.message}`);
+  const settings = (setRow?.value ?? {}) as { endpoint?: string; share_usage?: boolean };
+  const endpoint = String(settings.endpoint ?? FEEDBACK_DEFAULT_ENDPOINT).trim().replace(/\/+$/, '');
+  const siteUrl = (await resolveSiteUrl(supabase)) ?? '';
+  const ownHosts = new Set([feedbackHost(siteUrl), feedbackHost(Deno.env.get('SUPABASE_URL') ?? '')].filter(Boolean));
+  const receiveHere = !endpoint || ownHosts.has(feedbackHost(endpoint));
+  const postTo = async (sub: 'feedback' | 'feedback/ping', payload: Record<string, unknown>) => {
+    const url = /\/functions\/v1\//.test(endpoint)
+      ? `${endpoint.replace(/\/content-api$/, '')}/content-api/${sub}`
+      : `${endpoint}/api/${sub}`;
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const text = await res.text();
+    let json: Record<string, unknown>;
+    try { json = JSON.parse(text); } catch { json = { raw: text.slice(0, 300) }; }
+    if (!res.ok) throw new Error(`Feedback endpoint ${url} answered ${res.status}: ${String(json?.error ?? text.slice(0, 200))}`);
+    return { url, ...json };
+  };
+
+  switch (skillName) {
+    case 'submit_feedback': {
+      const a = args as { board?: string; title?: string; body?: string; author_name?: string; author_email?: string };
+      const board = FEEDBACK_BOARDS.has(String(a.board ?? '')) ? String(a.board) : 'feature';
+      const title = String(a.title ?? '').trim();
+      if (title.length < 3 || title.length > 200) throw new Error('title is required: 3–200 characters (what, where, expected vs actual).');
+      const body = String(a.body ?? '').slice(0, 10000);
+      const version = await feedbackVersion(supabase);
+      const instance_id = await feedbackInstanceId(supabase);
+      const payload = {
+        board, title, body,
+        author_name: a.author_name ? String(a.author_name).slice(0, 120) : null,
+        author_email: a.author_email ? String(a.author_email).slice(0, 200) : null,
+        origin_site_url: siteUrl || null,
+        origin: { ...version, instance_id },
+        instance_id,
+      };
+      if (receiveHere) {
+        const { data, error } = await supabase.from('feedback_posts')
+          .insert({ board, title, body, author_name: payload.author_name, author_email: payload.author_email, origin_site_url: payload.origin_site_url, origin: payload.origin, source: 'agent' })
+          .select('id, board, title, status, created_at').single();
+        if (error) throw new Error(`Feedback insert failed: ${error.message}`);
+        return { sent_to: 'this instance', post_id: data.id, board: data.board, status: data.status, url: siteUrl ? `${siteUrl}/feedback/${data.id}` : null };
+      }
+      const r = await postTo('feedback', payload);
+      return { sent_to: endpoint, post_id: r.id ?? null, board, status: r.status ?? 'open', endpoint_url: r.url };
+    }
+
+    case 'feedback_ping': {
+      if (settings.share_usage === false) return { skipped: 'feedback.share_usage is off — nothing was sent.' };
+      const version = await feedbackVersion(supabase);
+      const instance_id = await feedbackInstanceId(supabase);
+      const payload = { instance_id, site_url: siteUrl || null, ...version };
+      if (receiveHere) {
+        const { error } = await supabase.from('feedback_instances').upsert({
+          instance_id, site_url: payload.site_url, app: version.app, skills_sha: version.skills_sha,
+          modules_enabled: version.modules_enabled, module_count: version.module_count, last_seen_at: new Date().toISOString(),
+        }, { onConflict: 'instance_id' });
+        if (error) throw new Error(`Ping record failed: ${error.message}`);
+        return { sent_to: 'this instance', instance_id, ...version };
+      }
+      const r = await postTo('feedback/ping', payload);
+      return { sent_to: endpoint, instance_id, ...version, endpoint_url: r.url };
+    }
+
+    case 'manage_feedback': {
+      const a = args as { action?: string; post_id?: string; board?: string; status?: string; origin_site_url?: string; note?: string; limit?: number };
+      const action = String(a.action ?? 'list');
+      if (action === 'instances') {
+        const { data, error } = await supabase.from('feedback_instances')
+          .select('instance_id, site_url, app, skills_sha, modules_enabled, module_count, first_seen_at, last_seen_at, ping_count')
+          .order('last_seen_at', { ascending: false }).limit(500);
+        if (error) throw new Error(`Instances read failed: ${error.message}`);
+        const rows = (data ?? []) as Array<{ last_seen_at: string; skills_sha: string | null }>;
+        const weekAgo = Date.now() - 7 * 86400000;
+        const versions: Record<string, number> = {};
+        for (const r of rows) versions[r.skills_sha ?? 'unknown'] = (versions[r.skills_sha ?? 'unknown'] ?? 0) + 1;
+        return { instances: rows, total: rows.length, active_7d: rows.filter((r) => Date.parse(r.last_seen_at) >= weekAgo).length, versions };
+      }
+      if (action === 'list') {
+        const lim = Math.min(Math.max(Number(a.limit) || 50, 1), 200);
+        let q = supabase.from('feedback_posts')
+          .select('id, board, title, status, author_name, author_email, origin_site_url, origin, source, votes_count, comments_count, created_at, updated_at')
+          .order('created_at', { ascending: false }).limit(lim);
+        if (a.board && FEEDBACK_BOARDS.has(a.board)) q = q.eq('board', a.board);
+        if (a.status && FEEDBACK_STATUSES.has(a.status)) q = q.eq('status', a.status);
+        if (a.origin_site_url) q = q.eq('origin_site_url', String(a.origin_site_url));
+        const { data, error } = await q;
+        if (error) throw new Error(`Feedback list failed: ${error.message}`);
+        return { posts: data ?? [], count: (data ?? []).length };
+      }
+      if (!a.post_id) throw new Error('post_id is required');
+      if (action === 'get') {
+        const { data: post, error } = await supabase.from('feedback_posts').select('*').eq('id', a.post_id).maybeSingle();
+        if (error) throw new Error(`Feedback read failed: ${error.message}`);
+        if (!post) throw new Error(`No post ${a.post_id}`);
+        const { data: comments, error: cErr } = await supabase.from('feedback_comments').select('id, author_name, body, is_staff, created_at').eq('post_id', a.post_id).order('created_at');
+        if (cErr) throw new Error(`Comments read failed: ${cErr.message}`);
+        return { post, comments: comments ?? [] };
+      }
+      if (action === 'set_status') {
+        const status = String(a.status ?? '');
+        if (!FEEDBACK_STATUSES.has(status)) throw new Error(`status must be one of ${[...FEEDBACK_STATUSES].join(', ')}`);
+        const { data, error } = await supabase.from('feedback_posts').update({ status }).eq('id', a.post_id).select('id, status').single();
+        if (error) throw new Error(`Status update failed: ${error.message}`);
+        if (a.note) await supabase.from('feedback_comments').insert({ post_id: a.post_id, author_name: 'Staff', body: String(a.note).slice(0, 5000), is_staff: true });
+        return { post_id: data.id, status: data.status, note_posted: !!a.note };
+      }
+      if (action === 'comment') {
+        if (!a.note) throw new Error('note is required for comment');
+        const { data, error } = await supabase.from('feedback_comments').insert({ post_id: a.post_id, author_name: 'Staff', body: String(a.note).slice(0, 5000), is_staff: true }).select('id').single();
+        if (error) throw new Error(`Comment failed: ${error.message}`);
+        return { post_id: a.post_id, comment_id: data.id };
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('feedback_posts').delete().eq('id', a.post_id);
+        if (error) throw new Error(`Delete failed: ${error.message}`);
+        return { post_id: a.post_id, deleted: true };
+      }
+      throw new Error(`Unknown action ${action}: list | get | set_status | comment | delete | instances`);
+    }
+
+    case 'browse_feedback': {
+      const a = args as { board?: string; status?: string; query?: string; sort?: string; limit?: number };
+      const lim = Math.min(Math.max(Number(a.limit) || 20, 1), 100);
+      let q = supabase.from('feedback_posts')
+        .select('id, board, title, body, status, author_name, votes_count, comments_count, created_at')
+        .limit(lim);
+      if (a.board && FEEDBACK_BOARDS.has(a.board)) q = q.eq('board', a.board);
+      if (a.status && FEEDBACK_STATUSES.has(a.status)) q = q.eq('status', a.status);
+      if (a.query) q = q.ilike('title', `%${String(a.query).replace(/[%_]/g, '')}%`);
+      q = a.sort === 'top' ? q.order('votes_count', { ascending: false }) : q.order('created_at', { ascending: false });
+      const { data, error } = await q;
+      if (error) throw new Error(`Feedback read failed: ${error.message}`);
+      return { posts: data ?? [], count: (data ?? []).length, board_url: siteUrl ? `${siteUrl}/feedback` : null };
+    }
+
+    default:
+      throw new Error(`Unknown feedback skill: ${skillName}`);
+  }
 }
 
 async function executeOpenClawAction(
@@ -6952,6 +7144,9 @@ async function executeProductsAction(
       // untracked to the storefront, the low-stock alert and the reorder loop.
       track_inventory, low_stock_threshold, allow_backorder, stock_quantity,
       barcode, cost_cents, category_id, available_in_pos,
+      // Languages to translate name + description into, as published overlays
+      // (§10): ["sv","de"] or "all" (every enabled language but the source).
+      languages,
     } = args as any;
     if (!name || price_cents === undefined) throw new Error('name and price_cents required');
     const insertData: Record<string, unknown> = {
@@ -7006,6 +7201,23 @@ async function executeProductsAction(
         onHand = openingQty;
       }
     }
+    // The product is written once, in the site's language; `languages` makes
+    // its text follow into the shop's other languages (a translation failure
+    // never loses the product — it is reported).
+    let translations: Array<Record<string, unknown>> | undefined;
+    let translationNote: string | undefined;
+    let variantLabels: Array<Record<string, unknown>> | undefined;
+    const wantLangs = languages === 'all' ? 'all' : Array.isArray(languages) ? languages.filter((l: unknown) => typeof l === 'string') : null;
+    if (wantLangs && (wantLangs === 'all' || wantLangs.length)) {
+      try {
+        const t = await translateEntityEverywhere(supabase, 'product', data.id, { languages: wantLangs, publish: true });
+        translations = t.translations;
+        variantLabels = t.variant_labels;
+        if (t.skipped) translationNote = t.skipped;
+      } catch (e) {
+        translationNote = `Translation failed: ${(e as Error).message}`;
+      }
+    }
     return {
       product_id: data.id,
       name: data.name,
@@ -7013,6 +7225,9 @@ async function executeProductsAction(
       stock_quantity: onHand,
       track_inventory: data.track_inventory,
       ...(stockNote ? { note: stockNote } : {}),
+      ...(translations ? { translations } : {}),
+      ...(variantLabels?.length ? { variant_labels: variantLabels } : {}),
+      ...(translationNote ? { translation_note: translationNote } : {}),
     };
   }
 
@@ -7038,11 +7253,36 @@ async function executeProductsAction(
     // PostgREST rejects with "Could not find the '_caller_api_key_id' column".
     const updateData = stripInternalFields(rest);
     delete updateData.action;
+    // Translation controls, not columns: `languages` adds overlays, `retranslate:
+    // false` leaves the existing ones alone (default: their stale units follow).
+    const updLangs = updateData.languages === 'all' ? 'all' : Array.isArray(updateData.languages) ? (updateData.languages as unknown[]).filter((l) => typeof l === 'string') as string[] : undefined;
+    const retranslate = updateData.retranslate !== false;
+    delete updateData.languages;
+    delete updateData.retranslate;
     const { data, error } = await supabase.from('products')
       .update({ ...updateData, updated_at: new Date().toISOString() })
       .eq('id', product_id).select('id, name, is_active').single();
     if (error) throw new Error(`Update product failed: ${error.message}`);
-    return { product_id: data.id, name: data.name, status: 'updated' };
+    let translations: Array<Record<string, unknown>> | undefined;
+    let translationNote: string | undefined;
+    let variantLabels: Array<Record<string, unknown>> | undefined;
+    const textChanged = 'name' in updateData || 'description' in updateData;
+    if ((retranslate && textChanged) || updLangs) {
+      try {
+        const t = await translateEntityEverywhere(supabase, 'product', data.id, { languages: updLangs ?? [], publish: updLangs ? true : undefined });
+        translations = t.translations;
+        variantLabels = t.variant_labels;
+        if (t.skipped) translationNote = t.skipped;
+      } catch (e) {
+        translationNote = `Translation failed: ${(e as Error).message}`;
+      }
+    }
+    return {
+      product_id: data.id, name: data.name, status: 'updated',
+      ...(translations ? { translations } : {}),
+      ...(variantLabels?.length ? { variant_labels: variantLabels } : {}),
+      ...(translationNote ? { translation_note: translationNote } : {}),
+    };
   }
 
   if (action === 'get') {
@@ -10294,6 +10534,17 @@ async function executeDbAction(
 
       // update (default)
       if (!key) throw new Error('key is required for update');
+      // An object setting is a dial board (chat, branding, store, …): update
+      // MERGES the given keys into what is stored, so flipping one flag never
+      // wipes the rest — {key:'chat', value:{toolCallingEnabled:true}} used to
+      // replace the whole chat configuration. replace: true writes it as given.
+      let nextValue: unknown = value;
+      if (!(args as Record<string, unknown>).replace && value && typeof value === 'object' && !Array.isArray(value)) {
+        const { data: cur } = await supabase.from('site_settings').select('value').eq('key', key).maybeSingle();
+        if (cur?.value && typeof cur.value === 'object' && !Array.isArray(cur.value)) {
+          nextValue = { ...(cur.value as Record<string, unknown>), ...(value as Record<string, unknown>) };
+        }
+      }
       // custom_scripts is loaded in <head> on every public page. It is for a
       // tag manager or an analytics snippet — a few KB. On synclair
       // (2026-10-19) an agent that found no dial for section surfaces, dark
@@ -10320,7 +10571,7 @@ async function executeDbAction(
         }
       }
       const { data, error } = await supabase.from('site_settings')
-        .upsert({ key, value }, { onConflict: 'key' })
+        .upsert({ key, value: nextValue }, { onConflict: 'key' })
         .select().single();
       if (error) throw new Error(`Settings update failed: ${error.message}`);
 
@@ -13564,10 +13815,11 @@ async function executeDbAction(
 
       // contract_renewal_check — find expiring contracts grouped by urgency
       if (skillName === 'contract_renewal_check') {
-        const { days_ahead = 30, include_auto_renew = true } = args as any;
-        const horizon = businessDateIn((await loadHomeCached(supabase)).timeZone, Number(days_ahead) || 30);
+        const { days_ahead = 30, include_auto_renew = true, include_decided = false } = args as any;
+        const tz = (await loadHomeCached(supabase)).timeZone;
+        const horizon = businessDateIn(tz, Number(days_ahead) || 30);
         let q = supabase.from('contracts')
-          .select('id, title, counterparty_name, status, end_date, renewal_type, renewal_notice_days, value_cents, currency')
+          .select('id, title, counterparty_name, status, end_date, renewal_type, renewal_notice_days, value_cents, currency, renewal_decision, renewal_decided_at')
           .eq('status', 'active')
           .not('end_date', 'is', null)
           .lte('end_date', horizon)
@@ -13575,17 +13827,27 @@ async function executeDbAction(
         if (!include_auto_renew) q = q.neq('renewal_type', 'auto');
         const { data, error } = await q;
         if (error) throw new Error(`Renewal check failed: ${error.message}`);
-        const today = now.getTime();
+        // Days left on the business's calendar: both sides are date strings, so
+        // the difference is whole days. (#774 moved the horizon to the business
+        // date and left `now` behind — every nightly run on optic threw
+        // "now is not defined" from 2026-10-27 until this.)
+        const today = Date.parse(dateInZone(tz));
         const grouped: Record<string, any[]> = { critical: [], warning: [], notice: [] };
+        // A contract with a recorded decision (decide_renewal) is not an alarm:
+        // it is listed under `decided` unless include_decided asks for it in the buckets.
+        const decided: Array<Record<string, unknown>> = [];
         for (const c of (data || []) as any[]) {
-          const days = Math.ceil((new Date(c.end_date).getTime() - today) / (24 * 60 * 60 * 1000));
+          const days = Math.round((Date.parse(c.end_date) - today) / (24 * 60 * 60 * 1000));
+          if (c.renewal_decision && !include_decided) { decided.push({ ...c, days_until_expiry: days }); continue; }
           const bucket = days < 7 ? 'critical' : days < 30 ? 'warning' : 'notice';
           grouped[bucket].push({ ...c, days_until_expiry: days });
         }
         return {
           horizon_days: days_ahead,
-          total: (data || []).length,
+          total: grouped.critical.length + grouped.warning.length + grouped.notice.length,
           critical: grouped.critical, warning: grouped.warning, notice: grouped.notice,
+          decided,
+          how_to_fix: 'Ask the owner what each undecided contract should do, then record it: manage_contract(action: "decide_renewal", contract_id, decision: renew|terminate|renegotiate, decision_note). A decided contract moves to `decided`.',
         };
       }
 
@@ -13688,6 +13950,31 @@ async function executeDbAction(
           .select('id, title, status').single();
         if (error) throw new Error(`Create contract failed: ${error.message}`);
         return { created: true, contract_id: data.id, title: data.title, status: data.status };
+      }
+
+      // decide_renewal — the answer to a renewal window: renew, terminate or
+      // renegotiate, recorded on the contract. A decided contract leaves the
+      // radar (contract_renewal_check, check_operations), the way a recorded
+      // statutory filing leaves the deadline calendar.
+      if (action === 'decide_renewal') {
+        const { contract_id, decision, decision_note } = args as { contract_id?: string; decision?: string; decision_note?: string };
+        if (!contract_id) throw new Error('contract_id is required');
+        const d = String(decision ?? '').trim().toLowerCase();
+        if (!['renew', 'terminate', 'renegotiate'].includes(d)) {
+          throw new Error(`decision must be renew, terminate or renegotiate (got "${decision ?? ''}")`);
+        }
+        const { data, error } = await supabase.from('contracts')
+          .update({ renewal_decision: d, renewal_decided_at: new Date().toISOString(), renewal_decision_note: decision_note ? String(decision_note) : null, updated_at: new Date().toISOString() })
+          .eq('id', contract_id).select('id, title, counterparty_name, end_date, renewal_type, renewal_decision').single();
+        if (error) throw new Error(`Decide renewal failed: ${error.message}`);
+        return {
+          decided: true, contract_id: data.id, title: data.title, counterparty_name: data.counterparty_name, end_date: data.end_date,
+          decision: data.renewal_decision,
+          next: d === 'terminate'
+            ? 'Give notice to the counterparty before the notice date, then set status terminated when it ends (manage_contract update).'
+            : d === 'renegotiate' ? 'Draft the new terms (manage_contract create from a template, or update end_date/value_cents) before the notice date.'
+            : 'Nothing more — the contract runs on. The renewal radar is silent for it.',
+        };
       }
 
       if (action === 'update') {
@@ -13850,6 +14137,14 @@ async function executeDbAction(
         const taxRate = a.tax_rate !== undefined ? Number(a.tax_rate) : 0.25;
         const totals = computeTotals(items, taxRate);
         const invoiceNumber = a.invoice_number || await generateInvoiceNumber();
+        // A sent invoice without a due date is never overdue, so dunning never
+        // starts (F-001 on Nordbrygg, 2026-08-30 → found by Hermes 2026-10-25).
+        // Born with one: the payment terms' days ("net30", "Net 14", "30") after
+        // the issue date, 30 when the terms say nothing.
+        const issueDate = String(a.issue_date || (await businessToday(supabase)));
+        const termsDays = Number(String(a.payment_terms ?? '').match(/(\d{1,3})/)?.[1]);
+        const dueDays = Number.isFinite(termsDays) && termsDays > 0 ? termsDays : 30;
+        const defaultDue = (() => { const d = new Date(`${issueDate}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + dueDays); return d.toISOString().slice(0, 10); })();
         const insertData: Record<string, unknown> = {
           invoice_number: invoiceNumber,
           deal_id: a.deal_id || null,
@@ -13861,9 +14156,9 @@ async function executeDbAction(
           tax_rate: taxRate,
           ...totals,
           currency: a.currency || undefined,
-          due_date: a.due_date || null,
-          issue_date: a.issue_date || (await businessToday(supabase)),
-          payment_terms: a.payment_terms || null,
+          due_date: a.due_date || defaultDue,
+          issue_date: issueDate,
+          payment_terms: a.payment_terms || `Net ${dueDays}`,
           notes: a.notes || null,
           // The party the invoice goes to, and 'Er referens' (EN 16931 BT-10) — the
           // e-invoice (UBL/Peppol) export needs both; see einvoice.
@@ -15155,6 +15450,23 @@ async function executeGenericCrud(
     }
   }
 
+  // ── project_tasks: a garbled id answers with the task it meant ──────────────
+  // manage_project_task get/update/complete/move/delete key the row by an id the
+  // agent copied from a listing — and a model copies the first half of a uuid
+  // and improvises the rest (optic, "Revisionsberättelse", 2026-10-21/27). The
+  // generic path answered `.single()`'s "no rows" or Postgres' "invalid input
+  // syntax for type uuid", neither of which names the task. The resolver does,
+  // and the invalid shape never reaches Postgres. The guessed task is never
+  // acted on: the agent re-sends with the id the answer names.
+  if (table === 'project_tasks' && (action === 'get' || action === 'update' || action === 'delete') && id !== undefined && id !== null && id !== '') {
+    const resolved = await resolveProjectTask(supabase, { task_id: id, task_title: fields.task_title ?? fields.title });
+    if (!resolved.ok) {
+      const { ok: _ok, ...failure } = resolved;
+      return { ...failure, table, action };
+    }
+    delete fields.task_title;
+  }
+
   const auditEnabled = !!auditCtx && ACCOUNTING_AUDIT_TABLES.has(table);
 
   // Sanitize payload for audit (remove agent-internal _ fields)
@@ -16004,6 +16316,86 @@ async function trackObjectiveProgress(
 //   B) content_base64 + mime_type + file_name → uploaded to documents bucket;
 //      text/* and markdown are decoded to content_md; other types saved with
 //      extraction_status='unsupported' (still archived, just not searchable).
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sealDocument(supabase: SupabaseClient, documentId: string | null | undefined, sha: string): Promise<void> {
+  if (!documentId) return;
+  const { error } = await supabase.from('documents').update({ content_sha256: sha, hashed_at: new Date().toISOString() }).eq('id', documentId);
+  if (error) console.warn(`[documents] seal failed for ${documentId}: ${error.message}`);
+}
+
+// verify_document_integrity — re-download every archived file (and every
+// voucher attachment) and recompute its SHA-256. Unsealed rows are sealed with
+// what is there now; a sealed row whose bytes changed is a FINDING and is
+// never re-sealed by this handler. BFL 7 kap, the way Accounted enforces it.
+async function executeVerifyDocumentIntegrity(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
+  const limit = Math.min(Math.max(Number(args.limit) || 200, 1), 1000);
+  const onlyUnsealed = args.only_unsealed === true;
+  const dryRun = args.dry_run === true;
+  const readStorage = async (path: string): Promise<Uint8Array | null> => {
+    if (/^https?:\/\//i.test(path)) {
+      const res = await fetch(path);
+      if (!res.ok) return null;
+      return new Uint8Array(await res.arrayBuffer());
+    }
+    const { data, error } = await supabase.storage.from('documents').download(path);
+    if (error || !data) return null;
+    return new Uint8Array(await data.arrayBuffer());
+  };
+  const report = { checked: 0, sealed: 0, verified: 0, mismatched: [] as Array<{ id: string; kind: string; path: string; expected: string; actual: string }>, unreachable: [] as Array<{ id: string; kind: string; path: string }>, skipped_demo: 0, dry_run: dryRun };
+
+  // 1. The archive.
+  let q = supabase.from('documents').select('id, file_url, content_sha256, title').order('created_at', { ascending: false }).limit(limit);
+  if (onlyUnsealed) q = q.is('content_sha256', null);
+  const { data: docs, error: docsErr } = await q;
+  if (docsErr) return { error: `Could not list documents: ${docsErr.message}`, status: 'failed' };
+  for (const d of docs || []) {
+    if (!d.file_url || String(d.file_url).startsWith('demo://')) { report.skipped_demo++; continue; }
+    const bytes = await readStorage(String(d.file_url));
+    report.checked++;
+    if (!bytes) { report.unreachable.push({ id: d.id, kind: 'document', path: d.file_url }); continue; }
+    const sha = await sha256Hex(bytes);
+    if (!d.content_sha256) {
+      if (!dryRun) await sealDocument(supabase, d.id, sha);
+      report.sealed++;
+    } else if (d.content_sha256 === sha) {
+      report.verified++;
+    } else {
+      report.mismatched.push({ id: d.id, kind: 'document', path: d.file_url, expected: d.content_sha256, actual: sha });
+    }
+  }
+
+  // 2. Voucher attachments that are bare files (no archive row) — sealed on the attachment itself.
+  const { data: atts, error: attErr } = await supabase.from('journal_entry_documents')
+    .select('id, file_url, content_sha256, document_id').is('document_id', null).not('file_url', 'is', null).limit(limit);
+  if (attErr) return { ...report, error: `Could not list voucher attachments: ${attErr.message}`, status: 'failed' };
+  for (const a of atts || []) {
+    if (onlyUnsealed && a.content_sha256) continue;
+    const bytes = await readStorage(String(a.file_url));
+    report.checked++;
+    if (!bytes) { report.unreachable.push({ id: a.id, kind: 'voucher_attachment', path: a.file_url }); continue; }
+    const sha = await sha256Hex(bytes);
+    if (!a.content_sha256) {
+      if (!dryRun) await supabase.from('journal_entry_documents').update({ content_sha256: sha, hashed_at: new Date().toISOString() }).eq('id', a.id);
+      report.sealed++;
+    } else if (a.content_sha256 === sha) {
+      report.verified++;
+    } else {
+      report.mismatched.push({ id: a.id, kind: 'voucher_attachment', path: a.file_url, expected: a.content_sha256, actual: sha });
+    }
+  }
+  return {
+    success: report.mismatched.length === 0,
+    ...report,
+    note: report.mismatched.length
+      ? 'A sealed file no longer matches its hash: the bytes in storage changed after the voucher was booked. Nothing was re-sealed — report it to the admin.'
+      : report.unreachable.length ? 'Some files could not be read; their seals are untouched.' : 'Every reachable file matches its seal.',
+  };
+}
+
 async function executeUploadDocument(
   supabase: any,
   args: Record<string, unknown>,
@@ -16097,6 +16489,9 @@ async function executeUploadDocument(
       p_extraction_error: null,
     });
     if (rpcErr) return { error: `Failed to create document: ${rpcErr.message}`, status: 'failed' };
+    // Seal the text as stored (UTF-8 bytes of content_md).
+    const sealedText = await sha256Hex(new TextEncoder().encode(contentText));
+    await sealDocument(supabase, docId, sealedText);
     return {
       success: true,
       document_id: docId,
@@ -16173,10 +16568,15 @@ async function executeUploadDocument(
     p_extraction_error: extractionError,
   });
   if (rpcErr) return { error: `Failed to create document: ${rpcErr.message}`, status: 'failed' };
+  // Seal: the hash of exactly the bytes that went into the bucket (BFL 7 kap —
+  // verify_document_integrity recomputes it from storage later).
+  const sealedSha = await sha256Hex(bytes);
+  await sealDocument(supabase, docId, sealedSha);
 
   return {
     success: true,
     document_id: docId,
+    content_sha256: sealedSha,
     source: `agent-upload:${safePeer}`,
     extraction_status: extractionStatus,
     extraction_error: extractionError,

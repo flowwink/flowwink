@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261027180000",
-      "migrations_count": 702,
+      "migration_head": "20261027190000",
+      "migrations_count": 703,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2813,19 +2813,23 @@
         {
           "version": "20261027180000",
           "name": "valutan-och-forfallodagen-fods-ratt"
+        },
+        {
+          "version": "20261027190000",
+          "name": "feedbackbradan"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:414bf87d8b5def965459c4e4bf6ea8edbc8f97fca29c5c8b1a01518f8780746a",
-      "skill_count": 643,
-      "module_count": 68
+      "seed_hash": "sha256:df9b7ff50577441246f3b57475a4e57e05f3fbbd064c3c1f10c95926eabd6966",
+      "skill_count": 647,
+      "module_count": 69
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:a3b87748ae1f08a6d0df744cbe43a08ab3229095df3b26591f15595f259a691b",
+      "shared_hash": "sha256:e16aef70c9be12bf2b3c42bf89836929ed5ee376d79a1a20647f2e995537cc8e",
       "functions": {
-        "agent-execute": "sha256:fe5d3a31aed44fc1c07aef5e264affe6878eb950a340ee92f9b7ce63fb89842e",
+        "agent-execute": "sha256:ccf7843ab54d3b7fbbc7d9994203e709fca6221c216319e5f083e2e713f9812a",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2838,7 +2842,7 @@
         "composio-proxy": "sha256:3a8304cb297fce88e7713e3f2a38dd679d53e9927f557fade7ea6423cc722988",
         "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:7f891dad970a77c2a72f7c88224f952ce082d8915ec544727a56cdc6b66a61b9",
-        "content-api": "sha256:708a54d4de0c1fb14733195bdae5efcff9d668800fcbca93471e3a29fe42da93",
+        "content-api": "sha256:430e683932495d64da12e8807570583c84d967d206b0b51fd3b73b497e4ea71a",
         "contract-billing-cron": "sha256:1786af36bebaa65cf00555d2728d1af85656eee8e5cd1d843ccea4f9ca8ec3c4",
         "contract-sign": "sha256:44b97642a6e25d85e54866a6bea9d42967d5d0114c8ddc80803c66faaf8c7d1e",
         "create-checkout": "sha256:a1484c8ee529672f44507f630c562256312edf15f699634b4e36f940d824fe49",
@@ -2881,7 +2885,7 @@
         "quote-pay": "sha256:9be4edf4b93c80e9dad8bbe2976a8f1a9de6945d44b7a4f675ac0d0d9c590629",
         "quote-sign": "sha256:7f09589ccd4c61062f7c9c8d77b4762d31cc8c8fe09797534ffb640b8cfe020c",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:09efd97449b7699818ad941fd0f6c2a91a99bf7be535b5b6f618c23054b06942",
+        "run-platform-tests": "sha256:b79b76ce8424d1a205833a3e5bd10e051bc4c91d46c08892aa1619710b036793",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

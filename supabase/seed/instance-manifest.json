@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261027130000",
-      "migrations_count": 698,
+      "migration_head": "20261027150000",
+      "migrations_count": 699,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2797,19 +2797,23 @@
         {
           "version": "20261027130000",
           "name": "registret-over-inlamnade-deklarationer"
+        },
+        {
+          "version": "20261027150000",
+          "name": "produkterna-far-sprak"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:59ee4236237c486cec34348538b74c05a677158ca131db689ce1f5f7f8e3a672",
+      "seed_hash": "sha256:eb556f22264458e6d1250aa4db09706fdf11c0064d68badcfc825ddd98ec2a92",
       "skill_count": 641,
       "module_count": 68
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:2ebbeb232b89520cbe15d0bcf29c040db9c4419497301ef5ace0704eb1104d3c",
+      "shared_hash": "sha256:1d71dbc30aa845e52f2d308b9cef7b321fae80038fa9913427423c24725202ee",
       "functions": {
-        "agent-execute": "sha256:0582f95f91d0f7a24db9efc2645ae159969ab84174096f7e5e667d61a30cd51e",
+        "agent-execute": "sha256:49a28d5ccaad44ba47b1663b1f3ea5f2a764ed73bd6b15f361e567d399135f11",
         "agent-operate": "sha256:461d2b34a07529a999cdef56d5219ff6f08d3cbb14040c6a1d39c313d4bf1fc2",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2822,7 +2826,7 @@
         "composio-proxy": "sha256:3a8304cb297fce88e7713e3f2a38dd679d53e9927f557fade7ea6423cc722988",
         "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:7f891dad970a77c2a72f7c88224f952ce082d8915ec544727a56cdc6b66a61b9",
-        "content-api": "sha256:563468a58f81811f45c17e547590c6e7a8b30060bfcf0e18a45bd3750a0be4ab",
+        "content-api": "sha256:708a54d4de0c1fb14733195bdae5efcff9d668800fcbca93471e3a29fe42da93",
         "contract-billing-cron": "sha256:1786af36bebaa65cf00555d2728d1af85656eee8e5cd1d843ccea4f9ca8ec3c4",
         "contract-sign": "sha256:44b97642a6e25d85e54866a6bea9d42967d5d0114c8ddc80803c66faaf8c7d1e",
         "create-checkout": "sha256:a1484c8ee529672f44507f630c562256312edf15f699634b4e36f940d824fe49",

@@ -2930,7 +2930,7 @@
         },
         {
           "name": "translate_content",
-          "description": "Translate a blog post into other languages, server-side: entity \"blog_post\" + slug + locale (or languages: [\"sv\", …] / \"all\"). The post stays one post; each language is an overlay of its title, excerpt, SEO meta, body and image alt, and only units that are missing or stale are translated — a hand-polished translation survives until its source changes. Use when: a post exists in one language and the site sells in more; list_stale_translations shows a post's units missing or stale; backfilling translations after a language was enabled. NOT for: pages (translate_page — entity \"page\" routes there); writing a new post (write_blog_post translates by itself); one phrase by hand (set_translation with entity \"blog_post\").",
+          "description": "Translate a blog post — or a product, or a product category — into other languages, server-side: entity \"blog_post\" + slug + locale (or languages: [\"sv\", …] / \"all\"); entity \"product\" + product_id translates its name and description (a product is never absent in a language: untranslated text falls back to the source, §10). The post stays one post; each language is an overlay of its title, excerpt, SEO meta, body and image alt, and only units that are missing or stale are translated — a hand-polished translation survives until its source changes. Use when: a post exists in one language and the site sells in more; list_stale_translations shows a post's units missing or stale; backfilling translations after a language was enabled. NOT for: pages (translate_page — entity \"page\" routes there); writing a new post (write_blog_post translates by itself); one phrase by hand (set_translation with entity \"blog_post\").",
           "category": "content",
           "handler": "internal:translate_content",
           "scope": "internal",
@@ -2948,17 +2948,27 @@
                     "type": "string",
                     "enum": [
                       "blog_post",
-                      "page"
+                      "page",
+                      "product",
+                      "product_category"
                     ],
-                    "description": "What to translate. \"page\" is the same as translate_page."
+                    "description": "What to translate. \"page\" is the same as translate_page; \"product\" translates a product's name and description (§10), \"product_category\" a category's."
                   },
                   "slug": {
                     "type": "string",
-                    "description": "The source post (or page) slug"
+                    "description": "The source post (or page / category) slug; for a product, its exact name"
                   },
                   "post_id": {
                     "type": "string",
                     "description": "Post id (alternative to slug)"
+                  },
+                  "product_id": {
+                    "type": "string",
+                    "description": "Product id (entity \"product\")"
+                  },
+                  "category_id": {
+                    "type": "string",
+                    "description": "Category id (entity \"product_category\")"
                   },
                   "locale": {
                     "type": "string",
@@ -7212,7 +7222,7 @@
         },
         {
           "name": "manage_product",
-          "description": "Manage products: list, get, create, update, archive, delete. Use when: adding a new item to the store; updating product details or pricing; retiring a product (archive keeps its order/stock history; delete is refused once the product has any). NOT for: managing inventory (manage_inventory); browsing products (browse_products).",
+          "description": "Manage products: list, get, create, update, archive, delete. Use when: adding a new item to the store; updating product details or pricing; retiring a product (archive keeps its order/stock history; delete is refused once the product has any). A product is written ONCE in its source language; `languages` translates name and description into overlays (content_translations, the page/post model) and an update of either re-translates the stale units. NOT for: managing inventory (manage_inventory); browsing products (browse_products).",
           "category": "commerce",
           "handler": "module:products",
           "scope": "internal",
@@ -7220,7 +7230,7 @@
             "type": "function",
             "function": {
               "name": "manage_product",
-              "description": "Manage products: list, get, create, update, archive, delete. Use when: adding a new item to the store; updating product details or pricing; retiring a product (archive keeps its order/stock history; delete is refused once the product has any). NOT for: managing inventory (manage_inventory); browsing products (browse_products).",
+              "description": "Manage products: list, get, create, update, archive, delete. Use when: adding a new item to the store; updating product details or pricing; retiring a product (archive keeps its order/stock history; delete is refused once the product has any). A product is written ONCE in its source language; `languages` translates name and description into overlays (content_translations, the page/post model) and an update of either re-translates the stale units. NOT for: managing inventory (manage_inventory); browsing products (browse_products).",
               "parameters": {
                 "type": "object",
                 "properties": {
@@ -7252,6 +7262,27 @@
                   },
                   "description": {
                     "type": "string"
+                  },
+                  "languages": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "all"
+                        ]
+                      }
+                    ],
+                    "description": "Languages to translate name and description into (create/update), as published overlays in content_translations — every enabled language but the source with \"all\". The product itself stays in its source language (products.locale); a language without an overlay shows the source text, never hides the product."
+                  },
+                  "retranslate": {
+                    "type": "boolean",
+                    "description": "update: re-translate the units a changed name/description made stale in every existing overlay (default true). false leaves the overlays as they are — mark them by hand with set_translation."
                   },
                   "weight_grams": {
                     "type": "number",
@@ -18652,9 +18683,11 @@
                     "type": "string",
                     "enum": [
                       "page",
-                      "blog_post"
+                      "blog_post",
+                      "product",
+                      "product_category"
                     ],
-                    "description": "Only pages or only blog posts. Default: both."
+                    "description": "Only this kind of content. Default: all — pages, posts, products and categories."
                   },
                   "locale": {
                     "type": "string",
@@ -18812,9 +18845,19 @@
                     "type": "string",
                     "enum": [
                       "page",
-                      "blog_post"
+                      "blog_post",
+                      "product",
+                      "product_category"
                     ],
-                    "description": "Default \"page\". \"blog_post\": slug is the post, units are post.title, post.excerpt, post.content, …"
+                    "description": "Default \"page\". \"blog_post\": slug is the post, units are post.title, post.excerpt, post.content, …; \"product\": product_id (or the exact name as slug), units product.name and product.description; \"product_category\": slug, units category.name and category.description."
+                  },
+                  "product_id": {
+                    "type": "string",
+                    "description": "The product (entity \"product\") — alternative to slug"
+                  },
+                  "category_id": {
+                    "type": "string",
+                    "description": "The category (entity \"product_category\") — alternative to slug"
                   },
                   "slug": {
                     "type": "string",
@@ -18899,9 +18942,19 @@
                     "type": "string",
                     "enum": [
                       "page",
-                      "blog_post"
+                      "blog_post",
+                      "product",
+                      "product_category"
                     ],
-                    "description": "Default \"page\". \"blog_post\" publishes a post's overlay (slug = the post)."
+                    "description": "Default \"page\". \"blog_post\" publishes a post's overlay (slug = the post); \"product\" a product's (product_id); \"product_category\" a category's (slug)."
+                  },
+                  "product_id": {
+                    "type": "string",
+                    "description": "The product (entity \"product\") — alternative to slug"
+                  },
+                  "category_id": {
+                    "type": "string",
+                    "description": "The category (entity \"product_category\") — alternative to slug"
                   },
                   "slug": {
                     "type": "string",

@@ -31,7 +31,6 @@ import { isModuleEnabled } from '../_shared/modules.ts';
 import {
   type AuditContext,
   ACCOUNTING_AUDIT_TABLES,
-  sha256Hex,
   diffSnapshots,
   writeAuditTrail,
 } from '../_shared/agent-audit.ts';

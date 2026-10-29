@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { readInboundPayload } from '../../../supabase/functions/_shared/email/inbound-payload';
+import { readInboundPayload, payloadFromParsedMime } from '../../../supabase/functions/_shared/email/inbound-payload';
 import { classifyInbound } from '../../../supabase/functions/_shared/email/classify-inbound';
 
 /**
@@ -64,6 +64,52 @@ describe('inbound relay payload', () => {
   });
 });
 
+describe('raw MIME from the paste-in Worker', () => {
+  const mail = {
+    subject: 'Offert på serviceavtal',
+    text: 'Hej! Vi vill ha en offert.',
+    html: '<p>Hej!</p>',
+    messageId: '<x1@kafe-norr.se>',
+    inReplyTo: '<o1@nordbrygg.flowwink.com>',
+    from: { address: 'elin@kafe-norr.se', name: 'Elin' },
+    to: [{ address: 'someone-else@nordbrygg.flowwink.com' }],
+    headers: [{ key: 'from', value: 'Elin <elin@kafe-norr.se>' }],
+  };
+
+  it('the SMTP envelope wins over the headers — a catch-all routes by envelope recipient', () => {
+    const body = payloadFromParsedMime(mail, { from: 'bounce+x@kafe-norr.se', to: 'info@nordbrygg.flowwink.com' });
+    const r = readInboundPayload(body);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.message).toMatchObject({
+      from: 'bounce+x@kafe-norr.se',
+      to: 'info@nordbrygg.flowwink.com',
+      subject: 'Offert på serviceavtal',
+      messageIdHeader: '<x1@kafe-norr.se>',
+      inReplyTo: '<o1@nordbrygg.flowwink.com>',
+    });
+  });
+
+  it('falls back to the headers when the relay sends no envelope', () => {
+    const r = readInboundPayload(payloadFromParsedMime(mail, {}));
+    expect(r.ok && r.message.from).toBe('elin@kafe-norr.se');
+    expect(r.ok && r.message.to).toBe('someone-else@nordbrygg.flowwink.com');
+  });
+
+  it('the Worker has no dependencies, so it can be pasted into the dashboard', () => {
+    const worker = read('deploy/cloudflare/email-inbound/worker.js');
+    expect(worker).not.toMatch(/^\s*import\s/m);
+    expect(worker).toMatch(/message\/rfc822/);
+    expect(worker).toMatch(/x-envelope-to/);
+  });
+
+  it('the router parses raw MIME itself', () => {
+    const router = read('supabase/functions/email-webhook/index.ts');
+    expect(router).toMatch(/npm:postal-mime@\d/);
+    expect(router).toMatch(/payloadFromParsedMime\(/);
+  });
+});
+
 describe('one filing path for every provider', () => {
   it('Gmail and the relay route both file through ingest-message.ts', () => {
     const gmail = read('supabase/functions/_shared/email/ingest-gmail.ts');
@@ -73,6 +119,18 @@ describe('one filing path for every provider', () => {
     // Neither inserts the inbound row itself any more.
     expect(gmail).not.toMatch(/from\('outbound_communications'\)\.insert/);
     expect(router).not.toMatch(/from\("outbound_communications"\)\.insert/);
+  });
+
+  it('the event carries the thread the row was filed on — a relay has no provider thread id', () => {
+    const shared = read('supabase/functions/_shared/email/ingest-message.ts');
+    expect(shared).toMatch(/\.select\('thread_id'\)/);
+    const payload = shared.slice(shared.indexOf('_payload: {'));
+    expect(payload).toMatch(/thread_id: threadId,/);
+  });
+
+  it('the event dispatcher surfaces a failed skill as last_error', () => {
+    const d = read('supabase/functions/event-dispatcher/index.ts');
+    expect(d).toMatch(/out\?\.status === "failed"/);
   });
 
   it('the /inbound route fails closed without its secret', () => {

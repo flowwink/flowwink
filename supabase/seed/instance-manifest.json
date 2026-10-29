@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261029090000",
-      "migrations_count": 707,
+      "migration_head": "20261029120000",
+      "migrations_count": 708,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2833,6 +2833,10 @@
         {
           "version": "20261029090000",
           "name": "mfa-for-staff"
+        },
+        {
+          "version": "20261029120000",
+          "name": "definer-functions-declare-their-caller"
         }
       ]
     },

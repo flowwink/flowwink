@@ -2841,15 +2841,15 @@
       ]
     },
     "skills": {
-      "seed_hash": "sha256:0a3acf6584cd87bea6f2cd03112e451c93d5ac9c709ff66a482c0bcdfe6628dc",
+      "seed_hash": "sha256:2e660ddf73ac23f7a9373afd6dc4d28a0d0048d601ed216b7746286913ad2e6d",
       "skill_count": 648,
       "module_count": 69
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:b33bebed7b19865434d0330e24df9e3e3d8ee540c7baeebe430d3514cc6d72cc",
+      "shared_hash": "sha256:16fc65191a3234aebe6a21cd42ee067b09d275f24c34dff21db0ec147082e092",
       "functions": {
-        "agent-execute": "sha256:94a1242cfbce4a1b6c3d5fb2051c002b9b2ebec26b3f6ffeb6f84a1b38c16ee9",
+        "agent-execute": "sha256:dba08ec1a9aad0a18bfac242daf134d9a2061ce224a906d68deda6bae7928f8a",
         "agent-operate": "sha256:8fcf5ce566e12089e121d334bd95cdc02ec45564e7b3fc285d0023011853c9b3",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:4a7f3446938530184242099204551c60af4928f60493432d0e683f5ccbc864c8",
@@ -2878,7 +2878,7 @@
         "einvoice": "sha256:75eb9e0e1bf84e5fc7130ce8b782ffffab5ef5ec2c5acda0723a2e74664e0d96",
         "elks46-ingest": "sha256:161d6528fed5b76c7d632e7f7ebf762fc3fea89d678092c42fc7d8ab70a6587f",
         "email-send": "sha256:c2e6c0aa473761b234258730eda70e6e8a02bcae3214fda2476af27b5aeb4622",
-        "email-webhook": "sha256:55c393771311c65d2841fc988593923bc5dea9d253f847f875de2638ebecc239",
+        "email-webhook": "sha256:3d18ac5d769645071fe96edfcbdda80721d4b6322aca3c3edd93e5fd38364581",
         "event-dispatcher": "sha256:9eefa58e2b6947f83bacf5c27fc1bc772a4ed0d0f92af47e6c9577a1dd62f4c6",
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",

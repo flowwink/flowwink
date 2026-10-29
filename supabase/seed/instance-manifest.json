@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261028090037",
-      "migrations_count": 706,
+      "migration_head": "20261029090000",
+      "migrations_count": 707,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2829,6 +2829,10 @@
         {
           "version": "20261028090037",
           "name": "trad-takten-haller-under-samtidighet"
+        },
+        {
+          "version": "20261029090000",
+          "name": "mfa-for-staff"
         }
       ]
     },

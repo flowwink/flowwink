@@ -157,7 +157,8 @@ first on Free is the 150 s wall-clock on long jobs (`install_template`,
 
 **Commerce / Finance:**
 - `create-checkout`, `create-invoice-payment`, `send-order-confirmation`, `subscribe` — e-commerce
-- `generate-invoice-pdf`, `reconciliation`, `dunning-processor`, `fetch-fx-rates` — finance
+- `generate-invoice-pdf`, `dunning-processor` — finance (`reconciliation` and `fetch-fx-rates`
+  are `internal:` handlers in `agent-execute` since the 2026-07 consolidation, not functions)
 
 **AI Enrichment:**
 - `prospect-research`, `contact-finder`, `enrich-company`, `parse-resume`, `extract-pdf-text`, `extract-receipt` — data enrichment
@@ -638,7 +639,15 @@ managed-ledger lessons still apply to every fork's Supabase integration:
   `auth.uid()` is NULL and `has_role(auth.uid(),'admin')` is false. Guard with
   `(auth.role() = 'service_role' OR has_role(auth.uid(), <role>))` or the operator
   gets "Only admins…". 44 admin functions had this patch stranded in skipped
-  backdated migrations.
+  backdated migrations. **And the mirror rule (2026-10-29): a definer function
+  the browser never calls carries no EXECUTE for `anon`/`authenticated`** —
+  edge, agent-execute and cron run as the service role, other definer
+  functions as the owner. 112 were revoked in `20261029120000`; a browser-called
+  one is guarded in its body with `can_access_module(auth.uid(), '<module>')`.
+  Find the open ones in pg_catalog, not in a list: definer, non-trigger,
+  executable by authenticated, body without `service_role` / `has_role(` /
+  `can_access_module(` / `is_staff(` / `auth.uid() =` — then check pg_policy,
+  invoker-side functions, views, defaults and constraints before revoking.
 - **"Sync skills from code" is the 4th-layer deploy without DB creds — and
   the admin shell presses it for you.** `/admin/modules` → **"Sync skills from
   code"** re-runs `bootstrapModule()` for every enabled module, which **UPDATEs
@@ -751,7 +760,9 @@ type check, correctness lint, the ESLint ratchet (findings may only shrink — `
 lint:ratchet`, baseline in src/lib/__tests__/fixtures/eslint-baseline.json), 3900
 unit/guardrail tests, skill linter, artifact freshness, build; a single business process
 does not earn a live step on every PR. The Docker image builds on release tags only.
-**Fork syncs run once a day, at night** (`nightly-fork-sync.yml`, 01:23 UTC): a sync is
+**Fork syncs run once a day, at night** (`nightly-fork-sync.yml`, cron 20:53 UTC, which
+GitHub's queue lands around 01:30 UTC; one fork early = Actions → Nightly fork sync →
+Run workflow with `fork` and `force`, as optic got MFA on 2026-10-29): a sync is
 a production deploy, and deploying six times in an evening while an operator works
 is how "sometimes I get errors in the project view" happens (optic, 2026-09-04).
 Fleet-only workflows (docker image, release, main-red alert, MCP regression) carry

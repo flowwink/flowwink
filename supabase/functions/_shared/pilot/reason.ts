@@ -268,6 +268,52 @@ export async function partitionByCadence(
   return { actionable, satisfied };
 }
 
+/**
+ * The cadence quota enforced where the skill runs, not only where the prompt is
+ * written.
+ *
+ * partitionByCadence drops a satisfied objective from the PROMPT — but the
+ * model can read it straight back: liteit's heartbeat called list_objectives,
+ * saw "publish one post per week" active, and published on 10-18, 19, 22, 23,
+ * 24 and 28 (2026-10-28) with every one of those runs stamped agent=flowpilot.
+ * A prompt describes; only the call site constrains.
+ *
+ * Refuses `skillName` when at least one active objective counts it in
+ * `constraints.cadence` and EVERY such objective has met its quota for the
+ * period. One objective with room left is enough to let the call through.
+ * Any read failure fails OPEN, like partitionByCadence.
+ */
+type CadenceObjective = { id: string; goal: string; constraints?: { cadence?: { counts?: unknown; max?: unknown } } | null };
+
+export async function cadenceRefusal(
+  supabase: Parameters<typeof partitionByCadence>[0],
+  skillName: string,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const { data, error } = await supabase
+      .from('agent_objectives')
+      .select('id, goal, constraints')
+      .eq('status', 'active');
+    if (error || !data?.length) return null;
+    const counting = (data as CadenceObjective[]).filter((o) => {
+      const c = o.constraints?.cadence;
+      return c && c.counts === skillName && Number(c.max) > 0;
+    });
+    if (!counting.length) return null;
+    const { actionable, satisfied } = await partitionByCadence(supabase, counting);
+    if (actionable.length) return null;
+    return {
+      error: `${skillName} is not run again this period: every objective that delivers through it has met its cadence (${satisfied.map((s) => `"${s.goal}" ${s.note}`).join('; ')}).`,
+      code: 'CADENCE_SATISFIED',
+      retryable: false,
+      hint: 'The delivery for this period already exists. Do not retry or route around it through another skill; spend the turn on other work, or reply NO_REPLY.',
+      status: 'cadence_satisfied',
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** The only fields the identity gate reads off an objective row. */
 type GatedObjective = {
   goal?: unknown;
@@ -924,6 +970,10 @@ export async function executeBuiltInTool(
   fnName: string,
   fnArgs: any,
   traceId?: string,
+  // FlowChat (agent-operate) vouches for the admin at the keyboard as
+  // caller_user_id, so a skill that paces unattended runs (comment_on_task)
+  // can tell the two apart, and writes carry the person who asked.
+  opts?: { callerUserId?: string | null },
 ): Promise<any> {
   const execute = async () => {
     switch (fnName) {
@@ -969,6 +1019,7 @@ export async function executeBuiltInTool(
     // Not a built-in → delegate to agent-execute
     const body: Record<string, any> = { skill_name: fnName, arguments: fnArgs, agent_type: 'flowpilot' };
     if (traceId) body.trace_id = traceId;
+    if (opts?.callerUserId) body.caller_user_id = opts.callerUserId;
     const response = await fetch(`${supabaseUrl}/functions/v1/agent-execute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}`, 'apikey': serviceKey },
@@ -1290,6 +1341,17 @@ export async function reason(
           });
           turnErrors++;
           continue;
+        }
+
+        // Cadence quota at the call site — the prompt-level partition alone
+        // let the model re-deliver after reading the objective back.
+        if (config.enforceCadence && !isBuiltInTool(fnName) && fnName !== 'search_skills') {
+          const refusal = await cadenceRefusal(supabase, fnName);
+          if (refusal) {
+            console.log(`[reason] trace=${traceId} Cadence satisfied for '${fnName}' — refused`);
+            conversationMessages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(refusal) });
+            continue;
+          }
         }
 
         // Same-action detection (skip batch-oriented tools like record_outcome which

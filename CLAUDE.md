@@ -192,7 +192,7 @@ component map, ownership ruling, and the Trace/resumption build plan:
 
 ### MCP Server (external agent access)
 
-`mcp-server` exposes FlowWink skills to external agents. It runs on Supabase Edge Functions, so the transport is **Streamable HTTP** (not stdio — there is no long-lived local process). This is a consequence of serverless deployment, not Deno.
+`mcp-server` exposes FlowWink skills to external agents. It runs on Supabase Edge Functions, so the transport is **Streamable HTTP** (not stdio — there is no long-lived local process). This is a consequence of serverless deployment, not Deno. **Its address is the site's own `/mcp`** (`api/mcp.ts` on Vercel proxies `/mcp` and every subpath to the function, query and headers intact, streaming, 60 s window; `nginx.conf` carries the stub for Docker) — the shape every other integration uses (`mcp.stripe.com`, `mcp.linear.app/mcp`); `mcp.<domain>` is one more domain on the same project. The functions URL stays valid and is what the admin shows when the deployment does not answer on `/mcp` (`useMcpAddress` probes the `X-FlowWink-MCP` header).
 
 The system has 600+ skills. Exposing all of them as individual MCP tools floods a client's context. Three connection profiles control what a client sees (all via query params; default = unfiltered, kept for backward compat):
 
@@ -239,6 +239,28 @@ The `/rest/execute` endpoint mirrors the MCP tool surface but over plain HTTP PO
 **`manage_company`** — B2B master data lives on `companies`: `org_number`, `vat_number`, `parent_company_id` (subsidiary hierarchy; self-parent rejected), `employee_count`, `annual_revenue_cents`, `credit_limit_cents`, `account_owner`, `tags` (text[]). Use `find_duplicate_companies` before creating a company that might already exist (identical domain scores 1.0).
 
 **`refund_return`** — supports **partial refunds**: each call adds `refund_cents` to the running total; the expected total is Σ(return_items qty × unit_refund_cents) − `restocking_fee_cents`. Over-refunds are rejected. The RMA closes when the total is reached or `p_final: true` is passed. Set the restocking fee via `inspect_return` (QC step, only valid in status `received`).
+
+**`write_blog_post` — the floor (2026-10-28, after Hermes' audit of autoversio:
+median 260 words, 18 titles on one angle, 8 English posts on a Swedish site,
+the start page's over-promises in the body, a featured image picked by sending
+the brief to Unsplash).** The skill REFUSES (`status: 'refused'`, no `error`,
+never retried as is) a body under the site's word floor (Blog settings →
+`minWords`, default 600; `CONTENT_TOO_THIN`), in another language than it is
+declared in (`LANGUAGE_MISMATCH`), a title that re-words an earlier post
+(`DUPLICATE_CONTENT`, containment ≥ 0.67 — the hint names the post to extend),
+or carrying a phrase from the identity's `claims_to_avoid` (`FORBIDDEN_CLAIM`).
+`manage_blog_posts update` with `content` meets the same floor (no duplicate
+check); an import (`published_at` given) is not judged; `force: true` is for a
+person. The picture: `image_query` (2–4 concrete English nouns) or the title's
+nouns with the industry as anchor — never the brief; the alt is the title. A
+picture in the body is `![alt](url)` on a line of its own → a Tiptap `image`
+node, which the public renderer now draws (it used to throw and blank the
+whole post). The editorial plan is structure: `company_profile.content_angles`
+(`[{id, thesis, audience, proof, covered_by}]`); pass `angle` and the post's
+slug is written into `covered_by`, so the heartbeat is handed the OPEN angles.
+`audit_blog` is the read: words, language, duplicate clusters, images, ruled-out
+claims, each finding with `fix.skill` + `args`. The pure rule lives in
+`_shared/content-quality.ts`.
 
 **`manage_blog_posts` update** — edits the BODY too: `content` (markdown, converted
 exactly as `write_blog_post`) or `content_json` (the Tiptap doc `get` returns), one of
@@ -298,8 +320,18 @@ beside its payload, so an operator branches instead of guessing:
   an open period), `MISSING_EXCHANGE_RATE` (set the rate, then retry the same
   call), `MISSING_REQUIRED_PARAMETER` / `UNKNOWN_PARAMETERS` (the PGRST202
   pair), `FORBIDDEN`, `NOT_FOUND`, `ALREADY_EXISTS`, `INVALID_INPUT`,
-  `APPROVAL_REQUIRED`, `TRANSIENT`, `HANDLER_ERROR`. A handler's own `code`/`hint`
-  wins over the classifier.
+  `APPROVAL_REQUIRED`, `TRANSIENT`, `HANDLER_ERROR`, `RETENTION_LOCKED`. A
+  handler's own `code`/`hint` wins over the classifier.
+- A refusal is not a failure: `{ status: 'refused', code, retryable: false, hint }`
+  with NO `error`, so the ReAct self-repair never retries it and self-healing
+  never counts it toward disabling the skill (the same shape as
+  `pending_approval`); the journal records it as `refused`, which objective
+  evidence and progress skip. Codes: `ALREADY_NUDGED_TODAY` / `QUESTION_STILL_OPEN` —
+  `comment_on_task`'s thread cadence (one unattended agent comment per task per
+  day, sooner after a person writes; an unanswered question is not re-asked
+  until a person answers or the task moves; a person at the keyboard —
+  `caller_user_id` from FlowChat, workspace-chat or a user session, never the
+  gateway — writes as a person and is never refused).
 - A finance answer (accounting, invoicing, purchasing, expenses) starts with
   `context` from `agent_context()`: today, currency, fiscal year, today's period
   status, pending operations and approvals — read it before dating or pricing

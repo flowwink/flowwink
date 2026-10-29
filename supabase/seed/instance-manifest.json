@@ -2847,7 +2847,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:16fc65191a3234aebe6a21cd42ee067b09d275f24c34dff21db0ec147082e092",
+      "shared_hash": "sha256:fa2ae6b46404cf52cc217e597c6ba10b9e8cf0fa94f6e664054d32924d37d3b2",
       "functions": {
         "agent-execute": "sha256:dba08ec1a9aad0a18bfac242daf134d9a2061ce224a906d68deda6bae7928f8a",
         "agent-operate": "sha256:8fcf5ce566e12089e121d334bd95cdc02ec45564e7b3fc285d0023011853c9b3",
@@ -2878,7 +2878,7 @@
         "einvoice": "sha256:75eb9e0e1bf84e5fc7130ce8b782ffffab5ef5ec2c5acda0723a2e74664e0d96",
         "elks46-ingest": "sha256:161d6528fed5b76c7d632e7f7ebf762fc3fea89d678092c42fc7d8ab70a6587f",
         "email-send": "sha256:c2e6c0aa473761b234258730eda70e6e8a02bcae3214fda2476af27b5aeb4622",
-        "email-webhook": "sha256:3d18ac5d769645071fe96edfcbdda80721d4b6322aca3c3edd93e5fd38364581",
+        "email-webhook": "sha256:8934c5e9ceaf373ea9f66eb6e9894b7592b41b703208c7abe67c66144a54d4aa",
         "event-dispatcher": "sha256:9eefa58e2b6947f83bacf5c27fc1bc772a4ed0d0f92af47e6c9577a1dd62f4c6",
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",

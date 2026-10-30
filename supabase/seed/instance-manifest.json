@@ -2859,7 +2859,7 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:ef8963cb95398f28a805b2e7da01f5152b990ede6df9c059c804cd2cac82842d",
+      "shared_hash": "sha256:bcec1cc2574375d2f374d0e767db52447867fed5af71922d2e0a29fba82b566d",
       "functions": {
         "agent-execute": "sha256:1f2b1439b99584ea509bd5ddc83035fa2280c27e8066e31b8d1d1a5e6a935767",
         "agent-operate": "sha256:9ecfb8b3a76c28526af8c796fdfa0561ebb3b802b65f03275874f93b14369a0c",
@@ -2937,7 +2937,7 @@
         "web-scrape": "sha256:f0948362eb60ff2d597de407af0f3eedb3b0f892b75ce4acff960e0b6ebf146f",
         "web-search": "sha256:6002f6b14ad490cfa0b444129694f123fad021050234cc8f87ee04ebb16c5320",
         "webmeet-ice": "sha256:0b8daa42425b9377066f76985be751f4491185d0a17feaee33bf9580c5141365",
-        "workspace-chat": "sha256:665151114ce4a34aec6ffc897a3529837c24912fa5f3eab8349475812cf8e41a"
+        "workspace-chat": "sha256:d873c689f6c24d02514ef9ae61648071aeaad095e82166bb1655d5c9829094af"
       }
     },
     "frontend": {

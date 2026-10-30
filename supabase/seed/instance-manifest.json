@@ -2859,10 +2859,10 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:3d39dcdbfbe570cb0a50f3b8edb0c980e63a43754f3f68f14e8f28b1e106ac1c",
+      "shared_hash": "sha256:d53795584219fe6bf8d1cd004abd874050bda4093ce82898b763dda0094009f0",
       "functions": {
         "agent-execute": "sha256:1f2b1439b99584ea509bd5ddc83035fa2280c27e8066e31b8d1d1a5e6a935767",
-        "agent-operate": "sha256:d26566867c744a1650b407e7d602f60baf5f5cbafbb5ca93fb366d5b2bb4cbf2",
+        "agent-operate": "sha256:9ecfb8b3a76c28526af8c796fdfa0561ebb3b802b65f03275874f93b14369a0c",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:c7862e942bb9fbfcb847d236cd7fece01ad934f354ac038d03f9128e4f2e006a",
         "blog-rss": "sha256:0edb1a4c2aa225b7b8358536539f0ac2b45ef47ca625329b754fe7e104bf0014",

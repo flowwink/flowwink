@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useRef, useEffect, useState } from 'react';
 import { ArrowUp, Loader2, Terminal, RotateCcw, Wrench, Sparkles, X, Paperclip, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,8 @@ interface OperateChatProps {
   onSendMessage: (message: string) => void;
   onReset: () => void;
   onCancel?: () => void;
+  /** Pre-filled (not sent) input — the skill catalog's "Try in FlowChat" arrives with one. */
+  initialInput?: string;
 }
 
 interface AttachedFile {
@@ -94,8 +97,12 @@ function ToolStatusIndicator({ toolStatus }: { toolStatus: OperateMessage['toolS
   );
 }
 
-export function OperateChat({ messages, skills, isLoading, onSendMessage, onReset, onCancel }: OperateChatProps) {
+export function OperateChat({ messages, skills, isLoading, onSendMessage, onReset, onCancel, initialInput }: OperateChatProps) {
   const [input, setInput] = useState('');
+  useEffect(() => {
+    if (initialInput && !input) setInput(initialInput);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialInput]);
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -310,6 +317,15 @@ export function OperateChat({ messages, skills, isLoading, onSendMessage, onRese
                               </Badge>
                               {sr.result && (
                                 <span className="text-[10px] text-muted-foreground opacity-60 group-open:hidden">details</span>
+                              )}
+                              {(sr.status === 'pending_approval' || (sr.result as { staged?: boolean } | null)?.staged === true) && (
+                                <Link
+                                  to={sr.status === 'pending_approval' ? '/admin/approvals' : '/admin/approvals?tab=staged'}
+                                  className="text-[10px] font-medium text-primary underline-offset-2 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Review in Approvals →
+                                </Link>
                               )}
                             </summary>
                             {sr.result && (

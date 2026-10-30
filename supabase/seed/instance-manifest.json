@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261030090000",
-      "migrations_count": 709,
+      "migration_head": "20261030100000",
+      "migrations_count": 710,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2841,6 +2841,10 @@
         {
           "version": "20261030090000",
           "name": "flowpilot-cron-carries-the-service-key"
+        },
+        {
+          "version": "20261030100000",
+          "name": "notify-means-someone-is-told"
         }
       ]
     },
@@ -2853,7 +2857,7 @@
       "count": 77,
       "shared_hash": "sha256:3adcc0da88dcc0d52cd53ed24ae848b055fc120ee2a78b4ea175727de37ee6c3",
       "functions": {
-        "agent-execute": "sha256:dba08ec1a9aad0a18bfac242daf134d9a2061ce224a906d68deda6bae7928f8a",
+        "agent-execute": "sha256:1f2b1439b99584ea509bd5ddc83035fa2280c27e8066e31b8d1d1a5e6a935767",
         "agent-operate": "sha256:8fcf5ce566e12089e121d334bd95cdc02ec45564e7b3fc285d0023011853c9b3",
         "ai-task": "sha256:9dd415b357bf7fecf39ad56ee6f8cdc3c8ac4cf688f0313b83211eef5742b3af",
         "automation-dispatcher": "sha256:c7862e942bb9fbfcb847d236cd7fece01ad934f354ac038d03f9128e4f2e006a",

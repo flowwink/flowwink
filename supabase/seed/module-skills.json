@@ -7297,16 +7297,16 @@
                   "type": {
                     "type": "string",
                     "enum": [
-                      "physical",
-                      "digital",
-                      "service"
-                    ]
+                      "one_time",
+                      "recurring"
+                    ],
+                    "description": "one_time = bought once; recurring = a subscription."
                   }
                 }
               }
             }
           },
-          "instructions": "## browse_products\n### What\nBrowse products in the catalog (visitor-facing, read-only).\n### When to use\n- Visitor asks about products or pricing in chat\n- Need product info for recommendations\n- NOT for admin management (use manage_product)\n### Parameters\n- **search**: Optional text search.\n- **type**: Filter by type: physical, digital, service.\n### Edge cases\n- Only returns active products. Archived products excluded.\n- Visitor-safe: shows public pricing and descriptions."
+          "instructions": "## browse_products\n### What\nBrowse products in the catalog (visitor-facing, read-only).\n### When to use\n- Visitor asks about products or pricing in chat\n- Need product info for recommendations\n- NOT for admin management (use manage_product)\n### Parameters\n- **search**: Optional text search.\n- **type**: Filter by billing type: one_time (bought once) or recurring (a subscription). There is no physical/digital split.\n### Edge cases\n- Only returns active products. Archived products excluded.\n- Visitor-safe: shows public pricing and descriptions."
         },
         {
           "name": "manage_product",

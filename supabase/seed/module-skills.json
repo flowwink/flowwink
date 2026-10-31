@@ -11870,7 +11870,7 @@
               }
             }
           },
-          "instructions": "## handbook_search\n### What\nSearches and retrieves chapters from the synced GitHub handbook repository.\n### When to use\n- Visitor asks about agentic architecture, FlowPilot, OpenClaw, skills, heartbeat, federation\n- Admin wants to reference handbook content\n- Any question about how FlowPilot works architecturally\n### Parameters\n- **query**: Search term to find relevant chapters (searches title and content)\n- **slug**: Specific chapter slug to retrieve full content\n- **limit**: Max results for search (default 5)\n### Usage patterns\n1. Search: handbook_search(query: \"heartbeat\") → get snippets\n2. Read: handbook_search(slug: \"05-heartbeat-protocol\") → full chapter\n3. TOC: handbook_search() → list all chapters"
+          "instructions": "## handbook_search\n### What\nSearches and retrieves chapters from the synced GitHub handbook repository.\n### When to use\n- Visitor asks about agentic architecture, FlowPilot, OpenClaw, skills, heartbeat, federation\n- Admin wants to reference handbook content\n- Any question about how FlowPilot works architecturally\n### Parameters\n- **query**: Search term to find relevant chapters (searches title and content)\n- **slug**: Specific chapter slug to retrieve full content. A handbook in sections addresses chapters `<section>/<slug>` (e.g. `business/foreword`); a bare slug works when only one section has it.\n- **limit**: Max results for search (default 5)\n### Usage patterns\n1. Search: handbook_search(query: \"heartbeat\") → get snippets\n2. Read: handbook_search(slug: \"builder/heartbeat-protocol\") → full chapter (slugs come from the TOC)\n3. TOC: handbook_search() → list all chapters"
         },
         {
           "name": "sync_handbook_from_github",
@@ -11899,7 +11899,7 @@
                   },
                   "path": {
                     "type": "string",
-                    "description": "Path (default content/chapters)"
+                    "description": "Folder holding the .md chapters, read recursively; a subfolder is a section and its chapters are addressed <section>/<slug> (default src/content)"
                   },
                   "branch": {
                     "type": "string",

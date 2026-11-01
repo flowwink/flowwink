@@ -33,6 +33,11 @@ import {
   closedToEquityCents,
 } from '../_shared/accounting/income-statement.ts';
 import { markdownToTiptap, inlineClean, parseInline } from '../_shared/markdown-to-tiptap.ts';
+import { newsletterHtmlFromMarkdown, plainTextFromHtml, assessNewsletter, type NewsletterRefusal } from '../_shared/email/newsletter-content.ts';
+import { resolveAiConfig } from '../_shared/ai-config.ts';
+import { callAi } from '../_shared/ai-call.ts';
+import { hslTripletToHex } from '../_shared/email-shell.ts';
+import { screeningQuestionsOf } from '../_shared/recruitment/application-intake.ts';
 import { planFormDelivery } from '../_shared/forms/delivery-plan.ts';
 import { isModuleEnabled } from '../_shared/modules.ts';
 import {
@@ -119,12 +124,13 @@ import { handler as hFetchImage } from '../_shared/handlers/fetch-image.ts';
 import { handler as hTestAiConnection } from '../_shared/handlers/test-ai-connection.ts';
 import { handler as hUpdateAutonomyCron } from '../_shared/handlers/update-autonomy-cron.ts';
 import { executeCheckIntegrations } from '../_shared/handlers/check-integrations.ts';
+import { describeWebLayer } from '../_shared/web/layer.ts';
 import { executeDescribeBlocks } from '../_shared/handlers/describe-blocks.ts';
 // describe_blocks' other half: "what can I build" ↔ "what did I build".
 import { executeInspectRenderedPage } from '../_shared/handlers/inspect-rendered-page.ts';
 import { executeAgentTrace } from '../_shared/handlers/agent-trace.ts';
 import { buildCrudErrorHint } from '../_shared/crud-error-hint.ts';
-import { resolveProjectTask } from '../_shared/project-task-resolve.ts';
+import { resolveProjectTask, isUuid } from '../_shared/project-task-resolve.ts';
 import {
   AGENT_COMMENT_INTERVAL_MS, cadenceRefusalAnswer, decideTaskThreadCadence, nudgedTodayRefusal, personDisplayName,
   readTaskThread, readTaskThreadComments, threadAuthorFor, writePacedComment, type TaskCommentKind,
@@ -1122,6 +1128,8 @@ serve(async (req) => {
         result = await executeInspectRenderedPage(supabase, args as Record<string, unknown>);
       } else if (handler === 'internal:check_integrations') {
         result = await executeCheckIntegrations(supabase, args as Record<string, unknown>);
+      } else if (handler === 'internal:web_providers_status') {
+        result = await describeWebLayer(supabase);
 
       } else if (handler === 'internal:get_agent_trace') {
         result = await executeAgentTrace(supabase, args as Record<string, unknown>);
@@ -2504,7 +2512,7 @@ async function executeCalendarAction(
         id: `task:${r.id}`, sourceId: 'tasks',
         title: `Task — ${r.title}`,
         start: r.due_date, allDay: true, status: r.status,
-        url: `/admin/projects/${r.project_id}`,
+        url: `/admin/projects?project=${r.project_id}`,
       });
     }
   }
@@ -6229,53 +6237,31 @@ async function executePagesAction(
 // =============================================================================
 
 /**
- * Shared text-generation helper. Tries Gemini first, then OpenAI.
- * Returns trimmed text or null on failure.
+ * Shared text-generation helper on the platform's own AI (System AI settings,
+ * any provider — local included), never a hardcoded Gemini / gpt-4o-mini key
+ * pair beside it (2026-10-31). Returns trimmed text or null on failure.
  */
-async function generateShortText(prompt: string, maxTokens = 256): Promise<string | null> {
-  const geminiKey = Deno.env.get('GEMINI_API_KEY');
-  const openaiKey = Deno.env.get('OPENAI_API_KEY');
-
-  if (geminiKey) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: maxTokens, temperature: 0.4 },
-        }),
-      });
-      const data = await resp.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return String(text).trim();
-    } catch (e) {
-      console.error('[generateShortText] Gemini failed:', e);
+async function generateShortText(supabase: SupabaseClient, prompt: string, maxTokens = 256): Promise<string | null> {
+  try {
+    const ai = await resolveAiConfig(supabase, 'fast');
+    const resp = await callAi({
+      apiKey: ai.apiKey,
+      apiUrl: ai.apiUrl,
+      model: ai.model,
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    if (!resp.ok) {
+      console.error('[generateShortText] AI call failed:', resp.status, (await resp.text()).slice(0, 200));
+      return null;
     }
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content;
+    return text ? String(text).trim() : null;
+  } catch (e) {
+    console.error('[generateShortText] AI unavailable:', e);
+    return null;
   }
-
-  if (openaiKey) {
-    try {
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          max_tokens: maxTokens,
-          temperature: 0.4,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-      const data = await resp.json();
-      const text = data.choices?.[0]?.message?.content;
-      if (text) return String(text).trim();
-    } catch (e) {
-      console.error('[generateShortText] OpenAI failed:', e);
-    }
-  }
-
-  return null;
 }
 
 /**
@@ -6378,9 +6364,9 @@ Requirements:
 
 Output ONLY the meta description, nothing else.`;
 
-  const description = await generateShortText(prompt, 200);
+  const description = await generateShortText(supabase, prompt, 200);
   if (!description) {
-    return { page_id: page.id, slug: page.slug, title: page.title, updated: false, error: 'AI generation failed (no key configured or API error)' };
+    return { page_id: page.id, slug: page.slug, title: page.title, updated: false, error: 'AI generation failed — check System AI settings (provider + key)' };
   }
 
   const cleaned = description.replace(/^["']|["']$/g, '').trim().slice(0, 160);
@@ -6480,7 +6466,7 @@ async function processOnePageAlt(
     const singleAltKey = d.imageAlt !== undefined ? 'imageAlt' : (d.alt !== undefined ? 'alt' : 'imageAlt');
     if (singleImageUrl && (!d[singleAltKey] || String(d[singleAltKey]).trim() === '')) {
       if (fixed >= remainingBudget) break;
-      const alt = await generateAltForImage(singleImageUrl, pageContext);
+      const alt = await generateAltForImage(supabase, singleImageUrl, pageContext);
       if (alt) {
         d[singleAltKey] = alt;
         fixed++;
@@ -6495,7 +6481,7 @@ async function processOnePageAlt(
         if (img && typeof img === 'object') {
           const url = img.url || img.src;
           if (url && (!img.alt || String(img.alt).trim() === '')) {
-            const alt = await generateAltForImage(url, pageContext);
+            const alt = await generateAltForImage(supabase, url, pageContext);
             if (alt) {
               img.alt = alt;
               fixed++;
@@ -6526,7 +6512,7 @@ async function processOnePageAlt(
   return { page_id: page.id, slug: page.slug, title: page.title, images_fixed: fixed, updated: true, fixes };
 }
 
-async function generateAltForImage(imageUrl: string, pageContext: string): Promise<string | null> {
+async function generateAltForImage(supabase: SupabaseClient, imageUrl: string, pageContext: string): Promise<string | null> {
   // Extract filename hint from URL
   let filenameHint = '';
   try {
@@ -6550,7 +6536,7 @@ Requirements:
 
 Output ONLY the alt text, nothing else.`;
 
-  const alt = await generateShortText(prompt, 80);
+  const alt = await generateShortText(supabase, prompt, 80);
   if (!alt) return null;
   return alt.replace(/^["']|["']$/g, '').replace(/\.$/, '').trim().slice(0, 125);
 }
@@ -9500,6 +9486,7 @@ async function executeNewsletterAction(
 
   // manage_newsletters — full CRUD on newsletters table
   if (skillName === 'manage_newsletters') {
+    const newsletterBody = (db: typeof supabase, a: Record<string, unknown>) => writtenMailBody(db, a, 'manage_newsletters');
     const { action = 'list', newsletter_id, subject, content_html, status, schedule_at, audience_lists, limit = 20 } = args as any;
     // Empty/omitted audience = every confirmed subscriber (the pre-lists behaviour).
     const audience = Array.isArray(audience_lists)
@@ -9533,72 +9520,15 @@ async function executeNewsletterAction(
 
     if (action === 'create') {
       if (!subject) throw new Error('subject required for create');
-      let finalHtml = content_html as string | undefined;
-      const { topic, tone = 'professional', language = 'en', blog_content } = args as any;
-
-      // AI-generate newsletter content if topic provided but no content_html
-      if (!finalHtml && (topic || blog_content)) {
-        const geminiKey = Deno.env.get('GEMINI_API_KEY');
-        const openaiKey = Deno.env.get('OPENAI_API_KEY');
-        const sourceContext = blog_content
-          ? `Base the newsletter on this blog post content:\n\n${blog_content}\n\nAdapt it for email format — shorter, more direct, with a clear CTA.`
-          : `Topic: "${topic}"`;
-
-        const genPrompt = `Write a professional newsletter email about: ${sourceContext}
-Subject line: "${subject}"
-Tone: ${tone}
-Language: ${language}
-
-Write 300-600 words. Output clean HTML suitable for email (use <h2>, <p>, <ul>, <li>, <strong>, <em>, <a>).
-Include:
-- An engaging opening paragraph
-- 3-5 key points or tips
-- A clear call-to-action at the end
-Do NOT include <html>, <head>, <body> tags — just the inner content HTML.
-Do NOT include the subject line as a heading.
-Output ONLY the HTML content, no preamble or explanation.`;
-
-        if (geminiKey) {
-          try {
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-            const genResp = await fetch(geminiUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: genPrompt }] }],
-                generationConfig: { maxOutputTokens: 4096, temperature: 0.7 },
-              }),
-            });
-            const genData = await genResp.json();
-            const raw = genData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            finalHtml = raw.replace(/^```html\s*/i, '').replace(/```\s*$/, '').trim();
-            console.log(`[manage_newsletters] AI content generated via Gemini (${finalHtml.length} chars)`);
-          } catch (e) {
-            console.error('[manage_newsletters] Gemini generation failed:', e);
-          }
-        } else if (openaiKey) {
-          try {
-            const genResp = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiKey}` },
-              body: JSON.stringify({
-                model: 'gpt-4o-mini', max_tokens: 4096,
-                messages: [
-                  { role: 'system', content: `You are a newsletter copywriter. Tone: ${tone}. Language: ${language}.` },
-                  { role: 'user', content: genPrompt }
-                ],
-              }),
-            });
-            const genData = await genResp.json();
-            const raw = genData.choices?.[0]?.message?.content || '';
-            finalHtml = raw.replace(/^```html\s*/i, '').replace(/```\s*$/, '').trim();
-            console.log(`[manage_newsletters] AI content generated via OpenAI (${finalHtml.length} chars)`);
-          } catch (e) {
-            console.error('[manage_newsletters] OpenAI generation failed:', e);
-          }
-        }
-      }
-
+      // The operator writes the newsletter — it has read the wiki, the posts,
+      // the products. This skill used to hand a bare topic to its own Gemini /
+      // gpt-4o-mini call: a hardcoded model, English by default, no business
+      // identity, none of what the operator had just read (2026-10-31). Now
+      // content_md (markdown → email-safe HTML) or content_html; a topic alone
+      // is refused with the way to do it.
+      const body = await newsletterBody(supabase, args as Record<string, unknown>);
+      if ('status' in body) return body;
+      const finalHtml = body.html;
       const { data, error } = await supabase.from('newsletters').insert({
         subject,
         content_html: finalHtml || '',
@@ -9607,14 +9537,24 @@ Output ONLY the HTML content, no preamble or explanation.`;
         ...(audience !== undefined ? { audience_lists: audience } : {}),
       }).select().single();
       if (error) throw new Error(`Create newsletter failed: ${error.message}`);
-      return { newsletter_id: data.id, subject: data.subject, status: data.status, audience_lists: data.audience_lists ?? [], ai_generated: !!(finalHtml && !content_html) };
+      return {
+        newsletter_id: data.id, subject: data.subject, status: data.status, audience_lists: data.audience_lists ?? [],
+        // Where a person reviews it — FlowChat opens it beside the chat; an
+        // external agent hands this link to the person who sends it.
+        review_url: '/admin/newsletter',
+        next: 'A draft — nothing was sent. Sending (audience, test send, schedule) is a person\'s step on the Newsletter page, or execute_newsletter_send.',
+      };
     }
 
     if (action === 'update') {
       if (!newsletter_id) throw new Error('newsletter_id required for update');
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (subject !== undefined) updates.subject = subject;
-      if (content_html !== undefined) updates.content_html = content_html;
+      if (content_html !== undefined || (args as { content_md?: unknown }).content_md !== undefined) {
+        const body = await newsletterBody(supabase, args as Record<string, unknown>);
+        if ('status' in body) return body;
+        updates.content_html = body.html;
+      }
       if (status !== undefined) updates.status = status;
       if (schedule_at !== undefined) updates.scheduled_at = schedule_at;
       if (audience !== undefined) updates.audience_lists = audience;
@@ -9634,66 +9574,41 @@ Output ONLY the HTML content, no preamble or explanation.`;
     return { error: `Unknown newsletters action: ${action}` };
   }
 
-  // lead_nurture_sequence — AI-generated nurture email for a lead
+  // lead_nurture_sequence — the operator's nurture email for one lead, saved as a draft
   if (skillName === 'lead_nurture_sequence') {
-    const { lead_id, sequence_type: requestedType = 'welcome', tone = 'professional', language = 'en' } = args as any;
+    const { lead_id, sequence_type: requestedType = 'welcome', subject } = args as any;
     // re_engage and re-engage are the same intent; the enum spells it with a hyphen.
     const sequence_type = String(requestedType).replace(/_/g, '-');
     if (!lead_id) {
       throw new Error('lead_id is required — this drafts one email for one lead. To reach many leads at once use send_bulk_lead_email or a newsletter.');
     }
 
-    // Fetch lead info
     const { data: lead, error: leadErr } = await supabase.from('leads')
-      .select('id, email, name, status, source, score')
+      .select('id, email, name, status, source, score, ai_summary, lost_reason')
       .eq('id', lead_id).single();
     if (leadErr || !lead) throw new Error('Lead not found');
 
-    // Generate nurture email via AI
-    const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    const prompt = `Create a ${sequence_type} nurture email for a lead named "${lead.name || 'there'}" (source: ${lead.source || 'website'}).
-Tone: ${tone}. Language: ${language}.
-Return ONLY a JSON object with "subject" and "body_html" keys. The body_html should be a complete email in HTML format with inline styles.`;
-
-    let subject = `${sequence_type.charAt(0).toUpperCase() + sequence_type.slice(1)} — ${lead.name || lead.email}`;
-    let bodyHtml = `<p>Hi ${lead.name || 'there'},</p><p>Thank you for your interest!</p>`;
-
-    try {
-      let aiResponse: any;
-      if (geminiKey) {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2048, responseMimeType: 'application/json' } }),
-        });
-        const data = await resp.json();
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        aiResponse = JSON.parse(raw);
-      } else if (openaiKey) {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'gpt-4.1-mini', messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' } }),
-        });
-        const data = await resp.json();
-        aiResponse = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-      }
-      if (aiResponse?.subject) subject = aiResponse.subject;
-      if (aiResponse?.body_html) bodyHtml = aiResponse.body_html;
-    } catch (e) {
-      console.error('[lead_nurture_sequence] AI generation failed, using fallback:', e);
+    // The operator writes the mail — it knows the lead, the business and the
+    // site's language. This used to hand a one-line prompt to a hidden
+    // Gemini / gpt-4.1-mini call, English by default, and fall back to a
+    // one-line canned thank-you when no key was set (2026-10-31).
+    const body = await writtenMailBody(supabase, args as Record<string, unknown>, 'lead_nurture_sequence', {
+      what: 'nurture email',
+      contentHint: `Write the ${sequence_type} email for this lead yourself: subject + content_md (markdown, a line "→ [Label](url)" becomes a button), in the site's language. The lead is in \`lead\`; read recent activity with manage_leads get if you need more.`,
+    });
+    if ('status' in body) return { ...body, lead, sequence_type };
+    if (!subject || !String(subject).trim()) {
+      return { status: 'refused', code: 'CONTENT_REQUIRED', retryable: false, reason: 'no subject', hint: 'Give the email a subject and call again.', lead, sequence_type };
     }
 
-    // Create newsletter draft
     const { data: nl, error: nlErr } = await supabase.from('newsletters').insert({
-      subject,
-      content_html: bodyHtml,
+      subject: String(subject).trim(),
+      content_html: body.html,
       status: 'draft',
     }).select('id, subject, status').single();
     if (nlErr) throw new Error(`Newsletter creation failed: ${nlErr.message}`);
 
-    return { newsletter_id: nl.id, subject: nl.subject, status: nl.status, lead_email: lead.email, sequence_type };
+    return { newsletter_id: nl.id, subject: nl.subject, status: nl.status, lead_email: lead.email, sequence_type, review_url: '/admin/newsletter' };
   }
 
   // send_newsletter — legacy handler (create draft)
@@ -10436,40 +10351,46 @@ async function executeLeadsAction(
   return { error: `Unknown leads action: ${action}` };
 }
 
+/**
+ * The body of a mail the operator wrote — markdown in `content_md` (preferred)
+ * or HTML in `content_html` / `body_html` — rendered inbox-safe and held to the
+ * blog's floor: the site's language, none of the identity's claims_to_avoid.
+ * Shared by manage_newsletters, lead_nurture_sequence and send_email_to_lead,
+ * which each used to hide their own Gemini / gpt call behind a missing body
+ * (2026-10-31). A missing body is a refusal that says what to write.
+ */
+async function writtenMailBody(
+  db: any,
+  a: Record<string, unknown>,
+  skill: string,
+  opts: { what?: string; contentHint?: string } = {},
+): Promise<{ html: string; text: string } | NewsletterRefusal> {
+  const md = typeof a.content_md === 'string' ? a.content_md : '';
+  const rawHtml = typeof a.content_html === 'string' ? a.content_html : typeof a.body_html === 'string' ? a.body_html : '';
+  const { data: rows, error: settingsErr } = await db.from('site_settings').select('key, value').in('key', ['site_languages', 'company_profile', 'branding']);
+  if (settingsErr) console.warn(`[${skill}] settings read failed, content not judged:`, settingsErr.message);
+  const byKey = Object.fromEntries(((rows ?? []) as Array<{ key: string; value: Record<string, unknown> }>).map((r) => [r.key, r.value ?? {}]));
+  const asked = typeof a.language === 'string' ? a.language.toLowerCase() : '';
+  const siteLang = typeof byKey.site_languages?.default === 'string' ? String(byKey.site_languages.default).toLowerCase() : null;
+  const html = md ? newsletterHtmlFromMarkdown(md, hslTripletToHex(byKey.branding?.primaryColor as string) ?? undefined) : rawHtml;
+  const text = md || plainTextFromHtml(rawHtml);
+  const refusal = assessNewsletter({
+    subject: String(a.subject ?? ''),
+    text,
+    language: asked || siteLang,
+    claimsToAvoid: byKey.company_profile?.claims_to_avoid,
+    what: opts.what,
+    contentHint: opts.contentHint,
+  });
+  return refusal ?? { html, text: plainTextFromHtml(html) };
+}
+
 // =============================================================================
 // send_email_to_lead — Send a transactional outreach email to a single lead
 // =============================================================================
-// Uses AI (Gemini → OpenAI) to draft subject + body when not provided.
-// Sends via Resend. Logs result to lead_activities for audit + future
+// The operator writes subject + body (content_md or body_html); a missing one
+// is refused with the lead's context so it can. Sends via the email router. Logs result to lead_activities for audit + future
 // suppression checks. Supports dry_run for safe previews.
-
-/**
- * Robust JSON parser for AI-generated email drafts.
- * Handles: code-fence wrappers, leading/trailing prose, unterminated strings
- * (extracts subject/body via regex fallback when JSON.parse fails).
- */
-function parseAiEmailJson(raw: string): { subject?: string; body_html?: string } {
-  if (!raw) return {};
-  let txt = raw.trim();
-  // Strip ```json ... ``` fences
-  txt = txt.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-  // Try direct parse first
-  try {
-    return JSON.parse(txt);
-  } catch { /* fall through */ }
-  // Try extracting first {...} block
-  const match = txt.match(/\{[\s\S]*\}/);
-  if (match) {
-    try { return JSON.parse(match[0]); } catch { /* fall through */ }
-  }
-  // Last resort: regex-extract subject + body_html fields
-  const subjectMatch = txt.match(/"subject"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-  const bodyMatch = txt.match(/"body_html"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-  const out: { subject?: string; body_html?: string } = {};
-  if (subjectMatch) out.subject = subjectMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
-  if (bodyMatch) out.body_html = bodyMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
-  return out;
-}
 
 // Resolve the Resend "From" line from the integration config saved in
 // /admin/integrations (site_settings.integrations.resend.config.emailConfig).
@@ -10544,11 +10465,7 @@ async function executeSendEmailToLead(
   const {
     lead_id,
     subject: providedSubject,
-    body_html: providedBody,
     purpose = 'outreach', // outreach | follow_up | nurture | reply
-    tone = 'professional',
-    language = 'en',
-    custom_instructions,
     dry_run = false,
   } = args as any;
 
@@ -10581,91 +10498,22 @@ async function executeSendEmailToLead(
     };
   }
 
-  // 3. Generate subject + body via AI if not provided
-  let subject = providedSubject as string | undefined;
-  let bodyHtml = providedBody as string | undefined;
-
-  if (!subject || !bodyHtml) {
-    const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    const prompt = `Write a ${purpose} email to a lead.
-Lead: ${lead.name || 'unknown'} <${lead.email}>
-Source: ${lead.source || 'website'}
-Status: ${lead.status}
-${lead.ai_summary ? `Context: ${lead.ai_summary}` : ''}
-${custom_instructions ? `Special instructions: ${custom_instructions}` : ''}
-
-Tone: ${tone}. Language: ${language}.
-Keep it short (under 150 words), personal, and end with one clear call to action.
-Return ONLY a JSON object: {"subject": "...", "body_html": "<p>...</p>"}.
-The body_html should be clean HTML with inline styles, no <html>/<body> wrapper.`;
-
-    try {
-      let aiResp: any;
-      if (geminiKey) {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1024,
-                responseMimeType: 'application/json',
-              },
-            }),
-          },
-        );
-        const data = await r.json();
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        aiResp = parseAiEmailJson(raw);
-      } else if (openaiKey) {
-        const r = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4.1-mini',
-            messages: [{ role: 'user', content: prompt }],
-            response_format: { type: 'json_object' },
-          }),
-        });
-        const data = await r.json();
-        aiResp = parseAiEmailJson(data.choices?.[0]?.message?.content || '{}');
-      } else {
-        console.warn('[send_email_to_lead] No AI provider configured — using fallback template');
-      }
-      subject = subject || aiResp?.subject;
-      bodyHtml = bodyHtml || aiResp?.body_html;
-    } catch (e) {
-      // Don't hard-fail — let the fallback template below take over so the
-      // agent can still send a sensible email instead of getting stuck.
-      console.error('[send_email_to_lead] AI generation failed, falling back to template:', (e as Error).message);
-    }
-  }
-
-  // Fallback — if AI returned nothing usable, build a minimal but valid draft
-  // so the agent never gets stuck. Better a plain template than a hard fail.
+  // 3. The operator's text. This used to be drafted by a hidden Gemini /
+  //    gpt-4.1-mini call (English by default) or, without a key, a canned
+  //    meeting request — and then SENT
+  //    to a real person (2026-10-31). Nothing leaves that the operator did
+  //    not write.
+  const leadContext = { id: lead.id, name: lead.name, email: lead.email, status: lead.status, source: lead.source, score: lead.score, ai_summary: lead.ai_summary };
+  const body = await writtenMailBody(supabase, args, 'send_email_to_lead', {
+    what: 'email',
+    contentHint: `Write the ${purpose} email to this lead yourself: subject + content_md (markdown) or body_html, short and personal, in the site's language, one clear ask. The lead is in \`lead\`; read recent activity with manage_leads get if you need more. Use dry_run: true to preview.`,
+  });
+  if ('status' in body) return { ...body, sent: false, lead: leadContext };
+  const subject = typeof providedSubject === 'string' ? providedSubject.trim() : '';
   if (!subject) {
-    const purposeLabels: Record<string, string> = {
-      outreach: 'Hello from us',
-      follow_up: 'Following up',
-      nurture: 'A quick check-in',
-      reactivation: 'We miss you',
-    };
-    subject = purposeLabels[purpose as string] || 'Hello';
-    if (lead.name) subject = `${subject}, ${lead.name.split(' ')[0]}`;
+    return { status: 'refused', code: 'CONTENT_REQUIRED', retryable: false, reason: 'no subject', hint: 'Give the email a subject and call again.', sent: false, lead: leadContext };
   }
-  if (!bodyHtml) {
-    const greeting = lead.name ? `Hi ${lead.name.split(' ')[0]},` : 'Hi there,';
-    const ctx = custom_instructions ? `<p>${String(custom_instructions).slice(0, 300)}</p>` : '';
-    bodyHtml = `<p>${greeting}</p>${ctx}<p>I wanted to reach out personally — would you be open to a short conversation this week?</p><p>Best regards</p>`;
-    console.warn('[send_email_to_lead] Using fallback template (AI returned no usable content)');
-  }
+  const bodyHtml = body.html;
 
   // 4. Dry-run — return draft without sending
   if (dry_run) {
@@ -10695,6 +10543,7 @@ The body_html should be clean HTML with inline styles, no <html>/<body> wrapper.
       to: lead.email,
       subject,
       html: bodyHtml,
+      text: body.text,
       provider: 'composio', // preferred channel for replies-expected mail
       expects_reply: true,  // fallback order: Composio → SMTP → Resend
 
@@ -14260,6 +14109,60 @@ async function executeDbAction(
         const replayed = await replayExisting();
         if (replayed) return replayed;
 
+        // Prices are resolved BEFORE the header is written: a missing price must leave no
+        // orphan draft behind (it did — PO-00011 on the 2026-10-07 second pass).
+        for (const l of poLines as any[]) {
+          // A product code is not a product id. Nordbrygg's operator sent
+          // "LM-PB-GSK-01" 23 times; the id lookup failed unread and it was
+          // told the product "has no cost price" (it has 74,00). Name the
+          // product the code matches and ask for its id — never act on it.
+          if (l.product_id && !isUuid(String(l.product_id))) {
+            const code = String(l.product_id).trim();
+            const { data: byName, error: byNameErr } = await supabase.from('products')
+              .select('id, name').ilike('name', `%${code.replace(/[\\%_]/g, (c: string) => `\\${c}`)}%`).limit(3);
+            if (byNameErr) throw new Error(`Product lookup failed: ${byNameErr.message}`);
+            const named = (byName ?? []) as Array<{ id: string; name: string }>;
+            return {
+              error: `product_id "${code}" is not a product id (a uuid)` + (named.length === 1
+                ? ` — it matches "${named[0].name}" (${named[0].id}). Re-send with that id.`
+                : named.length ? ` — it matches ${named.map((p) => `"${p.name}" (${p.id})`).join(', ')}; pick one and re-send.`
+                : ' and no product name contains it. Find the product with browse_products and send its id.'),
+              code: 'INVALID_INPUT', retryable: true,
+              hint: 'Copy the product id from this message or from browse_products; nothing was written.',
+            };
+          }
+          if (l.unit_price_cents !== undefined && l.unit_price_cents !== null) continue;
+          if (!l.product_id) {
+            throw new Error(
+              `Purchase order line "${l.description ?? '(unnamed)'}" has neither unit_price_cents nor a product_id ` +
+              `to look one up from. Send unit_price_cents, or a product_id that carries a vendor price or a cost price.`,
+            );
+          }
+          // p_quantity, not p_qty: the wrong name answered PGRST202 unread,
+          // so every line fell back to the cost price and vendor prices (and
+          // their quantity breaks) never priced a PO (2026-10-31).
+          const { data: vp, error: vpErr } = await supabase.rpc('pick_vendor_price', {
+            p_product_id: l.product_id, p_vendor_id: vendor_id, p_quantity: l.quantity || 1,
+          });
+          if (vpErr) console.warn('[manage_purchase_order] vendor price lookup failed:', vpErr.message);
+          const picked: any = Array.isArray(vp) ? vp[0] : vp;
+          if (picked?.unit_price_cents != null) { l.unit_price_cents = picked.unit_price_cents; continue; }
+          const { data: prod, error: prodErr } = await supabase.from('products')
+            .select('name, cost_cents').eq('id', l.product_id).maybeSingle();
+          if (prodErr) throw new Error(`Product lookup failed: ${prodErr.message}`);
+          if (!prod) throw new Error(`No product ${l.product_id} — find it with browse_products and send its id.`);
+          if ((prod as any)?.cost_cents != null) { l.unit_price_cents = (prod as any).cost_cents; continue; }
+          throw new Error(
+            `No purchase price known for ${(prod as any)?.name ?? l.product_id}: the vendor has no price for this ` +
+            `product and the product has no cost price. Set one with manage_vendor_price, or send unit_price_cents ` +
+            `explicitly. Booking it at 0 would let the goods enter stock at zero cost and report an infinite margin.`,
+          );
+        }
+
+        // The header sums the lines AFTER their prices are known. It summed
+        // them before, so every looked-up price counted as 0: PO-00022 (draft,
+        // 1 776,00 of lines) and PO-00015 (received, 10 500,00) carry a 0,00
+        // header on Nordbrygg (2026-10-31).
         let subtotalCents = 0;
         let taxCents = 0;
         for (const line of poLines) {
@@ -14270,31 +14173,6 @@ async function executeDbAction(
           const lineTax = Math.round(lineSubtotal * ((line.tax_rate ?? 25) / 100));
           subtotalCents += lineSubtotal;
           taxCents += lineTax;
-        }
-
-        // Prices are resolved BEFORE the header is written: a missing price must leave no
-        // orphan draft behind (it did — PO-00011 on the 2026-10-07 second pass).
-        for (const l of poLines as any[]) {
-          if (l.unit_price_cents !== undefined && l.unit_price_cents !== null) continue;
-          if (!l.product_id) {
-            throw new Error(
-              `Purchase order line "${l.description ?? '(unnamed)'}" has neither unit_price_cents nor a product_id ` +
-              `to look one up from. Send unit_price_cents, or a product_id that carries a vendor price or a cost price.`,
-            );
-          }
-          const { data: vp } = await supabase.rpc('pick_vendor_price', {
-            p_product_id: l.product_id, p_vendor_id: vendor_id, p_qty: l.quantity || 1,
-          });
-          const picked: any = Array.isArray(vp) ? vp[0] : vp;
-          if (picked?.unit_price_cents != null) { l.unit_price_cents = picked.unit_price_cents; continue; }
-          const { data: prod } = await supabase.from('products')
-            .select('name, cost_cents').eq('id', l.product_id).maybeSingle();
-          if ((prod as any)?.cost_cents != null) { l.unit_price_cents = (prod as any).cost_cents; continue; }
-          throw new Error(
-            `No purchase price known for ${(prod as any)?.name ?? l.product_id}: the vendor has no price for this ` +
-            `product and the product has no cost price. Set one with manage_vendor_price, or send unit_price_cents ` +
-            `explicitly. Booking it at 0 would let the goods enter stock at zero cost and report an infinite margin.`,
-          );
         }
 
         const poInsert: Record<string, unknown> = {
@@ -14423,13 +14301,15 @@ async function executeDbAction(
               const composioKey = Deno.env.get('COMPOSIO_API_KEY');
               if (composioKey) {
                 const { data: lines } = await supabase.from('purchase_order_lines')
-                  .select('description, quantity, unit_price_cents, line_total_cents')
+                  .select('description, quantity, unit_price_cents, total_cents')
                   .eq('purchase_order_id', purchase_order_id);
+                // total_cents — line_total_cents does not exist, the query
+                // failed unread, and the vendor got a PO with no lines (2026-10-31).
 
                 // A supplier reads this: the business's grouping and decimals.
                 const poFmt = homeFormat(await loadHomeCached(supabase), 'en');
                 const lineItems = (lines || []).map((l: any) =>
-                  `• ${l.description}: ${l.quantity}x @ ${poFmt.money(l.unit_price_cents, po.currency)} = ${poFmt.money(l.line_total_cents, po.currency)}`
+                  `• ${l.description}: ${l.quantity}x @ ${poFmt.money(l.unit_price_cents, po.currency)} = ${poFmt.money(l.total_cents, po.currency)}`
                 ).join('\n');
 
                 const emailBody = [
@@ -16163,7 +16043,7 @@ const GENERIC_CRUD_TABLES = new Set([
   'content_proposals', 'content_research',
   'agent_memory', 'agent_activity',
   // Recruitment / ATS module
-  'job_postings', 'candidates', 'applications', 'application_stages', 'interviews',
+  'job_postings', 'candidates', 'applications', 'application_stages', 'interviews', 'candidate_notes',
   // Smart-bookkeeping learning loop
   'accounting_corrections',
   // HR onboarding (templates + per-employee checklists)
@@ -16172,6 +16052,9 @@ const GENERIC_CRUD_TABLES = new Set([
   // from the active default) — agent-creatable since 2026-10-05; before, a fresh
   // install had none and no skill could make one.
   'employment_contract_templates',
+  // One employee's contract and leave allocation — the HR guide's contract and
+  // vacation steps (hr_process_guide) had no skill for a person added directly.
+  'employment_contracts', 'leave_allocations',
   // Sales quotes (CPQ)
   'quotes',
   // Pricelists (Odoo-style versioned pricing)
@@ -16483,6 +16366,23 @@ async function executeGenericCrud(
     }
     action = 'update';
     Object.assign(fields, verbFields);
+  }
+
+  // A posting's screening questions live in meta.screening_questions — the
+  // careers form reads them there and process-job-application enforces them.
+  // Merged into the posting's meta, so its other keys survive; cleaned by the
+  // same rule the server applies.
+  if (table === 'job_postings' && fields.screening_questions !== undefined) {
+    const questions = screeningQuestionsOf({ screening_questions: fields.screening_questions });
+    delete fields.screening_questions;
+    const postingId = id ?? fields.job_posting_id ?? fields.id;
+    let meta: Record<string, unknown> = (fields.meta && typeof fields.meta === 'object') ? fields.meta : {};
+    if (action === 'update' && postingId) {
+      const { data: current, error: metaErr } = await supabase.from('job_postings').select('meta').eq('id', postingId).maybeSingle();
+      if (metaErr) throw new Error(`Reading the posting failed: ${metaErr.message}`);
+      meta = { ...((current?.meta as Record<string, unknown> | null) ?? {}), ...meta };
+    }
+    fields.meta = { ...meta, screening_questions: questions };
   }
 
   // Apply per-table column aliases (e.g. mime_type → file_type for documents).
@@ -17739,7 +17639,12 @@ async function executeUpdateSkillInstructions(
 // results and embeddings the customer paid for without asking. Not a secrecy
 // argument (the documentation is public on GitHub); a hygiene and cost one,
 // which is why the fix narrows the source list rather than guarding the data.
-const SEARCHABLE_KNOWLEDGE_SOURCES = ['pages', 'kb_articles', 'wiki_pages', 'documents'];
+// handbook_chapters IS the customer's own (the Handbook module) and is
+// indexed; it was missing here while the skill's enum offered docs_pages —
+// so an agent picked the refused source from the list it was shown
+// (Nordbrygg, 2026-10-18) and could never search the handbook. The seed's
+// enum and this list are one fact (skill-enums guard).
+const SEARCHABLE_KNOWLEDGE_SOURCES = ['pages', 'kb_articles', 'wiki_pages', 'handbook_chapters', 'documents'];
 
 async function executeSearchKnowledge(
   supabase: any,
@@ -19308,13 +19213,15 @@ async function executeCompetitorMonitor(
   if (taskResult?.error) return { error: taskResult.error, status: 'failed' };
   const analysis = taskResult?.result ?? taskResult;
 
-  // Store as a 'fact' memory (best-effort)
-  try {
-    await supabase.from('agent_memory').insert({
-      key: `competitor:${domain}`, value: { company_name: companyName, domain, analysis, scanned_at: new Date().toISOString() },
-      category: 'fact', created_by: 'competitor_monitor',
-    });
-  } catch { /* non-fatal */ }
+  // Store as a 'fact' memory (best-effort). created_by is the agent_type
+  // enum and key is unique: this inserted created_by 'competitor_monitor',
+  // so no analysis was ever kept, and a rescan would have collided anyway
+  // (2026-10-31). Upsert on key — the newest scan wins.
+  const { error: memErr } = await supabase.from('agent_memory').upsert({
+    key: `competitor:${domain}`, value: { company_name: companyName, domain, analysis, scanned_at: new Date().toISOString() },
+    category: 'fact', created_by: 'flowpilot', updated_at: new Date().toISOString(),
+  }, { onConflict: 'key' });
+  if (memErr) console.warn('[competitor_monitor] analysis not remembered:', memErr.message);
 
   return { company_name: companyName, domain, ...analysis };
 }

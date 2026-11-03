@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261102160000",
-      "migrations_count": 722,
+      "migration_head": "20261102170000",
+      "migrations_count": 723,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2893,6 +2893,10 @@
         {
           "version": "20261102160000",
           "name": "hr-ops-open-to-hr"
+        },
+        {
+          "version": "20261102170000",
+          "name": "browser-called-definers-guarded-and-reopened"
         }
       ]
     },
@@ -2903,9 +2907,9 @@
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:c3cf96c19f1eeda4329f6712fbd332a2225e9e270f6c0ac046acfc1b72a8950a",
+      "shared_hash": "sha256:5d282bfe9e031f9fb24123e8eaccb8e17b171b1bdab73553bb31ffa9aba891b9",
       "functions": {
-        "agent-execute": "sha256:64d8bc7bd0a5f8d974cfa787a12c5d7cadd25d55dac318525a63d326efd11fe8",
+        "agent-execute": "sha256:315572a107a651af662f5f95c246e916575f589b8fe9386c86fb5d24d7f19fa6",
         "agent-operate": "sha256:9ecfb8b3a76c28526af8c796fdfa0561ebb3b802b65f03275874f93b14369a0c",
         "ai-task": "sha256:4aefd9f45ede216422b8a75b92c9145f83e4264059194c35be80398be7ed3bef",
         "automation-dispatcher": "sha256:c7862e942bb9fbfcb847d236cd7fece01ad934f354ac038d03f9128e4f2e006a",
@@ -2968,7 +2972,7 @@
         "signal-dispatcher": "sha256:a76e992430f13d05003a0e00ba622c239006fc853531400d88a1f238310c90dc",
         "signal-ingest": "sha256:b7bf9c636845229394e12d2cec9b78da6657b3a321775f65063e53794eb0ea3d",
         "sitemap": "sha256:cae857d14065abbd7064c4e111bb5bcc95522420d675b6aa9b4d293f5415e213",
-        "stripe-webhook": "sha256:320a6686cc3e29a018180af51f90d963f9745178c6fa37f621036237ee208e72",
+        "stripe-webhook": "sha256:7d75adecab2680e76ecdcaf7a6946c7d5c139c8b00a7e9ebe66c48ea49a7cf9a",
         "subscription-billing-cron": "sha256:635a13846746187695a361f586125a59d61754c2eb950be3818a1c7258c8f48e",
         "subscriptions": "sha256:a79be41a49c863086ee5e73ae5ff803c4369f5fa7a93550ff8efa03a0772972e",
         "system-integrity-check": "sha256:02dd87d0fa5e610ceef45b843ada026fb8c860117005d9bbcb190e2847f27c08",

@@ -71,6 +71,20 @@ A report can belong to something in the business (`subject_type` +
 `subject_id`: a company, a deal, a project, a fiscal year), and `list_reports`
 filters on it.
 
+## Where reports show up
+
+- **On their subject's page.** A report with `subject_type` `company`, `deal`,
+  `project` or `contact` is listed on that company, deal or project page (a
+  *Reports* card, `SubjectReports`), and the report links back to it
+  (`src/lib/report-subjects.ts`). The card is absent when there is none, or
+  when the reader's role may read none. The type is stored lower-case with
+  underscores (`Company`, `fiscal year` → `company`, `fiscal_year`), so a page
+  always finds its reports.
+- **In the accounting workspace.** *Reports → Written reports* opens
+  `/admin/reports?for=accounting`: the reports published with
+  `audience_module: accounting`, inside the workspace. `?for=<module>` works
+  for any module.
+
 ## The report format
 
 `format: markdown` (default): plain markdown (headings, lists, tables, links)
@@ -137,6 +151,24 @@ shows the block as code.
   `LIVE_BLOCK_INVALID` and the reason, and nothing is published.
 - Each block shows when it was fetched and has a refresh button.
 
+### The overview dashboard
+
+**Reports → "Läget just nu" / "The state of things"** (`/admin/reports/overview`)
+is a standard dashboard made only of live blocks. It shows what needs attention
+in the books (`check_books`, when accounting is on: findings and upcoming
+filings) and in operations (`check_operations`: sales, receivables, contracts,
+support, field service, automations).
+
+- FlowPilot publishes it with `publish_overview_dashboard`, in the site's
+  language, built from the modules that are on.
+- A daily automation ("Overview dashboard", 04:41) keeps it present. Running it
+  again with nothing changed adds no version.
+- The automation reaches an existing instance with the edge deploy: the admin
+  shell's skill sync inserts missing automations for enabled modules (see
+  CLAUDE.md, Deployment). Until it has run, an admin creates the dashboard with
+  **Create the overview dashboard** under Reports, or asks FlowPilot.
+- Each block shows only what the reader's role allows.
+
 Use live blocks for figures that change, such as status, open items or this
 month. Use written figures for what a report concluded at a date.
 
@@ -152,6 +184,7 @@ run, but it cannot reach the reader's session or the admin API. Max 2 MB.
 | `list_reports` | Reports with their details and links, and the categories in use (reuse them). Filters: `category`, `search`, `include_archived`, `subject_type`, `subject_id`. |
 | `get_report` | A report's content, current or an older `version`, to build on. |
 | `list_report_versions` | Every version: when, by whom, who asked, the note. |
+| `publish_overview_dashboard` | Publish or refresh the overview dashboard (live blocks for the books and operations) in the site's language. |
 | `update_report_details` | Title, description, category, tags without new content (`not_changed` names what a person set). |
 
 Handler: `internal:reports` in agent-execute, which stamps the publisher and
@@ -166,12 +199,11 @@ the viewer and calls the `report_*` functions.
 | Handler | `supabase/functions/agent-execute/index.ts` (`executeReportsAction`) |
 | The dialect and live blocks (pure, shared with the edge) | `supabase/functions/_shared/reports/blocks.ts` (re-exported by `src/lib/report-blocks.ts`) |
 | Reader | `src/pages/admin/ReportsPage.tsx`, `src/components/admin/reports/ReportBody.tsx`, `src/hooks/useReports.ts` |
+| On the subject's page | `src/components/admin/reports/SubjectReports.tsx`, `src/lib/report-subjects.ts` |
 | Guardrail | `src/lib/__tests__/reports-module.guardrails.test.ts` |
 
 ## Next
 
-- **Reports where they belong:** a report's subject shown on that company, deal
-  or project, and under *Reports* in the accounting workspace.
 - **Scheduled reports:** FlowPilot's weekly digest and the month close
   published as reports, with the briefing linking to them.
 
@@ -188,5 +220,6 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `get_report` | internal | Read a report — its content and details, the current or an older version. Use when: building a new version on it; someone asks what a report says; comparing with an earlier version. NOT for: listin… |
 | `list_report_versions` | internal | Every version of a report: when, by whom (and who asked), the note. Use when: someone asks what changed or who published a report; before restoring is suggested to a person. NOT for: the content it… |
 | `update_report_details` | internal | Change a report\ |
+| `publish_overview_dashboard` | internal | Publish (or keep current) the overview dashboard "The state of things" / "Läget just nu" — one report of live blocks: what needs attention in the books (check_books, when accounting is on) and in o… |
 
 <!-- generated:skills:end -->

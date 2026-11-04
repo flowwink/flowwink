@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Archive, ArchiveRestore, Bot, Copy, FileBarChart, History, Loader2, Lock, Pencil, Search, Unlock } from 'lucide-react';
+import { Archive, ArchiveRestore, Bot, Copy, FileBarChart, History, LayoutDashboard, Loader2, Lock, Pencil, Search, Unlock, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { callSkill } from '@/lib/call-skill';
+import { useAuth } from '@/hooks/useAuth';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminPageContainer } from '@/components/admin/AdminPageContainer';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -16,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { usePlatformFormat } from '@/hooks/usePlatformFormat';
 import { ReportBody } from '@/components/admin/reports/ReportBody';
+import { subjectHref, subjectLabel } from '@/lib/report-subjects';
 import {
   useArchiveReport, useReports, useReportVersions, useRestoreReportVersion, useSetReportDetails,
   type ReportCard,
@@ -35,11 +39,26 @@ export default function ReportsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const { data: reports = [], isLoading, isError } = useReports(showArchived);
 
-  const categories = useMemo(() => [...new Set(reports.map((r) => r.category).filter(Boolean) as string[])].sort(), [reports]);
-  const shown = reports.filter((r) =>
+  // ?for=accounting — the reports written for one module's people, as the
+  // accounting workspace links them. A chip shows it and clears it.
+  const audience = params.get('for');
+  const forAudience = useMemo(() => reports.filter((r) => !audience || r.audience_module === audience), [reports, audience]);
+  const categories = useMemo(() => [...new Set(forAudience.map((r) => r.category).filter(Boolean) as string[])].sort(), [forAudience]);
+  const shown = forAudience.filter((r) =>
     (!category || r.category === category) &&
     (!search || `${r.title} ${r.description ?? ''} ${r.tags.join(' ')}`.toLowerCase().includes(search.toLowerCase())));
   const current = reports.find((r) => r.slug === slug) ?? null;
+  // The overview dashboard is published by a daily automation, but an
+  // instance that got the module before its automation (an existing one) has
+  // none yet: an admin creates it here with one click.
+  const { isAdmin } = useAuth();
+  const qc = useQueryClient();
+  const createOverview = useMutation({
+    mutationFn: () => callSkill<{ slug?: string }>('publish_overview_dashboard'),
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['reports'] }); navigate(`/admin/reports/${r.slug ?? 'overview'}`); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const hasOverview = reports.some((r) => r.slug === 'overview') || showArchived;
 
   return (
     <AdminLayout>
@@ -54,6 +73,15 @@ export default function ReportsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports" className="pl-8" />
             </div>
+            {audience && (
+              <Badge variant="secondary" className="gap-1 font-normal">
+                For {audience}
+                <button type="button" aria-label="Show every report" className="ml-0.5 hover:text-foreground"
+                  onClick={() => { const p = new URLSearchParams(params); p.delete('for'); setParams(p); }}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
             {categories.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 <Button size="sm" variant={category ? 'outline' : 'secondary'} className="h-7" onClick={() => setCategory(null)}>All</Button>
@@ -65,6 +93,12 @@ export default function ReportsPage() {
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               <Switch checked={showArchived} onCheckedChange={setShowArchived} /> Show archived
             </label>
+            {isAdmin && !isLoading && !hasOverview && (
+              <Button size="sm" variant="outline" className="w-full" disabled={createOverview.isPending} onClick={() => createOverview.mutate()}>
+                {createOverview.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <LayoutDashboard className="mr-2 h-3.5 w-3.5" />}
+                Create the overview dashboard
+              </Button>
+            )}
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               : isError ? <p className="text-sm text-destructive">Could not read the reports.</p>
                 : shown.length === 0 ? <EmptyList />
@@ -72,7 +106,7 @@ export default function ReportsPage() {
                     <ul className="space-y-1.5">
                       {shown.map((r) => (
                         <li key={r.id}>
-                          <Link to={`/admin/reports/${r.slug}`}
+                          <Link to={`/admin/reports/${r.slug}${audience ? `?for=${encodeURIComponent(audience)}` : ''}`}
                             className={cn('block rounded-lg border border-border p-3 transition-colors hover:bg-accent/60',
                               r.slug === slug && 'border-primary/50 bg-accent', r.status === 'archived' && 'opacity-60')}>
                             <div className="flex items-start justify-between gap-2">
@@ -150,6 +184,7 @@ function ReportView({ report, version, onVersion, onGone }: {
               <span>· {formatDateTime(shown.created_at)}</span>
               {report.category && <Badge variant="outline" className="font-normal">{report.category}</Badge>}
               {report.audience_module && <Badge variant="outline" className="font-normal">for {report.audience_module}</Badge>}
+              {report.subject_type && <SubjectBadge type={report.subject_type} id={report.subject_id} />}
               {report.status === 'archived' && <Badge variant="secondary">Archived</Badge>}
             </p>
           )}
@@ -240,4 +275,13 @@ function DetailsDialog({ report, open, onOpenChange }: { report: ReportCard; ope
       </DialogContent>
     </Dialog>
   );
+}
+
+/** What the report is about, linking to its page when it has one. */
+function SubjectBadge({ type, id }: { type: string; id: string | null }) {
+  const href = subjectHref(type, id);
+  const label = `About: ${subjectLabel(type)}${!href && id ? ` ${id}` : ''}`;
+  return href
+    ? <Link to={href}><Badge variant="outline" className="font-normal hover:bg-accent">{label} →</Badge></Link>
+    : <Badge variant="outline" className="font-normal">{label}</Badge>;
 }

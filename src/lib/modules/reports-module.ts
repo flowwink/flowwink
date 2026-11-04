@@ -1,6 +1,6 @@
 import { defineModule } from '@/lib/module-def';
 import { z } from 'zod';
-import type { SkillSeed } from '@/lib/module-bootstrap';
+import type { AutomationSeed, SkillSeed } from '@/lib/module-bootstrap';
 
 /**
  * Reports — what an agent worked out, as a page a person opens (2026-11-03).
@@ -81,7 +81,7 @@ const PUBLISH_PARAMS = {
   expected_version: { type: 'number', description: 'The version you built on (from get_report). A newer one refuses with STALE_VERSION instead of undoing someone else\'s work.' },
   requested_by: { type: 'string', description: 'Who asked, when you are an agent several people talk to. Shown next to your name, never instead of it. A signed-in person is filled in by the platform.' },
   audience_module: { type: 'string', description: 'Narrow who may read it to the roles that module is granted to: accounting for the books, hr for people, deals for the pipeline. Leave out for everyone with Reports.' },
-  subject_type: { type: 'string', description: 'What the report belongs to: company, deal, project, contact, fiscal_year, period.' },
+  subject_type: { type: 'string', description: 'What the report belongs to: company, deal, project, contact, fiscal_year, period. A company, deal, project or contact report is also shown on that page.' },
   subject_id: { type: 'string', description: 'The id (or the year/period) of that subject.' },
 } as const;
 
@@ -206,6 +206,39 @@ const REPORT_SKILLS: SkillSeed[] = [
       },
     },
   },
+  {
+    name: 'publish_overview_dashboard',
+    description:
+      'Publish (or keep current) the overview dashboard "The state of things" / "Läget just nu" — one report of live blocks: what needs attention in the books (check_books, when accounting is on) and in operations (check_operations), fetched as the reader when it is opened. Built from the site\'s language and the modules that are on; run again with nothing changed it adds no version. Use when: the owner asks for a dashboard, an overview or "the state of things"; after modules were switched on or off. NOT for: a report you wrote yourself (publish_report); reading the figures now (check_books, check_operations).',
+    category: 'content',
+    handler: 'internal:reports',
+    scope: 'internal',
+    trust_level: 'auto',
+    tool_definition: {
+      type: 'function',
+      risk: 'low',
+      reversible: true,
+      reversal: 'A person archives the report under Reports; every version is kept.',
+      function: {
+        name: 'publish_overview_dashboard',
+        description: 'Publish or refresh the standard overview dashboard (live blocks for the books and operations).',
+        parameters: { type: 'object', properties: {} },
+      },
+    },
+  },
+];
+
+/** The dashboard is there from day one and follows the modules: once a day, a no-op when nothing changed. */
+const REPORT_AUTOMATIONS: AutomationSeed[] = [
+  {
+    name: 'Overview dashboard',
+    description: 'Once a day, publish the overview dashboard (Reports → "The state of things") if it is missing or the enabled modules changed. Its figures are live, so nothing else needs to run.',
+    trigger_type: 'cron',
+    trigger_config: { cron: '41 4 * * *', expression: '41 4 * * *' },
+    skill_name: 'publish_overview_dashboard',
+    skill_arguments: {},
+    executor: 'platform',
+  },
 ];
 
 export const reportsModule = defineModule<Input, Output>({
@@ -223,6 +256,7 @@ export const reportsModule = defineModule<Input, Output>({
   skills: REPORT_SKILLS.map((s) => s.name),
   data: { tables: ['reports', 'report_versions'] },
   skillSeeds: REPORT_SKILLS,
+  automations: REPORT_AUTOMATIONS,
   async publish(_input: Input): Promise<Output> {
     return { success: true };
   },

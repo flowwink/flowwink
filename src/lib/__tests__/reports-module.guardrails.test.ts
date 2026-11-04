@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { reportsModule } from '@/lib/modules/reports-module';
 import { parseReport, resolvePath, validateLiveSpec } from '@/lib/report-blocks';
+import { overviewDashboard } from '../../../supabase/functions/_shared/reports/overview';
 import { classifyCall } from '../../../supabase/functions/_shared/skills/read-surface';
 
 const SQL = readFileSync('supabase/migrations/20261103150000_agent-reports.sql', 'utf8');
@@ -30,7 +31,7 @@ describe('the agent paths', () => {
   const names = (reportsModule.skillSeeds ?? []).map((s) => s.name);
 
   it('publish, list, read, versions and details — and nothing that takes away', () => {
-    expect(names.sort()).toEqual(['get_report', 'list_report_versions', 'list_reports', 'publish_report', 'update_report_details']);
+    expect(names.sort()).toEqual(['get_report', 'list_report_versions', 'list_reports', 'publish_overview_dashboard', 'publish_report', 'update_report_details']);
     expect(names.some((n) => /archive|restore|delete|rename/.test(n))).toBe(false);
     for (const s of reportsModule.skillSeeds ?? []) expect(s.handler).toBe('internal:reports');
   });
@@ -176,5 +177,63 @@ describe('live blocks — figures fetched when the report is opened (a dashboard
     expect(handlerFn).toMatch(/code: 'LIVE_BLOCK_INVALID'/);
     expect(handlerFn).toMatch(/classifyCall\(x\.spec\.skill, x\.spec\.args\) !== 'read'/);
     expect(EXEC).toMatch(/import \{ parseReport \} from '\.\.\/_shared\/reports\/blocks\.ts'/);
+  });
+});
+
+describe('the overview dashboard — published by FlowPilot, live, in the site\'s language', () => {
+  it('is all live blocks that parse, books only when accounting is on, in Swedish or English', () => {
+    const sv = overviewDashboard('sv', { accounting: true });
+    expect(sv).toMatchObject({ slug: 'overview', title: 'Läget just nu' });
+    const segs = parseReport(sv.content);
+    expect(segs.filter((x) => x.kind === 'invalid')).toEqual([]);
+    expect(segs.filter((x) => x.kind === 'live').map((x) => (x as { spec: { skill: string } }).spec.skill)).toEqual(['check_books', 'check_books', 'check_operations']);
+    const en = overviewDashboard('en-GB', { accounting: false });
+    expect(en.title).toBe('The state of things');
+    expect(parseReport(en.content).filter((x) => x.kind === 'live').map((x) => (x as { spec: { skill: string } }).spec.skill)).toEqual(['check_operations']);
+    // Pure: the same input is the same report, so a daily run adds no version.
+    expect(overviewDashboard('sv', { accounting: true }).content).toBe(sv.content);
+  });
+
+  it('counts a list with .length (operations has findings, no summary)', () => {
+    expect(resolvePath({ findings: [1, 2, 3] }, 'findings.length')).toBe(3);
+  });
+
+  it('a daily automation keeps it present, and an admin can create it from Reports', () => {
+    const mod = readFileSync('src/lib/modules/reports-module.ts', 'utf8');
+    expect(mod).toMatch(/skill_name: 'publish_overview_dashboard'/);
+    expect(mod).toMatch(/automations: REPORT_AUTOMATIONS/);
+    expect(readFileSync('src/pages/admin/ReportsPage.tsx', 'utf8')).toMatch(/callSkill<\{ slug\?: string \}>\('publish_overview_dashboard'\)/);
+    expect(handlerFn).toMatch(/skillName === 'publish_overview_dashboard'[\s\S]*overviewDashboard\(lang, \{ accounting: mods\.accounting\?\.enabled === true \}\)/);
+  });
+});
+
+describe('reports where they belong — on the subject\'s page, in the accounting workspace', () => {
+  it('a subject with a page links there; one without has no link', async () => {
+    const { subjectHref } = await import('@/lib/report-subjects');
+    expect(subjectHref('company', 'c1')).toBe('/admin/companies/c1');
+    expect(subjectHref('Deal', 'd1')).toBe('/admin/deals/d1');
+    expect(subjectHref('project', 'p1')).toBe('/admin/projects?project=p1');
+    expect(subjectHref('fiscal_year', '2026')).toBeNull();
+    expect(subjectHref(null, 'x')).toBeNull();
+  });
+
+  it('the company, deal and project pages show their reports', () => {
+    expect(readFileSync('src/pages/admin/CompanyDetailPage.tsx', 'utf8')).toMatch(/<SubjectReports subjectType="company"/);
+    expect(readFileSync('src/pages/admin/DealDetailPage.tsx', 'utf8')).toMatch(/<SubjectReports subjectType="deal"/);
+    expect(readFileSync('src/pages/admin/ProjectsPage.tsx', 'utf8')).toMatch(/<SubjectReports subjectType="project"/);
+    // Read through RLS like the list — the role matrix decides, no service path.
+    const hook = readFileSync('src/hooks/useReports.ts', 'utf8');
+    expect(hook).toMatch(/export function useSubjectReports[\s\S]*\.eq\('subject_type', subjectType\)[\s\S]*\.eq\('status', 'active'\)/);
+  });
+
+  it('publish stores one spelling of the subject kind, so the page finds it', () => {
+    expect(EXEC).toMatch(/const subjectType = \(\) => s\('subject_type'\)\?\.toLowerCase\(\)\.replace\(\/\[\\s-\]\+\/g, '_'\)/);
+    expect(EXEC).toMatch(/p_subject_type: subjectType\(\), p_subject_id: s\('subject_id'\)/);
+    expect(EXEC).not.toMatch(/p_subject_type: s\('subject_type'\)/);
+  });
+
+  it('the accounting workspace lists the reports written for the books', () => {
+    expect(readFileSync('src/lib/workspaces.ts', 'utf8')).toMatch(/href: '\/admin\/reports\?for=accounting', moduleId: 'reports'/);
+    expect(readFileSync('src/pages/admin/ReportsPage.tsx', 'utf8')).toMatch(/r\.audience_module === audience/);
   });
 });

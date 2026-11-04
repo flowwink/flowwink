@@ -24,7 +24,7 @@ import { applyIdentityPolicy, installIdentityPolicy } from '../_shared/site-iden
 import {
   SITE_EXPORT_MAX_FILE_MB, SITE_EXPORT_MAX_PAYLOAD_MB, SITE_EXPORT_PUBLIC_BUCKETS, SITE_EXPORT_TIME_BUDGET_MS,
   type SiteExportStorage, base64ToBytes, collectMediaUrls, fetchStorageObjectWithinBudget,
-  groupUrlsByStorageObject, ownHostsFrom, publicObjectUrl, publicStorageBase, rewriteUrlsInTemplate, siteExportBudget,
+  groupUrlsByStorageObject, ownHostsFrom, publicObjectUrl, publicStorageBase, rewriteUrlsInTemplate, sha256Hex, siteExportBudget,
 } from '../_shared/media/site-export.ts';
 import { filterRecipients, blockedResponse } from '../_shared/email-allowlist.ts';
 import { resolveSiteUrl } from '../_shared/site-url.ts';
@@ -84,7 +84,8 @@ import { executeReconciliation } from '../_shared/handlers/reconciliation.ts';
 import { handleEmailAdmins as hEmailAdmins } from '../_shared/handlers/email-admins.ts';
 import { handleDraftEmailReply } from '../_shared/handlers/draft-email-reply.ts';
 import { handleTranslatePage } from '../_shared/handlers/translate-page.ts';
-import { isDryRunRead } from '../_shared/skills/read-surface.ts';
+import { classifyCall, isDryRunRead } from '../_shared/skills/read-surface.ts';
+import { parseReport } from '../_shared/reports/blocks.ts';
 import { handleTranslateContent, translatePostEverywhere, translateEntityEverywhere, type TranslateContentArgs } from '../_shared/handlers/translate-content.ts';
 import { listContentOverlays } from '../_shared/handlers/content-overlay.ts';
 import { blogPostPath } from '../_shared/i18n/blog-address.ts';
@@ -187,6 +188,7 @@ import bundledModuleSkills from "./_module-skills.json" with { type: "json" };
 import { SKILL_OWNER_MODULE_OVERRIDES } from "../_shared/skills/owner-module.ts";
 import bundledUiTextCatalog from "./_ui-text-catalog.json" with { type: "json" };
 import { slugify } from '../_shared/slugify.ts';
+import { checkBlogSlug, redirectRenamedPost } from '../_shared/blog-slug-rename.ts';
 import { businessDateIn, businessPeriod, dateInZone, homeFormat, startOfBusinessDay, wallClockToInstant } from '../_shared/locale/home.ts';
 import { businessToday, loadHomeCached } from '../_shared/locale/load-home.ts';
 import { handleGetBusinessHome, handleSetBusinessHome, type SetBusinessHomeArgs } from '../_shared/handlers/business-home.ts';
@@ -232,8 +234,52 @@ const corsHeaders = {
 // manage_journal_entry create path calls them too (the inline copies drifted:
 // the old substring scorer survived there and could auto-book to the wrong
 // account — robustness review finding C1, fixed 2026-07-08).
-function acctExpandTemplateLines(tplLines: any[], baseCents: number, grossCents?: number): any[] {
-  const out = tplLines.map((l: any) => ({
+// Typed, because every bug the comments below record (C1 the drifted scorer,
+// H1 the drifting bank leg, B1 the mis-scaled bank percentage, B5 the
+// arbitrary tiebreak) was a field read off an untyped row — and a wrong field
+// name here books money to the wrong account silently. `deno check` now
+// rejects one.
+
+/** One line of an `accounting_templates.template_lines` row: a percentage
+ *  template carries `*_pct`, a fixed one `*_cents`. */
+interface AcctTemplateLine {
+  account_code?: string | null;
+  account_name?: string | null;
+  description?: string | null;
+  debit_pct?: number | null;
+  credit_pct?: number | null;
+  debit_cents?: number | null;
+  credit_cents?: number | null;
+}
+
+/** The expanded, bookable form: both sides present, in cents. */
+interface AcctEntryLine {
+  account_code?: string | null;
+  account_name?: string | null;
+  description: string | null;
+  debit_cents: number;
+  credit_cents: number;
+}
+
+/** An `accounting_templates` row as the scorer and the expanders read it. */
+interface AcctTemplate {
+  id?: string;
+  template_name?: string | null;
+  keywords?: unknown[] | null;
+  usage_count?: number | null;
+  template_lines?: AcctTemplateLine[] | null;
+}
+// `template_lines` is a nullable jsonb column, so every one of these takes
+// the null: the three below already did (`tplLines || []`), while the expander
+// called `.map` on it and threw a bare TypeError on a template saved without
+// lines. An empty expansion lands in the callers' existing "no lines" check
+// and comes back as an error an operator can act on.
+function acctExpandTemplateLines(
+  tplLines: AcctTemplateLine[] | null | undefined,
+  baseCents: number,
+  grossCents?: number,
+): AcctEntryLine[] {
+  const out: AcctEntryLine[] = (tplLines ?? []).map((l) => ({
     account_code: l.account_code,
     account_name: l.account_name,
     description: l.description ?? null,
@@ -247,36 +293,36 @@ function acctExpandTemplateLines(tplLines: any[], baseCents: number, grossCents?
   // actual gross is known (booking a bank event), pin the 19xx leg to it
   // exactly; rounding is absorbed by a non-bank line below.
   if (grossCents && grossCents > 0) {
-    const bankLine = out.find((l: any) => String(l.account_code || '').startsWith('19')
+    const bankLine = out.find((l) => String(l.account_code || '').startsWith('19')
       && (l.debit_cents > 0 || l.credit_cents > 0));
     if (bankLine) {
       if (bankLine.debit_cents > 0) bankLine.debit_cents = grossCents;
       else bankLine.credit_cents = grossCents;
     }
   }
-  const d = out.reduce((s: number, l: any) => s + l.debit_cents, 0);
-  const c = out.reduce((s: number, l: any) => s + l.credit_cents, 0);
+  const d = out.reduce((s, l) => s + l.debit_cents, 0);
+  const c = out.reduce((s, l) => s + l.credit_cents, 0);
   if (d !== c) {
     const diff = d - c;
     // Absorb rounding on the largest NON-bank line (usually the VAT or
     // expense/revenue line) — never on the 19xx leg, which must stay equal to
     // what actually moved in the bank.
-    const candidates = out.filter((l: any) => !String(l.account_code || '').startsWith('19'));
+    const candidates = out.filter((l) => !String(l.account_code || '').startsWith('19'));
     const pool = candidates.length > 0 ? candidates : out;
-    const biggest = pool.reduce((a: any, b: any) =>
+    const biggest = pool.reduce((a, b) =>
       Math.max(b.debit_cents, b.credit_cents) > Math.max(a.debit_cents, a.credit_cents) ? b : a);
     if (biggest.debit_cents >= biggest.credit_cents) biggest.debit_cents -= diff;
     else biggest.credit_cents += diff;
   }
   return out;
 }
-function acctIsPctTemplate(tplLines: any[]): boolean {
-  return Array.isArray(tplLines) && tplLines.some((l: any) => (l.debit_pct ?? 0) > 0 || (l.credit_pct ?? 0) > 0);
+function acctIsPctTemplate(tplLines: AcctTemplateLine[] | null | undefined): boolean {
+  return Array.isArray(tplLines) && tplLines.some((l) => (l.debit_pct ?? 0) > 0 || (l.credit_pct ?? 0) > 0);
 }
 // Gross→net: a percentage template's counter (bank) side is e.g. 125% of the
 // NET base. A bank line is GROSS (incl. VAT), so the NET base to feed the
 // template = gross / (sum(debit_pct)/100). E.g. 1000 gross, 125% total → 800.
-function acctNetBaseFromGross(tplLines: any[], grossCents: number): number {
+function acctNetBaseFromGross(tplLines: AcctTemplateLine[] | null | undefined, grossCents: number): number {
   // The gross that hit the bank IS the 19xx bank leg's percentage of the net
   // base — NOT the sum of the debit side. Using Σ debit_pct mis-scaled any
   // compound template whose bank leg ≠ full debit side: net salary (bank leg
@@ -294,7 +340,7 @@ function acctNetBaseFromGross(tplLines: any[], grossCents: number): number {
 // (revenue/refund). Templates with no 19xx leg are not bank-event-bookable
 // (accruals, year-end adjustments). Matching an outflow to a revenue template
 // books bank fees as income — the real-data failure this guards against.
-function acctTemplateBankDirection(tplLines: any[]): 'inflow' | 'outflow' | null {
+function acctTemplateBankDirection(tplLines: AcctTemplateLine[] | null | undefined): 'inflow' | 'outflow' | null {
   for (const l of tplLines || []) {
     const code = String(l.account_code || '');
     if (!code.startsWith('19')) continue;
@@ -329,9 +375,9 @@ function acctTokenize(s: string): string[] {
     .filter((w) => w.length >= 2);
 }
 function acctScoreTemplates(
-  allTemplates: any[],
+  allTemplates: AcctTemplate[],
   searchTerms: string,
-): { template: any; score: number; confidence: number; matchDetails: string[] }[] {
+): { template: AcctTemplate; score: number; confidence: number; matchDetails: string[] }[] {
   const terms = acctFold((searchTerms || '').toLowerCase().trim());
   const words = acctTokenize(terms);
   const wordSet = new Set(words);
@@ -350,7 +396,7 @@ function acctScoreTemplates(
     return best;
   };
 
-  const scored = (allTemplates || []).map((t: any) => {
+  const scored = (allTemplates || []).map((t) => {
     let score = 0;
     const details: string[] = [];
     for (const kwRaw of (t.keywords || [])) {
@@ -365,7 +411,7 @@ function acctScoreTemplates(
       if (pts) { score += pts; details.push(`kw:${kw}+${pts}`); }
     }
     // template-name words that appear as whole search words (small tiebreaker)
-    for (const nw of acctTokenize(t.template_name)) {
+    for (const nw of acctTokenize(String(t.template_name ?? ''))) {
       if (nw.length >= 3 && wordSet.has(nw)) { score += 12; details.push(`name:${nw}`); }
     }
     score += Math.min(10, (t.usage_count || 0) * 2);
@@ -443,6 +489,8 @@ interface ExecuteRequest {
   caller_agent_name?: string;
   /** When called via MCP, the api_key id (and inbound peer) that initiated the call. */
   caller_api_key_id?: string;
+  /** Run only if the call is a READ (read-surface classifyCall) — a live report block. */
+  read_only?: boolean;
   /**
    * The VERIFIED email of a signed-in customer (identity ladder rung 2). Set by
    * chat-completion from the resolved JWT — NEVER from model output. Customer-
@@ -557,6 +605,8 @@ serve(async (req) => {
       });
     }
     const { skill_id, skill_name, arguments: rawArgs = {}, agent_type, conversation_id, scheduled, objective_context, trace_id, caller_user_id: bodyCallerUserId, caller_api_key_id, caller_agent_name: bodyCallerAgentName, caller_email, company_id: callerCompanyId, company_role: callerCompanyRole } = body;
+    // A live report block runs read-only (see the READ_ONLY_RUN check below).
+    const readOnlyRun = body.read_only === true;
     // A verified admin JWT is the authoritative caller identity — internal edge
     // callers (service key) keep passing caller_user_id/caller_api_key_id in the body.
     const caller_user_id = gateUserId ?? bodyCallerUserId;
@@ -837,6 +887,17 @@ serve(async (req) => {
       ? ticketArgs._approval_activity_id : undefined;
     delete ticketArgs._approval_request_id;
     delete ticketArgs._approval_activity_id;
+
+    // A read-only run (a live report block, opened by a reader): the call
+    // must be a READ by the platform's own rule (read-surface classifyCall),
+    // or nothing runs. Opening a report can never send, book or change
+    // anything, whatever the report's author wrote into it.
+    if (readOnlyRun === true && classifyCall(skill.name, args as Record<string, unknown>) !== 'read') {
+      return new Response(JSON.stringify({
+        status: 'refused', code: 'READ_ONLY_RUN', retryable: false,
+        hint: `"${skill.name}" changes data, and a read-only run (a live report block) only reads. Use a list_/get_/check_ skill, or manage_* with a read action.`,
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // A dry run of a skill whose contract makes it a read (DRY_RUN_READS in
     // _shared/skills/read-surface.ts) plans and writes nothing: it passes the
@@ -1318,6 +1379,11 @@ serve(async (req) => {
       } else if (handler === 'internal:module_usage_report') {
         result = await executeModuleUsageReport(supabase, args as Record<string, unknown>);
 
+      } else if (handler === 'internal:reports') {
+        result = await executeReportsAction(supabase, skill.name, args as Record<string, unknown>, {
+          agent_type, caller_agent_name, attended_user_id: attendedUserId,
+        });
+
       } else if (handler === 'internal:manage_modules') {
         result = await executeManageModules(supabase, args as Record<string, unknown>, { caller_user_id, caller_agent_name, agent_type, attended: Boolean(attendedUserId) });
 
@@ -1556,10 +1622,14 @@ serve(async (req) => {
       } else {
         result = { error: `Unknown handler type: ${handler}` };
       }
-    } catch (handlerErr: any) {
-      // Normalize all handler exceptions to {error: string} format
-      console.error(`[agent-execute] Handler '${handler}' threw:`, handlerErr.message);
-      result = { error: `Handler exception: ${handlerErr.message || 'Unknown error'}`, status: 'failed' };
+    } catch (handlerErr) {
+      // Normalize all handler exceptions to {error: string} format. A handler
+      // can throw a non-Error (a string, a PostgREST body), and `.message` on
+      // that is undefined — an operator reading "Handler exception: undefined"
+      // learns nothing, so stringify whatever was thrown.
+      const handlerMsg = handlerErr instanceof Error ? handlerErr.message : String(handlerErr);
+      console.error(`[agent-execute] Handler '${handler}' threw:`, handlerMsg);
+      result = { error: `Handler exception: ${handlerMsg || 'Unknown error'}`, status: 'failed' };
     }
 
     // 4b. The agent envelope. A failure carries a stable `code`, `retryable`
@@ -1733,7 +1803,7 @@ const MODULE_HANDLER_TO_SETTING: Record<string, string> = {
 };
 
 async function autoActivateModule(
-  supabase: any,
+  supabase: SupabaseClient,
   moduleName: string,
   ctx: { skillName: string; args?: Record<string, unknown> },
 ): Promise<string | null> {
@@ -1802,7 +1872,7 @@ async function autoActivateModule(
 // =============================================================================
 
 async function executeModuleAction(
-  supabase: any,
+  supabase: SupabaseClient,
   moduleName: string,
   skillName: string,
   args: Record<string, unknown>,
@@ -2251,7 +2321,10 @@ async function executeModuleAction(
         const targetFolders = folder ? [folder] : ['pages', 'imports', 'templates', 'uploads'];
         const pageLimit = Math.min(Math.max(Number((args as any).limit) || 100, 1), 1000);
         const pageOffset = Math.max(Number((args as any).offset) || 0, 0);
-        const allFiles: Array<{ name: string; folder: string; url: string; size?: number; type?: string; created_at?: string }> = [];
+        // `created_at` is `string | null` on a storage object — a file uploaded
+        // through a path that never stamped it comes back null, and saying so
+        // beats an operator reading a missing date as "not fetched".
+        const allFiles: Array<{ name: string; folder: string; url: string; size?: number; type?: string; created_at?: string | null }> = [];
         let truncated = false;
         for (const f of targetFolders) {
           const { data: files, error: listErr } = await supabase.storage
@@ -2473,7 +2546,7 @@ async function executeModuleAction(
 // Calendar module handler — aggregates events across enabled domain tables
 // =============================================================================
 async function executeCalendarAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -2715,16 +2788,29 @@ function siteExportPublicCandidates(): Array<string | undefined> {
 }
 
 /** Whether an object exists at bucket/path on THIS instance, and its size. */
-async function statStorageObject(supabase: any, bucket: string, path: string): Promise<{ exists: boolean; size: number | null; error?: string }> {
+async function statStorageObject(supabase: SupabaseClient, bucket: string, path: string): Promise<{ exists: boolean; size: number | null; md5: string | null; error?: string }> {
   const slash = path.lastIndexOf('/');
   const dir = slash >= 0 ? path.slice(0, slash) : '';
   const name = slash >= 0 ? path.slice(slash + 1) : path;
   const { data, error } = await supabase.storage.from(bucket).list(dir, { search: name, limit: 100 });
-  if (error) return { exists: false, size: null, error: error.message };
+  if (error) return { exists: false, size: null, md5: null, error: error.message };
   const hit = (data ?? []).find((o: { name?: string }) => o?.name === name);
-  if (!hit) return { exists: false, size: null };
+  if (!hit) return { exists: false, size: null, md5: null };
   const size = Number(hit?.metadata?.size);
-  return { exists: true, size: Number.isFinite(size) ? size : null };
+  // The listing's eTag is the object's MD5 for a single-part upload (quoted);
+  // a multipart upload's reads `<md5>-<parts>` and is no hash of the bytes.
+  const etag = String(hit?.metadata?.eTag ?? '').replace(/^W\//, '').replace(/"/g, '').toLowerCase();
+  return { exists: true, size: Number.isFinite(size) ? size : null, md5: /^[0-9a-f]{32}$/.test(etag) ? etag : null };
+}
+
+/** MD5 of carried bytes, to compare with a storage listing's eTag — null where the runtime has no MD5. */
+async function md5Hex(bytes: Uint8Array): Promise<string | null> {
+  try {
+    const { createHash } = await import('node:crypto');
+    return createHash('md5').update(bytes).digest('hex');
+  } catch {
+    return null;
+  }
 }
 
 /** The shapes the export writes and the installer reads — mirrored in src/data/templates/types.ts. */
@@ -2748,6 +2834,8 @@ interface SiteExportDocument {
   description?: string | null;
   visibility?: string;
   visible_to_role?: string | null;
+  /** The origin row's seal — the install keys on it, file or no file. */
+  content_sha256?: string | null;
   content_md?: string | null;
   extraction_status?: string | null;
   source?: string | null;
@@ -2776,7 +2864,7 @@ type WikiPageRow = { slug: string; title: string; content_md: string | null; tag
 type DocumentRow = {
   id: string; title: string; file_name: string; file_url: string | null; file_type: string | null; file_size_bytes: number | null;
   category: string | null; tags: string[] | null; folder: string | null; description: string | null; visibility: string | null;
-  visible_to_role: string | null; content_md: string | null; extraction_status: string | null; source: string | null;
+  visible_to_role: string | null; content_sha256: string | null; content_md: string | null; extraction_status: string | null; source: string | null;
 };
 const WIKI_VISIBILITY = new Set(['internal', 'admin']);
 const WIKI_EDITABLE_BY = new Set(['authenticated', 'admin']);
@@ -2787,7 +2875,7 @@ const DOCUMENT_VISIBILITY = new Set(['shared', 'role', 'private']);
 // deviation: existing live content is PRESERVED (colliding slugs/names are
 // skipped and reported) instead of the hook's clear-all fallback. Only
 // resources tracked in the previous template's manifest are removed.
-async function tplInstall(supabase: any, args: Record<string, unknown>): Promise<unknown> {
+async function tplInstall(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
   const a = args as any;
   const templateId = a.template_id || a.templateId || a.id;
   if (!templateId || typeof templateId !== 'string') {
@@ -2894,8 +2982,18 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
         if (there.exists) {
           let same = false;
           if (there.size === bytes.byteLength) {
-            const { data: existing, error: dlErr } = await supabase.storage.from(bucket).download(path);
-            if (!dlErr && existing) same = (await sha256Hex(new Uint8Array(await existing.arrayBuffer()))) === sha;
+            // Same size: compare the listing's MD5 with the carried bytes'
+            // before pulling the file back through the worker — a re-install
+            // of 40 files used to download all 40 inside the same 150 s call
+            // (review round 3 of #797). Only when the listing has no plain
+            // MD5 (a multipart upload) is the object downloaded and hashed.
+            const md5 = there.md5 ? await md5Hex(bytes) : null;
+            if (there.md5 && md5) {
+              same = md5 === there.md5;
+            } else {
+              const { data: existing, error: dlErr } = await supabase.storage.from(bucket).download(path);
+              if (!dlErr && existing) same = (await sha256Hex(new Uint8Array(await existing.arrayBuffer()))) === sha;
+            }
           }
           if (same) {
             needsUpload = false;
@@ -3171,33 +3269,52 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
   if (include.wiki) {
     const pages: Partial<SiteExportWikiPage>[] = knowledge.wikiPages ?? [];
     const wanted = pages.map((p) => String(p?.slug || '').trim()).filter(Boolean);
-    const existingSlugs = new Set<string>();
+    // What the target already has — slug, and the two fields an install may
+    // only ever NARROW (review round 3 of #797: an admin-only page was
+    // reopened to every signed-in user by a carried or defaulted 'internal').
+    const existingPages = new Map<string, { visibility: string | null; editable_by: string | null }>();
     for (let i = 0; i < wanted.length; i += 200) {
-      const { data: rows, error } = await supabase.from('wiki_pages').select('slug').in('slug', wanted.slice(i, i + 200));
+      const { data: rows, error } = await supabase.from('wiki_pages').select('slug, visibility, editable_by').in('slug', wanted.slice(i, i + 200));
       if (error) { errors.push(`Wiki: could not read existing pages: ${error.message}`); break; }
-      for (const r of rows ?? []) existingSlugs.add(r.slug);
+      for (const r of rows ?? []) existingPages.set(r.slug, { visibility: r.visibility ?? null, editable_by: r.editable_by ?? null });
     }
+    const existingSlugs = new Set<string>(existingPages.keys());
+    const wikiRank = (v: unknown) => (v === 'admin' ? 1 : 0);
+    const editableRank = (v: unknown) => (v === 'admin' ? 1 : 0);
     const written = new Set<string>();
     for (const p of pages) {
       const slug = String(p?.slug || '').trim();
       const title = String(p?.title || '').trim();
       if (!slug || !title) { errors.push(`Wiki page "${slug || title || '?'}": slug and title are required`); continue; }
-      const row: Record<string, unknown> = {
-        title,
-        content_md: typeof p.content_md === 'string' ? p.content_md : '',
-        tags: Array.isArray(p.tags) ? p.tags.map((t: unknown) => String(t)) : [],
-        visibility: WIKI_VISIBILITY.has(String(p.visibility)) ? String(p.visibility) : 'internal',
-        editable_by: WIKI_EDITABLE_BY.has(String(p.editable_by)) ? String(p.editable_by) : 'authenticated',
-        updated_by: callerUserId,
-        updated_by_agent: agentStamp(args),
-      };
+      const carriedVisibility = WIKI_VISIBILITY.has(String(p.visibility)) ? String(p.visibility) : null;
+      const carriedEditableBy = WIKI_EDITABLE_BY.has(String(p.editable_by)) ? String(p.editable_by) : null;
+      const stamp = { updated_by: callerUserId, updated_by_agent: agentStamp(args) };
       if (existingSlugs.has(slug)) {
-        const { error } = await supabase.from('wiki_pages').update(row).eq('slug', slug);
+        // An update writes only what the export CARRIES — the same rule the
+        // documents pass has (carriedOnly): no '' body, no [] tags, no default
+        // visibility over a page the target already has. Visibility and
+        // editable_by move one way only, toward the narrower value.
+        const had = existingPages.get(slug) ?? { visibility: null, editable_by: null };
+        const patch: Record<string, unknown> = { title, ...stamp };
+        if (typeof p.content_md === 'string' && p.content_md.trim()) patch.content_md = p.content_md;
+        if (Array.isArray(p.tags) && p.tags.length) patch.tags = p.tags.map((t: unknown) => String(t));
+        if (carriedVisibility && wikiRank(carriedVisibility) > wikiRank(had.visibility)) patch.visibility = carriedVisibility;
+        if (carriedEditableBy && editableRank(carriedEditableBy) > editableRank(had.editable_by)) patch.editable_by = carriedEditableBy;
+        const { error } = await supabase.from('wiki_pages').update(patch).eq('slug', slug);
         if (error) { errors.push(`Wiki page "${slug}": ${error.message}`); continue; }
         updated.wiki_pages.push(slug);
       } else {
-        const { error } = await supabase.from('wiki_pages')
-          .insert({ slug, ...row, created_by: callerUserId, created_by_agent: agentStamp(args) });
+        const { error } = await supabase.from('wiki_pages').insert({
+          slug,
+          title,
+          content_md: typeof p.content_md === 'string' ? p.content_md : '',
+          tags: Array.isArray(p.tags) ? p.tags.map((t: unknown) => String(t)) : [],
+          visibility: carriedVisibility ?? 'internal',
+          editable_by: carriedEditableBy ?? 'authenticated',
+          ...stamp,
+          created_by: callerUserId,
+          created_by_agent: agentStamp(args),
+        });
         if (error) { errors.push(`Wiki page "${slug}": ${error.message}`); continue; }
         wikiSlugs.push(slug);
       }
@@ -3209,7 +3326,11 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
       const slug = String(p?.slug || '').trim();
       if (!written.has(slug)) continue;
       const parent = typeof p.parent_slug === 'string' && p.parent_slug.trim() ? p.parent_slug.trim() : null;
-      if (parent && !written.has(parent) && !existingSlugs.has(parent)) {
+      // Not carried → not written: a new page has no parent to set, and an
+      // existing page keeps the place it has (review round 3 of #797 — an
+      // omitted parent_slug moved the target's page to the root).
+      if (!parent) continue;
+      if (!written.has(parent) && !existingSlugs.has(parent)) {
         const { data: onSite, error: onSiteErr } = await supabase.from('wiki_pages').select('slug').eq('slug', parent).maybeSingle();
         if (onSiteErr) { errors.push(`Wiki page "${slug}": could not check parent "${parent}": ${onSiteErr.message}`); continue; }
         // Say what was STORED (review round 2 of #797): a new page has no
@@ -3229,8 +3350,13 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
   }
 
   // 7c. Documents — metadata, the indexed text, and the file when the export
-  //     carried it. Keyed on (title, file_name): an existing document is
-  //     brought up to date, a new one is created, nothing is duplicated.
+  //     carried it. Keyed on the SEAL first (content_sha256 — the row holding
+  //     the same bytes), then on (title, file_name) for a row the target has
+  //     no sealed file for yet. Two documents that share a name but not their
+  //     bytes are two documents: the second is created beside the first,
+  //     never written over it (review round 3 of #797 — monthly "Invoice" /
+  //     invoice.pdf uploads collapsed into one, and the newer bytes were
+  //     dropped without a word).
   //     Visibility travels verbatim and is never widened; a role-scoped
   //     document whose role is missing narrows to private. Bytes land in the
   //     PRIVATE documents bucket, whose files follow their row's visibility
@@ -3238,6 +3364,8 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
   const documentIds: string[] = [];
   /** Role-scoped documents whose role this instance does not have — written as private instead. */
   const narrowedToPrivate: string[] = [];
+  /** Documents created BESIDE a namesake on the target: same title + file_name, different (or several) sealed files. */
+  const createdBesideNamesake: string[] = [];
   if (include.documents) {
     const docs: Partial<SiteExportDocument>[] = knowledge.documents ?? [];
     // The same uploader resolution upload_document uses: the caller, else an
@@ -3273,7 +3401,11 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
         // have (`hr_lead` from a fork) is refused with 22P02 — so the write is
         // retried NARROWED to private, never widened and never dropped (review
         // of #797: it used to skip the document and say it had narrowed).
-        const writeNarrowingUnknownRole = async <R,>(write: (m: Record<string, unknown>) => PromiseLike<{ data?: R; error: { code?: string; message: string } | null }>) => {
+        // `data` is `R | null` on a PostgREST answer, never merely absent: a
+        // failed insert returns an explicit null beside the error. Typing the
+        // client (this file's `supabase: any` sweep) is what made the
+        // difference visible — the call site already reads `created?.id`.
+        const writeNarrowingUnknownRole = async <R,>(write: (m: Record<string, unknown>) => PromiseLike<{ data?: R | null; error: { code?: string; message: string } | null }>) => {
           const first = await write(meta);
           if (first.error?.code === '22P02' && meta.visibility === 'role') {
             meta.visibility = 'private';
@@ -3284,10 +3416,6 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
           return first;
         };
 
-        const { data: existing, error: existErr } = await supabase.from('documents')
-          .select('id, file_url, content_sha256, visibility, visible_to_role').eq('title', title).eq('file_name', fileName).limit(1).maybeSingle();
-        if (existErr) { errors.push(`Document "${title}": ${existErr.message}`); continue; }
-
         // The bytes, when carried — decoded and checked against the seal they
         // left with before anything is written.
         let bytes: Uint8Array | null = null;
@@ -3297,6 +3425,33 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
           sha = await sha256Hex(bytes);
           if (typeof d.file.sha256 === 'string' && d.file.sha256 && d.file.sha256 !== sha) {
             errors.push(`Document "${title}": bytes do not match the carried SHA-256 seal — not restored`); continue;
+          }
+        }
+        // The seal the origin row carried travels on the entry too, so a
+        // document whose bytes did not fit the export still finds its row.
+        const carriedSha = sha ?? (typeof d.content_sha256 === 'string' && /^[0-9a-f]{64}$/i.test(d.content_sha256) ? d.content_sha256.toLowerCase() : null);
+
+        type ExistingDocument = { id: string; file_url: string | null; content_sha256: string | null; visibility: string | null; visible_to_role: string | null };
+        const existingColumns = 'id, file_url, content_sha256, visibility, visible_to_role';
+        let existing: ExistingDocument | null = null;
+        if (carriedSha) {
+          const { data: bySeal, error: sealErr } = await supabase.from('documents')
+            .select(existingColumns).eq('content_sha256', carriedSha).order('id').limit(1).maybeSingle();
+          if (sealErr) { errors.push(`Document "${title}": ${sealErr.message}`); continue; }
+          existing = (bySeal as ExistingDocument | null) ?? null;
+        }
+        if (!existing) {
+          const { data: byName, error: existErr } = await supabase.from('documents')
+            .select(existingColumns).eq('title', title).eq('file_name', fileName).order('id').limit(2);
+          if (existErr) { errors.push(`Document "${title}": ${existErr.message}`); continue; }
+          const namesakes = (byName ?? []) as ExistingDocument[];
+          if (namesakes.length === 1 && !(namesakes[0].content_sha256 && carriedSha)) {
+            // One row on the name, and not two DIFFERENT sealed files: the
+            // same document (a text-only one, or one the target has no file
+            // for yet). Two seals that did not match above are two files.
+            existing = namesakes[0];
+          } else if (namesakes.length) {
+            createdBesideNamesake.push(`${title} (${fileName})`);
           }
         }
 
@@ -3622,6 +3777,7 @@ async function tplInstall(supabase: any, args: Record<string, unknown>): Promise
     updated: { wiki_pages: updated.wiki_pages.length, documents: updated.documents.length },
     // Role-scoped documents whose role does not exist on this instance: kept, as private.
     documents_narrowed_to_private: narrowedToPrivate.length ? narrowedToPrivate : undefined,
+    documents_created_beside_namesakes: createdBesideNamesake.length ? createdBesideNamesake : undefined,
     skipped,
     media_rewritten_urls: mediaRewrites.size,
     // The target's own files are never overwritten: same bytes → reused, a
@@ -3908,7 +4064,7 @@ async function executeManageModules(
 }
 
 /** All rader ur agent_skills — paginerad, så PostgREST:s radtak aldrig kan tysta bort svansen. */
-async function readAllSkills(supabase: any, columns: string): Promise<{ rows: any[]; error?: string }> {
+async function readAllSkills(supabase: SupabaseClient, columns: string): Promise<{ rows: any[]; error?: string }> {
   const PAGE = 500;
   const out: any[] = [];
   for (let from = 0; ; from += PAGE) {
@@ -3925,7 +4081,7 @@ async function readAllSkills(supabase: any, columns: string): Promise<{ rows: an
   return { rows: out };
 }
 
-async function executeSyncSkillsFromCode(supabase: any, args: Record<string, unknown>): Promise<unknown> {
+async function executeSyncSkillsFromCode(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
   const force = args.force === true;
 
   const raw = JSON.stringify(bundledModuleSkills);
@@ -4147,7 +4303,7 @@ async function executeSyncSkillsFromCode(supabase: any, args: Record<string, unk
 // without a soul from 03:00 until someone logged in, some days all day.
 // The gate is checked here TOO (belt and braces with the SQL function): a
 // non-sandbox instance answers with a refusal, never a wipe.
-async function executeResetSandbox(supabase: any, args: Record<string, unknown>): Promise<unknown> {
+async function executeResetSandbox(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
   // ONE toggle owns the demo lifecycle (2026-08-12): demo_mode — the visible
   // System-settings switch — is the gate. sandbox_mode is honored as a legacy
   // alias until the old sandbox instance is retired; no UI writes it anymore.
@@ -4241,7 +4397,7 @@ async function executeResetSandbox(supabase: any, args: Record<string, unknown>)
  * one the RPC enforces on write; calling it means the preview cannot disagree
  * with the refusal.
  */
-async function tplExportSite(supabase: any, args: Record<string, unknown>): Promise<unknown> {
+async function tplExportSite(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
   const a = args as any;
   const saveAs = typeof a.save_as === 'string' ? a.save_as.trim() : '';
   const include: string[] = Array.isArray(a.include)
@@ -4268,6 +4424,25 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
     key: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   };
   const ownHosts = siteExportOwnHosts(a.media_hosts);
+
+  // ── Who is asking: restricted knowledge is an admin's to export ──────────
+  // The reads below run with the service role, so RLS is not in the way: a
+  // private HR contract or an admin-only wiki page came back — text, and the
+  // file as base64 — to any caller whose role carries the templates module
+  // (review round 3 of #797). The STORED row is guarded by
+  // carries_restricted_content; the answer was not. So a caller who is not
+  // an admin exports the shared documents and the internal wiki pages only,
+  // and what was left out is counted in export_report.skipped with the way
+  // to get it. No caller id is the platform itself (a scheduled run, an
+  // internal edge call with the service key) — there is no reach to narrow.
+  const callerUserId = typeof a._caller_user_id === 'string' && a._caller_user_id ? a._caller_user_id : null;
+  let callerIsAdmin = !callerUserId;
+  if (callerUserId) {
+    const { data: isAdmin, error: roleErr } = await supabase.rpc('has_role', { _user_id: callerUserId, _role: 'admin' });
+    if (roleErr) return { error: `Could not resolve the caller's role: ${roleErr.message}` };
+    callerIsAdmin = isAdmin === true;
+  }
+  const restrictedOmitted = { documents: [] as string[], wiki_pages: [] as string[] };
 
   const meta = {
     id: String(a.id || a.template_id || saveAs || 'site-export').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -4368,7 +4543,12 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
     });
     if (error) return { error: `Failed to fetch wiki pages: ${error}` };
     if (truncated) return { error: 'Failed to fetch wiki pages: the read reached its page cap — the export would be incomplete. Export in parts.' };
-    wikiPages = rows.map((w) => ({
+    const readable = callerIsAdmin ? rows : rows.filter((w) => {
+      if ((w.visibility || 'internal') === 'internal') return true;
+      restrictedOmitted.wiki_pages.push(w.slug);
+      return false;
+    });
+    wikiPages = readable.map((w) => ({
       slug: w.slug, title: w.title, content_md: w.content_md || '',
       tags: Array.isArray(w.tags) && w.tags.length ? w.tags : undefined,
       parent_slug: w.parent_slug || undefined,
@@ -4396,13 +4576,17 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
     // one timestamp, and ties can repeat a document on two pages or drop it
     // from both (review round 2 of #797).
     const { rows, error, truncated } = await readAllRows<DocumentRow>(supabase, 'documents', {
-      columns: 'id, title, file_name, file_url, file_type, file_size_bytes, category, tags, folder, description, visibility, visible_to_role, content_md, extraction_status, source',
+      columns: 'id, title, file_name, file_url, file_type, file_size_bytes, category, tags, folder, description, visibility, visible_to_role, content_sha256, content_md, extraction_status, source',
       orderBy: 'id',
     });
     if (error) return { error: `Failed to fetch documents: ${error}` };
     if (truncated) return { error: 'Failed to fetch documents: the read reached its page cap — the export would be incomplete. Export in parts.' };
     documents = [];
     for (const d of rows) {
+      if (!callerIsAdmin && (DOCUMENT_VISIBILITY.has(String(d.visibility)) ? String(d.visibility) : 'private') !== 'shared') {
+        restrictedOmitted.documents.push(`${d.title} (${d.file_name})`);
+        continue;
+      }
       const entry: SiteExportDocument = {
         title: d.title, file_name: d.file_name,
         file_type: d.file_type || undefined,
@@ -4413,6 +4597,7 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
         description: d.description || undefined,
         visibility: DOCUMENT_VISIBILITY.has(String(d.visibility)) ? String(d.visibility) : 'private',
         visible_to_role: d.visible_to_role || undefined,
+        content_sha256: d.content_sha256 || undefined,
         content_md: d.content_md || undefined,
         extraction_status: d.extraction_status || undefined,
         source: d.source || undefined,
@@ -4443,6 +4628,8 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
     if (countErr) return { error: `Failed to count documents: ${countErr.message}` };
     if (count) skipped.push({ section: 'documents', count, how: 'Add "documents" to include.' });
   }
+  if (restrictedOmitted.wiki_pages.length) skipped.push({ section: 'wiki pages (admin-only)', count: restrictedOmitted.wiki_pages.length, how: 'An admin-only wiki page is exported by an admin only. Ask an admin to run this export, or leave the page to be rebuilt on the new instance.', items: restrictedOmitted.wiki_pages });
+  if (restrictedOmitted.documents.length) skipped.push({ section: 'documents (role-scoped or private)', count: restrictedOmitted.documents.length, how: 'A role-scoped or private document is exported by an admin only. Ask an admin to run this export; shared documents are in it.', items: restrictedOmitted.documents });
   if (fileSkips.not_embedded.length) skipped.push({ section: 'document files (embed_files=false)', count: fileSkips.not_embedded.length, how: 'Omit embed_files=false to carry the bytes; the documents themselves (metadata + indexed text) are in the export.', items: fileSkips.not_embedded });
   if (fileSkips.too_large.length) skipped.push({ section: 'document files (over max_file_mb)', count: fileSkips.too_large.length, how: `Raise max_file_mb (≤ ${SITE_EXPORT_MAX_FILE_MB}) or move these files by hand; their metadata and indexed text are in the export.`, items: fileSkips.too_large });
   if (fileSkips.payload_full.length) skipped.push({ section: 'document files (payload full)', count: fileSkips.payload_full.length, how: `The embedded bytes reached max_payload_mb (≤ ${SITE_EXPORT_MAX_PAYLOAD_MB}). Raise it, or export in parts (narrower include, embed_files=false) and move the rest by hand.`, items: fileSkips.payload_full });
@@ -4591,20 +4778,24 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
   let saved: any = null;
   if (saveAs) {
     const { data: existing } = await supabase
-      .from('site_templates').select('id, template_json').ilike('name', saveAs).maybeSingle();
+      .from('site_templates').select('id').ilike('name', saveAs).maybeSingle();
 
     // An update REPLACES the body. Re-exporting with a narrower `include` than
     // last time therefore drops sections the stored template had — caught live:
     // a re-save without include turned 12 products into 0. The write is still
     // correct (replace is what update means), but a caller who is not told has
-    // no way to notice.
+    // no way to notice. The stored body is COUNTED in the database
+    // (site_template_section_counts), never read back into the worker: it can
+    // hold 40 MB of base64, and this needs six integers (review round 3 of #797).
     const removed: Array<{ section: string; was: number }> = [];
-    if (existing?.template_json) {
-      const before = existing.template_json as Record<string, unknown>;
-      for (const [key, label] of [['products', 'products'], ['kbCategories', 'KB categories'], ['blogPosts', 'blog posts'], ['wikiPages', 'wiki pages'], ['documents', 'documents'], ['media', 'media files']] as const) {
-        const had = Array.isArray(before[key]) ? (before[key] as unknown[]).length : 0;
+    if (existing?.id) {
+      const { data: before, error: countErr } = await supabase.rpc('site_template_section_counts', { p_template_id: existing.id });
+      if (countErr) console.warn(`[export_site_template] stored section counts unavailable: ${countErr.message}`);
+      const had = (before ?? {}) as Record<string, unknown>;
+      for (const [key, column, label] of [['products', 'products', 'products'], ['kbCategories', 'kb_categories', 'KB categories'], ['blogPosts', 'blog_posts', 'blog posts'], ['wikiPages', 'wiki_pages', 'wiki pages'], ['documents', 'documents', 'documents'], ['media', 'media_files', 'media files']] as const) {
+        const was = Number(had[column]);
         const now = Array.isArray(fullBody[key]) ? (fullBody[key] as unknown[]).length : 0;
-        if (had > 0 && now === 0) removed.push({ section: label, was: had });
+        if (Number.isFinite(was) && was > 0 && now === 0) removed.push({ section: label, was });
       }
     }
     const { data: writeResult, error: writeError } = await supabase.rpc('manage_site_template', {
@@ -4720,7 +4911,7 @@ async function tplExportSite(supabase: any, args: Record<string, unknown>): Prom
 }
 
 async function executeTemplatesAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -4754,7 +4945,7 @@ async function executeTemplatesAction(
 // =============================================================================
 
 async function executeTimesheetsAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -5024,7 +5215,7 @@ async function executeTimesheetsAction(
 
 
 async function executeHandbookAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -5114,7 +5305,7 @@ function slugifyAgentName(name: string): string {
 }
 
 async function resolveReportedBy(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<string | null> {
   const claimed = typeof args.reported_by === 'string' ? args.reported_by.trim().toLowerCase() : '';
@@ -5182,6 +5373,97 @@ async function feedbackInstanceId(supabase: SupabaseClient): Promise<string> {
 
 function feedbackHost(u: string | null | undefined): string {
   try { return new URL(String(u ?? '')).host.toLowerCase(); } catch { return ''; }
+}
+
+/**
+ * Reports (2026-11-03) — what an agent worked out, as a page a person opens.
+ * The rules live in the database (report_* in 20261103150000); this stamps
+ * what a model must never choose: WHO published (FlowPilot, Flowwork, or the
+ * external agent's name), who asked when a person is at the keyboard, and
+ * whose roles narrow what list/read return (the viewer). Agents can add,
+ * never take away — there is no archive, restore or rename skill.
+ */
+async function executeReportsAction(
+  supabase: SupabaseClient,
+  skillName: string,
+  args: Record<string, unknown>,
+  ctx: { agent_type?: string; caller_agent_name?: string | null; attended_user_id?: string | null },
+): Promise<unknown> {
+  const s = (k: string) => (typeof args[k] === 'string' && (args[k] as string).trim() ? (args[k] as string).trim() : null);
+  const n = (k: string) => (args[k] === undefined || args[k] === null || args[k] === '' ? null : Number(args[k]));
+  const list = (k: string) => (Array.isArray(args[k]) ? (args[k] as unknown[]).map(String) : typeof args[k] === 'string' && args[k] ? String(args[k]).split(',').map((t) => t.trim()).filter(Boolean) : null);
+  const viewer = ctx.attended_user_id ?? null;
+  const call = async (fn: string, params: Record<string, unknown>) => {
+    const { data, error } = await supabase.rpc(fn as never, params as never);
+    if (error) return { error: error.message, code: 'HANDLER_ERROR', retryable: false };
+    return data;
+  };
+
+  if (skillName === 'publish_report') {
+    const kind = ctx.agent_type === 'mcp' ? 'mcp' : ctx.agent_type === 'flowwork' ? 'flowwork' : ctx.agent_type === 'flowpilot' ? 'flowpilot' : 'agent';
+    const by = kind === 'mcp' ? (ctx.caller_agent_name || 'External agent') : kind === 'flowwork' ? 'Flowwork' : kind === 'flowpilot' ? 'FlowPilot' : 'Agent';
+    // Who asked: the signed-in person when one is at the keyboard (verified);
+    // otherwise the agent's own word (requested_by), shown beside its name.
+    // Live blocks are checked here, with the parser the reader draws them
+    // with: a block the reader cannot draw, a skill that does not exist or
+    // one that is not a READ is refused now — not discovered by a person
+    // opening the report.
+    const content = typeof args.content === 'string' ? args.content : '';
+    if ((s('format') ?? 'markdown') === 'markdown' && content.includes('```live')) {
+      const segs = parseReport(content);
+      const problems: string[] = [];
+      for (const seg of segs) {
+        if (seg.kind === 'invalid') problems.push(`a live block: ${seg.errors.join('; ')}`);
+      }
+      const live = segs.filter((x): x is Extract<typeof x, { kind: 'live' }> => x.kind === 'live');
+      if (live.length) {
+        const names = [...new Set(live.map((x) => x.spec.skill))];
+        const { data: known, error: knownErr } = await supabase.from('agent_skills').select('name').in('name', names).eq('enabled', true);
+        if (knownErr) console.error('[reports] live skill lookup failed:', knownErr.message);
+        const have = new Set((known ?? []).map((r: { name: string }) => r.name));
+        for (const x of live) {
+          if (!have.has(x.spec.skill)) problems.push(`live block "${x.spec.title ?? x.spec.skill}": no enabled skill named ${x.spec.skill}`);
+          else if (classifyCall(x.spec.skill, x.spec.args) !== 'read') problems.push(`live block "${x.spec.title ?? x.spec.skill}": ${x.spec.skill} changes data — a live block may only read (list_/get_/check_ skills, or manage_* with a read action)`);
+        }
+      }
+      if (problems.length) {
+        return { status: 'refused', code: 'LIVE_BLOCK_INVALID', retryable: false,
+          hint: `Nothing was published. Fix and publish again: ${problems.join(' | ')}` };
+      }
+    }
+    let requestedBy = s('requested_by');
+    if (viewer) {
+      const { data: person, error: personErr } = await supabase.from('profiles').select('full_name, email').eq('id', viewer).maybeSingle();
+      if (personErr) console.error('[reports] requester lookup failed:', personErr.message);
+      requestedBy = (person?.full_name as string | undefined)?.trim() || (person?.email as string | undefined) || requestedBy;
+    }
+    return await call('report_publish', {
+      p_title: s('title'), p_content: typeof args.content === 'string' ? args.content : null,
+      p_format: s('format') ?? 'markdown', p_slug: s('slug'), p_description: s('description'),
+      p_category: s('category'), p_tags: list('tags'), p_note: s('note'),
+      p_expected_version: n('expected_version'), p_requested_by: requestedBy,
+      p_audience_module: s('audience_module'), p_subject_type: s('subject_type'), p_subject_id: s('subject_id'),
+      p_published_by: by, p_published_by_kind: kind,
+    });
+  }
+  if (skillName === 'list_reports') {
+    return await call('report_list', {
+      p_category: s('category'), p_search: s('search'), p_include_archived: args.include_archived === true,
+      p_subject_type: s('subject_type'), p_subject_id: s('subject_id'), p_limit: n('limit') ?? 50, p_viewer: viewer,
+    });
+  }
+  if (skillName === 'get_report') {
+    return await call('report_read', { p_slug: s('slug'), p_version: n('version'), p_viewer: viewer });
+  }
+  if (skillName === 'list_report_versions') {
+    return await call('report_version_list', { p_slug: s('slug'), p_viewer: viewer });
+  }
+  if (skillName === 'update_report_details') {
+    return await call('report_update_details', {
+      p_slug: s('slug'), p_title: s('title'), p_description: s('description'), p_category: s('category'), p_tags: list('tags'),
+    });
+  }
+  return { error: `Unknown reports skill ${skillName}`, code: 'NOT_FOUND', retryable: false };
 }
 
 async function executeFeedbackAction(
@@ -5362,7 +5644,7 @@ async function executeFeedbackAction(
 }
 
 async function executeOpenClawAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -5510,9 +5792,10 @@ async function executeOpenClawAction(
               payload: { raw_response: outboundData },
             });
           }
-        } catch (fetchErr: any) {
-          console.error('[openclaw_exchange] A2A outbound call failed:', fetchErr.message);
-          peerResponse = { error: fetchErr.message };
+        } catch (fetchErr) {
+          const fetchMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+          console.error('[openclaw_exchange] A2A outbound call failed:', fetchMsg);
+          peerResponse = { error: fetchMsg };
         }
       }
 
@@ -5697,7 +5980,7 @@ async function executeOpenClawAction(
 // =============================================================================
 
 async function executeConsultantsAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -7431,7 +7714,16 @@ async function executeWikiAction(
     };
   }
 
-  const action = String((args as any).action || 'list');
+  let action = String((args as any).action || 'list');
+  // add_tags is a parameter of update, but an agent tagging pages reaches for
+  // it as the action — on optic (2026-10-20…28) one did so on 17 pages, sending
+  // the labels as `tags`, and was answered "Unknown wiki action" each time. The
+  // intent is unambiguous: add these labels, keep the rest.
+  if (action === 'add_tags') {
+    const { tags, add_tags, ...rest } = args as Record<string, unknown>;
+    args = { ...rest, action: 'update', add_tags: Array.isArray(add_tags) ? add_tags : tags };
+    action = 'update';
+  }
 
   // Title → slug resolution, shared by get and update. It used to live inline in
   // `update` only, which meant the read surface was PICKIER than the write
@@ -7618,7 +7910,10 @@ async function executeWikiAction(
     return { slug, status: 'deleted' };
   }
 
-  return { error: `Unknown wiki action: ${action}` };
+  return {
+    error: `Unknown wiki action: ${action}. Valid actions: list, get, create, update, delete.`,
+    hint: 'To label a page, update it: tags replaces its labels, add_tags adds to them. To add a section, update with append_md.',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -10382,7 +10677,7 @@ function groupBy(items: any[], key: string): Record<string, number> {
 // =============================================================================
 
 async function executeLeadPipelineReview(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { limit = 25 } = args as any;
@@ -10575,7 +10870,7 @@ function normalizeLeadStatus(input: unknown): string | null {
 }
 
 async function executeLeadsAction(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { action = 'list', lead_id, status, score, search, limit = 50, lost_reason, lost_note } = args as any;
@@ -10709,7 +11004,7 @@ async function writtenMailBody(
 // /admin/integrations (site_settings.integrations.resend.config.emailConfig).
 // Falls back to a safe default only if nothing is configured. This is what
 // makes the Resend side panel actually take effect for agent-sent emails.
-async function resolveResendFrom(supabase: any): Promise<string> {
+async function resolveResendFrom(supabase: SupabaseClient): Promise<string> {
   try {
     const { data } = await supabase
       .from('site_settings')
@@ -10727,7 +11022,7 @@ async function resolveResendFrom(supabase: any): Promise<string> {
 // Log an outbound email to the gateway log so it appears in /admin/communications.
 // Fire-and-forget — never let a logging error fail the email send itself.
 async function logOutboundEmail(
-  supabase: any,
+  supabase: SupabaseClient,
   row: {
     status: 'sent' | 'failed' | 'simulated' | 'blocked';
     recipient: string | string[];
@@ -10772,7 +11067,7 @@ async function logOutboundEmail(
 
 
 async function executeSendEmailToLead(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const {
@@ -10914,7 +11209,7 @@ async function executeSendEmailToLead(
 // Supports dry_run for safe preview.
 
 async function executeSendInvoiceForOrder(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const {
@@ -11263,13 +11558,13 @@ function blogPublishedAt(value: unknown): string | null {
 // Every argument manage_blog_posts reads — the tool_definition's properties,
 // one for one (blog-post-update.guardrails.test.ts holds the two together).
 // Anything else is named back as `ignored`, never swallowed into "updated".
-const MANAGE_BLOG_POSTS_ARGS = new Set(['action', 'post_id', 'slug', 'status', 'scheduled_at', 'title', 'excerpt', 'content', 'content_json', 'featured_image', 'featured_image_alt', 'category', 'published_at', 'locale', 'retranslate', 'force', 'limit', 'seo_title', 'meta_description', 'og_image', 'meta_json']);
+const MANAGE_BLOG_POSTS_ARGS = new Set(['action', 'post_id', 'slug', 'status', 'scheduled_at', 'title', 'excerpt', 'content', 'content_json', 'featured_image', 'featured_image_alt', 'category', 'published_at', 'locale', 'retranslate', 'force', 'limit', 'seo_title', 'meta_description', 'og_image', 'meta_json', 'new_slug']);
 
 async function executeBlogPostsManagement(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
-  const { action = 'list', post_id, slug, status, title, excerpt, content, content_json, featured_image, featured_image_alt, category, published_at, locale, retranslate, seo_title, meta_description, og_image, meta_json, limit = 20 } = args as any;
+  const { action = 'list', post_id, slug, new_slug, status, title, excerpt, content, content_json, featured_image, featured_image_alt, category, published_at, locale, retranslate, seo_title, meta_description, og_image, meta_json, limit = 20 } = args as any;
 
   if (action === 'list') {
     let query = supabase.from('blog_posts')
@@ -11425,6 +11720,17 @@ async function executeBlogPostsManagement(
       if (!/^[a-z]{2}(-[a-z0-9]{2,8})?$/.test(l)) throw new Error(`locale "${locale}" is not a language tag — use "sv", "en", "en-GB".`);
       updates.locale = l;
     }
+    // A new address. Refused before any write when another post (or another
+    // post's translation) answers there; the 301 from the old address is
+    // written after the row moves (_shared/blog-slug-rename.ts).
+    let renamedFrom: string | undefined;
+    if (new_slug !== undefined) {
+      const { data: cur, error: curErr } = await supabase.from('blog_posts').select('slug').eq('id', resolvedPostId).single();
+      if (curErr) throw new Error(`Post read failed before the slug change: ${curErr.message}`);
+      const check = await checkBlogSlug(supabase, resolvedPostId, String(cur?.slug ?? ''), new_slug);
+      if (!check.ok) return { error: check.error, code: check.code, retryable: check.retryable, hint: check.hint };
+      if (!check.unchanged) { updates.slug = check.slug; renamedFrom = String(cur.slug); }
+    }
     // An argument this skill does not know is named back, never folded into a
     // silent "updated: true" (the agent envelope, CLAUDE.md). Nothing known to
     // change → no write at all: UNKNOWN_PARAMETERS when something unknown was
@@ -11434,13 +11740,24 @@ async function executeBlogPostsManagement(
     if (!acted) {
       return ignored.length
         ? { error: `Nothing was updated: ${ignored.join(', ')} ${ignored.length === 1 ? 'is not a parameter' : 'are not parameters'} of manage_blog_posts.`, code: 'UNKNOWN_PARAMETERS', retryable: true, ignored,
-            hint: 'Use the declared names (read_skill manage_blog_posts): title, excerpt, content | content_json, seo_title, meta_description, og_image, meta_json (merged), featured_image, featured_image_alt, category, status, scheduled_at, published_at, locale.' }
+            hint: 'Use the declared names (read_skill manage_blog_posts): title, excerpt, content | content_json, seo_title, meta_description, og_image, meta_json (merged), featured_image, featured_image_alt, category, status, scheduled_at, published_at, locale, new_slug.' }
         : { error: 'Nothing to update: pass at least one field to change (title, excerpt, content, seo_title, meta_description, …).', code: 'MISSING_REQUIRED_PARAMETER', retryable: true,
             hint: 'Name the field and its new value; update never writes an empty change.' };
     }
     const { data, error } = await supabase.from('blog_posts')
-      .update(updates).eq('id', resolvedPostId).select('id, title, status, featured_image, published_at, meta_json, reading_time_minutes').single();
+      .update(updates).eq('id', resolvedPostId).select('id, title, slug, status, featured_image, published_at, meta_json, reading_time_minutes').single();
     if (error) throw new Error(`Update post failed: ${error.message}`);
+    // The old address keeps working: 301 blog/<old> → blog/<new>. The row has
+    // already moved, so a failure here is reported, never thrown away.
+    let redirect: Record<string, unknown> | undefined;
+    if (renamedFrom !== undefined) {
+      try {
+        redirect = { ...(await redirectRenamedPost(supabase, data.id, renamedFrom, data.slug)) };
+      } catch (err) {
+        redirect = { error: (err as Error).message, from: `/blog/${renamedFrom}`, to: `/blog/${data.slug}`,
+          hint: `The post moved but /blog/${renamedFrom} is not redirected yet: manage_redirect action "create" from_path "blog/${renamedFrom}" to_path "blog/${data.slug}".` };
+      }
+    }
     const cat = category !== undefined ? await setBlogPostCategory(supabase, data.id, category) : undefined;
     // Translations follow the edit: only the units whose source changed are
     // translated, in the languages the post already has (§9).
@@ -11456,6 +11773,7 @@ async function executeBlogPostsManagement(
     }
     // `status` is the POST's status, read back from the row — never the word "updated".
     return { post_id: data.id, updated: true, status: data.status, featured_image: data.featured_image, published_at: data.published_at,
+      ...(renamedFrom !== undefined ? { slug: data.slug, previous_slug: renamedFrom, redirect } : {}),
       ...(imageNote ? { image_note: imageNote } : {}),
       ...(updates.content_json !== undefined ? { content_updated: true, reading_time_minutes: data.reading_time_minutes } : {}),
       ...(updates.meta_json !== undefined ? { meta: { seoTitle: data.meta_json?.seoTitle ?? null, description: data.meta_json?.description ?? null, ogImage: data.meta_json?.ogImage ?? null }, meta_keys_changed: Object.keys(metaPatch) } : {}),
@@ -11498,7 +11816,7 @@ async function executeBlogPostsManagement(
 // =============================================================================
 
 async function executeBookingsManagement(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { action = 'list', booking_id, status, assigned_employee_id, period = 'month', limit = 50, customer_email, customer_phone } = args as any;
@@ -11612,7 +11930,7 @@ function bouncePurchaseOrderArgs(
 }
 
 async function executeDbAction(
-  supabase: any,
+  supabase: SupabaseClient,
   table: string,
   skillName: string,
   args: Record<string, unknown>,
@@ -12282,7 +12600,7 @@ async function executeDbAction(
 
       // Direction partition is event-independent (review finding M3): compute
       // each template's bank direction ONCE instead of per event (was N×M).
-      const templatesByDirection: Record<'inflow' | 'outflow', any[]> = { inflow: [], outflow: [] };
+      const templatesByDirection: Record<'inflow' | 'outflow', AcctTemplate[]> = { inflow: [], outflow: [] };
       for (const t of allTemplates || []) {
         const dir = acctTemplateBankDirection(t.template_lines);
         if (dir) templatesByDirection[dir].push(t);
@@ -12321,7 +12639,7 @@ async function executeDbAction(
         // from 90: a fresh rule is proposed, after two confirmed bookings of
         // the counterparty it books itself.
         const rule = templateRules.find((r) => ruleMatches(r, ev)) ?? null;
-        const ruleTpl = rule ? directionCompatible.find((t: { id: string }) => t.id === rule.suggested_template_id) ?? null : null;
+        const ruleTpl = rule ? directionCompatible.find((t) => t.id === rule.suggested_template_id) ?? null : null;
         if (rule && ruleTpl) {
           const isPctR = acctIsPctTemplate(ruleTpl.template_lines);
           const netBaseR = isPctR ? acctNetBaseFromGross(ruleTpl.template_lines, grossCents) : grossCents;
@@ -12350,7 +12668,7 @@ async function executeDbAction(
         // Routing rule #1: vendor default wins (if direction-compatible).
         const vendorTplId = vendorDefaults.get(String(ev.counterparty || '').toLowerCase().trim());
         const vendorTpl = vendorTplId
-          ? directionCompatible.find((t: any) => t.id === vendorTplId) ?? null
+          ? directionCompatible.find((t) => t.id === vendorTplId) ?? null
           : null;
         if (vendorTpl) {
           const isPctV = acctIsPctTemplate(vendorTpl.template_lines);
@@ -14607,10 +14925,14 @@ async function executeDbAction(
             .select('id, po_number, total_cents, currency, notes, order_date, expected_delivery, vendor_id, vendors(name, email)')
             .eq('id', purchase_order_id).single();
 
-          const vendorEmail = (po as any)?.vendors?.email;
-          const vendorName = (po as any)?.vendors?.name;
+          const vendor = (po?.vendors ?? null) as { name?: string | null; email?: string | null } | null;
+          const vendorEmail = vendor?.email;
+          const vendorName = vendor?.name;
 
-          if (vendorEmail) {
+          // `po` is null when the order vanished between the update and this
+          // read; the vendor address then cannot exist either, so the email
+          // was already skipped. Say so, so the body below can read the order.
+          if (po && vendorEmail) {
             try {
               const composioKey = Deno.env.get('COMPOSIO_API_KEY');
               if (composioKey) {
@@ -15591,7 +15913,7 @@ const FLOWTABLE_PAGE = 1000;
 const safeFlowtableKey = (k: string): boolean => /^[a-zA-Z0-9_]+$/.test(k);
 
 async function resolveFlowtableTable(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<{ table?: any; error?: string }> {
   const { table_id, table, base } = args as any;
@@ -15631,7 +15953,7 @@ async function resolveFlowtableTable(
 }
 
 async function executeFlowtableAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -15643,7 +15965,7 @@ async function executeFlowtableAction(
 }
 
 async function executeFlowtableQuery(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const {
@@ -15983,7 +16305,7 @@ async function executeFlowtableQuery(
 }
 
 async function executeFlowtableRecord(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { action, id, values, merge = true } = args as any;
@@ -16064,7 +16386,7 @@ const flowtableSlugify = (s: string): string =>
     .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
 
 async function resolveFlowtableBase(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<{ base?: any; error?: string }> {
   const { base_id, base } = args as any;
@@ -16095,7 +16417,7 @@ async function resolveFlowtableBase(
 // cleaned options or an error string. Link/rollup targets may be given by
 // table name — resolved here so the stored config always holds ids.
 async function normalizeFlowtableFieldOptions(
-  supabase: any,
+  supabase: SupabaseClient,
   tableId: string,
   type: string,
   raw: Record<string, unknown>,
@@ -16165,7 +16487,7 @@ async function normalizeFlowtableFieldOptions(
 }
 
 async function executeFlowtableTable(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { action, name, fields, confirm = false } = args as any;
@@ -16245,7 +16567,7 @@ async function executeFlowtableTable(
 }
 
 async function executeFlowtableField(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const { action, name, key, type, options } = args as any;
@@ -16543,7 +16865,7 @@ function stripInternalFields(data: Record<string, unknown>): Record<string, unkn
 }
 
 async function executeGenericCrud(
-  supabase: any,
+  supabase: SupabaseClient,
   table: string,
   skillName: string,
   args: Record<string, unknown>,
@@ -16860,11 +17182,15 @@ async function executeGenericCrud(
           } else {
             createdItem = data;
           }
-        } catch (e: any) {
+        } catch (e) {
           if (auditEnabled) {
+            // The audit trail is the record of what went wrong; a non-Error
+            // throw has no `.message`, and an audited failure with a blank
+            // reason is the one entry nobody can reconstruct later.
             await writeAuditTrail(supabase, {
               ctx: auditCtx!, table, crud_action: 'create',
-              request_payload: auditPayload, success: false, error_message: e.message,
+              request_payload: auditPayload, success: false,
+              error_message: e instanceof Error ? e.message : String(e),
             });
           }
           throw e;
@@ -16908,11 +17234,12 @@ async function executeGenericCrud(
           } else {
             updatedItem = data;
           }
-        } catch (e: any) {
+        } catch (e) {
           if (auditEnabled) {
             await writeAuditTrail(supabase, {
               ctx: auditCtx!, table, crud_action: 'update', entity_id: id,
-              request_payload: auditPayload, before, success: false, error_message: e.message,
+              request_payload: auditPayload, before, success: false,
+              error_message: e instanceof Error ? e.message : String(e),
             });
           }
           throw e;
@@ -16951,7 +17278,8 @@ async function executeGenericCrud(
       default:
         return { error: `Unknown action '${action}' for table ${table}. Supported: list, get, create, update, delete.` };
     }
-  } catch (err: any) {
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err);
     // The generic path used to stop at the driver's message. A model in a loop
     // answers a dead end by looking for another door — the same failure the
     // parameter-contract bounce exists to prevent — so the three write
@@ -16959,13 +17287,15 @@ async function executeGenericCrud(
     const schema = await schemaColumns();
     const hint = buildCrudErrorHint({
       table,
-      message: err?.message ?? String(err),
+      message: errMsg,
       columns: schema[table] ?? [],
       knownTables: Object.keys(schema),
       sentKeys: Object.keys(args ?? {}).filter((k) => !k.startsWith('_')),
+      enums: _schemaEnums?.[table] ?? {},
+      sent: args ?? {},
     });
     if (hint) return hint;
-    return { error: `Generic CRUD error on ${table}: ${err.message}` };
+    return { error: `Generic CRUD error on ${table}: ${errMsg}` };
   }
 }
 
@@ -16981,6 +17311,8 @@ async function executeGenericCrud(
  * the caller still answers with what it knows.
  */
 let _schemaCache: Record<string, string[]> | null = null;
+/** table → enum column → accepted values; PostgREST lists them per property. Filled with _schemaCache. */
+let _schemaEnums: Record<string, Record<string, string[]>> | null = null;
 async function schemaColumns(): Promise<Record<string, string[]>> {
   if (_schemaCache) return _schemaCache;
   try {
@@ -16992,9 +17324,19 @@ async function schemaColumns(): Promise<Record<string, string[]>> {
     });
     if (!res.ok) return {};
     const spec = await res.json();
-    const defs = (spec?.definitions ?? {}) as Record<string, { properties?: Record<string, unknown> }>;
+    const defs = (spec?.definitions ?? {}) as Record<string, { properties?: Record<string, { enum?: unknown }> }>;
     _schemaCache = Object.fromEntries(
       Object.entries(defs).map(([name, def]) => [name, Object.keys(def?.properties ?? {})]),
+    );
+    _schemaEnums = Object.fromEntries(
+      Object.entries(defs).map(([name, def]) => [
+        name,
+        Object.fromEntries(
+          Object.entries(def?.properties ?? {})
+            .filter(([, p]) => Array.isArray(p?.enum))
+            .map(([col, p]) => [col, (p.enum as unknown[]).map(String)]),
+        ),
+      ]),
     );
     return _schemaCache;
   } catch {
@@ -17007,7 +17349,7 @@ async function schemaColumns(): Promise<Record<string, string[]>> {
 // =============================================================================
 
 async function executeAnalyticsAction(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
@@ -17342,7 +17684,7 @@ async function executeAnalyticsAction(
 
 
 async function executeWebhook(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   // Get active webhooks, find one matching the event
@@ -17426,11 +17768,11 @@ async function executeOpenResponsesRequest(
     }
 
     return await response.json();
-  } catch (err: any) {
+  } catch (err) {
     return {
       status: 'peer_unavailable',
       peer: effectivePeerName,
-      message: `OpenResponses call to '${effectivePeerName}' failed: ${err.message}`,
+      message: `OpenResponses call to '${effectivePeerName}' failed: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }
@@ -17440,7 +17782,7 @@ async function executeOpenResponsesRequest(
 // =============================================================================
 
 async function logActivity(
-  supabase: any,
+  supabase: SupabaseClient,
   activity: {
     agent: string;
     skill_id: string;
@@ -17553,7 +17895,7 @@ const SKILL_OBJECTIVE_MAP: Record<string, string[]> = {
 };
 
 async function trackObjectiveProgress(
-  supabase: any,
+  supabase: SupabaseClient,
   skillName: string,
   activityId: string,
 ): Promise<void> {
@@ -17617,10 +17959,8 @@ async function trackObjectiveProgress(
 //   B) content_base64 + mime_type + file_name → uploaded to documents bucket;
 //      text/* and markdown are decoded to content_md; other types saved with
 //      extraction_status='unsupported' (still archived, just not searchable).
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+// sha256Hex comes from _shared/media/site-export.ts — the one seal the export
+// writes, the installer verifies and the archive keeps.
 
 async function sealDocument(supabase: SupabaseClient, documentId: string | null | undefined, sha: string): Promise<void> {
   if (!documentId) return;
@@ -17698,7 +18038,7 @@ async function executeVerifyDocumentIntegrity(supabase: SupabaseClient, args: Re
 }
 
 async function executeUploadDocument(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
   ctx: { caller_user_id?: string; caller_api_key_id?: string },
 ): Promise<unknown> {
@@ -17810,8 +18150,8 @@ async function executeUploadDocument(
     const bin = atob(contentBase64!);
     bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  } catch (e: any) {
-    return { error: `Invalid base64 content: ${e.message}`, status: 'failed' };
+  } catch (e) {
+    return { error: `Invalid base64 content: ${e instanceof Error ? e.message : String(e)}`, status: 'failed' };
   }
 
   // Upload to documents bucket under agent-uploads/<peer>/<uuid>-<fileName>
@@ -17834,9 +18174,9 @@ async function executeUploadDocument(
       extractedMd = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
       if (extractedMd.length > 500_000) extractedMd = extractedMd.slice(0, 500_000) + '\n\n…[truncated]';
       extractionStatus = 'success';
-    } catch (e: any) {
+    } catch (e) {
       extractionStatus = 'failed';
-      extractionError = `Text decode failed: ${e.message}`;
+      extractionError = `Text decode failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } else if (isExtractable({ file_type: mt, file_name: fileName })) {
     // A PDF or an Office file (docx/pptx/xlsx) is queued for the extraction
@@ -17901,7 +18241,7 @@ async function executeUploadDocument(
 // unwanted change is one update away from undone (audit before overwrite).
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeUpdateSkillInstructions(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const name = typeof args.skill_name === 'string' ? args.skill_name.trim() : '';
@@ -17964,7 +18304,7 @@ async function executeUpdateSkillInstructions(
 const SEARCHABLE_KNOWLEDGE_SOURCES = ['pages', 'kb_articles', 'wiki_pages', 'handbook_chapters', 'documents'];
 
 async function executeSearchKnowledge(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const query = typeof args.query === 'string' ? args.query.trim() : '';
@@ -18012,7 +18352,7 @@ async function executeSearchKnowledge(
 const RETURN_REASON_CODES = ['defective','wrong_item','not_as_described','changed_mind','damaged_in_transit','other'];
 
 async function executeRequestReturn(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const email = typeof (args as any)._caller_email === 'string' ? (args as any)._caller_email : '';
@@ -18093,7 +18433,7 @@ async function moneyFormatter(supabase: unknown): Promise<(cents: number | null 
 }
 
 async function executeListCompanyRecords(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
   table: 'orders' | 'invoices',
 ): Promise<unknown> {
@@ -18176,7 +18516,7 @@ function companyScopeGuard(
 // company A can never open a return against company B's order. Write, role-gated.
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeRequestCompanyReturn(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const scope = companyScopeGuard(args, 'buyer');
@@ -18245,7 +18585,7 @@ async function executeRequestCompanyReturn(
 const QUOTE_ACCEPTABLE_FROM = ['sent', 'viewed', 'pending_approval'];
 
 async function executeApproveCompanyQuote(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const scope = companyScopeGuard(args, 'approver');
@@ -18304,7 +18644,7 @@ async function executeApproveCompanyQuote(
 const COMPANY_CONTACT_ROLES = ['viewer', 'buyer', 'approver', 'admin'];
 
 async function executeManageCompanyContacts(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const scope = companyScopeGuard(args, 'admin');
@@ -18405,7 +18745,7 @@ async function executeManageCompanyContacts(
 // instead of duplicated (metadata.reorder_of).
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeReorderCompanyOrder(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const scope = companyScopeGuard(args, 'buyer');
@@ -18494,7 +18834,7 @@ async function executeReorderCompanyOrder(
 // an identical open draft request.
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeRequestCompanyQuote(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const scope = companyScopeGuard(args, 'buyer');
@@ -18562,7 +18902,7 @@ async function executeRequestCompanyQuote(
 // No state is written here.
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeInitiateCompanyInvoicePayment(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const scope = companyScopeGuard(args, 'buyer');
@@ -18616,7 +18956,7 @@ async function executeInitiateCompanyInvoicePayment(
 // rule. Used by FlowPilot/peers to self-verify before releasing a new skill.
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeLintSkill(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const targetName = typeof args.skill_name === 'string' ? args.skill_name.trim() : '';
@@ -18830,7 +19170,7 @@ function lintOne(
 // any specific module being enabled.
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeListCommunications(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const ALLOWED_CHANNELS = new Set(['email', 'sms', 'slack', 'signing']);
@@ -18885,7 +19225,7 @@ async function executeListCommunications(
 }
 
 async function executeGetCommunication(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const id = typeof args.id === 'string' ? args.id.trim() : '';
@@ -18911,7 +19251,7 @@ async function executeGetCommunication(
 // Idempotent: dedupes on (source='email', source_id=message_id).
 // ─────────────────────────────────────────────────────────────────────────────
 async function executeEmailToTicket(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   // Accept both flat args and nested `event` (event-dispatcher passes the full event).
@@ -19087,7 +19427,7 @@ async function executeEmailToTicket(
 // title + excerpt, then calls the `social_post` task with them as topic/key
 // points. Replaces the dead db:content_proposals wiring (returned {items:[]}).
 async function executeSocialPostBatch(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
   supabaseUrl: string,
   serviceKey: string,
@@ -19120,7 +19460,7 @@ async function executeSocialPostBatch(
 // ad_creative_generate — fetch the campaign context, then generate creative via
 // the ad_creative ai-task and store it. Replaces the dead db:ad_creatives wiring.
 async function executeAdCreativeGenerate(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
   supabaseUrl: string,
   serviceKey: string,
@@ -19199,6 +19539,36 @@ async function composioExecuteTool(
   }
 }
 
+/**
+ * Does this instance hold an ACTIVE Composio account for the toolkit? true / false,
+ * or null when the list itself could not be read (then the caller tries and lets
+ * the tool's own answer speak). Matched the way composio-proxy's
+ * getConnectedAccountId matches: status ACTIVE and the toolkit slug, checked
+ * locally because Composio may ignore the filter.
+ */
+async function composioToolkitConnected(supabaseUrl: string, serviceKey: string, toolkit: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/composio-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
+      body: JSON.stringify({ action: 'list_apps' }),
+    });
+    if (!res.ok) return null;
+    const body = (await res.json().catch(() => null)) as { result?: unknown } | null;
+    type Account = { toolkit?: { slug?: string }; toolkit_slug?: string; appName?: string; status?: string };
+    const items = Array.isArray(body?.result) ? (body!.result as Account[]) : null;
+    if (!items) return null;
+    const want = toolkit.toLowerCase();
+    return items.some((a) => {
+      const slug = String(a?.toolkit?.slug ?? a?.toolkit_slug ?? a?.appName ?? '').toLowerCase();
+      const status = String(a?.status ?? '').toUpperCase();
+      return slug === want && (status === '' || status === 'ACTIVE');
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** Meta returns lists as { data: [...] } — sometimes one level deeper after the proxy. */
 function metaList(payload: unknown): Record<string, unknown>[] {
   const p = payload as { data?: unknown } | unknown[] | null;
@@ -19243,6 +19613,22 @@ async function executeSyncAdMetrics(
   const dryRun = dry_run === true;
   const exec = (action: string, a: Record<string, unknown>) => composioExecuteTool(supabaseUrl, serviceKey, 'metaads', action, a);
 
+  // 0. Meta Ads is OPTIONAL for Paid Growth, but the nightly Ad Metrics Sync
+  // comes with the module. Without a connected account there is nothing to
+  // sync — a refusal with work_done 0, so the unattended tick leaves no row and
+  // the Automation Health panel stops calling it erroring (optic, 2026-11-03:
+  // eight nights of "Tool METAADS_GET_AD_ACCOUNTS not found" — Composio's
+  // answer to a tool called with no connected account). A connected account
+  // whose call fails still fails below.
+  const notConnectedRefusal = {
+    status: 'refused',
+    code: 'NOT_CONNECTED',
+    retryable: false,
+    work_done: 0,
+    hint: 'No Meta Ads account connected — nothing to sync. Connect it under Modules → Composio → Quick Connect → metaads (the Meta Ads integration card explains the one-time Meta app + auth config), then run again.',
+  };
+  if (await composioToolkitConnected(supabaseUrl, serviceKey, 'metaads') === false) return notConnectedRefusal;
+
   // 1. Which ad account. Explicit arg → integration config → first the user can see.
   let account = typeof ad_account_id === 'string' && ad_account_id.trim() ? ad_account_id.trim() : '';
   if (!account) {
@@ -19259,12 +19645,8 @@ async function executeSyncAdMetrics(
   if (!accountsRes.ok) {
     const msg = accountsRes.error ?? 'unknown';
     const notConnected = /no (active )?connected account|not connected|connected_account|auth config|api key not configured/i.test(msg);
-    return {
-      error: notConnected
-        ? 'No Meta Ads account connected. Connect it under Modules → Composio → Quick Connect → metaads (the Meta Ads integration card explains the one-time Meta app + auth config), then run again.'
-        : `Meta Ads lookup failed: ${msg}`,
-      status: 'failed',
-    };
+    if (notConnected) return notConnectedRefusal;
+    return { error: `Meta Ads lookup failed: ${msg}`, status: 'failed' };
   }
   const accounts = metaList(accountsRes.data) as Array<{ id?: string; account_id?: string; name?: string; currency?: string }>;
   if (!account) {
@@ -19462,7 +19844,7 @@ async function executeSendWinbackCampaign(
 // (impressions/clicks/conversions/ctr/cpc) + budget/spend, flags pause/scale/
 // maintain. Read-only. Replaces the dead db:ad_campaigns wiring.
 async function executeAdOptimize(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const a = args as any;
@@ -19499,7 +19881,7 @@ async function executeAdOptimize(
 // competitor_monitor — scrape the competitor domain (web-scrape) then analyze it
 // via the competitor_analysis ai-task. Replaces the dead db:agent_memory wiring.
 async function executeCompetitorMonitor(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
   supabaseUrl: string,
   serviceKey: string,
@@ -19547,7 +19929,7 @@ async function executeCompetitorMonitor(
 // bulk_invoice_from_timesheets RPC. Was db:invoices (dead — listed invoices
 // instead of generating one). The bulk_ variant is the real engine.
 async function executeInvoiceFromTimesheets(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const a = args as any;
@@ -19660,7 +20042,7 @@ async function executeSendDunningReminders(
 }
 
 async function executeReplyToTicketViaEmail(
-  supabase: any,
+  supabase: SupabaseClient,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const ticketId = String(args.ticket_id || '').trim();

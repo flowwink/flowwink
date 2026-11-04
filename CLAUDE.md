@@ -266,7 +266,13 @@ claims, each finding with `fix.skill` + `args`. The pure rule lives in
 **`manage_blog_posts` update** — edits the BODY too: `content` (markdown, converted
 exactly as `write_blog_post`) or `content_json` (the Tiptap doc `get` returns), one of
 the two. Never delete + rewrite to change a post's text — the id, slug, revisions and
-category survive an update.
+category survive an update. `new_slug` moves the post's address: refused
+(`ALREADY_EXISTS`) when another post or another post's translation answers there;
+otherwise the platform writes the 301 `blog/<old>` → `blog/<new>` itself
+(`_shared/blog-slug-rename.ts`; earlier redirects re-pointed, copied overlay slugs
+moved). `/blog/<slug>` and `/<lang>/blog/<slug>` follow `page_redirects` when no post
+answers (`src/lib/blog-redirect.ts`), so a renamed, drafted or deleted post with a
+redirect never 404s.
 
 **`write_blog_post` / `translate_content`** — a post is written ONCE, in its
 source language (`language`, default the site's); `languages` (default every
@@ -424,6 +430,23 @@ one, `false` learns nothing, omitted keeps the legacy silent vendor ramp. Pass
 the proposal's `rule_id` with `match_source: "rule"` so the rule is credited.
 A rule is a template (`manage_reconciliation_rule` with
 `p_suggested_template_id`) and wins `propose_bookkeeping` outright.
+
+**`publish_report` — Reports (2026-11-03)** — what an agent worked out, as a
+versioned page staff open at `/admin/reports/<slug>` (the wiki says how things
+are; a report what happened). Markdown with the AgentReports blocks (`::kpis`,
+`::note warn`, `::details`, ```` ```chart bar|stacked|line ````) or a sandboxed
+HTML page; `read_skill publish_report` carries the guide. A ```` ```live ```` block
+(`{skill, args, kpis|chart|table}`) fetches its figures when opened, as the
+reader (`read_only: true` — agent-execute refuses anything but a read,
+`READ_ONLY_RUN`); `publish_report` refuses a malformed, unknown or writing
+live skill (`LIVE_BLOCK_INVALID`). A report of live blocks is a dashboard. Every publish is a
+version, identical content adds none, `expected_version` refuses a stale write
+(`STALE_VERSION`), `audience_module` narrows who may read it. The platform
+stamps the publisher (FlowPilot / Flowwork / the MCP key's agent name) and the
+person who asked — never a model. Agents add, never take away: archive,
+restore and rename are a person's (`report_person_*` refuse the service role),
+and what a person renamed an agent's next version keeps (`kept_person_fields`).
+docs/modules/reports.md.
 
 **`manage_kb_article` get** — accepts `article_id`, `slug` or `title` (NOT `id`). Title resolves case-insensitively (exact, then unique prefix); ambiguous titles error with guidance. Safe pattern for certainty: `list`/search first, then `get` by slug.
 

@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261104090000",
-      "migrations_count": 727,
+      "migration_head": "20261104210000",
+      "migrations_count": 730,
       "migrations": [
         {
           "version": "00000000000000",
@@ -2913,19 +2913,31 @@
         {
           "version": "20261104090000",
           "name": "users-last-sign-in"
+        },
+        {
+          "version": "20261104150000",
+          "name": "feedback-ping-site-name"
+        },
+        {
+          "version": "20261104200000",
+          "name": "reports-requester-and-mine"
+        },
+        {
+          "version": "20261104210000",
+          "name": "agent-day"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:993ac84e1f3013b1b851f4d09609f2ae12e86a3dd515ef3c59b7a6f28806e7a4",
-      "skill_count": 666,
+      "seed_hash": "sha256:59b24feaa1c9755cb653915caeb0634ab996fba0c9ce7431be57f1a23eb1c629",
+      "skill_count": 669,
       "module_count": 70
     },
     "edge_functions": {
       "count": 77,
-      "shared_hash": "sha256:6bd621302eabdf8a21e59dce115c7bbe4102ec25d0fcb1f0a1f3db48546241cb",
+      "shared_hash": "sha256:8d77b108ba336050e2de490d4f669c2f9567da8bdfdedae8aad475ef5402a1f0",
       "functions": {
-        "agent-execute": "sha256:06c0b47948fca016403c94389fa8e9ad3b57610bc383f1cbbda597f3625f07dd",
+        "agent-execute": "sha256:cb5cb776048943265be688b8f8d69bbd133e340e34f6c5cc1ab527fed8383ceb",
         "agent-operate": "sha256:9ecfb8b3a76c28526af8c796fdfa0561ebb3b802b65f03275874f93b14369a0c",
         "ai-task": "sha256:4aefd9f45ede216422b8a75b92c9145f83e4264059194c35be80398be7ed3bef",
         "automation-dispatcher": "sha256:c7862e942bb9fbfcb847d236cd7fece01ad934f354ac038d03f9128e4f2e006a",
@@ -2938,7 +2950,7 @@
         "composio-proxy": "sha256:6635c3a91cff990bed5a1e68f160c028e346c5c29d69935f496ac5af45f64b8d",
         "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:7f891dad970a77c2a72f7c88224f952ce082d8915ec544727a56cdc6b66a61b9",
-        "content-api": "sha256:b0034bfa98cd5fdf210a421957ff34baf1ff69413d8ddf78dfe56513412082ca",
+        "content-api": "sha256:c10d72fe013be6d14a0c39e3c280aa409a0b18f5f64066728ebbe861c8c8f370",
         "contract-billing-cron": "sha256:1786af36bebaa65cf00555d2728d1af85656eee8e5cd1d843ccea4f9ca8ec3c4",
         "contract-sign": "sha256:f4af280386c03f0d21840d528e450208b682c81324e22780a662512eaea7d41f",
         "create-checkout": "sha256:69da667fdd9aefd97db35b280a53c597e80c8744a1e8940286347ecd0b77c711",
@@ -2959,7 +2971,7 @@
         "extract-pdf-text": "sha256:9872c2f09ab05adc07eefc3b03aa8efe921a9dcc702a4b78544fb89109556e28",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",
         "flowpilot-heartbeat": "sha256:12fb83152244c262ae8450c0a2a25fe4f8ffff04aef8d62f3faf704472f4f645",
-        "flowpilot-lifecycle": "sha256:837f0ae3ae326be25c067589043101a35d9852d6860ec7d6384ac2b2a21b53af",
+        "flowpilot-lifecycle": "sha256:2fdabbe2c859a91f13e934c9dbc959b0c97a01ea65c9a074766d70c37d4273f5",
         "gatewayapi-ingest": "sha256:d6f74c384f0baac936737762d330c470636502afcc9af418b1c43db26134e4fe",
         "generate-invoice-pdf": "sha256:788baea5630795df69dd7b69f4177b12fd1432a061dca2e0bf2cc562fb6ffb2d",
         "get-page": "sha256:3e42751911164c9d6c350b931a4e64a4824166a6bef8d02e526ad378c8f3921b",
@@ -2981,7 +2993,7 @@
         "quote-pay": "sha256:eac676922cee4e9ebe19650afd1ec708a48c2b3efd8d56d0f77654d21a272c00",
         "quote-sign": "sha256:39d7fefbce4d0a711c3b7309803513e1517ed726b733e8c925a02c4649f0c95b",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:50ef39595cce83db35e5b3859a947b1ebcd41f80e94250dde26ba7127f6cf240",
+        "run-platform-tests": "sha256:36a47b9a3d85ff8049ea5dad4290a333478153abe09aa0299fd520cffcabbff8",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",
         "send-webhook": "sha256:796644e9ab3d12a339c4fcc411fb28a9be6ef235b109e4e2e22262d53a44cbcc",
         "setup-database": "sha256:49f03dc85ea4d48cd53b7760b0a68f4e2a628a217207b0fe4590d931f594e56e",

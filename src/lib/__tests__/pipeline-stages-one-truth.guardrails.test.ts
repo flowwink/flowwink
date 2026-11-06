@@ -158,3 +158,48 @@ describe('kontaktens statusväljare följer den konfigurerade tratten', () => {
     expect(leadUtils).not.toMatch(/lead: \{ label: 'Contact'/);
   });
 });
+
+/**
+ * Two axes, two words. A CONTACT has a lifecycle (prospect → lead →
+ * opportunity → customer); a DEAL has a pipeline stage. Both used to start
+ * with "Lead", and someone not raised on HubSpot read them as one thing
+ * (Peter at optic, 2026-11-05). The contact keeps the industry word; the
+ * deal's first column is "New" — a deal that exists is already past lead.
+ */
+describe("a deal's first stage is 'New'; 'Lead' is the contact's word", () => {
+  const seedMigration = readFileSync(
+    resolve(__dirname, '../../../supabase/migrations/20261105090000_deal-stage-new-not-lead.sql'), 'utf-8');
+  const odooImport = readFileSync(
+    resolve(__dirname, '../../../supabase/functions/_shared/import/odoo.ts'), 'utf-8');
+  const leadDetailPage = readFileSync(
+    resolve(__dirname, '../../../src/pages/admin/LeadDetailPage.tsx'), 'utf-8');
+  const leadsListPage = readFileSync(
+    resolve(__dirname, '../../../src/pages/admin/LeadsPage.tsx'), 'utf-8');
+
+  it('the seed, the pre-load fallback and the Odoo relabel agree on "New" for deal/lead', () => {
+    expect(seedMigration).toMatch(/\('deal','lead','New'/);
+    expect(seedMigration).toMatch(/\('lead','lead','Lead'/);
+    expect(dealsPage).toMatch(/\{ key: 'lead', name: 'New' \}/);
+    expect(odooImport).toMatch(/lead: 'New', prospecting: 'Prospecting'/);
+  });
+
+  it('the rename touches only the seed\'s own word — an operator-named column stays', () => {
+    expect(seedMigration).toMatch(/SET name = 'New'\s+WHERE entity_type = 'deal' AND key = 'lead' AND name = 'Lead'/);
+  });
+
+  it("manage_deal tells the agent the stage KEYS before the call, and that `lead` is shown as New", () => {
+    // The handler normalises "new" → lead and rejects unknown keys, but a
+    // schema with a bare `stage: { type: 'string' }` taught the agent the
+    // values only through the error. Pre-call contract, not post-call repair.
+    const dealsModule = readFileSync(
+      resolve(__dirname, '../../../src/lib/modules/deals-module.ts'), 'utf-8');
+    expect(dealsModule).toMatch(/stage: \{\s*type: 'string',\s*description: 'Pipeline stage KEY, in order: lead \(the first column — shown as "New"/);
+    expect(dealsModule).toMatch(/prospecting, qualified, proposal, negotiation, closed_won, closed_lost/);
+    expect(dealsModule).toMatch(/Adding "a new lead" is add_lead, never a deal/);
+  });
+
+  it("the contact's axis is labelled Lifecycle, not Status, beside the deal's Stage", () => {
+    expect(leadDetailPage).toMatch(/>Lifecycle:<\/span>/);
+    expect(leadsListPage).toMatch(/placeholder="Set lifecycle…"/);
+  });
+});

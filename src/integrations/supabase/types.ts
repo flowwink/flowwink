@@ -1137,6 +1137,8 @@ export type Database = {
           mcp_exposed: boolean | null
           name: string
           origin: Database["public"]["Enums"]["skill_origin"]
+          quarantine_reason: string | null
+          quarantined_at: string | null
           requires: Json | null
           requires_staging: boolean
           scope: Database["public"]["Enums"]["agent_scope"]
@@ -1155,6 +1157,8 @@ export type Database = {
           mcp_exposed?: boolean | null
           name: string
           origin?: Database["public"]["Enums"]["skill_origin"]
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           requires?: Json | null
           requires_staging?: boolean
           scope?: Database["public"]["Enums"]["agent_scope"]
@@ -1173,6 +1177,8 @@ export type Database = {
           mcp_exposed?: boolean | null
           name?: string
           origin?: Database["public"]["Enums"]["skill_origin"]
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           requires?: Json | null
           requires_staging?: boolean
           scope?: Database["public"]["Enums"]["agent_scope"]
@@ -1522,6 +1528,7 @@ export type Database = {
           key_prefix: string
           last_used_at: string | null
           name: string
+          revoked_at: string | null
           scopes: string[] | null
         }
         Insert: {
@@ -1533,6 +1540,7 @@ export type Database = {
           key_prefix: string
           last_used_at?: string | null
           name: string
+          revoked_at?: string | null
           scopes?: string[] | null
         }
         Update: {
@@ -1544,6 +1552,7 @@ export type Database = {
           key_prefix?: string
           last_used_at?: string | null
           name?: string
+          revoked_at?: string | null
           scopes?: string[] | null
         }
         Relationships: []

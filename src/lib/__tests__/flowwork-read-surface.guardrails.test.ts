@@ -66,6 +66,20 @@ describe('the read surface is fail-closed', () => {
     }
   });
 
+  it('the reads without a read prefix the 2026-11-07 sweep found are reads (handlers verified: no writes)', () => {
+    for (const name of [
+      'estimate_delivery_date', 'export_calendar_ics', 'export_survey_responses', 'export_voucher_archive_manifest',
+      'read_partner', 'read_sie_file', 'summarize_candidate_pipeline', 'validate_address', 'verify_document_integrity',
+    ]) {
+      expect(isReadSkill(name), name).toBe(true);
+      expect(classifyCall(name, {}), name).toBe('read');
+    }
+    // Their neighbours that DO write or reach outside stay staged.
+    for (const name of ['fetch_ecb_rates', 'inspect_rendered_page', 'inspect_return', 'report_finding', 'scan_gmail_inbox']) {
+      expect(isReadSkill(name), name).toBe(false);
+    }
+  });
+
   it('explicit extras are reads even without the prefix', () => {
     for (const name of ['accounting_reports', 'ar_aging_report', 'year_end_readiness', 'prepare_vat_return']) {
       expect(isReadSkill(name), name).toBe(true);
@@ -143,7 +157,7 @@ describe('staged writes: propose, never execute', () => {
     const { readFileSync } = await import('fs');
     const { join } = await import('path');
     const src = readFileSync(
-      join(__dirname, '../../../supabase/functions/agent-execute/index.ts'),
+      join(__dirname, '../../../supabase/functions/_shared/execute/core.ts'),
       'utf8',
     );
     expect(src).toMatch(/\(body as any\)\.force_staged === true/);

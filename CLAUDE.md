@@ -148,7 +148,14 @@ first on Free is the 150 s wall-clock on long jobs (`install_template`,
 - `content-api` — programmatic content access
 
 **Agent / FlowPilot:**
-- `agent-execute`, `agent-operate`, `agent-reason` — agentic AI workflow functions
+- `agent-execute`, `agent-operate`, `agent-reason` — agentic AI workflow functions.
+  **agent-execute's pipeline lives in `_shared/execute/core.ts`** (`handleAgentExecute`:
+  every gate in order, the dispatch, the envelope, the journal, and the handlers it
+  dispatches to); `agent-execute/index.ts` is the HTTP door, `serve(handleAgentExecute)`.
+  A caller inside the same project (the ReAct loop, the gateway, a dispatcher) can
+  import the core and run a skill without the HTTP hop — the same reasoning as
+  "FlowPilot does NOT call its own MCP gateway" below. The guards that read the
+  pipeline's source read `_shared/execute/core.ts`.
 - `flowpilot-heartbeat`, `flowpilot-briefing`, `flowpilot-distill`, `flowpilot-learn` — autonomous operator lifecycle
 - `mcp-server` — outward-facing MCP gateway for external agents/federation peers
 
@@ -209,6 +216,24 @@ The system has 600+ skills. Exposing all of them as individual MCP tools floods 
 It lives in `_shared/skills/` (NOT under `pilot/`) precisely because the gateway must work for external agents even when the FlowPilot module is disabled. When promoting capability-discovery logic, keep it here. FlowPilot's actual intelligence (soul, objectives, ReAct decisions) stays in FlowPilot; only the "which skill is relevant" lookup is shared. Avoid naming it "Router"/"Selector" — selection is by scoring on metadata, not hardcoded dispatch (Law 1).
 
 **FlowPilot does NOT call its own MCP gateway internally** — it shares the Engine and hits the DB / `executeSkill` directly. Deliberate, not an omission: MCP would add an HTTP hop, auth, and JSON-RPC serialization for zero gain when you're already inside the same Deno process with service-role DB access. MCP is a transport for *crossing a trust/process boundary*; FlowPilot is already on the inside of it.
+
+**The native transport is the caller's (2026-11-06).** `getMcpHandler` runs
+under the request store (`requestContext.run` in the `/*` route), so
+`loadExposedSkills` sees the peer's group ceiling, `filterByOwner` makes
+`tools/list` the owner's reach, the handler cache is keyed by `?groups=` +
+ceiling + owner (+ schema flavour, mode) and lives 60 s — a module switched
+off leaves the list within a minute — and every native tool handler runs
+`scopeAllowsSkill`, `skillWithinGroups` and `ownerMayRun` before
+`executeSkill`, as REST does. Until then the server was built outside the
+store and cached per `?groups=` alone for five minutes.
+**One description, every surface (2026-11-06).** The row's `description`
+(the one with `Use when:` / `NOT for:`, `rankableDef`) is what native
+`tools/list`, `/rest/tools`, `search_skills` and FlowPilot's pre-narrow all
+send; `tool_definition.function.description` is the fallback. A ratchet
+(`skill-descriptions-carry-the-markers`) keeps every exposed skill marked
+and under 2000 characters — a manual belongs in `instructions`, read with
+`read_skill`. `?groups=<module>` narrows through the owner map
+(`skillModuleToken`), so every module that owns a skill is a token.
 
 ### REST compatibility layer (`/rest/*`)
 
@@ -351,9 +376,15 @@ beside its payload, so an operator branches instead of guessing:
 - A **read-only API key** (Developer → MCP Keys, "Read-only key"; the
   `read_only` scope) runs read skills as they are, forces `dry_run: true` on a
   write that declares it, and refuses every other write with `READ_ONLY_KEY`
-  before anything reaches agent-execute (`executeSkill` in `mcp-server`). The
-  scope is a mode, not a grant: it never widens or narrows which skills exist.
-  Hand one to an agent you are still evaluating.
+  before anything reaches agent-execute (`executeSkill` in `mcp-server`). A
+  read is what the platform's one read rule says (`classifyCall` in
+  `_shared/skills/read-surface.ts` — the rule a live report block and
+  FlowWork's loop are held to), so `manage_*` with a read action passes. The
+  verdict holds on every transport: the request context is opened in the
+  auth middleware (until 2026-11-06 only the native transport had it, and a
+  read-only key could write over `/rest/execute`). The scope is a mode, not
+  a grant: it never widens or narrows which skills exist. Hand one to an
+  agent you are still evaluating.
 - `month_close_checklist(p_year, p_month)` is what a month is closed against
   (the Month close tab reads the same function); run it, fix its `blocking`
   checks, then call its `next` (close_accounting_period). Months close in order.
@@ -364,10 +395,39 @@ beside its payload, so an operator branches instead of guessing:
   bytes (`content_sha256`); `verify_document_integrity` re-verifies and reports
   a mismatch instead of re-sealing it; `export_voucher_archive_manifest` is the
   year's arkivförteckning.
+- **Quiet when there is nothing to say (2026-11-06).** Every automatic
+  surface asks which modules are on before it speaks (`loadEnabledModules`
+  in `_shared/modules.ts`: one read, many questions). The daily briefing
+  gates every section and action item per module, has no health score
+  without a signal, and on a day with no action item and no figure writes
+  its `flowpilot_briefings` row and sends nothing. `check_operations` judges
+  an area only when its module is on (automations always) and answers
+  `areas`; `check_books` accuses nothing before `books_started_on()`. The
+  weekly digest is an automation, never a starter objective — an always-
+  active objective is what kept the heartbeat's idle short-circuit from
+  firing. A new automatic surface follows the same rule: ask the modules,
+  say nothing about one that is off, send nothing on an empty day. The
+  nightly fresh install proves it first (`npm run qa:quiet` before `qa:prep`,
+  `scripts/quiet-by-default.ts`): a red run means something alarms a virgin
+  instance again.
+- **A module that is off is off for agents (2026-11-06).** The gate is the
+  skill's OWNING module (`skillModuleOn` in `_shared/skills/module-gate.ts`,
+  from the generated owner map), not its category: the gateway's discovery
+  and FlowPilot's skill loading hide the skills of an off module, and
+  agent-execute refuses one with `MODULE_DISABLED` (a refusal: `status:
+  'refused'`, no `error`, never retried, never counted toward self-healing).
+  Platform skills, agent-made skills and the kept utilities
+  (`TEARDOWN_KEEP_SKILLS`) always pass; a missing modules row fails open.
+  A hidden row of an off module answers `MODULE_DISABLED` too, never "Skill
+  not found". The skill sync heals leaked rows for every off module when the
+  modules row is present; the wake-on-write of an untouched module (Law 4,
+  `autoActivateModule`) needs a row that is still enabled, which the heal
+  ends — in practice a module is switched on under Modules or with
+  `manage_modules`.
 - `check_operations` is the operations twin of `check_books` (2026-10-27,
   after Hermes' first morning on Nordbrygg): one read across sales,
-  receivables, contracts, support, field service, automations and the chat,
-  each finding with `fix.skill` + `args`, plus `assignable` — the auth user
+  receivables, contracts, support, field service, automations and the chat
+  — per ENABLED module — each finding with `fix.skill` + `args`, plus `assignable` — the auth user
   ids a ticket (`manage_ticket assigned_to`) or a visit (`manage_service_order
   technician_id`) can go to; empty means the owner must invite people, an
   agent cannot. A renewal window is answered with `manage_contract
@@ -390,6 +450,42 @@ beside its payload, so an operator branches instead of guessing:
   RECEIVES: the public board at `/feedback`, `manage_feedback` (list /
   set_status / comment / delete / `instances` — the fleet that pings) and
   `/admin/feedback`. One code path for the admin form and an agent.
+- **A need with alternatives is a capability (2026-11-07).** A module
+  states `requiredCapabilities: ['email' | 'web:read' | 'web:search']`
+  (`useModules.tsx`, `CAPABILITY_PROVIDERS`) and any provider of it
+  satisfies the need — Resend, SMTP or Composio for mail; the built-in
+  reader, Firecrawl or Jina for reading the web. `requiredIntegrations` is
+  for a product with no alternative (a guard refuses one that has). The
+  module card names the capability, never one product.
+- **A module that is off is off for visitors too (2026-11-07).**
+  `PublicModuleGate` (the router's root layout) answers the site's own 404
+  for a public route of a module the row does not carry as enabled —
+  `public-route-modules.ts` maps route prefixes (`/shop`, `/feedback`,
+  `/blog`, `/kb`, `/jobs`, `/docs`, the token pages …) to their module, with
+  or without a `/:lang` prefix; a mapped route waits for the row rather than
+  serving the page. A guard reads every public route out of `App.tsx`: map a
+  new public page or declare it module-less there.
+- **A module that is off is off for the browser too (2026-11-07).** The
+  sidebar hid a disabled module's pages, but the route gate asked only the
+  role matrix, so an admin who typed the URL was served the page and its
+  first write woke the module. `moduleOffForRoute` (`admin-route-access.ts`)
+  reads the modules row exactly as the sidebar does; `AdminLayout` and
+  `AdminRouteGate` answer with `ModuleOff` (the module's name, a door to
+  Modules for an admin) for everyone, admins included. Routes without a
+  module (`/admin`, `/admin/modules`, personal pages) and a missing row never
+  block.
+- **One module switch (2026-11-06).** `_shared/modules/module-switch.ts`
+  is the only code that switches a module on or off: the row, the skills
+  (both flags in one write, via `hideSkills`), every automation that runs one
+  of the module's skills, and `site_settings.module_teardowns` with the
+  automation ids enable resumes. Its callers: `manage_modules`, the Modules
+  page (`src/lib/module-switch.ts` builds the catalogues from the registry
+  and runs it as the admin), `manage_site_settings key=modules` (the
+  `enabled` flags go through the switch, the rest merges) and
+  `install_template` (parents included, `withParents`). A new writer of the
+  modules row runs the switch — never the row alone, which is the state
+  `autoActivateModule` wakes a module from. The rules (graph, core,
+  protected, which skills) stay in `module-plan.ts`.
 - **The operator runs the platform too (2026-10-31).** `module_usage_report`
   (read) says per module: rows in its declared tables (`tables_with_rows` —
   configuration counts, read it), calls by people/agents, automation runs, who

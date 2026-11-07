@@ -1926,6 +1926,111 @@
       "fallback": "Subtotal"
     },
     {
+      "key": "room.closedBody",
+      "group": "room",
+      "fallback": "The owner has closed the room. Ask them if you still need the documents."
+    },
+    {
+      "key": "room.closedTitle",
+      "group": "room",
+      "fallback": "This room is closed"
+    },
+    {
+      "key": "room.contents",
+      "group": "room",
+      "fallback": "Contents"
+    },
+    {
+      "key": "room.download",
+      "group": "room",
+      "fallback": "Download"
+    },
+    {
+      "key": "room.empty",
+      "group": "room",
+      "fallback": "Nothing has been placed in this room yet."
+    },
+    {
+      "key": "room.firstVisit",
+      "group": "room",
+      "fallback": "Your first visit — everything here is new to you."
+    },
+    {
+      "key": "room.footer",
+      "group": "room",
+      "fallback": "This link is personal. Every opening, view and download is recorded in your name."
+    },
+    {
+      "key": "room.invalidBody",
+      "group": "room",
+      "fallback": "The link is invalid, has expired or has been revoked. Ask the person who gave it to you for a new one."
+    },
+    {
+      "key": "room.invalidTitle",
+      "group": "room",
+      "fallback": "This link does not open anything"
+    },
+    {
+      "key": "room.kicker",
+      "group": "room",
+      "fallback": "Document room"
+    },
+    {
+      "key": "room.lastVisit",
+      "group": "room",
+      "fallback": "Your last visit"
+    },
+    {
+      "key": "room.loading",
+      "group": "room",
+      "fallback": "Opening the room…"
+    },
+    {
+      "key": "room.mayDownload",
+      "group": "room",
+      "fallback": "you may view and download"
+    },
+    {
+      "key": "room.mayView",
+      "group": "room",
+      "fallback": "you may view in the browser"
+    },
+    {
+      "key": "room.new",
+      "group": "room",
+      "fallback": "New"
+    },
+    {
+      "key": "room.newSince",
+      "group": "room",
+      "fallback": "new since then"
+    },
+    {
+      "key": "room.openedFor",
+      "group": "room",
+      "fallback": "Opened for"
+    },
+    {
+      "key": "room.otherFolder",
+      "group": "room",
+      "fallback": "Other documents"
+    },
+    {
+      "key": "room.seenByYou",
+      "group": "room",
+      "fallback": "You have opened this"
+    },
+    {
+      "key": "room.until",
+      "group": "room",
+      "fallback": "until"
+    },
+    {
+      "key": "room.view",
+      "group": "room",
+      "fallback": "View"
+    },
+    {
       "key": "shop.add",
       "group": "shop",
       "fallback": "Add"

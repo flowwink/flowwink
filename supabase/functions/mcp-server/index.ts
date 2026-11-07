@@ -5,6 +5,7 @@ import { getServiceClient } from '../_shared/supabase-clients.ts';
 import { readAllRows } from '../_shared/read-all-rows.ts';
 import { AsyncLocalStorage } from "node:async_hooks";
 import templateAuditData from "./template-audit.json" with { type: "json" };
+import { classifyCall, isReadSkill } from "../_shared/skills/read-surface.ts";
 import { flattenSchemaForOpenAI, hasUnsafeTopLevelKeyword } from "../_shared/mcp/schema.ts";
 import {
   buildModuleToCategory,
@@ -13,7 +14,10 @@ import {
   resolveGroupTokens as resolveGroupTokensShared,
   SKILL_CATEGORY_MODULES as SHARED_SKILL_CATEGORY_MODULES,
   loadActiveModuleIds,
+  skillModuleToken,
+  SKILL_OWNER_MODULE_IDS,
 } from "../_shared/mcp/groups.ts";
+import { skillModuleOn } from "../_shared/skills/module-gate.ts";
 // Platform skill-relevance primitive — shared by FlowPilot (reason.ts) AND this
 // outward-facing MCP gateway. Lives under skills/ (not pilot/) precisely because
 // it must work for external agents even when the FlowPilot module is disabled.
@@ -22,7 +26,7 @@ import { ownerModuleOf } from "../_shared/skills/owner-module.ts";
 import { buildSkillCatalog } from "../_shared/skills/dispatch.ts";
 
 // Per-request context propagated through MCP handlers (cached transport bypasses Hono ctx)
-const requestContext = new AsyncLocalStorage<{ callerUserId: string | null; callerApiKeyId: string | null; peerGroups?: string[]; ownerUserId?: string | null; agentName?: string | null; readOnly?: boolean }>();
+const requestContext = new AsyncLocalStorage<{ callerUserId: string | null; callerApiKeyId: string | null; peerGroups?: string[]; ownerUserId?: string | null; agentName?: string | null; readOnly?: boolean; scopes?: string[] }>();
 
 // The scope that makes a key read-only (Developer → MCP Keys, "Read-only key"):
 // reads run as they are, a write that declares `dry_run` runs with it forced
@@ -52,8 +56,13 @@ async function sha256(raw: string): Promise<string> {
     .join("");
 }
 
+// One client per isolate. Every call site built its own (`createClient` per
+// call, 648 of them in one owner filter), and the REST path measured 220 ms
+// where native measured 32 ms for the same skill — the service client holds
+// no per-request state (no session, no user), so one is enough.
+let serviceClientSingleton: ReturnType<typeof getServiceClient> | null = null;
 function serviceClient() {
-  return getServiceClient();
+  return serviceClientSingleton ??= getServiceClient();
 }
 
 // ---------- auth ----------
@@ -249,9 +258,12 @@ function buildToolAnnotations(skill: SkillRow): Record<string, unknown> {
   const declaredRisk = td.risk === "low" || td.risk === "medium" || td.risk === "high" ? td.risk : null;
   const declaredReversible = typeof td.reversible === "boolean" ? td.reversible : null;
 
-  // Read-only heuristic: list_*/get_*/search_*/check_*/lookup_* + trust=auto
+  // Read-only: the platform's read rule (read-surface.ts) first, then the
+  // older verb list and a declared low risk — so the hint tools/list shows
+  // agrees with what a read-only key is allowed to run.
   const readOnly =
-    (/^(list_|get_|search_|check_|lookup_|find_|fetch_|read_|describe_|preview_)/.test(name) ||
+    (isReadSkill(name) ||
+      /^(lookup_|fetch_|read_|describe_)/.test(name) ||
       (declaredRisk === "low" && declaredReversible === null)) &&
     !isStaged;
 
@@ -302,6 +314,12 @@ const TOOLSET_GROUPS = Object.keys(SKILL_CATEGORY_MODULES) as string[];
 
 // Reverse map: module-id → category, so ?groups=leads resolves to "crm".
 const MODULE_TO_CATEGORY: Record<string, string> = buildModuleToCategory(SKILL_CATEGORY_MODULES);
+// Every module that owns a skill is a token, whether or not a category lists
+// it — the owner map is what the narrowing reads (skillModuleToken).
+for (const owner of SKILL_OWNER_MODULE_IDS) {
+  const key = owner.toLowerCase();
+  if (owner !== "platform" && !(key in MODULE_TO_CATEGORY)) MODULE_TO_CATEGORY[key] = "*";
+}
 
 /**
  * Composite groups: expand a single token into multiple categories so a
@@ -357,59 +375,87 @@ function resolveGroupTokens(tokens: string[]): { categories: Set<string>; module
  * `meta.truncated` lets a caller that reasons from absence tell a short answer
  * from a complete one — `search_skills` passes it on as `complete`.
  */
+// The exposed list, remembered for a minute per (groups asked for, peer
+// ceiling). Every REST call and every dispatch tool (search_skills,
+// read_skill, execute_skill) re-read the whole register — 650 rows with
+// their schemas, ~0.7 MB — to find ONE name: /rest/execute measured 224 ms
+// where native tools/call, whose handler is cached, measured 35 ms for the
+// same skill (local stack, 2026-11-07). The same minute the handler cache
+// gives: a module switched off, a skill disabled, leaves the list within it —
+// and the run is still judged by agent-execute's own gate (MODULE_DISABLED,
+// enabled = true) on every call. The promise is cached, so concurrent calls
+// share one read.
+const exposedSkillsCache = new Map<string, { until: number; load: Promise<{ rows: SkillRow[]; truncated: boolean }> }>();
+const EXPOSED_SKILLS_TTL_MS = 60 * 1000;
+
 async function loadExposedSkills(
   filterGroups?: string[],
   meta?: { truncated?: boolean },
 ): Promise<SkillRow[]> {
-  const sb = serviceClient();
-  const [skillsResult, activeModules] = await Promise.all([
-    readAllRows<SkillRow>(sb, "agent_skills", {
-      columns: "name, description, category, handler, trust_level, requires_staging, tool_definition",
-      orderBy: "name",
-      filter: (q) => q.eq("enabled", true).eq("mcp_exposed", true),
-    }),
-    loadActiveModules(),
-  ]);
-
-  if (meta) meta.truncated = skillsResult.truncated;
-
-  if (skillsResult.error) {
-    console.error("Failed to load skills:", skillsResult.error);
-    return [];
-  }
-  if (skillsResult.truncated) {
-    console.error(
-      "MCP: the skill register did not fit inside the read ceiling — the catalog " +
-      "below is a prefix, so absence from it proves nothing.",
-    );
-  }
-
-  const all = skillsResult.rows;
-  let filtered = all.filter((s) => isCategoryActive(s.category, activeModules));
-
-  // Federation-peer ceiling: a peer's toolset_groups cap what it can DISCOVER,
-  // intersected with any ?groups= it passed (ceiling always wins). Empty = open.
   const peerGroups = requestContext.getStore()?.peerGroups ?? [];
-  const effGroups = effectiveGroups(filterGroups, peerGroups);
-
-  // Apply toolset group filter — supports category tokens, composite tokens,
-  // and module-level sub-filters (e.g. ?groups=invoicing narrows commerce).
-  if (effGroups && effGroups.length > 0) {
-    const { categories, modules } = resolveGroupTokens(effGroups);
-    filtered = filtered.filter((s) => {
-      if (categories.has(s.category)) return true;
-      if (modules.size === 0) return false;
-      const mod = classifySkillModule(s.name, s.handler);
-      return mod ? modules.has(mod) : false;
-    });
+  const cacheKey = JSON.stringify([filterGroups ?? null, peerGroups]);
+  const hit = exposedSkillsCache.get(cacheKey);
+  if (hit && hit.until > Date.now()) {
+    const { rows, truncated } = await hit.load;
+    if (meta) meta.truncated = truncated;
+    return rows;
   }
+  const load = (async (): Promise<{ rows: SkillRow[]; truncated: boolean; failed?: boolean }> => {
+    const sb = serviceClient();
+    const [skillsResult, activeModules] = await Promise.all([
+      readAllRows<SkillRow>(sb, "agent_skills", {
+        columns: "name, description, category, handler, trust_level, requires_staging, tool_definition",
+        orderBy: "name",
+        filter: (q) => q.eq("enabled", true).eq("mcp_exposed", true),
+      }),
+      loadActiveModules(),
+    ]);
 
-  console.log(
-    `MCP: ${filtered.length}/${all.length} skills exposed` +
-    (filterGroups ? ` (groups: ${filterGroups.join(",")})` : "") +
-    ` (${activeModules.size} active modules)`,
-  );
-  return filtered;
+    if (skillsResult.error) {
+      console.error("Failed to load skills:", skillsResult.error);
+      return { rows: [], truncated: true, failed: true };
+    }
+    if (skillsResult.truncated) {
+      console.error(
+        "MCP: the skill register did not fit inside the read ceiling — the catalog " +
+        "below is a prefix, so absence from it proves nothing.",
+      );
+    }
+
+    const all = skillsResult.rows;
+    // The module gate: the skill's OWNING module is on (module-gate.ts). The
+    // category gate stays as a second net for a skill the owner map lacks.
+    let filtered = all.filter((s) => skillModuleOn(s.name, activeModules) && isCategoryActive(s.category, activeModules));
+
+    // Federation-peer ceiling: a peer's toolset_groups cap what it can DISCOVER,
+    // intersected with any ?groups= it passed (ceiling always wins). Empty = open.
+    const effGroups = effectiveGroups(filterGroups, peerGroups);
+
+    // Apply toolset group filter — supports category tokens, composite tokens,
+    // and module-level sub-filters (e.g. ?groups=invoicing narrows commerce).
+    if (effGroups && effGroups.length > 0) {
+      const { categories, modules } = resolveGroupTokens(effGroups);
+      filtered = filtered.filter((s) => {
+        if (categories.has(s.category)) return true;
+        if (modules.size === 0) return false;
+        const mod = skillModuleToken(s.name, s.handler);
+        return mod ? modules.has(mod) : false;
+      });
+    }
+
+    console.log(
+      `MCP: ${filtered.length}/${all.length} skills exposed` +
+      (filterGroups ? ` (groups: ${filterGroups.join(",")})` : "") +
+      ` (${activeModules.size} active modules)`,
+    );
+    return { rows: filtered, truncated: skillsResult.truncated };
+  })();
+  exposedSkillsCache.set(cacheKey, { until: Date.now() + EXPOSED_SKILLS_TTL_MS, load });
+  // A failed read is never remembered: the next call reads again.
+  load.then((r) => { if (r.failed) exposedSkillsCache.delete(cacheKey); }, () => exposedSkillsCache.delete(cacheKey));
+  const { rows, truncated } = await load;
+  if (meta) meta.truncated = truncated;
+  return rows;
 }
 
 // ---------- execute skill ----------
@@ -511,12 +557,13 @@ async function resolvePeerGroups(apiKeyId: string | null): Promise<string[]> {
 }
 
 const ownerAdminCache = new Map<string, boolean>();
+/** (owner|module) → may run, a minute: the per-module verdict behind discovery and every REST call. */
+const ownerModuleCache = new Map<string, boolean>();
 async function ownerMayRun(skillName: string, ownerUserId: string | null | undefined, moduleMemo?: Map<string, boolean>): Promise<{ ok: boolean; reason?: string }> {
   if (!ownerUserId) return { ok: true };
-  const sb = serviceClient();
   let isAdmin = ownerAdminCache.get(ownerUserId);
   if (isAdmin === undefined) {
-    const { data, error } = await sb.rpc("has_role", { _user_id: ownerUserId, _role: "admin" });
+    const { data, error } = await serviceClient().rpc("has_role", { _user_id: ownerUserId, _role: "admin" });
     if (error) console.error("ownerMayRun: has_role failed — treating the owner as non-admin", error.message);
     isAdmin = data === true;
     ownerAdminCache.set(ownerUserId, isAdmin);
@@ -526,12 +573,20 @@ async function ownerMayRun(skillName: string, ownerUserId: string | null | undef
   const mod = ownerModuleOf(skillName);
   // Same fail-closed rule as agent-execute: platform skills and unmapped skills are admin-only.
   if (!mod || mod === "platform") return { ok: false, reason: `"${skillName}" is admin-only and the person this agent acts for is not an admin` };
-  let can = moduleMemo?.get(mod);
+  // The verdict per (owner, module) is remembered a minute, like the admin
+  // verdict above: a non-admin owner's call used to ask can_access_module once
+  // per module (≈70) on EVERY discovery, with a memo that lived one call.
+  const ownerModKey = `${ownerUserId}|${mod}`;
+  let can = moduleMemo?.get(mod) ?? ownerModuleCache.get(ownerModKey);
   if (can === undefined) {
-    const { data, error } = await sb.rpc("can_access_module", { _user_id: ownerUserId, _module_id: mod });
+    const { data, error } = await serviceClient().rpc("can_access_module", { _user_id: ownerUserId, _module_id: mod });
     if (error) console.error("ownerMayRun: can_access_module failed — fail closed", error.message);
     can = data === true;
     moduleMemo?.set(mod, can);
+    if (!error) {
+      ownerModuleCache.set(ownerModKey, can);
+      setTimeout(() => ownerModuleCache.delete(ownerModKey), 60_000);
+    }
   }
   if (can) return { ok: true };
   return { ok: false, reason: `the person this agent acts for has no access to the ${mod} module, so "${skillName}" is out of reach — ask an admin to grant it under Users → Role Permissions` };
@@ -541,6 +596,8 @@ async function ownerMayRun(skillName: string, ownerUserId: string | null | undef
 // only the skills its owner may run (one can_access_module per module, memoised).
 async function filterByOwner<T extends { name: string }>(skills: T[], ownerUserId: string | null | undefined): Promise<T[]> {
   if (!ownerUserId) return skills;
+  // An admin owner reaches everything: one verdict, not one per skill.
+  if (skills.length && (await ownerMayRun(skills[0].name, ownerUserId)).ok && ownerAdminCache.get(ownerUserId)) return skills;
   const memo = new Map<string, boolean>();
   const out: T[] = [];
   for (const sk of skills) {
@@ -559,7 +616,7 @@ function skillWithinGroups(
   const { categories, modules } = resolveGroupTokens(groups);
   if (category && categories.has(category)) return true;
   if (modules.size === 0) return false;
-  const mod = classifySkillModule(name, handler ?? null);
+  const mod = skillModuleToken(name, handler ?? null);
   return mod ? modules.has(mod) : false;
 }
 
@@ -580,20 +637,25 @@ async function executeSkill(
   callerAgentName?: string | null,
 ): Promise<string> {
   const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/agent-execute`;
-  // A read-only key: reads pass, a write that declares `dry_run` is forced
+  // A read-only key: a READ passes, a write that declares `dry_run` is forced
   // into it, any other write is refused here — before anything reaches
-  // agent-execute. The verdict uses the same annotations tools/list shows.
+  // agent-execute. The verdict is the platform's own read rule
+  // (_shared/skills/read-surface.ts: the read prefixes and extras, a manage_*
+  // with a read action, a dry run that is a read by contract) — the rule a
+  // live report block and FlowWork's loop are held to. Until 2026-11-06 it
+  // was the tools/list verb heuristic, which knew list_/get_ but not
+  // browse_/query_/count_, so a read-only key was refused `browse_blog`.
   let forcedDryRun = false;
   if (requestContext.getStore()?.readOnly) {
-    const { data: row } = await serviceClient()
-      .from("agent_skills")
-      .select("name, trust_level, requires_staging, tool_definition")
-      .eq("name", skillName)
-      .maybeSingle();
-    const annotations = row ? buildToolAnnotations(row as SkillRow) : { readOnlyHint: false };
-    const params = (row?.tool_definition as { function?: { parameters?: { properties?: Record<string, unknown> } } } | null)?.function?.parameters?.properties ?? {};
-    if (!annotations.readOnlyHint) {
-      if ("dry_run" in params) {
+    const verdict = classifyCall(skillName, args);
+    if (verdict !== "read") {
+      const { data: row } = await serviceClient()
+        .from("agent_skills")
+        .select("name, tool_definition")
+        .eq("name", skillName)
+        .maybeSingle();
+      const params = (row?.tool_definition as { function?: { parameters?: { properties?: Record<string, unknown> } } } | null)?.function?.parameters?.properties ?? {};
+      if (verdict === "stage" && "dry_run" in params) {
         args = { ...args, dry_run: true };
         forcedDryRun = true;
       } else {
@@ -1332,7 +1394,18 @@ async function createMcpServer(filterGroups?: string[], openaiSafe = false, disp
     version: "1.0.0",
   });
 
-  const skills = await loadExposedSkills(filterGroups);
+  // Built INSIDE the request context (getMcpHandler runs under it since
+  // 2026-11-06): loadExposedSkills sees the peer's group ceiling, and the
+  // owner filter makes tools/list the owner's reach — what ownerMayRun would
+  // refuse at call time is not listed. Until today the server was built
+  // outside the context and cached per ?groups= alone for five minutes, so
+  // every key saw the same list, whatever its ceiling, owner or the modules
+  // switched off meanwhile.
+  const ctx0 = requestContext.getStore();
+  // …and the key's scope: a scoped key (mcp:crm, skill:<name>) is shown what
+  // it may call, not 660 tools of which it may call 40.
+  const skills = (await filterByOwner(await loadExposedSkills(filterGroups), ctx0?.ownerUserId))
+    .filter((s) => scopeAllowsSkill(ctx0?.scopes, s.name, s.category));
 
   if (dispatchMode) {
     // ── Dispatcher mode ──────────────────────────────────────────────────────
@@ -1355,12 +1428,22 @@ async function createMcpServer(filterGroups?: string[], openaiSafe = false, disp
         flattenedCount++;
       }
 
+      // ONE description reaches every surface: the one with the markers
+      // (rankableDef — the row's "Use when: / NOT for:", which search_skills
+      // ranks by). The function description lacked them in 555 of 657.
       const toolDef: Record<string, unknown> = {
-        description: `[${skill.category}] ${fn.description || skill.description || skill.name}`,
+        description: `[${skill.category}] ${rankableDef(skill)?.function?.description || fn.description || skill.description || skill.name}`,
         inputSchema,
         annotations: buildToolAnnotations(skill),
         handler: async (args: Record<string, unknown>) => {
           const ctx = requestContext.getStore();
+          // The same three checks REST runs before a call: the key's scope,
+          // the peer's group ceiling, the owner's reach. Until 2026-11-06 the
+          // native handler ran only the third.
+          if (!scopeAllowsSkill(ctx?.scopes, skill.name, skill.category)
+              || !skillWithinGroups(skill.name, skill.handler, skill.category, ctx?.peerGroups)) {
+            return { content: [{ type: "text" as const, text: JSON.stringify({ error: `API key scope does not permit skill '${skill.name}'.` }) }] };
+          }
           const reach = await ownerMayRun(skill.name, ctx?.ownerUserId);
           if (!reach.ok) return { content: [{ type: "text" as const, text: JSON.stringify({ error: `Forbidden: ${reach.reason}` }) }] };
           const result = await executeSkill(skill.name, args, ctx?.callerUserId ?? null, ctx?.callerApiKeyId ?? null, ctx?.agentName ?? null);
@@ -1593,7 +1676,22 @@ app.use("/*", async (c, next) => {
   c.set("apiKeyOwner" as never, peerIdentity.ownerUserId as never);
   c.set("apiKeyCreatedBy" as any, peerIdentity.ownerUserId ?? auth.createdBy);
   c.set("apiKeyAgentName" as never, peerIdentity.name as never);
-  return next();
+  // Every route below runs inside the request context — who the caller is and
+  // whether the key is read-only. Until 2026-11-06 only the native transport
+  // opened the store; /rest/execute called executeSkill outside it, so the
+  // read-only verdict (requestContext.getStore()?.readOnly) was never seen
+  // there and a read-only key could write over REST. The native route still
+  // opens a nested store with the peer-group ceiling resolved for the request.
+  return requestContext.run(
+    {
+      callerUserId: peerIdentity.ownerUserId ?? auth.createdBy ?? null,
+      callerApiKeyId: auth.keyId ?? null,
+      ownerUserId: peerIdentity.ownerUserId ?? null,
+      readOnly: isReadOnlyKey(auth.scopes),
+      agentName: peerIdentity.name ?? null,
+    },
+    () => next(),
+  );
 });
 
 // ══════════════════════════════════════════════════════════
@@ -1696,7 +1794,7 @@ app.get("/rest/tools", async (c) => {
         : rawParams;
       return {
         name: s.tool_definition.function.name,
-        description: s.tool_definition.function.description || s.description,
+        description: rankableDef(s)?.function?.description || s.tool_definition.function.description || s.description,
         group: s.category,
         parameters: params,
       };
@@ -1930,20 +2028,27 @@ app.post("/rest/execute", async (c) => {
 // Native MCP transport (JSON-RPC over POST)
 // ══════════════════════════════════════════════════════════
 
-// Cache MCP handlers by group key
+// Cache MCP handlers by what decides the tool list: the ?groups= asked for,
+// the peer's ceiling and the owner (the list is the owner's reach), the
+// schema flavour and the mode. Short-lived: a module switched off is gone
+// from tools/list within a minute, not five. Built under the request
+// context, so loadExposedSkills and filterByOwner see the caller.
 const mcpHandlerCache = new Map<string, (req: Request) => Promise<Response>>();
+const MCP_HANDLER_TTL_MS = 60 * 1000;
 
 async function getMcpHandler(filterGroups?: string[], openaiSafe = false, dispatchMode = false) {
-  const groupKey = filterGroups ? filterGroups.sort().join(",") : "__all__";
-  const cacheKey = `${groupKey}${openaiSafe ? "::safe" : ""}${dispatchMode ? "::dispatch" : ""}`;
+  const ctx = requestContext.getStore();
+  const groupKey = filterGroups ? [...filterGroups].sort().join(",") : "__all__";
+  const ceilingKey = ctx?.peerGroups?.length ? [...ctx.peerGroups].sort().join(",") : "-";
+  const scopeKey = ctx?.scopes?.length ? [...ctx.scopes].sort().join(",") : "-";
+  const cacheKey = `${groupKey}::${ceilingKey}::${scopeKey}::${ctx?.ownerUserId ?? "-"}${openaiSafe ? "::safe" : ""}${dispatchMode ? "::dispatch" : ""}`;
   let handler = mcpHandlerCache.get(cacheKey);
   if (!handler) {
     const server = await createMcpServer(filterGroups, openaiSafe, dispatchMode);
     const transport = new StreamableHttpTransport();
     handler = transport.bind(server);
     mcpHandlerCache.set(cacheKey, handler);
-    // Expire cache after 5 minutes to pick up skill changes
-    setTimeout(() => mcpHandlerCache.delete(cacheKey), 5 * 60 * 1000);
+    setTimeout(() => mcpHandlerCache.delete(cacheKey), MCP_HANDLER_TTL_MS);
   }
   return handler;
 }
@@ -1962,16 +2067,21 @@ app.all("/*", async (c) => {
   // schemas in their context, and can load a skill's playbook before running it.
   const dispatchMode = url.searchParams.get("mode") === "dispatch";
 
-  const handler = await getMcpHandler(filterGroups, openaiSafe, dispatchMode);
-
   const callerUserId = (c.get("apiKeyCreatedBy" as any) as string | null) ?? null;
   const callerApiKeyId = (c.get("apiKeyId" as any) as string | null) ?? null;
   // Resolve the peer's group ceiling ONCE per request (empty = full access).
   const peerGroups = await resolvePeerGroups(callerApiKeyId);
   c.set("apiKeyPeerGroups" as any, peerGroups);
   const ownerUserId = ownerOf(c);
-  const readOnly = isReadOnlyKey(c.get("apiKeyScopes" as never) as string[] | undefined);
-  const response = await requestContext.run({ callerUserId, callerApiKeyId, peerGroups, ownerUserId, readOnly, agentName: agentNameOf(c) }, () => handler(c.req.raw));
+  const scopes = (c.get("apiKeyScopes" as never) as string[] | undefined) ?? [];
+  const readOnly = isReadOnlyKey(scopes);
+  // The handler is built and run under ONE store: the tool list is this
+  // caller's (ceiling, owner, modules as they are now), and every tool
+  // handler reads the same caller.
+  const response = await requestContext.run(
+    { callerUserId, callerApiKeyId, peerGroups, ownerUserId, readOnly, scopes, agentName: agentNameOf(c) },
+    async () => (await getMcpHandler(filterGroups, openaiSafe, dispatchMode))(c.req.raw),
+  );
   const headers = new Headers(response.headers);
   for (const [k, v] of Object.entries(corsHeaders)) {
     headers.set(k, v);

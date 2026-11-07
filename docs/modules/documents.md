@@ -38,6 +38,7 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `manage_document` | internal | Upload, search, categorize, and delete documents in the central archive. Use when: storing contracts, HR docs, financial records, or project files. NOT for: media library images (use media_browse),… |
 | `extract_pdf_text` | internal | Extract text content from any PDF document. Uses AI vision to read the PDF and return structured text. Use when: a user uploads a PDF and asks for its content; you need to extract data from a docum… |
 | `manage_document_share_link` | internal | Create/revoke/list tokenized public share links for a document (optional expiry, view/download permission). Use when: sharing a document externally without an account. NOT for: uploading documents … |
+| `manage_document_room` | internal | A document room: a named set of documents and who may see it, without copying anything — a board room, legal counsel, a partner. Members get a personal link (view or download, optional expiry) and the access log names who opened what. |
 | `upload_document` | internal | Upload a file to the workspace knowledge base. Stores a permanent, searchable document with extracted markdown so future workspace-chat queries can cite it. Use when: the agent has produced or rece… |
 
 ## Integrity and retention (2026-10-27)
@@ -51,6 +52,7 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 Tables created by this module (from migrations):
 
 - `public.journal_entry_documents`
+- `public.document_rooms`, `public.document_room_items`, `public.document_room_members`, `public.document_room_access` — a room points at documents (never copies), a member is one personal link, the access log is written by `open_document_room` / `resolve_document_room_file` only (migration `20261107120000`). Public page `/room/<token>`; files through `document-share?room=&doc=`. Investor room (migration `20261107150000`): `document_room_members.document_ids` (NULL = the whole room) is applied by both readers; `get` answers `seen_by` / `unseen_by` per document; `member_history` is one person's record; the recipient page marks what is new since their last visit.
 
 All tables ship with Row-Level Security policies. See migration files for the exact rules.
 

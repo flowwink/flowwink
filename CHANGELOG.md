@@ -8,6 +8,161 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ## [Unreleased]
 
+### Security
+
+- **Production dependencies without a known high or critical advisory but two.**
+  `npm audit --omit=dev` went from 18 (1 critical, 7 high) to 5 (1 high, 4
+  moderate). `vitest` and `jsdom` were in `dependencies` and dragged the whole
+  vite / esbuild / rollup tool chain into the production tree — they are
+  `devDependencies` now, and the critical one left with them. `pdfjs-dist` 5 → 6
+  (arbitrary JavaScript on opening a malicious PDF; the chat attachment reader,
+  text extraction proved on a two-page PDF), `react-router-dom` 6.30.6, and
+  patched copies of `lodash`, `ws`, `yaml`, `picomatch`, `fflate` and
+  `postcss-selector-parser` pinned through `overrides`. Left, each its own
+  change: `zod` 4 (high; 62 files), `react-router` 7 (moderate; a router major),
+  and `satori` under `@vercel/og` — 1.0.3 requires `fs` in its edge build, which
+  the edge runtime does not have, so the OG cards stay on 0.6.8 until a release
+  that runs there.
+
+- **The method that should have caught it, repaired.** The weekly security
+  scan had been red since its first run (2026-10-26) on `npm audit`, before the
+  guardrails step ever ran, and nothing watched the workflow; the five tool
+  functions sat in the public-functions guard's known-debt list for 40 days
+  with a green badge beside them. Now the scan is two jobs (advisories and
+  guardrails — one never hides the other), the guardrails job runs EVERY
+  guardrail test instead of a hand list of nine (40 security-shaped guards were
+  outside it), and each job that fails opens or updates one issue (label
+  `security-red`) and closes it when green. The known-debt list carries a
+  clock: a name may stay `KNOWN_UNGATED` for 60 days, then the guard is red with
+  the two ways out named — gate it or prove it visitor-facing by design. A
+  CodeQL workflow (javascript-typescript, security-extended) runs on every PR
+  and weekly; it is one more reader, not the method — Deno's request sources
+  are not modelled there, which is why the repo's own guards exist.
+- **Outbound URLs are judged before they are fetched (SSRF, CWE-918).** An
+  independent researcher (Riddhish Lichade) reported that `extract-pdf-text`,
+  `web-scrape` and `browser-fetch` were reachable without a caller check and
+  fetched a caller-supplied URL as given, returning the body — and an edge
+  function runs inside the project's network, where `SUPABASE_URL` is the
+  internal gateway on a self-hosted instance. Confirmed on a local stack: the
+  runtime fetched `http://kong:8000/rest/v1/` with a 200. Now one rule,
+  `_shared/net/outbound-url.ts`: http(s) only, no credentials, no single-label
+  or local hostname, every resolved address outside the private, loopback,
+  link-local, CGNAT, multicast and reserved ranges (IPv4 and IPv6, mapped forms
+  included), redirects followed by hand and re-judged, at most five; a name that
+  cannot be resolved is refused (`URL_NOT_ALLOWED`). Applied at every
+  content-URL sink: the web layer's reader (so Firecrawl and Jina never read a
+  private target on our behalf either), web-scrape's sitemap and site detection,
+  extract-pdf-text, browser-fetch, process-image, the image and résumé
+  handlers, media import from URL, site-scrape and migrate-page. The five tool
+  functions on paid keys (`web-scrape`, `browser-fetch`, `web-search`,
+  `extract-pdf-text`, `process-image`) now verify their caller
+  (`requireServiceOrStaff`: the service key or a staff session) and left the
+  public-functions ratchet. An admin's own configured endpoints (webhooks, A2A
+  peers, a local STT server) are not judged — they are the operator's network by
+  design; `OUTBOUND_FETCH_ALLOW_PRIVATE=true` lifts the address check for an
+  intranet deployment. Guard `outbound-urls-are-public` holds the rule and scans
+  every `fetch` of a caller-URL identifier. `SECURITY.md` is new.
+### Changed
+
+- **agent-execute's pipeline is importable.** The 20 500-line executor moved
+  from `agent-execute/index.ts` to `_shared/execute/core.ts` as
+  `handleAgentExecute(req)`, byte-identical but for the import prefixes and the
+  wrapper; `index.ts` is the HTTP door, `serve(handleAgentExecute)`. Nothing
+  behaves differently. It is the first step toward running a skill in-process
+  from the ReAct loop, the gateway and the dispatchers instead of over an HTTP
+  hop inside the same project (one invocation per tool call, not two; one auth
+  gate, not two). The 169 guards, scripts and docs that read the pipeline's
+  source read the new path; the edge type-check baseline carries the file under
+  its new name.
+
+### Fixed
+
+- **The gateway pays for its own work once.** `/rest/execute` measured 220 ms
+  where native `tools/call` measured 32 ms for the same skill on a local stack,
+  and the database explained ten of those milliseconds: every REST call and
+  every dispatch tool (`search_skills`, `read_skill`, `execute_skill`) re-read
+  the whole exposed register (650 rows with schemas) to find one name, and the
+  owner filter built a Supabase client per skill — 648 `createClient` calls —
+  before asking whether the owner is an admin. The exposed list is remembered a
+  minute per (groups, peer ceiling) — the same minute the native handler cache
+  gives, and the run is still judged by agent-execute's own gate on every call;
+  one service client per isolate; the admin verdict first and once per filter;
+  a non-admin owner's module verdicts remembered a minute (`gateway-pays-once`
+  guard).
+- **The executor pays for its own statements once.** Measured on a local
+  stack with pg_stat_statements: of a skill call's 5–8 SQL statements, 4–6 were
+  agent-execute's own — the lookup of the whole skill row (`instructions`
+  included), the modules row, FlowPilot's trust RPC, an objectives select on
+  every call though 9 in 10 skills have no objective keywords, and the journal
+  insert; the handler was the minority. Now the lookup names its eight
+  columns, the modules row is read once per call and started beside the lookup,
+  the trust RPC overlaps the module gate, and objective tracking asks the map
+  before the database. One statement fewer on most calls, two serial round
+  trips overlapped; locally −17 % p50 on an RPC read (`executor-round-trips`
+  guard).
+- **Open doors without visitors (security pass).** With the advisor's own
+  questions against a local database: the public feedback board's anon write
+  policies (the board writes through content-api; the DELETE policy's `true`
+  let anyone delete every vote), a SECURITY DEFINER view of RMAs readable by
+  anon, three definer views that handed staff data to any signed-in portal
+  customer, and a definer RPC content-api calls as the service role but anon
+  could call too. Migration `20261107130000` drops the policies, makes the
+  views read as their caller, revokes anon, and gives the ping RPC to the
+  service role. Everything else the lints raised is the architecture (public
+  intake inserts, token-based public reads, service-role-only tables).
+- **The read surface knows nine more of its reads.** The local skill sweep
+  (648 exposed skills called read-only through agent-execute; every read
+  passed, every write was refused as designed) found reads whose names carry
+  no read prefix — `read_partner`, `validate_address`, `estimate_delivery_date`,
+  the `export_*` reports, `summarize_candidate_pipeline`, `read_sie_file`,
+  `verify_document_integrity` — so FlowWork and a read-only key refused them.
+  Each handler verified (selects only, writes nothing); they are `READ_EXTRAS`
+  now. `fetch_ecb_rates` (writes rates) and `inspect_rendered_page` (drives a
+  browser) stay staged.
+- **A module states a need by capability, not by product.** Site migration
+  required Firecrawl by name and warned on a site that read the web fine
+  through Jina or the built-in reader; the newsletter required Resend on a
+  site that mails through SMTP. `requiredCapabilities` (`email`, `web:read`,
+  `web:search`) is satisfied by any provider of it (`CAPABILITY_PROVIDERS`,
+  the built-in reader always counts), the module card says "Needs an email
+  provider (Resend, SMTP or Composio)" instead of "Missing: resend", and a
+  guard refuses a requiredIntegration that has alternatives.
+- **A module that is off is off for visitors too.** Only the Knowledge Base
+  page and the navigation asked the modules row; `/feedback` took posts with
+  the feedback module off, `/shop` listed products with e-commerce off,
+  `/jobs` took applications with recruitment off. `PublicModuleGate` in the
+  router's root layout answers the site's own 404 for a public route of a
+  module that is off (`public-route-modules.ts`, with or without a language
+  prefix), waits for the row on a mapped route instead of serving the page,
+  and a guard reads every public route out of `App.tsx` so a new page is
+  mapped or declared module-less.
+- **The view sweep judges a denied page's late answers as warnings too.**
+  A response whose body could not be read because the page had already
+  navigated to Access Denied landed after the denied-page downgrade and kept
+  its `error` — one false red per sweep. Findings are now judged on a snapshot
+  when the visit ends. And the report header's badges sit in a `div`, not a
+  `p` (React's nesting warning on `/admin/reports/:slug`).
+- **A module that is off is off for the browser too.** The sidebar hid a
+  disabled module's pages, but the route gate asked only the role matrix, so
+  an admin who typed `/admin/webinars` with Webinars off was served the page
+  — and the first write there woke the module behind the operator's back.
+  `moduleOffForRoute` reads the modules row exactly as the sidebar does; both
+  gates (`AdminLayout`, `AdminRouteGate`) answer with the module's name and,
+  for an admin, a door to Modules that opens that module's sheet.
+
+### Added
+
+- **`npm run qa:quiet`** — a fresh stack must be quiet: the heartbeat
+  answers `skipped`, the briefing answers `quiet` and writes its row without
+  a report version, a chat message or a mail. The nightly fresh install runs
+  it before anything is seeded, the one place a virgin instance exists. Its
+  first run found two things that alarmed a newborn: every daily job was
+  "unhealthy" because its hour had not come (`enrichCronHealth` now gives
+  "never ran" a day's grace by pg_cron's own history, the pulse profile), and
+  the language proof of `20261026080000` left a "Proof" lead in every
+  instance's CRM — the migration cleans it now, and
+  `20261107120001_bevisordern-lamnar-ingen-lead` removes the one already there.
+
 ### Changed
 
 - **Developer has three doors, Skills one page.** `/admin/developer` is
@@ -18,6 +173,68 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   beside **Browse**, with a sidebar entry under System beside Modules; `?tab=mcp-skills`
   redirects. Removed: the mock "Dev Tools" tab, the n8n template brochure,
   the explorer's third copy of the MCP client config (the wizard has it).
+
+### Fixed
+
+- **A read-only key is read-only over REST too.** `/rest/execute` ran
+  outside the gateway's request context, so the `read_only` scope was never
+  seen there and such a key could write over REST; the context is now opened
+  in the auth middleware for every route. The verdict is the platform's own
+  read rule (`_shared/skills/read-surface.ts`), not the tools/list verb
+  heuristic, which did not know `browse_` / `query_` / `count_` and refused a
+  read-only key `browse_blog`. A `manage_*` call with a read action passes.
+- **Quiet when there is nothing to say.** A fresh instance was alarmed every
+  morning. The daily briefing now asks which modules are on before every
+  section and action item, has no health score without a signal (no more
+  yellow 50/100 on an empty week), and on a day with no action item and no
+  figure writes its row and sends nothing — no report version, no chat
+  message, no mail. `check_operations` judges an area only when its module
+  is on (automations always) and answers `areas`; `check_books` accuses
+  nothing before `books_started_on()` (the earliest of the first declared
+  fiscal year and the first posted journal entry) and says so. The "Set up
+  weekly digest" starter objective is gone (completed where it exists): the
+  digest is an automation, and the always-active objective was what kept the
+  heartbeat's idle short-circuit from ever firing on a fresh instance.
+- **One module switch.** Switching a module on or off is four writes that
+  must agree — the row, the skills (both flags, one write), the automations
+  that run them, the decision record — and there were two implementations and
+  three more writers of the row alone. `_shared/modules/module-switch.ts` is
+  now the one implementation: `manage_modules`, the Modules page (single and
+  bulk toggles, awaited, refusals shown), `manage_site_settings key=modules`
+  and `install_template` all run it. A module switched off in the admin and
+  on again gets its automations back (the record carries their ids); an
+  automation that runs the module's skill stops whatever group seeded it; a
+  template's enable takes the parents along; the browser template installer runs
+  the same switch, the last writer outside it.
+- **A module that is off is off for agents.** Skills were gated by
+  category (open when any of a category's modules was on; `commerce` lists
+  24), so a module that was off but whose rows had leaked stayed visible and
+  ran. The gate is now the skill's owning module (`_shared/skills/module-gate.ts`):
+  the MCP gateway and FlowPilot hide its skills, and agent-execute refuses
+  one with `MODULE_DISABLED` — a refusal that names the module and the way
+  on, where a hidden row used to answer "Skill not found". The skill sync
+  heals leaked rows for every off module, not only the ones with a teardown
+  record; the wake-on-write of an untouched module (Law 4) remains for a row
+  that is still enabled, which the heal ends — in practice a module is
+  switched on under Modules or with `manage_modules`.
+- **The native MCP transport answers for the caller.** The McpServer was
+  built outside the request context and cached per `?groups=` alone for five
+  minutes, so every key saw the same `tools/list` — whatever its peer
+  ceiling, its owner's reach or the modules switched off meanwhile — and a
+  native `tools/call` skipped the key-scope and ceiling checks REST ran. The
+  handler is now built and run under one store, the list is the owner's
+  reach and the key's scope, the cache is keyed by the caller's reach and
+  lives a minute, and every native tool handler runs the same three checks
+  as REST.
+- **One skill description reaches every surface, and `?groups=<module>`
+  works.** `search_skills` ranked by the row description ("Use when: / NOT
+  for:") while native `tools/list`, `/rest/tools` and FlowPilot's pre-narrow
+  sent the function description, which lacked the markers in 555 of 657
+  exposed skills; all three now send the rankable one, and a ratchet keeps
+  every exposed skill marked and under 2000 characters (the baseline may only
+  shrink). A `?groups=<module>` token narrows through the owner map — it used
+  to resolve through a ten-module name heuristic, so `?groups=leads`, `blog`
+  or `hr` returned nothing.
 
 ### Added
 

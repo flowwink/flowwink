@@ -77,6 +77,46 @@ master switch, *MCP exposed* whether connected agents are shown it. It used
 to be a tab on Developer, which made three pages that listed the same skills.
 The old link `?tab=mcp-skills` still lands.
 
+## Quiet when there is nothing to say
+
+*Who: the admin who reads the morning briefing; every agent that runs
+`check_operations` or `check_books`.*
+
+A fresh instance used to be alarmed every morning: a "Quiet day" mail with
+a yellow 50/100, leads and revenue for modules that were off, operations
+findings for tickets and quotes nobody had switched on, and VAT returns
+"not recorded as filed" for periods before the books began. Now the briefing
+asks which modules are on before every section, has no score without a
+signal, and on a day with nothing to tell writes its row and sends nothing.
+`check_operations` judges an area only when its module is on and answers
+`areas`; `check_books` accuses nothing before `books_started_on()`, the
+earliest of the first declared fiscal year and the first posted journal
+entry. The weekly digest is an automation ("Weekly digest report"), no
+longer a starter objective, so FlowPilot is idle until you give it a goal.
+
+## One module switch
+
+*Who: an admin on Modules; an agent through `manage_modules`.*
+
+Switching a module off in the admin and on again now brings its automations
+back, and stops every automation that runs one of its skills whatever menu
+seeded it. The Modules page, `manage_modules`, `manage_site_settings
+key=modules` and a template install all run the same switch, so what an
+agent does and what you click agree, and a switched-off module stays off
+until someone switches it on. The bulk toggle waits for every module and
+tells you what it could not do.
+
+## A module that is off is off for agents
+
+*Who: every agent over MCP; FlowPilot.*
+
+Switch a module off and its skills leave the tool list — the gateway's and
+FlowPilot's — and a call that still names one is refused with
+`MODULE_DISABLED`, a refusal the agent is told not to retry. Before, a
+category stayed open while any module in it was on, so an off module's
+skills could linger. The way on is Modules, or `manage_modules` with the
+owner's approval.
+
 ---
 
 ## Workspaces — Accounting, HR, Sales and Support get their own menu

@@ -1,5 +1,5 @@
 {
-  "errors": 3129,
+  "errors": 3128,
   "warnings": 91,
   "files": {
     "scripts/agent-surface-sweep.ts": 2,
@@ -439,7 +439,7 @@
     "supabase/functions/_shared/token-tracking.ts": 1,
     "supabase/functions/_shared/trace/read-model.ts": 5,
     "supabase/functions/_shared/types.ts": 3,
-    "supabase/functions/agent-execute/index.ts": 682,
+    "supabase/functions/_shared/execute/core.ts": 682,
     "supabase/functions/agent-operate/index.ts": 15,
     "supabase/functions/ai-task/index.ts": 13,
     "supabase/functions/ai-task/tasks.ts": 77,
@@ -469,7 +469,7 @@
     "supabase/functions/event-dispatcher/index.ts": 8,
     "supabase/functions/federation-invite-peer/index.ts": 6,
     "supabase/functions/flowpilot-heartbeat/index.ts": 17,
-    "supabase/functions/flowpilot-lifecycle/briefing.ts": 37,
+    "supabase/functions/flowpilot-lifecycle/briefing.ts": 36,
     "supabase/functions/flowpilot-lifecycle/curator.ts": 10,
     "supabase/functions/flowpilot-lifecycle/distill.ts": 5,
     "supabase/functions/flowpilot-lifecycle/followthrough.ts": 2,

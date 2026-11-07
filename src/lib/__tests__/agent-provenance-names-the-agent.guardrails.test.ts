@@ -17,7 +17,7 @@ import { provenanceLabel } from '@/lib/agent-provenance';
 const root = join(__dirname, '../../..');
 const read = (p: string) => readFileSync(join(root, p), 'utf8');
 const gateway = read('supabase/functions/mcp-server/index.ts');
-const executor = read('supabase/functions/agent-execute/index.ts');
+const executor = read('supabase/functions/_shared/execute/core.ts');
 const migration = read('supabase/migrations/20261008130000_wikin-sager-vilken-agent.sql');
 
 describe('the gateway names the agent', () => {
@@ -28,7 +28,8 @@ describe('the gateway names the agent', () => {
     const calls = gateway.match(/await executeSkill\([^)]*\)/g) ?? [];
     expect(calls.length).toBeGreaterThanOrEqual(4);
     for (const call of calls) expect(call, call).toMatch(/ctx\?\.agentName \?\? null|agentNameOf\(c\)/);
-    expect(gateway).toMatch(/agentName: agentNameOf\(c\) \}, \(\) => handler\(c\.req\.raw\)\)/);
+    // The native route builds and runs the handler under one store (2026-11-06); the agent's name rides in it.
+    expect(gateway).toMatch(/agentName: agentNameOf\(c\) \},\s+async \(\) => \(await getMcpHandler\(filterGroups, openaiSafe, dispatchMode\)\)\(c\.req\.raw\),/);
   });
 });
 

@@ -67,6 +67,7 @@ import {
 import { getBuiltInTools, getDispatchTools } from './built-in-tools.ts';
 import { createTraceRecorder } from '../trace/events.ts';
 import { lessonText } from './lesson-text.ts';
+import { SERVICE_CALLER, type ExecuteRequest, type SkillRunner } from '../execute/types.ts';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -534,9 +535,10 @@ export async function loadSkillTools(
   if (budgetTier === 'drop') {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 14);
+    // A refusal kept as 'success' (enum lagging the deploy) is not usage.
     const { data: recentUsage } = await supabase
       .from('agent_activity')
-      .select('skill_name')
+      .select('skill_name, answer:output->>status')
       .gte('created_at', weekAgo.toISOString())
       .eq('status', 'success')
       .order('created_at', { ascending: false })
@@ -544,7 +546,7 @@ export async function loadSkillTools(
 
     const usageCounts: Record<string, number> = {};
     for (const a of (recentUsage || [])) {
-      if (a.skill_name) usageCounts[a.skill_name] = (usageCounts[a.skill_name] || 0) + 1;
+      if (a.skill_name && a.answer !== 'refused') usageCounts[a.skill_name] = (usageCounts[a.skill_name] || 0) + 1;
     }
 
     const scored = gatedSkills.map((s: any) => ({
@@ -849,7 +851,7 @@ export async function executeBuiltInTool(
   // can tell the two apart, and writes carry the person who asked.
   // enforceCadence (the heartbeat): the built-ins that run skills on the
   // loop's behalf ask the cadence quota before each one, as the loop does.
-  opts?: { callerUserId?: string | null; enforceCadence?: boolean },
+  opts?: { callerUserId?: string | null; enforceCadence?: boolean; runSkill?: SkillRunner },
 ): Promise<any> {
   const via = { enforceCadence: opts?.enforceCadence === true };
   const execute = async () => {
@@ -893,10 +895,36 @@ export async function executeBuiltInTool(
       case 'record_outcome': return handleRecordOutcome(supabase, fnArgs);
     }
 
-    // Not a built-in → delegate to agent-execute
-    const body: Record<string, any> = { skill_name: fnName, arguments: fnArgs, agent_type: 'flowpilot' };
+    // Not a built-in → the executor. In-process when the run carries it
+    // (config.runSkill = executeSkillRequest, which every entrypoint passes
+    // since 2026-11-07): one invocation per tool call instead of two (a
+    // heartbeat with ten tool calls was eleven), no second auth gate, the JSON
+    // once — the loop already runs as the service role inside the same Deno
+    // project, the same rule as "FlowPilot does NOT call its own MCP gateway
+    // internally". The core is not imported here (see _shared/execute/types.ts).
+    // The envelope of a non-2xx (error, code, hint, and on a 403/404/409 the
+    // reason) reaches the model either way. It used to be thrown away, so the
+    // model and the retry logic saw only "HTTP 409" — and retried an
+    // already-executed operation twice. A non-2xx is never retried from here.
+    const body: ExecuteRequest = { skill_name: fnName, arguments: fnArgs, agent_type: 'flowpilot' };
     if (traceId) body.trace_id = traceId;
     if (opts?.callerUserId) body.caller_user_id = opts.callerUserId;
+    const failed = (status: number, parsed: Record<string, unknown>) => ({
+      ...parsed,
+      error: typeof parsed.error === 'string' && parsed.error ? parsed.error : `Skill ${fnName} failed: HTTP ${status}`,
+      status: 'failed',
+      http_status: status,
+      retryable: false,
+    });
+    if (opts?.runSkill) {
+      const out = await opts.runSkill(body, SERVICE_CALLER);
+      if (out.status < 200 || out.status >= 300) {
+        console.error(`[reason] trace=${traceId} agent-execute ${fnName} HTTP ${out.status}: ${JSON.stringify(out.body ?? null).slice(0, 200)}`);
+        return failed(out.status, out.body && typeof out.body === 'object' && !Array.isArray(out.body) ? (out.body as Record<string, unknown>) : {});
+      }
+      return out.body;
+    }
+    // No runner (a harness that stubs fetch): the HTTP hop.
     const response = await fetch(`${supabaseUrl}/functions/v1/agent-execute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}`, 'apikey': serviceKey },
@@ -905,19 +933,9 @@ export async function executeBuiltInTool(
     if (!response.ok) {
       const errText = await response.text();
       console.error(`[reason] trace=${traceId} agent-execute ${fnName} HTTP ${response.status}: ${errText.slice(0, 200)}`);
-      // The body is the envelope agent-execute wrote (error, code, hint, and on
-      // a 403/404/409 the reason). It used to be thrown away, so the model and
-      // the retry logic saw only "HTTP 409" — and retried an already-executed
-      // operation twice. A non-2xx is never retried from here.
       let parsed: Record<string, unknown> = {};
       try { parsed = JSON.parse(errText); } catch { /* not JSON */ }
-      return {
-        ...parsed,
-        error: typeof parsed.error === 'string' && parsed.error ? parsed.error : `Skill ${fnName} failed: HTTP ${response.status}`,
-        status: 'failed',
-        http_status: response.status,
-        retryable: false,
-      };
+      return failed(response.status, parsed);
     }
     return response.json();
   };
@@ -1045,7 +1063,7 @@ export async function reason(
     if (!config.onProgress) return;
     try { void Promise.resolve(config.onProgress(event)).catch(() => {}); } catch { /* a listener never stops the run */ }
   };
-  const skillOpts = { callerUserId: config.callerUserId ?? null, enforceCadence: config.enforceCadence === true };
+  const skillOpts = { callerUserId: config.callerUserId ?? null, enforceCadence: config.enforceCadence === true, runSkill: config.runSkill };
   // The run's decisions, kept with its steps (agent_trace_events). Flushed once in finally.
   const why = createTraceRecorder(supabase, traceId);
   console.log(`[reason] Starting run trace=${traceId} lane=${config.lockLane || 'none'} tier=${config.tier || 'fast'}`);

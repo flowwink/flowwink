@@ -142,6 +142,33 @@ consolidating a family is a fleet-wide rename and needs a reason. What bites
 first on Free is the 150 s wall-clock on long jobs (`install_template`,
 `demo-cycle`, a heartbeat with many objectives), not the count.
 
+**The executor is a function you import, not only a URL you fetch
+(2026-11-07).** `agent-execute`'s request pipeline — every gate in order
+(retired names, lookup, authorization, module gate, scope, staging,
+trust/approval, the claim), the handler dispatch (the `internal:` chain, the
+module and db executors), the agent envelope, the journal, objective
+tracking — is `executeSkillRequest(body, auth)` in
+`supabase/functions/_shared/execute/core.ts`; it answers `{ status, body }`,
+the HTTP status and JSON the function answers. `agent-execute/index.ts` is
+the thin wrapper (auth header → core → `Response`, plus CORS and the
+`async: true` 202 handoff, which stays HTTP-only). A caller inside the same
+Deno project runs a skill in-process with `SERVICE_CALLER` as the auth —
+the gateway's `executeSkill` (`mcp-server`) imports it, and the ReAct loop
+runs it through `ReasonConfig.runSkill`, which every entrypoint that calls
+`reason()` (heartbeat, workspace-chat, agent-operate) sets to
+`executeSkillRequest` — so a tool call is one invocation, not two (the same
+reasoning as "FlowPilot does NOT call its own MCP gateway"). `reason.ts`
+itself imports only the contract (`_shared/execute/types.ts`, no imports):
+the app's `tsc` reaches it through its tests, and the 20k-line core is
+Deno's, checked by the deno ratchet; without a runner the loop takes the HTTP
+hop (a harness that stubs fetch). The dispatchers that rely on `async: true`
+(automation, event, signal) and the rest of the 16 callers still
+`fetch(.../functions/v1/agent-execute)`; convert one at a time. The core
+imports the four JSON bundles from `agent-execute/` (where
+`scripts/generated-artifacts.ts` writes them), so every function that imports
+it bundles them too (~5 ms to parse; not a cold-start cost). The guards that
+read the executor as text read `_shared/execute/core.ts`.
+
 **Core API:**
 - `chat-completion` — FlowPilot AI endpoint; supports OpenAI, Gemini, local, n8n providers
 - `get-page` — serves pages with caching; called by PublicPage before DB fallback
@@ -149,13 +176,9 @@ first on Free is the 150 s wall-clock on long jobs (`install_template`,
 
 **Agent / FlowPilot:**
 - `agent-execute`, `agent-operate`, `agent-reason` — agentic AI workflow functions.
-  **agent-execute's pipeline lives in `_shared/execute/core.ts`** (`handleAgentExecute`:
-  every gate in order, the dispatch, the envelope, the journal, and the handlers it
-  dispatches to); `agent-execute/index.ts` is the HTTP door, `serve(handleAgentExecute)`.
-  A caller inside the same project (the ReAct loop, the gateway, a dispatcher) can
-  import the core and run a skill without the HTTP hop — the same reasoning as
-  "FlowPilot does NOT call its own MCP gateway" below. The guards that read the
-  pipeline's source read `_shared/execute/core.ts`.
+  **agent-execute's pipeline lives in `_shared/execute/core.ts`**
+  (`executeSkillRequest(body, auth)` → `{ status, body }`); `agent-execute/index.ts`
+  is the HTTP door — see "The executor is a function you import" above.
 - `flowpilot-heartbeat`, `flowpilot-briefing`, `flowpilot-distill`, `flowpilot-learn` — autonomous operator lifecycle
 - `mcp-server` — outward-facing MCP gateway for external agents/federation peers
 
@@ -358,12 +381,15 @@ beside its payload, so an operator branches instead of guessing:
   with NO `error`, so the ReAct self-repair never retries it and self-healing
   never counts it toward disabling the skill (the same shape as
   `pending_approval`); the journal records it as `refused`, which objective
-  evidence and progress skip. Codes: `ALREADY_NUDGED_TODAY` / `QUESTION_STILL_OPEN` —
+  evidence and progress skip — and a refusal with `work_done: 0` on an
+  unattended path (no `caller_user_id`: the heartbeat, the gateway, a
+  scheduled tick) leaves no journal row at all, the caller holds the answer.
+  Codes: `ALREADY_NUDGED_TODAY` / `QUESTION_STILL_OPEN` —
   `comment_on_task`'s thread cadence (one unattended agent comment per task per
   day, sooner after a person writes; an unanswered question is not re-asked
-  until a person answers or the task moves; a person at the keyboard —
-  `caller_user_id` from FlowChat, workspace-chat or a user session, never the
-  gateway — writes as a person and is never refused).
+  until a person answers, the task moves, or seven days pass; a person at the
+  keyboard — `caller_user_id` from FlowChat, workspace-chat or a user session,
+  never the gateway — writes as a person and is never refused).
 - A finance answer (accounting, invoicing, purchasing, expenses) starts with
   `context` from `agent_context()`: today, currency, fiscal year, today's period
   status, pending operations and approvals — read it before dating or pricing
@@ -410,6 +436,15 @@ beside its payload, so an operator branches instead of guessing:
   nightly fresh install proves it first (`npm run qa:quiet` before `qa:prep`,
   `scripts/quiet-by-default.ts`): a red run means something alarms a virgin
   instance again.
+- **The briefing is the business, Observability is the machine room
+  (2026-11-08).** The Daily Briefing reads no platform health: a failing
+  pg_cron job or skill was an action item its admins could do nothing about,
+  and enough to send the mail. An action item is something a person on the
+  instance can act on; the operator's own work is told, never a reason to
+  send. What is the platform's fault goes upstream with the daily
+  `feedback_ping` (`_shared/feedback/machine-room-reports.ts`, behind
+  `share_usage`, under `submit_feedback`'s cadence); titles name the defect,
+  bodies never carry error text.
 - **A module that is off is off for agents (2026-11-06).** The gate is the
   skill's OWNING module (`skillModuleOn` in `_shared/skills/module-gate.ts`,
   from the generated owner map), not its category: the gateway's discovery

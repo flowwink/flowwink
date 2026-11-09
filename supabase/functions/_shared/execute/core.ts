@@ -1,5 +1,13 @@
 // agent-execute v2026-04-20-stale-deals-with-contact (lead/company in deal_stale_check)
+// The executor's request pipeline (2026-11-07). Everything that was the body of
+// agent-execute's serve() — the gates in order, the handler dispatch, the
+// envelope, the journal — is executeSkillRequest below, so a caller inside the
+// same Deno project (FlowPilot's ReAct loop, the MCP gateway) runs a skill
+// in-process. The HTTP function (agent-execute/index.ts) is a thin wrapper:
+// parse the auth header → this → wrap in a Response. The JSON bundles stay in
+// agent-execute/ (scripts/generated-artifacts.ts writes them there).
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { ExecuteAuth, ExecuteOutcome, ExecuteRequest } from './types.ts';
 import { blocksShapeError, normalizeBlockData, normalizeBlocks, validateBlockData } from '../normalize-blocks.ts';
 import { planImport, readImageHeader, isGlb } from '../media/import-plan.ts';
 import { normalizeSkillArgs } from '../skill-aliases.ts';
@@ -11,6 +19,7 @@ import { switchModules, withParents } from '../modules/module-switch.ts';
 import { moduleDisabledRefusal, ownerModuleOf, skillModuleOn } from '../skills/module-gate.ts';
 import { loadActiveModuleIds } from '../mcp/groups.ts';
 import { appendSent, feedbackKey, judgeFeedback, type SentFeedback } from '../feedback/feedback-cadence.ts';
+import { fileMachineRoomReports } from '../feedback/machine-room-reports.ts';
 import { clusterReports, type BoardPost } from '../feedback/feedback-clusters.ts';
 import { bounceManagePageArgs, collectPageUpdateFields, parseMenuFields, resolveCreateLocale, type SiteLanguagesDeclaration } from '../pages/manage-page-contract.ts';
 import { extractTextFromBlock } from '../chat-context.ts';
@@ -23,6 +32,7 @@ import { stampAgentError } from '../agent-errors.ts';
 import { fetchPublic } from '../net/outbound-url.ts';
 import { classifySkillModule } from '../mcp/groups.ts';
 import { readAllRows } from '../read-all-rows.ts';
+import { fiscalYearOf, fiscalYearStart, openingBalancesAt } from '../accounting/opening-balance.ts';
 import { claimIsRequired, interpretApprovalClaim, type ClaimResult } from '../approval-claim.ts';
 import { applyIdentityPolicy, installIdentityPolicy } from '../site-identity.ts';
 import {
@@ -131,6 +141,8 @@ import { handler as hExtractReceipt } from '../handlers/extract-receipt.ts';
 import { handler as hAnalyzeBrand } from '../handlers/analyze-brand.ts';
 import { handler as hDocsSync } from '../handlers/docs-sync.ts';
 import { loadOrgName } from '../org-name.ts';
+import { renderTemplate } from '../template-render.ts';
+import { escapeHtml } from '../email/mail-template.ts';
 import { handler as hGithubContentSync } from '../handlers/github-content-sync.ts';
 import { handler as hUnsplashSearch } from '../handlers/unsplash-search.ts';
 import { handler as hFetchImage } from '../handlers/fetch-image.ts';
@@ -182,6 +194,302 @@ async function callResponseHandler(
     return { error: `Handler returned non-JSON (HTTP ${resp.status})` };
   }
 }
+// ─── internal: handlers — one registry, one dispatch line ────────────────────
+// What a handler may read of the request: the same names executeSkillRequest holds, so an
+// entry that needs one destructures it and the signature says so. Until
+// 2026-11-07 these were 77 `else if` arms, one per handler name; the
+// registry makes a missing handler a shape a guard can check against the seeds
+// (skill-handlers-reach-their-runtime) instead of a name someone remembered.
+// `internal:reconciliation/<action>` is a prefix match and keeps its own branch.
+type AgentType = ExecuteRequest['agent_type'];
+
+interface InternalCtx {
+  supabase: SupabaseClient;
+  args: Record<string, unknown>;
+  /** The agent_skills row being run (id, name, handler, …). */
+  skill: { id: string; name: string; handler: string; [key: string]: unknown };
+  agent_type: AgentType;
+  caller_user_id: string | undefined;
+  caller_api_key_id: string | undefined;
+  caller_agent_name: string | null;
+  conversation_id: string | undefined;
+  trace_id: string | undefined;
+  /** A person at the keyboard, or null — see the comment at its declaration. */
+  attendedUserId: string | null;
+  supabaseUrl: string;
+  serviceKey: string;
+  scheduled: boolean | undefined;
+  objective_context: ExecuteRequest['objective_context'];
+}
+
+type InternalHandler = (ctx: InternalCtx) => Promise<unknown> | unknown;
+
+const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
+  // Attachments take the same road as upload_document: storage + create_agent_document.
+  'internal:import_from_odoo': ({ supabase, args, caller_user_id, caller_api_key_id }) => importFromOdoo({
+    supabase,
+    callerUserId: caller_user_id ?? null,
+    uploadDocument: (a) => executeUploadDocument(supabase, a, { caller_user_id, caller_api_key_id }),
+  }, args),
+  'internal:process_due_social_posts': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeProcessDueSocialPosts(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:approve_content_campaign': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeApproveCampaign(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  // (supabase, args) handler — it sat in RESPONSE_HANDLERS (Request → Response
+  // adapters) and was called with a Request, so `args` was undefined and every
+  // call died on "Cannot read properties of undefined (reading 'subject')"
+  // (skill smoke, 2026-10-01). It never delivered a single admin mail.
+  'internal:email_admins': ({ supabase, args }) => hEmailAdmins(supabase, args),
+  'internal:verify_email': ({ supabase, args }) => executeVerifyEmail(supabase, args),
+  'internal:contact_finder': ({ args }) => executeContactFinder(args),
+  'internal:manage_service_order': ({ supabase, args }) => executeManageServiceOrder(supabase, args),
+  'internal:fetch_ecb_rates': ({ supabase }) => executeFetchFxRates(supabase),
+  'internal:read_sie_file': ({ args }) => executeReadSieFile(args),
+  'internal:describe_blocks': ({ args }) => executeDescribeBlocks(args),
+  'internal:inspect_rendered_page': ({ supabase, args }) => executeInspectRenderedPage(supabase, args),
+  'internal:check_integrations': ({ supabase, args }) => executeCheckIntegrations(supabase, args),
+  'internal:web_providers_status': ({ supabase }) => describeWebLayer(supabase),
+  'internal:get_agent_trace': ({ supabase, args }) => executeAgentTrace(supabase, args),
+  'internal:agent_day_report': ({ supabase, args }) => executeAgentDayReport(supabase, args),
+  'internal:reset_sandbox': ({ supabase, args }) => executeResetSandbox(supabase, args),
+  'internal:comment_on_task': (ctx) => executeCommentOnTask(ctx),
+  'internal:knowledge_index_status': async ({ supabase }) => {
+    const { data: stats, error: statsErr } = await supabase.rpc('knowledge_index_stats');
+    return statsErr ? { success: false, error: statsErr.message } : { success: true, ...(stats as Record<string, unknown>) };
+  },
+  // The page's text walks through the platform, never through the agent's
+  // context: structure preserved by construction, counts in the answer.
+  'internal:translate_page': ({ supabase, args }) => handleTranslatePage(supabase, args as any),
+  // translate_page's engine for any overlaid content — a blog post's
+  // title, excerpt, meta and body as overlays per language.
+  'internal:translate_content': ({ supabase, args }) => handleTranslateContent(supabase, args as TranslateContentArgs),
+  'internal:get_business_home': ({ supabase }) => handleGetBusinessHome(supabase),
+  // The same three facts the Site settings card writes, validated.
+  'internal:set_business_home': ({ supabase, args }) => handleSetBusinessHome(supabase, args as SetBusinessHomeArgs),
+  'internal:set_translation': ({ supabase, args }) => handleSetTranslation(supabase, args as SetTranslationArgs),
+  'internal:publish_translation': ({ supabase, args }) => handlePublishTranslation(supabase, args as PublishTranslationArgs),
+  // Adds the language; copies nothing. The overlay model's
+  // translate_site_into — the old name routes here too.
+  'internal:enable_language': ({ supabase, args }) => handleEnableLanguage(supabase, args as EnableLanguageArgs),
+  // Sibling rows → overlays. dry_run defaults to true inside the handler.
+  'internal:convert_translation_groups': ({ supabase, args }) => handleConvertTranslationGroups(supabase, args as ConvertGroupsArgs),
+  'internal:list_stale_translations': ({ supabase, args }) => handleListStaleTranslations(supabase, args as ListStaleArgs),
+  'internal:translate_ui_text': ({ supabase, args }) => handleTranslateUiText(supabase, args as any, bundledUiTextCatalog as any),
+  'internal:performance_mode_status': async ({ supabase }) => {
+    const { data: pm, error: pmErr } = await supabase.rpc('performance_mode_status');
+    return pmErr ? { success: false, error: pmErr.message } : { success: true, ...(pm as Record<string, unknown>) };
+  },
+  'internal:set_performance_mode': ({ supabase, args }) => executeSetPerformanceMode(supabase, args),
+  'internal:set_skill_trust': ({ supabase, args }) => executeSetSkillTrust(supabase, args),
+  'internal:sync_skills_from_code': ({ supabase, args }) => executeSyncSkillsFromCode(supabase, args),
+  'internal:module_usage_report': ({ supabase, args }) => executeModuleUsageReport(supabase, args),
+  'internal:reports': ({ supabase, args, skill, agent_type, caller_agent_name, attendedUserId }) =>
+    executeReportsAction(supabase, skill.name, args, { agent_type, caller_agent_name, attended_user_id: attendedUserId }),
+  'internal:manage_modules': ({ supabase, args, caller_user_id, caller_agent_name, agent_type, attendedUserId }) =>
+    executeManageModules(supabase, args, { caller_user_id, caller_agent_name, agent_type, attended: Boolean(attendedUserId) }),
+  'internal:qualify_lead': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeQualifyLead(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:distill_contact_state': ({ supabase, args }) => executeDistillContactState(supabase, args),
+  'internal:enrich_company': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeEnrichCompany(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:prospect_fit_analysis': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeProspectFitAnalysis(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:sales_profile_setup': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeSalesProfileSetup(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:prospect_research': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeProspectResearch(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:parse_resume': ({ supabase, args }) => executeParseResume(supabase, args),
+  'internal:scan_gmail_inbox': ({ supabase, args, supabaseUrl, serviceKey, caller_user_id }) =>
+    executeGmailInboxScan(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id }),
+  'internal:ingest_inbound_email': ({ supabase, args, supabaseUrl, serviceKey }) =>
+    executeIngestInboundEmail(supabase, args, { supabaseUrl, serviceKey }),
+  'internal:prepare_vat_return': ({ supabase, args }) => executeVatReturnSe(supabase, args),
+  'internal:build_site_step': ({ supabase, args }) => executeCopilotAction(supabase, args),
+  // Multi-skill: get_company_profile / update_company_profile
+  'internal:company_profile': ({ supabase, args, skill }) => executeCompanyProfile(supabase, args, skill.name),
+  'internal:get_customer_360': ({ supabase, args }) => executeCustomer360(supabase, args),
+  // Multi-skill router: dispatches on the skill name (the edge function
+  // used the _skill field the edge: dispatch injected for the same purpose).
+  'internal:contact_center': ({ supabase, args, skill }) => executeContactCenter(supabase, args, skill.name),
+  'internal:verify_document_integrity': ({ supabase, args }) => executeVerifyDocumentIntegrity(supabase, args),
+  'internal:upload_document': ({ supabase, args, caller_user_id, caller_api_key_id }) =>
+    executeUploadDocument(supabase, args, { caller_user_id, caller_api_key_id }),
+  'internal:search_knowledge': ({ supabase, args }) => executeSearchKnowledge(supabase, args),
+  'internal:request_return': ({ supabase, args }) => executeRequestReturn(supabase, args),
+  'internal:list_company_orders': ({ supabase, args }) => executeListCompanyRecords(supabase, args, 'orders'),
+  'internal:list_company_invoices': ({ supabase, args }) => executeListCompanyRecords(supabase, args, 'invoices'),
+  'internal:request_company_return': ({ supabase, args }) => executeRequestCompanyReturn(supabase, args),
+  'internal:approve_company_quote': ({ supabase, args }) => executeApproveCompanyQuote(supabase, args),
+  'internal:manage_company_contacts': ({ supabase, args }) => executeManageCompanyContacts(supabase, args),
+  'internal:reorder_company_order': ({ supabase, args }) => executeReorderCompanyOrder(supabase, args),
+  'internal:request_company_quote': ({ supabase, args }) => executeRequestCompanyQuote(supabase, args),
+  'internal:initiate_company_invoice_payment': ({ supabase, args }) => executeInitiateCompanyInvoicePayment(supabase, args),
+  'internal:lint_skill': ({ supabase, args }) => executeLintSkill(supabase, args),
+  'internal:update_skill_instructions': ({ supabase, args }) => executeUpdateSkillInstructions(supabase, args),
+  'internal:list_communications': ({ supabase, args }) => executeListCommunications(supabase, args),
+  'internal:get_communication': ({ supabase, args }) => executeGetCommunication(supabase, args),
+  'internal:email_to_ticket': ({ supabase, args }) => executeEmailToTicket(supabase, args),
+  'internal:draft_email_reply': ({ supabase, args }) => handleDraftEmailReply(supabase, args),
+  'internal:reply_to_email': ({ supabase, args }) => handleReplyToEmail(supabase, args),
+  'internal:reply_to_ticket_via_email': ({ supabase, args }) => executeReplyToTicketViaEmail(supabase, args),
+  'internal:social_post_batch': ({ supabase, args, supabaseUrl, serviceKey }) => executeSocialPostBatch(supabase, args, supabaseUrl, serviceKey),
+  'internal:ad_creative_generate': ({ supabase, args, supabaseUrl, serviceKey }) => executeAdCreativeGenerate(supabase, args, supabaseUrl, serviceKey),
+  'internal:ad_optimize': ({ supabase, args }) => executeAdOptimize(supabase, args),
+  'internal:send_winback_campaign': ({ supabase, args, supabaseUrl, serviceKey }) => executeSendWinbackCampaign(supabase, args, supabaseUrl, serviceKey),
+  'internal:sync_ad_metrics': ({ supabase, args, supabaseUrl, serviceKey }) => executeSyncAdMetrics(supabase, args, supabaseUrl, serviceKey),
+  'internal:competitor_monitor': ({ supabase, args, supabaseUrl, serviceKey }) => executeCompetitorMonitor(supabase, args, supabaseUrl, serviceKey),
+  'internal:invoice_from_timesheets': ({ supabase, args }) => executeInvoiceFromTimesheets(supabase, args),
+  'internal:send_dunning_reminders': ({ supabase, args, supabaseUrl, serviceKey }) => executeSendDunningReminders(supabase, args, supabaseUrl, serviceKey),
+};
+
+// read_sie_file — bytes, never a string. SIE 4 is specified as IBM CP437 and
+// Bokio still writes it that way; a text read decodes it as UTF-8 and destroys
+// every å ä ö before the skill sees it, irrecoverably. See _shared/sie-reader.ts.
+function executeReadSieFile(args: Record<string, unknown>): unknown {
+  const b64 = typeof args.content_base64 === 'string'
+    ? (args.content_base64 as string).replace(/^data:[^,]+,/, '') : '';
+  if (!b64) {
+    return {
+      error: 'content_base64 is required. Read the SIE file as BYTES and base64-encode it — do NOT read it as text. SIE 4 is specified as IBM CP437; a text read decodes it as UTF-8 and destroys every å ä ö before the file reaches this skill, and nothing here can undo that.',
+      status: 'failed',
+    };
+  }
+  let sieBytes: Uint8Array;
+  try {
+    const bin = atob(b64);
+    sieBytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) sieBytes[i] = bin.charCodeAt(i);
+  } catch (e) {
+    return { error: `content_base64 is not valid base64: ${e instanceof Error ? e.message : String(e)}`, status: 'failed' };
+  }
+  const sieInclude = Array.isArray(args.include)
+    ? (args.include as unknown[]).map((x) => String(x).toLowerCase()) : [];
+  return readSieFile(sieBytes, sieInclude);
+}
+
+// comment_on_task — a comment on a project task's thread, paced.
+async function executeCommentOnTask(
+  { supabase, args, agent_type, caller_agent_name, caller_api_key_id, attendedUserId }: InternalCtx,
+): Promise<unknown> {
+  const bodyText = String((args as any).body ?? '').trim();
+  const kind = ['step', 'question', 'decision', 'comment'].includes(String((args as any).kind)) ? String((args as any).kind) : 'step';
+  if (!bodyText) return { success: false, error: 'body is required' };
+  // The id is resolved, never trusted as sent: a garbled uuid (the
+  // right prefix, an improvised tail — optic's heartbeat on
+  // "Revisionsberättelse", 2026-10-21/27) answers with the task it
+  // meant instead of `no task <id>`, and an invalid uuid never
+  // reaches Postgres. task_title is accepted only when it names
+  // exactly one open task. See _shared/project-task-resolve.ts.
+  const resolved = await resolveProjectTask(supabase, args as any, { allowTitle: true });
+  if (!resolved.ok) {
+    const { ok: _ok, ...failure } = resolved;
+    return { success: false, ...failure };
+  }
+  const taskId = resolved.id;
+  // The thread keeps the cadence, not the prompt: one agent comment
+  // per task per day, and an unanswered question stays open (optic,
+  // 2026-10-27: 48 FlowPilot comments on one task, none from a
+  // person). Identity is server-stamped, never author_name; a person
+  // at the keyboard writes as a person and is never refused; a
+  // refusal carries no `error`. See _shared/handlers/task-thread-cadence.ts.
+  const author = threadAuthorFor({
+    agentType: agent_type, callerAgentName: caller_agent_name,
+    callerApiKeyId: caller_api_key_id ?? null, attendedUserId,
+  });
+  const authorType = author.attended ? 'person' : agent_type === 'flowpilot' ? 'flowpilot' : 'agent';
+  // The person's name and the thread are independent reads — one round trip, not two.
+  const [authorName, thread] = await Promise.all([
+    attendedUserId
+      ? personDisplayName(supabase, attendedUserId)
+      : Promise.resolve(String((args as any).author_name ?? '').trim() || (authorType === 'flowpilot' ? 'FlowPilot' : (caller_agent_name ?? agent_type))),
+    readTaskThreadComments(supabase, taskId),
+  ]);
+  if (thread.error) return { success: false, error: thread.error };
+  const movedAt = resolved.task.moved_at ?? null;
+  const verdict = decideTaskThreadCadence({ comments: thread.comments, author, kind: kind as TaskCommentKind, taskMovedAt: movedAt });
+  if (!verdict.allowed) return cadenceRefusalAnswer(verdict.refusal, resolved.task);
+  const state = verdict.state;
+  // Compare-and-set under a per-task lock: written only if no
+  // comment from this agent landed since the one it saw, so two
+  // overlapping heartbeats cannot both write.
+  const written = await writePacedComment(supabase, {
+    task_id: taskId, project_id: resolved.task.project_id, body: bodyText, kind: kind as TaskCommentKind,
+    author_type: authorType, author_name: authorName, author_id: attendedUserId,
+    agent_key: author.agent_key,
+    seen_last_at: author.attended ? null : (state.last_agent_comment_at ?? new Date(Date.now() - AGENT_COMMENT_INTERVAL_MS).toISOString()),
+  });
+  if ('error' in written) return { success: false, error: written.error };
+  if (!written.written) {
+    // Another invocation of the same agent wrote first: a day after ITS comment.
+    const lastAt = written.last_at ?? new Date().toISOString();
+    // The winner's comment is in the thread now — its question may be
+    // the one that stands. The refusal describes the thread as it IS,
+    // not as it was before the lock, so the next tick (told to read the
+    // answer instead of the thread) does not plan a follow-up that
+    // QUESTION_STILL_OPEN will refuse. An unreadable re-read keeps the
+    // state it had.
+    const reread = await readTaskThreadComments(supabase, taskId);
+    const current = reread.error ? state : readTaskThread(reread.comments, author, movedAt);
+    return cadenceRefusalAnswer(nudgedTodayRefusal(current, lastAt), resolved.task);
+  }
+  const row = written;
+  // What the thread says now, so a heartbeat sees it without a second call.
+  const after = readTaskThread(
+    [{ author_type: authorType, author_name: authorName, agent_key: author.agent_key, kind, created_at: row.created_at }, ...thread.comments],
+    author, movedAt,
+  );
+  return {
+    success: true, comment_id: row.id, task_id: taskId, task_title: resolved.task.title, kind,
+    ...(resolved.matched_by === 'title' ? { matched_by: 'title', resolution_note: 'Resolved by task_title; send task_id next time.' } : {}),
+    last_agent_comment_at: after.last_agent_comment_at,
+    open_question: after.open_question,
+    note: author.attended
+      ? 'On the card\'s thread, in your name; a question shows as one to whoever opens it.'
+      : 'On the card\'s thread; a question shows as one to whoever opens it. The thread takes your next comment on this task in 24 h, sooner once a person writes.',
+  };
+}
+
+// set_performance_mode — one dial for the instance's pulse. Applied by the DB
+// function that is the only writer of cron schedules; read back so "changed"
+// is evidence.
+async function executeSetPerformanceMode(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
+  const mode = String((args as any).mode ?? '').trim();
+  if (!['low', 'balanced', 'high'].includes(mode)) {
+    return { success: false, error: 'mode must be low, balanced or high' };
+  }
+  const { data: applied, error: applyErr } = await supabase.rpc('apply_performance_mode', {
+    p_mode: mode,
+    p_reason: String((args as any).reason ?? 'set by operator'),
+  });
+  if (applyErr) return { success: false, error: applyErr.message };
+  const { data: after, error: afterErr } = await supabase.rpc('performance_mode_status');
+  const status = afterErr ? { status_error: afterErr.message } : {
+    mode: (after as any)?.mode,
+    runs_last_hour: (after as any)?.runs_last_hour,
+    startup_timeouts_last_hour: (after as any)?.startup_timeouts_last_hour,
+    jobs: (after as any)?.jobs,
+  };
+  return { success: true, ...(applied as Record<string, unknown>), now: status };
+}
+
+// set_skill_trust — the trust dial, exposed to an operator with a mandate. One
+// column, read back after the write so "updated" is never a lie.
+async function executeSetSkillTrust(supabase: SupabaseClient, args: Record<string, unknown>): Promise<unknown> {
+  const name = String((args as any).skill_name ?? '').trim();
+  const level = String((args as any).trust_level ?? '').trim();
+  if (!name || !['auto', 'notify', 'approve'].includes(level)) {
+    return { success: false, error: 'skill_name and trust_level (auto | notify | approve) are required' };
+  }
+  const { data: before, error: readErr } = await supabase.from('agent_skills').select('id, trust_level, enabled').eq('name', name).maybeSingle();
+  if (readErr || !before) {
+    return { success: false, error: readErr ? readErr.message : `no skill named ${name} on this instance` };
+  }
+  const { data: after, error: updErr } = await supabase.from('agent_skills').update({ trust_level: level }).eq('id', before.id).select('trust_level').single();
+  return updErr
+    ? { success: false, error: updErr.message }
+    : { success: true, skill_name: name, previous: before.trust_level, trust_level: after?.trust_level, reason: (args as any).reason ?? null, note: 'Read on the next call of the skill. sync_skills_from_code leaves it alone.' };
+}
+
 // Starter-template bundle — regenerated by `bun run scripts/templates-to-json.ts`.
 // Keyed by template id; used by list_templates / install_template.
 import bundledTemplates from "../../agent-execute/_templates.json" with { type: "json" };
@@ -203,9 +511,6 @@ import { businessToday, loadHomeCached } from '../locale/load-home.ts';
 import { handleGetBusinessHome, handleSetBusinessHome, type SetBusinessHomeArgs } from '../handlers/business-home.ts';
 import { loadHome } from '../locale/load-home.ts';
 import { isExtractable } from '../documents/extractable.ts';
-// Supabase edge runtime: keeps a promise alive after the response is sent.
-// deno-lint-ignore no-explicit-any
-declare const EdgeRuntime: any;
 
 // ─── Skill → owning module (rollsvepet #102) ─────────────────────────────
 // The auth gate below authorizes non-admin staff per the skill's OWNING
@@ -230,10 +535,6 @@ for (const [name, moduleId] of Object.entries(SKILL_OWNER_MODULE_OVERRIDES)) {
   SKILL_OWNER_MODULE[name] = moduleId;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
 
 // ─── Agentic bookkeeping: shared template scoring + expansion ───────────────
 // These mirror the inline logic in the manage_journal_entry create path
@@ -484,52 +785,6 @@ const UNDERSCORE_PARAM_RPCS = new Set<string>([
   'utm_attribution_report',
 ]);
 
-interface ExecuteRequest {
-  skill_id?: string;
-  skill_name?: string;
-  arguments: Record<string, unknown>;
-  agent_type: 'flowpilot' | 'chat' | 'mcp';
-  conversation_id?: string;
-  /** Trace ID from the parent reason() loop for end-to-end observability */
-  trace_id?: string;
-  /** When called via MCP, the user who owns the api_key. Used for ownership/created_by. */
-  caller_user_id?: string;
-  /** When called via MCP, the connected agent's name (a2a_peers.name). Stamps *_by_agent columns so a row says WHICH agent, not just "mcp". */
-  caller_agent_name?: string;
-  /** When called via MCP, the api_key id (and inbound peer) that initiated the call. */
-  caller_api_key_id?: string;
-  /** Run only if the call is a READ (read-surface classifyCall) — a live report block. */
-  read_only?: boolean;
-  /**
-   * The VERIFIED email of a signed-in customer (identity ladder rung 2). Set by
-   * chat-completion from the resolved JWT — NEVER from model output. Customer-
-   * scoped skills (e.g. request_return) use it to enforce "acts on the caller's
-   * own records only". Injected into args as `_caller_email`.
-   */
-  caller_email?: string;
-  /**
-   * Identity ladder rung 3 (B2B): the ACTIVE company + role of a signed-in
-   * B2B contact, resolved by chat-completion from the verified JWT →
-   * company_contacts membership — NEVER from model output. Company-scoped
-   * skills use them to enforce "acts only within the caller's own company".
-   * Injected into args as `_company_id` / `_company_role`. (P0 plumbing — no
-   * company-scoped skill consumes them yet; wired in P1.)
-   */
-  company_id?: string;
-  company_role?: string;
-  objective_context?: {
-    goal: string;
-    step: string;
-    why: string;
-  };
-  /**
-   * The caller declares this run is an unattended scheduled tick (the
-   * automation-dispatcher's cron lane), not something a human or an agent
-   * asked for just now. Only such a run may have its journal row suppressed
-   * when the skill declares it did nothing — see _shared/activity/work-done.ts.
-   */
-  scheduled?: boolean;
-}
 
 // normalizeSkillArgs is now imported from ../_shared/skill-aliases.ts
 
@@ -540,19 +795,27 @@ interface ExecuteRequest {
 // executeLeadAction) call it from outside serve()'s closure.
 const sanitizeOrTerm = (v: unknown): string => String(v ?? '').replace(/[,()\\]/g, ' ').trim();
 
-/**
- * agent-execute's request pipeline: every gate in order (retired names, the
- * lookup, authorization, the module gate, scope, staging, trust and approval,
- * the claim, handler dispatch, the envelope, the journal, objective
- * tracking), then the handlers it dispatches to. The HTTP function
- * (agent-execute/index.ts) is a thin caller of this; a caller inside the same
- * project can import it and skip the HTTP hop.
- */
-export async function handleAgentExecute(req: Request): Promise<Response> {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
 
+export type { ExecuteAuth, ExecuteOutcome, ExecuteRequest, SkillRunner } from './types.ts';
+export { SERVICE_CALLER } from './types.ts';
+
+/**
+ * Run one skill: the whole pipeline agent-execute's HTTP function ran — in
+ * this order: retired names, lookup, authorization (JWT callers), the module
+ * gate, scope, staging, trust/approval, the approval claim, handler dispatch,
+ * the agent envelope, the journal, objective tracking. Behaviour is the
+ * function's; only the transport is gone. Every return is the HTTP status
+ * and body the function answered, so a caller that read the wire reads this.
+ *
+ * The request is taken through one JSON round trip first — exactly what the
+ * HTTP hop did — so a handler that mutates `arguments` (the server-stamped
+ * `_caller_*` keys, the stripped `_approved`) never writes into the caller's
+ * own object, and `undefined` values vanish the way they did on the wire.
+ *
+ * `async: true` (the 202 handoff) is the HTTP function's: a dispatcher that
+ * relies on it keeps calling over HTTP until it is converted.
+ */
+export async function executeSkillRequest(input: ExecuteRequest, auth: ExecuteAuth): Promise<ExecuteOutcome> {
   const startTime = Date.now();
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -561,66 +824,15 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
   // capture `supabase` and `serviceKey` from this scope. When we extract
   // handlers/* in phase 2b, swap to getServiceClient() from _shared/supabase-clients.
   const supabase = createClient(supabaseUrl, serviceKey);
+  const { isServiceCaller, gateUserId, gateIsAdmin } = auth;
+  // The HTTP function answers 401 before the body is read; the same rule here
+  // keeps an in-process caller from running a skill as nobody.
+  if (!isServiceCaller && !gateUserId) {
+    return { status: 401, body: { error: 'Unauthorized' } };
+  }
 
   try {
-    // ─── AUTH GATE ───────────────────────────────────────────────────────
-    // agent-execute runs any enabled skill with the service-role client (RLS
-    // off) and is deployed --no-verify-jwt, so it MUST authenticate in-body or
-    // it is an unauthenticated universal skill executor reachable from the
-    // internet. Legitimate callers are exactly two: internal edge functions
-    // (mcp-server, voice-ingest, automation-dispatcher, send-webhook,
-    // run-autonomy-tests) which send Bearer <service_role key>, and the admin
-    // UI which sends the logged-in user's JWT via functions.invoke.
-    //
-    // AUTHENTICATION happens here (who are you); AUTHORIZATION for JWT callers
-    // happens after the skill lookup (may you run THIS skill) — admins run
-    // everything, other staff run skills whose owning module their role is
-    // granted in role_module_access. Before #102 this gate required admin for
-    // every JWT caller, which 401'd module-granted staff out of every skill-
-    // backed surface (accounting tabs, staged FlowWork actions, order actions).
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const bearer = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    let gateUserId: string | null = null;
-    let gateIsAdmin = false;
-    let isServiceCaller = false;
-    if (bearer && serviceKey && bearer === serviceKey) {
-      isServiceCaller = true; // trusted internal edge caller
-    } else if (bearer && bearer !== anonKey) {
-      const { data: userData } = await supabase.auth.getUser(bearer);
-      if (userData?.user) {
-        gateUserId = userData.user.id;
-        const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: gateUserId, _role: 'admin' });
-        gateIsAdmin = isAdmin === true;
-      }
-    }
-    if (!isServiceCaller && !gateUserId) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const body: ExecuteRequest = await req.json();
-    // ─── ASYNC HANDOFF ──────────────────────────────────────────────────────
-    // A dispatcher must not sit on a 20-second skill (the responder, a send)
-    // for every event in its batch: on Resta the event-dispatcher died mid-
-    // batch, left events unmarked, re-ran the same ones every minute and never
-    // reached new mail (2026-09-04). With async:true the caller gets 202 at
-    // once and the skill runs here in the background; the activity log is the
-    // result. Only for callers already authenticated above.
-    if ((body as any).async === true) {
-      const { async: _async, ...rest } = body as any;
-      const run = fetch(`${supabaseUrl}/functions/v1/agent-execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
-        body: JSON.stringify(rest),
-      }).then((r) => r.text()).catch((e) => console.error('[agent-execute] async handoff failed:', e));
-      if (typeof EdgeRuntime !== 'undefined' && (EdgeRuntime as any)?.waitUntil) (EdgeRuntime as any).waitUntil(run);
-      return new Response(JSON.stringify({ accepted: true, async: true, skill: rest.skill_name ?? rest.skill_id ?? null, note: 'Running in the background — the activity log carries the result.' }), {
-        status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const body: ExecuteRequest = JSON.parse(JSON.stringify(input));
     const { skill_id, skill_name, arguments: rawArgs = {}, agent_type, conversation_id, scheduled, objective_context, trace_id, caller_user_id: bodyCallerUserId, caller_api_key_id, caller_agent_name: bodyCallerAgentName, caller_email, company_id: callerCompanyId, company_role: callerCompanyRole } = body;
     // A live report block runs read-only (see the READ_ONLY_RUN check below).
     const readOnlyRun = body.read_only === true;
@@ -667,9 +879,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
     }
 
     if (!skill_id && !skill_name) {
-      return new Response(JSON.stringify({ error: 'skill_id or skill_name required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return { status: 400, body: { error: 'skill_id or skill_name required' } };
     }
 
     // 0. Retired names answer with a direction, not a wall. Checked BEFORE the
@@ -681,9 +891,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
     //    410 would throw away the very pointer this exists to deliver.
     const retired = skill_name ? retiredSkillResult(String(skill_name)) : null;
     if (retired) {
-      return new Response(JSON.stringify(retired), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return { status: 200, body: retired };
     }
 
     // The modules row, read ONCE per call and only when a module's skill is
@@ -718,14 +926,10 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
       if (missingName && owner && owner !== 'platform') {
         const active = await activeModules();
         if (!skillModuleOn(missingName, active)) {
-          return new Response(JSON.stringify(moduleDisabledRefusal(missingName, owner)), {
-            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return { status: 200, body: moduleDisabledRefusal(missingName, owner) };
         }
       }
-      return new Response(JSON.stringify({ error: `Skill not found: ${skill_id || skill_name}` }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return { status: 404, body: { error: `Skill not found: ${skill_id || skill_name}` } };
     }
 
     const skill = skills;
@@ -764,9 +968,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
       });
       if (!decision.allowed) {
         const why = decision.reason;
-        return new Response(JSON.stringify({ error: `Forbidden: "${skill.name}" — ${why}` }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return { status: 403, body: { error: `Forbidden: "${skill.name}" — ${why}` } };
       }
     }
 
@@ -800,7 +1002,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
               input: args, output: refusal, trace_id: trace_id || undefined,
               status: 'refused', conversation_id, duration_ms: Date.now() - startTime,
             });
-            return new Response(JSON.stringify(refusal), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return { status: 200, body: refusal };
           }
         }
       }
@@ -816,9 +1018,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         status: 'failed', conversation_id, duration_ms: Date.now() - startTime,
         error_message: `Skill '${skill.name}' is internal-only, cannot run from public chat`,
       });
-      return new Response(JSON.stringify({ error: 'This action is not available' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return { status: 403, body: { error: 'This action is not available' } };
     }
 
     // 3a. STAGING ENVELOPE — preview-first MCP protocol for high-impact writes.
@@ -891,7 +1091,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
       const doubleGateNote = isDoubleGated
         ? ` This skill also requires human approval: that re-invoke answers status="pending_approval" with an approval_request_id. Do NOT pass _approved=true yet — it is refused until the request is approved in /admin/approvals. Once it is, re-call ONCE with the same arguments plus _approved_operation_id, _approved=true and _approval_request_id.`
         : '';
-      return new Response(JSON.stringify({
+      return { status: 202, body: {
         staged: true,
         operation_id: opRow?.id,
         skill: skill.name,
@@ -907,9 +1107,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
           ...(isDoubleGated ? { after_human_approval: { _approved_operation_id: opRow?.id, _approved: true, _approval_request_id: '<from the pending_approval answer>' } } : {}),
           reject: { skill: 'reject_pending_operation', args: { p_id: opRow?.id, p_reason: '<reason>' } },
         },
-      }), {
-        status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      } };
     }
 
     // Who the journal credits. Normally the caller's agent_type — but an
@@ -928,10 +1126,10 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         .maybeSingle();
       if (op?.created_by_agent) effectiveAgent = op.created_by_agent as string;
       if (!op || op.status !== 'approved' || op.skill_name !== skill.name) {
-        return new Response(JSON.stringify({
+        return { status: 403, body: {
           error: 'pending operation not approved or skill mismatch',
           operation_id: approvedOpId,
-        }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } };
       }
       // Approval windows are finite: an approved-but-unexecuted operation past
       // expires_at must NOT execute with stale context (sweep finding #B5).
@@ -939,10 +1137,10 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         await supabase.from('pending_operations')
           .update({ status: 'expired' })
           .eq('id', approvedOpId);
-        return new Response(JSON.stringify({
+        return { status: 403, body: {
           error: `pending operation expired at ${op.expires_at} — re-stage the skill call to get a fresh approval`,
           operation_id: approvedOpId,
-        }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } };
       }
       // NOT marked executed here. A DOUBLE-GATED skill (requires_staging AND
       // trust_level='approve' — install_template, the accounting closers) still
@@ -984,10 +1182,10 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
     // or nothing runs. Opening a report can never send, book or change
     // anything, whatever the report's author wrote into it.
     if (readOnlyRun === true && classifyCall(skill.name, args as Record<string, unknown>) !== 'read') {
-      return new Response(JSON.stringify({
+      return { status: 200, body: {
         status: 'refused', code: 'READ_ONLY_RUN', retryable: false,
         hint: `"${skill.name}" changes data, and a read-only run (a live report block) only reads. Use a list_/get_/check_ skill, or manage_* with a read action.`,
-      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } };
     }
 
     // A dry run of a skill whose contract makes it a read (DRY_RUN_READS in
@@ -1038,7 +1236,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         console.error('[agent-execute] request_skill_approval threw:', e);
       }
 
-      return new Response(JSON.stringify({
+      return { status: 202, body: {
         status: 'pending_approval',
         activity_id: activityId,
         approval_request_id: approvalRequestId,
@@ -1046,9 +1244,7 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         trust_level: 'approve',
         message: `Action '${skill.name}' requires approval. Decision page: /admin/approvals${approvalRequestId ? `?request=${approvalRequestId}` : ''}. Poll agent_activity for status='approved' then re-call ONCE with the same arguments plus _approved=true${approvalRequestId ? ` and _approval_request_id="${approvalRequestId}"` : ''}. The approval is consumable exactly once: if the approver's UI (or the follow-through sweep) already ran it, the re-call is refused with 409 already_executed — that is not an error to retry.`,
         input: args,
-      }), {
-        status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      } };
     }
 
     // 3b. CONSUME THE APPROVAL — exactly once, whichever executor got here.
@@ -1089,16 +1285,18 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
           input: args, output: { refused: verdict.reason, approval_request_id: verdict.requestId ?? null, claim: claimResult },
           trace_id: trace_id || undefined,
           status: 'failed', conversation_id, duration_ms: Date.now() - startTime,
-          error_message: verdict.message.slice(0, 500),
+          error_message: (verdict.message ?? '').slice(0, 500),
         });
-        return new Response(JSON.stringify({
+        // A Response built with `status: undefined` answered 200; the verdict's
+        // refusals always carry 403 or 409, so the fallback is never reached.
+        return { status: verdict.httpStatus ?? 200, body: {
           status: 'refused',
           reason: verdict.reason,
           approval_request_id: verdict.requestId ?? null,
           skill: skill.name,
           error: verdict.message,
           message: verdict.message,
-        }), { status: verdict.httpStatus, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } };
       }
       claimedApprovalRequestId = verdict.requestId;
       claimedApprovalActivityId = verdict.activityId;
@@ -1216,305 +1414,19 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         const peerName = handler.replace('responses:', '');
         result = await executeOpenResponsesRequest(peerName, args);
 
-      } else if (handler === 'internal:import_from_odoo') {
-        // Attachments take the same road as upload_document: storage + create_agent_document.
-        result = await importFromOdoo({
-          supabase,
-          callerUserId: caller_user_id ?? null,
-          uploadDocument: (a) => executeUploadDocument(supabase, a, { caller_user_id, caller_api_key_id }),
-        }, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:process_due_social_posts') {
-        result = await executeProcessDueSocialPosts(supabase, args as Record<string, unknown>, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:approve_content_campaign') {
-        result = await executeApproveCampaign(supabase, args as Record<string, unknown>, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:email_admins') {
-        // (supabase, args) handler — it sat in RESPONSE_HANDLERS (Request → Response
-        // adapters) and was called with a Request, so `args` was undefined and every
-        // call died on "Cannot read properties of undefined (reading 'subject')"
-        // (skill smoke, 2026-10-01). It never delivered a single admin mail.
-        result = await hEmailAdmins(supabase, args as Record<string, unknown>);
-
       } else if (handler === 'builtin:site_meta') {
         // get_blog_rss_url — the only builtin:* handler, and nothing dispatched it:
         // "Unknown handler type" on every call (skill smoke, 2026-10-01). The feed
         // is the blog-rss edge function on this instance.
         result = { url: `${supabaseUrl}/functions/v1/blog-rss`, format: 'rss', posts: 20 };
 
-      } else if (handler === 'internal:verify_email') {
-        result = await executeVerifyEmail(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:contact_finder') {
-        result = await executeContactFinder(args);
-
-      } else if (handler === 'internal:manage_service_order') {
-        result = await executeManageServiceOrder(supabase, args);
-
-      } else if (handler === 'internal:fetch_ecb_rates') {
-        result = await executeFetchFxRates(supabase);
-
-      } else if (handler === 'internal:read_sie_file') {
-        // Bytes, never a string. SIE 4 is specified as IBM CP437 and Bokio still
-        // writes it that way; a text read decodes it as UTF-8 and destroys every
-        // å ä ö before the skill sees it, irrecoverably. See _shared/sie-reader.ts.
-        const b64 = typeof args.content_base64 === 'string'
-          ? (args.content_base64 as string).replace(/^data:[^,]+,/, '') : '';
-        if (!b64) {
-          result = {
-            error: 'content_base64 is required. Read the SIE file as BYTES and base64-encode it — do NOT read it as text. SIE 4 is specified as IBM CP437; a text read decodes it as UTF-8 and destroys every å ä ö before the file reaches this skill, and nothing here can undo that.',
-            status: 'failed',
-          };
-        } else {
-          let sieBytes: Uint8Array | null = null;
-          try {
-            const bin = atob(b64);
-            sieBytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) sieBytes[i] = bin.charCodeAt(i);
-          } catch (e) {
-            result = { error: `content_base64 is not valid base64: ${e instanceof Error ? e.message : String(e)}`, status: 'failed' };
-          }
-          if (sieBytes) {
-            const sieInclude = Array.isArray(args.include)
-              ? (args.include as unknown[]).map((x) => String(x).toLowerCase()) : [];
-            result = readSieFile(sieBytes, sieInclude);
-          }
-        }
-
-      } else if (handler === 'internal:describe_blocks') {
-        result = executeDescribeBlocks(args as Record<string, unknown>);
-      } else if (handler === 'internal:inspect_rendered_page') {
-        result = await executeInspectRenderedPage(supabase, args as Record<string, unknown>);
-      } else if (handler === 'internal:check_integrations') {
-        result = await executeCheckIntegrations(supabase, args as Record<string, unknown>);
-      } else if (handler === 'internal:web_providers_status') {
-        result = await describeWebLayer(supabase);
-
-      } else if (handler === 'internal:get_agent_trace') {
-        result = await executeAgentTrace(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:agent_day_report') {
-        result = await executeAgentDayReport(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:reset_sandbox') {
-        result = await executeResetSandbox(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:comment_on_task') {
-        const bodyText = String((args as any).body ?? '').trim();
-        const kind = ['step', 'question', 'decision', 'comment'].includes(String((args as any).kind)) ? String((args as any).kind) : 'step';
-        if (!bodyText) {
-          result = { success: false, error: 'body is required' };
-        } else {
-          // The id is resolved, never trusted as sent: a garbled uuid (the
-          // right prefix, an improvised tail — optic's heartbeat on
-          // "Revisionsberättelse", 2026-10-21/27) answers with the task it
-          // meant instead of `no task <id>`, and an invalid uuid never
-          // reaches Postgres. task_title is accepted only when it names
-          // exactly one open task. See _shared/project-task-resolve.ts.
-          const resolved = await resolveProjectTask(supabase, args as any, { allowTitle: true });
-          if (!resolved.ok) {
-            const { ok: _ok, ...failure } = resolved;
-            result = { success: false, ...failure };
-          } else {
-            const taskId = resolved.id;
-            // The thread keeps the cadence, not the prompt: one agent comment
-            // per task per day, and an unanswered question stays open (optic,
-            // 2026-10-27: 48 FlowPilot comments on one task, none from a
-            // person). Identity is server-stamped, never author_name; a person
-            // at the keyboard writes as a person and is never refused; a
-            // refusal carries no `error`. See _shared/handlers/task-thread-cadence.ts.
-            const author = threadAuthorFor({
-              agentType: agent_type, callerAgentName: caller_agent_name,
-              callerApiKeyId: caller_api_key_id ?? null, attendedUserId,
-            });
-            const authorType = author.attended ? 'person' : agent_type === 'flowpilot' ? 'flowpilot' : 'agent';
-            const authorName = attendedUserId
-              ? await personDisplayName(supabase, attendedUserId)
-              : String((args as any).author_name ?? '').trim() || (authorType === 'flowpilot' ? 'FlowPilot' : (caller_agent_name ?? agent_type));
-            const thread = await readTaskThreadComments(supabase, taskId);
-            if (thread.error) {
-              result = { success: false, error: thread.error };
-            } else {
-              const movedAt = resolved.task.moved_at ?? null;
-              const verdict = decideTaskThreadCadence({ comments: thread.comments, author, kind: kind as TaskCommentKind, taskMovedAt: movedAt });
-              if (!verdict.allowed) {
-                result = cadenceRefusalAnswer(verdict.refusal, resolved.task);
-              } else {
-                const state = verdict.state;
-                // Compare-and-set under a per-task lock: written only if no
-                // comment from this agent landed since the one it saw, so two
-                // overlapping heartbeats cannot both write.
-                const written = await writePacedComment(supabase, {
-                  task_id: taskId, project_id: resolved.task.project_id, body: bodyText, kind: kind as TaskCommentKind,
-                  author_type: authorType, author_name: authorName, author_id: attendedUserId,
-                  agent_key: author.agent_key,
-                  seen_last_at: author.attended ? null : (state.last_agent_comment_at ?? new Date(Date.now() - AGENT_COMMENT_INTERVAL_MS).toISOString()),
-                });
-                if ('error' in written) {
-                  result = { success: false, error: written.error };
-                } else if (!written.written) {
-                  // Another invocation of the same agent wrote first: a day after ITS comment.
-                  const lastAt = written.last_at ?? new Date().toISOString();
-                  result = cadenceRefusalAnswer(nudgedTodayRefusal(state, lastAt), resolved.task);
-                } else {
-                  const row = written;
-                  // What the thread says now, so a heartbeat sees it without a second call.
-                  const after = readTaskThread(
-                    [{ author_type: authorType, author_name: authorName, agent_key: author.agent_key, kind, created_at: row.created_at }, ...thread.comments],
-                    author, movedAt,
-                  );
-                  result = {
-                    success: true, comment_id: row.id, task_id: taskId, task_title: resolved.task.title, kind,
-                    ...(resolved.matched_by === 'title' ? { matched_by: 'title', resolution_note: 'Resolved by task_title; send task_id next time.' } : {}),
-                    last_agent_comment_at: after.last_agent_comment_at,
-                    open_question: after.open_question,
-                    note: author.attended
-                      ? 'On the card\'s thread, in your name; a question shows as one to whoever opens it.'
-                      : 'On the card\'s thread; a question shows as one to whoever opens it. The thread takes your next comment on this task in 24 h, sooner once a person writes.',
-                  };
-                }
-              }
-            }
-          }
-        }
-
-      } else if (handler === 'internal:knowledge_index_status') {
-        const { data: stats, error: statsErr } = await supabase.rpc('knowledge_index_stats');
-        result = statsErr ? { success: false, error: statsErr.message } : { success: true, ...(stats as Record<string, unknown>) };
-
-      } else if (handler === 'internal:translate_page') {
-        // The page's text walks through the platform, never through the agent's
-        // context: structure preserved by construction, counts in the answer.
-        result = await handleTranslatePage(supabase, args as any);
-
-      } else if (handler === 'internal:translate_content') {
-        // translate_page's engine for any overlaid content — a blog post's
-        // title, excerpt, meta and body as overlays per language.
-        result = await handleTranslateContent(supabase, args as TranslateContentArgs);
-
-      } else if (handler === 'internal:get_business_home') {
-        result = await handleGetBusinessHome(supabase);
-
-      } else if (handler === 'internal:set_business_home') {
-        // The same three facts the Site settings card writes, validated.
-        result = await handleSetBusinessHome(supabase, args as SetBusinessHomeArgs);
-
-      } else if (handler === 'internal:set_translation') {
-        result = await handleSetTranslation(supabase, args as SetTranslationArgs);
-
-      } else if (handler === 'internal:publish_translation') {
-        result = await handlePublishTranslation(supabase, args as PublishTranslationArgs);
-
-      } else if (handler === 'internal:enable_language') {
-        // Adds the language; copies nothing. The overlay model's
-        // translate_site_into — the old name routes here too.
-        result = await handleEnableLanguage(supabase, args as EnableLanguageArgs);
-
-      } else if (handler === 'internal:convert_translation_groups') {
-        // Sibling rows → overlays. dry_run defaults to true inside the handler.
-        result = await handleConvertTranslationGroups(supabase, args as ConvertGroupsArgs);
-
-      } else if (handler === 'internal:list_stale_translations') {
-        result = await handleListStaleTranslations(supabase, args as ListStaleArgs);
-
-      } else if (handler === 'internal:translate_ui_text') {
-        result = await handleTranslateUiText(supabase, args as any, bundledUiTextCatalog as any);
-
-      } else if (handler === 'internal:performance_mode_status') {
-        const { data: pm, error: pmErr } = await supabase.rpc('performance_mode_status');
-        result = pmErr ? { success: false, error: pmErr.message } : { success: true, ...(pm as Record<string, unknown>) };
-
-      } else if (handler === 'internal:set_performance_mode') {
-        // One dial for the instance's pulse. Applied by the DB function that is
-        // the only writer of cron schedules; read back so "changed" is evidence.
-        const mode = String((args as any).mode ?? '').trim();
-        if (!['low', 'balanced', 'high'].includes(mode)) {
-          result = { success: false, error: 'mode must be low, balanced or high' };
-        } else {
-          const { data: applied, error: applyErr } = await supabase.rpc('apply_performance_mode', {
-            p_mode: mode,
-            p_reason: String((args as any).reason ?? 'set by operator'),
-          });
-          if (applyErr) {
-            result = { success: false, error: applyErr.message };
-          } else {
-            const { data: after, error: afterErr } = await supabase.rpc('performance_mode_status');
-            const status = afterErr ? { status_error: afterErr.message } : {
-              mode: (after as any)?.mode,
-              runs_last_hour: (after as any)?.runs_last_hour,
-              startup_timeouts_last_hour: (after as any)?.startup_timeouts_last_hour,
-              jobs: (after as any)?.jobs,
-            };
-            result = { success: true, ...(applied as Record<string, unknown>), now: status };
-          }
-        }
-
-      } else if (handler === 'internal:set_skill_trust') {
-        // The trust dial, exposed to an operator with a mandate. One column,
-        // read back after the write so "updated" is never a lie.
-        const name = String((args as any).skill_name ?? '').trim();
-        const level = String((args as any).trust_level ?? '').trim();
-        if (!name || !['auto', 'notify', 'approve'].includes(level)) {
-          result = { success: false, error: 'skill_name and trust_level (auto | notify | approve) are required' };
-        } else {
-          const { data: before, error: readErr } = await supabase.from('agent_skills').select('id, trust_level, enabled').eq('name', name).maybeSingle();
-          if (readErr || !before) {
-            result = { success: false, error: readErr ? readErr.message : `no skill named ${name} on this instance` };
-          } else {
-            const { data: after, error: updErr } = await supabase.from('agent_skills').update({ trust_level: level }).eq('id', before.id).select('trust_level').single();
-            result = updErr
-              ? { success: false, error: updErr.message }
-              : { success: true, skill_name: name, previous: before.trust_level, trust_level: after?.trust_level, reason: (args as any).reason ?? null, note: 'Read on the next call of the skill. sync_skills_from_code leaves it alone.' };
-          }
-        }
-
-      } else if (handler === 'internal:sync_skills_from_code') {
-        result = await executeSyncSkillsFromCode(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:module_usage_report') {
-        result = await executeModuleUsageReport(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:reports') {
-        result = await executeReportsAction(supabase, skill.name, args as Record<string, unknown>, {
-          agent_type, caller_agent_name, attended_user_id: attendedUserId,
-        });
-
-      } else if (handler === 'internal:manage_modules') {
-        result = await executeManageModules(supabase, args as Record<string, unknown>, { caller_user_id, caller_agent_name, agent_type, attended: Boolean(attendedUserId) });
-
-      } else if (handler === 'internal:qualify_lead') {
-        result = await executeQualifyLead(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:distill_contact_state') {
-        result = await executeDistillContactState(supabase, args as Record<string, unknown>);
-
-      } else if (handler === 'internal:enrich_company') {
-        result = await executeEnrichCompany(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:prospect_fit_analysis') {
-        result = await executeProspectFitAnalysis(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:sales_profile_setup') {
-        result = await executeSalesProfileSetup(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:prospect_research') {
-        result = await executeProspectResearch(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:parse_resume') {
-        result = await executeParseResume(supabase, args);
-
-      } else if (handler === 'internal:scan_gmail_inbox') {
-        result = await executeGmailInboxScan(supabase, args, { supabaseUrl, serviceKey, callerUserId: caller_user_id });
-
-      } else if (handler === 'internal:ingest_inbound_email') {
-        result = await executeIngestInboundEmail(supabase, args, { supabaseUrl, serviceKey });
-
-      } else if (handler === 'internal:prepare_vat_return') {
-        result = await executeVatReturnSe(supabase, args);
-
-      } else if (handler === 'internal:build_site_step') {
-        result = await executeCopilotAction(supabase, args);
+      } else if (Object.hasOwn(INTERNAL_HANDLERS, handler)) {
+        // One registry, one line: see INTERNAL_HANDLERS at the top of the file.
+        const ctx: InternalCtx = {
+          supabase, args, skill, agent_type, caller_user_id, caller_api_key_id, caller_agent_name,
+          conversation_id, trace_id, attendedUserId, supabaseUrl, serviceKey, scheduled, objective_context,
+        };
+        result = await INTERNAL_HANDLERS[handler](ctx);
 
       } else if (RESPONSE_HANDLERS[handler]) {
         result = await callResponseHandler(RESPONSE_HANDLERS[handler], args, skill.name);
@@ -1523,102 +1435,6 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
         // Sub-path routing preserved from the edge function:
         // internal:reconciliation/auto-match → action 'auto-match'.
         result = await executeReconciliation(handler.split('/')[1], args);
-
-      } else if (handler === 'internal:company_profile') {
-        // Multi-skill: get_company_profile / update_company_profile
-        result = await executeCompanyProfile(supabase, args, skill.name);
-
-      } else if (handler === 'internal:get_customer_360') {
-        result = await executeCustomer360(supabase, args);
-
-      } else if (handler === 'internal:contact_center') {
-        // Multi-skill router: dispatches on the skill name (the edge function
-        // used the _skill field the edge: dispatch injected for the same purpose).
-        result = await executeContactCenter(supabase, args, skill.name);
-
-      } else if (handler === 'internal:verify_document_integrity') {
-        result = await executeVerifyDocumentIntegrity(supabase, args);
-
-      } else if (handler === 'internal:upload_document') {
-        result = await executeUploadDocument(supabase, args, { caller_user_id, caller_api_key_id });
-
-      } else if (handler === 'internal:search_knowledge') {
-        result = await executeSearchKnowledge(supabase, args);
-
-      } else if (handler === 'internal:request_return') {
-        result = await executeRequestReturn(supabase, args);
-
-      } else if (handler === 'internal:list_company_orders') {
-        result = await executeListCompanyRecords(supabase, args, 'orders');
-
-      } else if (handler === 'internal:list_company_invoices') {
-        result = await executeListCompanyRecords(supabase, args, 'invoices');
-
-      } else if (handler === 'internal:request_company_return') {
-        result = await executeRequestCompanyReturn(supabase, args);
-
-      } else if (handler === 'internal:approve_company_quote') {
-        result = await executeApproveCompanyQuote(supabase, args);
-
-      } else if (handler === 'internal:manage_company_contacts') {
-        result = await executeManageCompanyContacts(supabase, args);
-
-      } else if (handler === 'internal:reorder_company_order') {
-        result = await executeReorderCompanyOrder(supabase, args);
-
-      } else if (handler === 'internal:request_company_quote') {
-        result = await executeRequestCompanyQuote(supabase, args);
-
-      } else if (handler === 'internal:initiate_company_invoice_payment') {
-        result = await executeInitiateCompanyInvoicePayment(supabase, args);
-
-      } else if (handler === 'internal:lint_skill') {
-        result = await executeLintSkill(supabase, args);
-
-      } else if (handler === 'internal:update_skill_instructions') {
-        result = await executeUpdateSkillInstructions(supabase, args);
-
-      } else if (handler === 'internal:list_communications') {
-        result = await executeListCommunications(supabase, args);
-
-      } else if (handler === 'internal:get_communication') {
-        result = await executeGetCommunication(supabase, args);
-
-      } else if (handler === 'internal:email_to_ticket') {
-        result = await executeEmailToTicket(supabase, args);
-
-      } else if (handler === 'internal:draft_email_reply') {
-        result = await handleDraftEmailReply(supabase, args);
-
-      } else if (handler === 'internal:reply_to_email') {
-        result = await handleReplyToEmail(supabase, args);
-
-      } else if (handler === 'internal:reply_to_ticket_via_email') {
-        result = await executeReplyToTicketViaEmail(supabase, args);
-
-      } else if (handler === 'internal:social_post_batch') {
-        result = await executeSocialPostBatch(supabase, args, supabaseUrl, serviceKey);
-
-      } else if (handler === 'internal:ad_creative_generate') {
-        result = await executeAdCreativeGenerate(supabase, args, supabaseUrl, serviceKey);
-
-      } else if (handler === 'internal:ad_optimize') {
-        result = await executeAdOptimize(supabase, args);
-
-      } else if (handler === 'internal:send_winback_campaign') {
-        result = await executeSendWinbackCampaign(supabase, args, supabaseUrl, serviceKey);
-
-      } else if (handler === 'internal:sync_ad_metrics') {
-        result = await executeSyncAdMetrics(supabase, args, supabaseUrl, serviceKey);
-
-      } else if (handler === 'internal:competitor_monitor') {
-        result = await executeCompetitorMonitor(supabase, args, supabaseUrl, serviceKey);
-
-      } else if (handler === 'internal:invoice_from_timesheets') {
-        result = await executeInvoiceFromTimesheets(supabase, args);
-
-      } else if (handler === 'internal:send_dunning_reminders') {
-        result = await executeSendDunningReminders(supabase, args, supabaseUrl, serviceKey);
 
       } else if (handler.startsWith('rpc:')) {
         const fnName = handler.replace('rpc:', '');
@@ -1766,11 +1582,16 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
     // for, and every handler that has not adopted the work-done contract (it
     // reports null, which is unknown, which keeps its row). The automation row
     // itself keeps last_triggered_at / run_count, so "it ran" survives — what
-    // stops is one row per empty minute. See _shared/activity/work-done.ts.
+    // stops is one row per empty minute. A REFUSAL with nothing done is idle on
+    // every unattended path, not only a `scheduled` one: the heartbeat sends no
+    // `scheduled`, and twenty refused nudges per run, twice a day, is the optic
+    // wall moved from the thread into the journal. See _shared/activity/work-done.ts.
     const workDone = declaredWorkDone(result);
     const idleTick = isIdleScheduledRun(result, {
       scheduled: scheduled === true,
       failed: handlerFailed,
+      refused: handlerRefused,
+      unattended: attendedUserId === null,
     });
     const activityId = idleTick ? null : await logActivity(supabase, {
       // effectiveAgent, not agent_type: an approved staged write is credited to
@@ -1856,15 +1677,11 @@ export async function handleAgentExecute(req: Request): Promise<Response> {
     // exists for. Known consumers (callSkill, the pilot's step evaluator) already
     // check result.error as well, so honesty here breaks nobody and fixes the
     // ones that only read status.
-    return new Response(JSON.stringify({ status: handlerFailed ? 'failed' : handlerRefused ? 'refused' : 'success', result, trust_level: trustLevel, work_done: workDone, activity_logged: !idleTick }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return { status: 200, body: { status: handlerFailed ? 'failed' : handlerRefused ? 'refused' : 'success', result, trust_level: trustLevel, work_done: workDone, activity_logged: !idleTick } };
 
   } catch (err) {
     console.error('agent-execute error:', err);
-    return new Response(JSON.stringify({ error: (err as Error).message || 'Internal error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return { status: 500, body: { error: (err as Error).message || 'Internal error' } };
   }
 }
 
@@ -5889,16 +5706,17 @@ async function executeFeedbackAction(
       // "Nordbrygg", not a host, and three localhost rows tell apart. No setting.
       const site_name = (await loadOrgName(supabase, '')) || null;
       const payload = { instance_id, site_url: siteUrl || null, site_name, ...version };
+      const machine_room = await fileMachineRoomReports(supabase, (report) => executeFeedbackAction(supabase, 'submit_feedback', report));
       if (receiveHere) {
         const { error } = await supabase.from('feedback_instances').upsert({
           instance_id, site_url: payload.site_url, site_name, app: version.app, skills_sha: version.skills_sha, migration_head: version.migration_head,
           modules_enabled: version.modules_enabled, module_count: version.module_count, last_seen_at: new Date().toISOString(),
         }, { onConflict: 'instance_id' });
         if (error) throw new Error(`Ping record failed: ${error.message}`);
-        return { sent_to: 'this instance', instance_id, ...version };
+        return { sent_to: 'this instance', instance_id, ...version, machine_room };
       }
       const r = await postTo('feedback/ping', payload);
-      return { sent_to: endpoint, instance_id, ...version, endpoint_url: r.url };
+      return { sent_to: endpoint, instance_id, ...version, endpoint_url: r.url, machine_room };
     }
 
     case 'manage_feedback': {
@@ -11568,6 +11386,7 @@ async function executeSendInvoiceForOrder(
     notes,
     payment_terms,
     dry_run = false,
+    receipt = false,
   } = args as any;
 
   if (!order_id) throw new Error('order_id is required');
@@ -11575,12 +11394,25 @@ async function executeSendInvoiceForOrder(
   // 1. Fetch order + items
   const { data: order, error: orderErr } = await supabase
     .from('orders')
-    .select('id, customer_email, customer_name, currency, total_cents, status, metadata, user_id, shipping_cost_cents')
+    .select('id, customer_email, customer_name, currency, total_cents, status, metadata, user_id, shipping_cost_cents, lang, partner_id')
     .eq('id', order_id)
     .maybeSingle();
   if (orderErr) throw new Error(`Order lookup failed: ${orderErr.message}`);
   if (!order) throw new Error(`Order ${order_id} not found`);
   if (!order.customer_email) throw new Error(`Order ${order_id} has no customer_email`);
+
+  // The order.paid automation's call: a receipt, for a paid order, where the
+  // page it links to exists. Each "no" is a refusal, not a failure.
+  if (receipt) {
+    if (!(await isModuleEnabled(supabase, 'invoicing'))) {
+      return { status: 'refused', code: 'MODULE_DISABLED', retryable: false, order_id,
+        hint: 'A receipt is a paid invoice, and the Invoicing module is off — its page would answer 404. No receipt was created.' };
+    }
+    if (!orderIsPaid(order.status)) {
+      return { status: 'refused', code: 'INVALID_INPUT', retryable: false, order_id,
+        hint: `Order is ${order.status}: only a paid order gets a receipt. Call without receipt to invoice it.` };
+    }
+  }
 
   const { data: items, error: itemsErr } = await supabase
     .from('order_items')
@@ -11678,6 +11510,14 @@ async function executeSendInvoiceForOrder(
     }
   }
 
+  // An order the business already invoiced has its document: the receipt must
+  // not mail it a second time.
+  if (receipt && existingInvoice) {
+    return { status: 'refused', code: 'ALREADY_EXISTS', retryable: false, order_id,
+      invoice_number: existingInvoice.invoice_number,
+      hint: `Order already has invoice ${existingInvoice.invoice_number}. No second document was created or sent.` };
+  }
+
   // 4. Dry-run preview
   if (dry_run) {
     return {
@@ -11735,8 +11575,9 @@ async function executeSendInvoiceForOrder(
         currency: order.currency || undefined,
         due_date: dueDate,
         payment_terms: payment_terms || `Net ${due_days}`,
-        // The note stays for human readability; it is no longer load-bearing.
-        notes: `${notes ? notes + '\n' : ''}order:${order_id}`,
+        // The customer reads the notes on the page and the PDF. The link is the
+        // order_id column; the prose marker only where the column is missing.
+        notes: orderIdColumn ? (notes || null) : `${notes ? notes + '\n' : ''}order:${order_id}`,
         ...(orderIdColumn ? { order_id } : {}),
         status: orderPaid ? 'paid' : 'sent',
         sent_at: new Date().toISOString(),
@@ -11794,22 +11635,51 @@ async function executeSendInvoiceForOrder(
       publicToken = inv?.public_token;
     }
     const invoiceUrl = origin && publicToken ? `${origin.replace(/\/$/, '')}/invoice/${publicToken}` : '';
-    // English mail, the business's way of writing money.
-    const home = homeFormat(await loadHome(supabase), 'en');
+    // A paid order's mail is its receipt, and the words are site content: the
+    // language the customer ordered in, else their party's, else the site's.
+    // The built-in English below is the fallback (Law 4).
+    type ReceiptTemplate = { ok?: boolean; html?: string; subject?: string; locale?: string };
+    let tpl: ReceiptTemplate | null = null;
+    if (orderPaid) {
+      let recipientLang: string | null = (order as { lang?: string | null }).lang ?? null;
+      if (!recipientLang && (order as { partner_id?: string | null }).partner_id) {
+        const { data: langRow, error: langErr } = await supabase.rpc('partner_language', { p_partner_id: (order as { partner_id: string }).partner_id });
+        if (langErr) console.warn('[send_invoice_for_order] could not read the recipient language:', langErr.message);
+        recipientLang = (langRow as { lang?: string } | null)?.lang ?? null;
+      }
+      const { data: resolved, error: tplErr } = await supabase.rpc('resolve_email_template', { p_name: 'order_receipt', p_locale: recipientLang });
+      if (tplErr) console.warn('[send_invoice_for_order] template lookup failed — using built-in fallback:', tplErr.message);
+      tpl = resolved as ReceiptTemplate | null;
+    }
+    // The mail's language, the business's way of writing money.
+    const home = homeFormat(await loadHome(supabase), tpl?.ok && tpl.html ? tpl.locale : 'en');
     const fmt = (cents: number) => home.money(cents, order.currency);
 
     // A FRAGMENT, not a document — email-send wraps it in the operator's
     // branded shell, so the invoice mail finally looks like the company's other
     // mail instead of like this function's own idea of an email.
-    const html = `
-      <h2 style="margin:0 0 12px">Invoice ${invoice.invoice_number}</h2>
+    let html = `
+      <h2 style="margin:0 0 12px">${orderPaid ? 'Receipt' : 'Invoice'} ${invoice.invoice_number}</h2>
       <p>Hi ${order.customer_name || 'there'},</p>
       <p>Thank you for your order. ${orderPaid
         ? `It is paid in full — this invoice for <strong>${fmt(totalCents)}</strong> is your receipt${invoiceUrl ? ' below' : ''}.`
         : `Please find your invoice for <strong>${fmt(totalCents)}</strong>${invoiceUrl ? ' below' : ''}.`}</p>
       ${invoiceUrl ? `<p><a href="${invoiceUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none">View invoice &amp; download PDF</a></p>` : ''}
       <p style="color:#666;font-size:13px">If you have any questions, just reply to this email.</p>`;
-    const subject = `Invoice ${invoice.invoice_number}`;
+    let subject = `${orderPaid ? 'Receipt' : 'Invoice'} ${invoice.invoice_number}`;
+    if (tpl?.ok && tpl.html) {
+      const vars: Record<string, string> = {
+        customer_name: escapeHtml(order.customer_name || ''),
+        invoice_number: escapeHtml(invoice.invoice_number),
+        total: fmt(totalCents),
+        tax: fmt(taxCents),
+        order_ref: String(order_id).slice(0, 8),
+        receipt_url: invoiceUrl,
+        site_name: escapeHtml(await loadOrgName(supabase, '')),
+      };
+      html = renderTemplate(tpl.html, vars);
+      subject = tpl.subject ? renderTemplate(tpl.subject, vars) : subject;
+    }
 
     const { data: sendData, error: sendErr } = await supabase.functions.invoke('email-send', {
       body: {
@@ -13267,6 +13137,19 @@ async function executeDbAction(
           sinceDate = since.toISOString();
         }
 
+        // A balance-sheet account's figure is its opening balance plus a window's
+        // movement, so the window has to start where an opening balance is known.
+        // The balance sheet is as-of: its window is the fiscal year of to_date,
+        // whatever from_date/period say. The ledger and the trial balance take
+        // the window they are given and default to that same year — 'all' used
+        // to mean every year ever posted, on top of an opening balance for one
+        // of them. The income statement keeps its window as given.
+        const asOfDate = String(untilDate || (await businessToday(supabase))).slice(0, 10);
+        if (report_type !== 'profit_loss') {
+          const fy = await fiscalYearOf(supabase, asOfDate);
+          if (report_type === 'balance_sheet' || !sinceDate) sinceDate = fy.date_from;
+        }
+
         // Fetch posted lines with optional filters
         // EVERY posted line, page by page. This was one unbounded select, and PostgREST
         // cuts that at 1 000 rows without a word: with 2 322 posted lines the trial
@@ -13323,25 +13206,26 @@ async function executeDbAction(
         }
 
         // Merge OPENING BALANCES (IB) for balance-sheet accounts. IB is a
-        // STATE (opening_balances table, per fiscal_year), not a journal
-        // transaction — this is the single IB mechanism (2026-07-07 decision;
-        // the verifikat-IB approach was rejected: it pollutes the journal and
-        // makes the IB|movement|UB three-column report impossible).
-        // Fiscal year = year of the report's end date (BR is an as-of report).
-        const { data: ibYear, error: ibYearErr } = await supabase.rpc('fiscal_year_of', { p_date: String(untilDate || (await businessToday(supabase))).slice(0, 10) });
-        if (ibYearErr) console.warn('[agent-execute] fiscal year lookup failed — falling back to the calendar year:', ibYearErr.message);
-        const fiscalYearForIB = Number(ibYear ?? new Date(untilDate || new Date().toISOString()).getFullYear());
-        const { data: ibRows } = await supabase.from('opening_balances')
-          .select('account_code, account_name, amount_cents, balance_type')
-          .eq('fiscal_year', fiscalYearForIB);
+        // STATE, not a journal transaction (2026-07-07 decision; a verifikat-IB
+        // pollutes the journal and makes IB|movement|UB impossible) — and it is
+        // DERIVED: the bridge plus everything posted since, at the window's
+        // start (_shared/accounting/opening-balance.ts). Reading the stored rows
+        // for the report's year opened every year but the first at zero.
         const ibByAccount = new Map<string, number>();
-        for (const ib of (ibRows || []) as any[]) {
-          // signed in the account's NORMAL direction: debit-normal accounts
-          // count debit-IB as +, credit-normal count credit-IB as +.
-          const normal = chartMap.get(ib.account_code)?.normal_balance
-            || (ib.balance_type === 'debit' ? 'debit' : 'credit');
-          const signed = ib.balance_type === normal ? Number(ib.amount_cents) : -Number(ib.amount_cents);
-          ibByAccount.set(ib.account_code, (ibByAccount.get(ib.account_code) || 0) + signed);
+        const ibRows: Array<{ account_code: string; account_name?: string }> = [];
+        if (sinceDate && report_type !== 'profit_loss') {
+          for (const [code, net] of await openingBalancesAt(supabase, String(sinceDate).slice(0, 10))) {
+            const type = chartMap.get(code)?.account_type;
+            if (net === 0 || (account_code && code !== account_code)) continue;
+            if (type !== 'asset' && type !== 'liability' && type !== 'equity') continue;
+            // signed in the account's NORMAL direction: debit-normal accounts
+            // count a debit balance as +, credit-normal a credit balance.
+            const normal = chartMap.get(code)?.normal_balance || 'debit';
+            ibByAccount.set(code, normal === 'credit' ? -net : net);
+            ibRows.push({ account_code: code });
+          }
+        }
+        for (const ib of ibRows) {
           if (!balanceMap.has(ib.account_code)) {
             balanceMap.set(ib.account_code, {
               account_code: ib.account_code,
@@ -13378,14 +13262,14 @@ async function executeDbAction(
         const stmtClassification = await loadStatementClassification(supabase);
 
         if (report_type === 'ledger') {
-          return { report_type: 'general_ledger', period, accounts: balances, total_accounts: balances.length };
+          return { report_type: 'general_ledger', period, from_date: sinceDate, to_date: asOfDate, accounts: balances, total_accounts: balances.length };
         }
 
         if (report_type === 'trial_balance') {
           const totalDebit = balances.reduce((s, b) => s + b.debit_total, 0);
           const totalCredit = balances.reduce((s, b) => s + b.credit_total, 0);
           return {
-            report_type: 'trial_balance', period,
+            report_type: 'trial_balance', period, from_date: sinceDate, to_date: asOfDate,
             accounts: balances,
             total_debit_cents: totalDebit,
             total_credit_cents: totalCredit,
@@ -13429,7 +13313,7 @@ async function executeDbAction(
             );
           }
           return {
-            report_type: 'balance_sheet', period,
+            report_type: 'balance_sheet', period, from_date: sinceDate, as_of: asOfDate,
             assets, liabilities, equity,
             unclassified,
             unclassified_cents: unclassifiedCents,
@@ -14037,7 +13921,25 @@ async function executeDbAction(
         
         const totalDebit = (data || []).filter((r: any) => r.balance_type === 'debit').reduce((s: number, r: any) => s + r.amount_cents, 0);
         const totalCredit = (data || []).filter((r: any) => r.balance_type === 'credit').reduce((s: number, r: any) => s + r.amount_cents, 0);
-        return { balances: data, count: (data || []).length, total_debit_cents: totalDebit, total_credit_cents: totalCredit, balanced: totalDebit === totalCredit };
+        // The stored rows are the bridge only. A year's opening balance is
+        // DERIVED — the bridge plus everything posted since — and that is what
+        // a year's question is answered with: a later year has no stored rows,
+        // and reading their absence as "no opening balance" is how an agent
+        // booked a year's closing balance a second time (LiteIT, 2026-11-08).
+        const { data: firstRow, error: firstErr } = await supabase.from('opening_balances')
+          .select('fiscal_year').order('fiscal_year', { ascending: true }).limit(1).maybeSingle();
+        if (firstErr) throw new Error(`Could not read the bridge year: ${firstErr.message}`);
+        let derived: unknown = undefined;
+        if (fiscal_year) {
+          const { data: d, error: dErr } = await supabase.rpc('opening_balances_for_year', { p_year: Number(fiscal_year) });
+          derived = dErr ? { error: dErr.message } : d;
+        }
+        return {
+          balances: data, count: (data || []).length, total_debit_cents: totalDebit, total_credit_cents: totalCredit, balanced: totalDebit === totalCredit,
+          bridge_year: firstRow?.fiscal_year ?? null,
+          ...(fiscal_year ? { derived_opening_balances: derived } : {}),
+          rule: 'Only the first fiscal year the books carry stores an opening balance (the bridge). Every later year is derived — derived_opening_balances, net_cents signed against the debit side. Never book an opening balance as a journal entry.',
+        };
       }
 
       if (action === 'set') {
@@ -14055,6 +13957,27 @@ async function executeDbAction(
             .select('account_name').eq('account_code', account_code).maybeSingle();
           account_name = coa?.account_name;
           if (!account_name) throw new Error(`account_name is required (account ${account_code} not found in chart_of_accounts)`);
+        }
+
+        // The bridge belongs to the first year the books carry; every later
+        // year is derived from it (opening_balances_for_year). A stored row for
+        // a later year is never read — storing one only looks like it worked.
+        const yearStart = await fiscalYearStart(supabase, Number(fiscal_year));
+        const { data: firstRow, error: firstErr } = await supabase.from('opening_balances')
+          .select('fiscal_year').order('fiscal_year', { ascending: true }).limit(1).maybeSingle();
+        if (firstErr) throw new Error(`Could not read the bridge year: ${firstErr.message}`);
+        const { count: earlier, error: earlierErr } = await supabase.from('journal_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'posted').lt('entry_date', yearStart);
+        if (earlierErr) throw new Error(`Could not check for entries before ${yearStart}: ${earlierErr.message}`);
+        if ((firstRow && Number(fiscal_year) > Number(firstRow.fiscal_year)) || (earlier ?? 0) > 0) {
+          return {
+            status: 'refused', code: 'IB_IS_DERIVED', retryable: false,
+            fiscal_year, bridge_year: firstRow?.fiscal_year ?? null, entries_before_year: earlier ?? 0,
+            hint: `The opening balance of ${fiscal_year} is derived — the bridge plus everything posted before ${yearStart} — not stored. ` +
+              `Read it with manage_opening_balances action=list fiscal_year=${fiscal_year} (derived_opening_balances). ` +
+              'If it differs from the closing balance you expected, the difference is in an earlier year: book a correction there, or fix the bridge (the first year\'s opening balances). Never book it as a journal entry.',
+          };
         }
 
         // Upsert by fiscal_year + account_code + locale

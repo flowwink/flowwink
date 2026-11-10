@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "content"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-10-02"
+generated_at: "2026-11-09"
 description: Clone and migrate external websites into FlowWink.
 ---
 
@@ -30,8 +30,7 @@ Ships with **2 agent skills**.
 
 ## Integrations
 
-**Required:** `firecrawl`
-**Optional:** `jina`
+**Optional:** `firecrawl`, `jina`
 
 ## Skills
 
@@ -50,6 +49,12 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 **Input fields:** `action`, `url`, `search`, `pageType`, `slug`, `title`
 
 **Output fields:** `success`, `data`, `branding`, `error`, `providers`, `scraper`, `ai`
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [content-to-conversion](../processes/content-to-conversion.md)
 
 ## File Map
 

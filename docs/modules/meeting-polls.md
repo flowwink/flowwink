@@ -5,7 +5,7 @@ version: "0.1.0"
 category: "data"
 autonomy: "view-required"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Propose several times, let people answer by link without an account, and let a rule pick the first time everyone can make
 ---
 
@@ -13,7 +13,7 @@ description: Propose several times, let people answer by link without an account
 
 > Propose several times, let people answer by link without an account, and let a rule pick the first time everyone can make
 
-Ships with **4 agent skills**.
+Ships with **4 agent skills**, **3 database tables**, **1 public block**.
 
 ## Quick Facts
 
@@ -26,7 +26,8 @@ Ships with **4 agent skills**.
 | **Core** | No |
 | **Capabilities** | `data:write`, `content:receive` |
 | **MCP-exposed skills** | 4 |
-| **Owns tables** | — |
+| **Owns tables** | 3 |
+| **Requires modules** | `bookings`, `calendar` |
 
 ## Skills
 
@@ -37,8 +38,18 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 |-------|-------|-------------|
 | `create_meeting_poll` | internal | Propose several candidate times for a meeting and get a shareable link people answer WITHOUT an account. Use when: someone wants to find a time that works for a group ("hitta en tid för oss nästa v… |
 | `respond_to_meeting_poll` | external | Answer a meeting poll by its share link: which of the proposed times work for this person. One answer per e-mail — answering again replaces the previous one. Use when: a visitor or external attende… |
-| `resolve_meeting_poll` | internal | Decide the meeting time from the answers, by the poll\ |
+| `resolve_meeting_poll` | internal | Decide the meeting time from the answers, by the poll's rule, and put it on the calendar with the people who can make it as attendees. Use when: enough answers are in, the organizer asks "which tim… |
 | `list_meeting_polls` | internal | List meeting polls with their status, rule, answer counts and share links. Use when: an operator asks what polls are open, which have enough answers, or wants the link to re-send. NOT for: the publ… |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.meeting_poll_responses`
+- `public.meeting_poll_slots`
+- `public.meeting_polls`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
 
 ## Module API Contract
 
@@ -48,12 +59,19 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 
 **Output fields:** `success`, `error`
 
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [propose-to-meet](../processes/propose-to-meet.md)
+
 ## File Map
 
 | Purpose | Path |
 |---------|------|
 | Module definition | `src/lib/modules/meeting-polls-module.ts` |
 | Hook | `src/hooks/useMeetingPolls.ts` |
+| Public block | `src/components/public/blocks/MeetingPollBlock.tsx` |
 
 ## Contributing
 

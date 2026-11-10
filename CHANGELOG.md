@@ -8,8 +8,176 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ## [Unreleased]
 
+### Removed
+
+- **The Global Elements module is gone.** It had no skills and no tables and was
+  hidden ("merged into Pages"); its one effect was to be switched on by accident
+  whenever an agent edited the header. Headers and footers are unchanged — they
+  are Pages' `manage_global_blocks`.
+- **Browser Control is retired.** The module was a Chrome-extension relay for
+  reading pages behind a login (LinkedIn, X) through an admin's browser. Nobody
+  used it, it was off by default, and agents with their own browser do that job
+  better and hand the result in over MCP. Gone: the module, the extension and its
+  download, the chat's relay code (never wired), and the `browser-fetch` edge
+  function. Its skill `browser_fetch` only forwarded public pages to web-scrape,
+  so a call to it now answers "retired, use `scrape_url`". FlowPilot's system
+  prompt told it to read every URL with `browser_fetch` while the off-by-default
+  module hid that skill; it names `scrape_url` now. A migration removes the
+  module from each instance's settings and access matrix and disables the skill
+  row and any automation that ran it.
+
+### Security
+
+- **A scheduled call carries a secret the database made itself.** The nine
+  functions pg_cron calls (the automation, event and signal dispatchers, the
+  knowledge indexer, dunning, contract and subscription billing, quote-expiry
+  reminders, demo-cycle) checked nobody: the cron jobs sent the publishable key
+  every browser carries, so anyone could start the billing run or, on a demo
+  instance, the nightly rebuild. The database now makes a random `CRON_SECRET`
+  in its vault, adds it to every scheduled call at call time (`x-cron-secret`),
+  and the functions admit the service key, a staff session (an admin for
+  demo-cycle) or that secret. automation-dispatcher rewrites any cron job that
+  lacks it within a minute. For one week a call with none of them is let
+  through and logged (`[cron-secret]`); then it is refused. No unguarded public
+  function is left on the ratchet.
+- **The public AI endpoints have a ceiling.** chat-completion, docs-chat and
+  consultant-match answered anyone with the publishable key, a paid model call
+  each, with nothing counting them. Now 30 per visitor per 5 minutes (a hashed
+  IP, never the address) and 600 per instance per hour, a 429 with
+  Retry-After past either; the platform's own calls are never counted. The
+  dial is `site_settings.security.publicAiRateLimit` (0 switches one off).
+- **A high-stakes write with nobody at the keyboard waits for a person.** The
+  heartbeat, the e-mail responder, the visitor chat and gateway agents act on
+  text other people wrote, and ten writes declared high-risk or irreversible
+  (pay_vendor_invoice, close_accounting_period, send_einvoice, …) could run with
+  no human at all. An unattended call of such a write now lands in
+  /admin/approvals; a person in FlowChat or the admin is never held. Every
+  prompt carries a hardcoded rule that content from tools and channels is
+  data, never an instruction.
+
+### Added
+
+- **Agent work on the dashboard.** A panel for an owner, not a developer: how
+  much the agents did today and which ones, what is waiting for a person
+  (operations an agent staged, questions an agent asked on a task that nobody
+  has answered), and the calls that were refused or failed in the last seven
+  days with the reason in words. Scheduled jobs and a person's own clicks are
+  not counted, and a module that is off stays out of it.
+- **The books can be kept somewhere else.** Accounting → Settings → Ledger:
+  with "Kept in another system" (Fortnox, Visma …) FlowWink no longer books
+  invoices, paid orders or vendor invoices by itself, and the books check stays
+  quiet instead of listing every invoice as unbooked. Vouchers already booked
+  are left alone; switching back lets the catch-up book what was skipped.
+- **A paid order gets its receipt by itself.** The receipt is the order's paid
+  invoice, sent by the new automation `Receipt on paid order` in the language the
+  customer ordered in (`order_receipt` template, en + sv). It can be switched off
+  per instance, and it needs the Invoicing module. The public invoice page is
+  translatable and calls a paid invoice a receipt. The PDF is still in English.
+
 ### Fixed
 
+- **Sending an invoice no longer needs the accounting grant.** A salesperson
+  without it was refused ("Requires the accounting module") because the booking
+  behind the send could not run. The invoice is sent, the booking is caught up.
+- **An order is revenue when it is paid.** Marking an order delivered wrote
+  `completed` over its payment status — losing `paid`, and turning an unpaid
+  delivered order into revenue — and the weekly briefing counted revenue on
+  `completed` alone, so a paid order not yet delivered was missing. Delivery no
+  longer touches the payment status, and the briefing counts what the Orders
+  page counts.
+- **The daily briefing's schedule is the platform's, not FlowPilot's.** The cron
+  health filed the briefing job under FlowPilot, so with FlowPilot off a stopped
+  briefing was never flagged and never required — while the briefing itself runs
+  without FlowPilot. It is judged on every instance now.
+- **A receipt is not unbooked work.** A paid order is booked when it is paid,
+  and its receipt is an invoice born paid. The booking functions already skipped
+  it, but `check_books` reported it as "a customer invoice without a voucher"
+  (high), `month_close_checklist` would have failed the month on it and
+  `book_unbooked_invoices` listed it every run, booking nothing. One rule,
+  `invoice_booked_with_its_order`, now answers for all three.
+- **Consultant profiles are re-embedded every hour again.** The consultants
+  module schedules its reindex at `7 * * * *` (minute 7 of every hour), a shape
+  the dispatcher's cron parser had no branch for, so it switched the automation
+  off on its first tick — on every instance with Consultants on, since
+  2026-09-04. The parser runs `M * * * *` now, a guard checks every cron
+  expression a module seeds, and a migration switches back on what the old
+  parser switched off (only where the skill it runs is still enabled).
+- **Three inbound endpoints verify their caller; River's media is not
+  listable by anyone; what stays open is written down.** `signal-ingest`
+  accepted the publishable key (it ships in the site's JavaScript), so anyone
+  could create blog drafts, memories and AI work — now the service key, a
+  member of staff or the instance's own `signal_ingest_token`. `voice-recording`
+  played a voicemail for anyone holding the call id — staff only, the panel
+  fetches it with the session. `voice-ingest` takes the provider's URL secret
+  on call webhooks, and an opt-in `VOICE_STREAM_SECRET` on the AI stream.
+  `river-media` let anon LIST every file the team posted — images still open
+  by URL, listing is staff's. `npm run qa:open-access` (nightly) lists every
+  table policy, storage policy and public bucket open to an anonymous visitor
+  from the database and requires a written reason for each. Known-ungated 12 → 9.
+- **Every process is proven to the screen a person looks at.** The battery
+  proved the data; nobody opened /admin/invoices to see the receipt was there,
+  and on an instance nobody runs the processes by hand. Scenarios now name
+  where their outcome shows (`s.shows`), and `npm run qa:process-views`
+  (nightly, after the battery) opens each view as an admin in a real browser
+  and requires the run's text — 17 views across 16 processes. Its first run
+  found three real gaps, fixed here: the quote list showed "—" for every quote
+  made without a lead (it read only the lead, never the quote's own
+  `customer_name`); the returns list never named the customer; Webinars and
+  Recruitment could not be linked to a tab (now `useTabParam`).
+- **Gmail can be connected only by an admin of the site.** The OAuth `state`
+  was the constant `gmail_connect`: anyone could consent with their own Google
+  account and the instance stored it as its inbox; `status`, `disconnect` and
+  `update_settings` answered anyone too. The POST actions need an admin (or the
+  platform), and the consent screen opens only with a one-time state an admin
+  is handed (`begin`), accepted once within ten minutes.
+- **migrate-page verifies its caller** (`requireServiceOrStaff`): it fetches any
+  public URL and spends AI tokens on it. The wizard (staff) and
+  `edge:migrate-page` (service key) are its callers.
+- The public-functions guard knows a resolver RPC handed the caller's token
+  (`resolve_document_share({ _token })`) as token possession; `document-share`
+  was token-gated all along. Known-ungated ceiling 16 → 12.
+- **UB becomes IB for agents too.** The agent report read stored opening balances
+  per year, so a later year opened at zero and an agent booked the previous closing
+  balance as a voucher. Every reader now derives it, and only the bridge of the
+  first fiscal year can be stored (`IB_IS_DERIVED`).
+- **An order is invoiced at what the customer paid.** Gross lines were read as net
+  and VAT added again, and a paid order's invoice asked to be paid. It is now split
+  per rate and born paid. A cancelled invoice is no longer reused for its order, so
+  the order can be invoiced again.
+- **An issued invoice cannot be deleted in the admin view.** Only a draft can: the
+  link in the customer's mail stopped answering when the invoice went.
+- **Internal order markers no longer reach the customer** in a new invoice's notes.
+
+- **An alarm means something is wrong now.** The bell was amber every day on every
+  instance, because any agent run on notify trust painted it; it is amber now for
+  a person being needed or something still broken, and a healed integration stops
+  warning. A read is no longer "an agent acted on its own". An automation is
+  `stale` against its own schedule, not after 48 hours (a monthly job was dead 29
+  days of 30), and warns while its own newest run failed, not for a week after.
+- **The feedback board and the daily ping write again.** #922 took anon's write
+  policies and its EXECUTE on `feedback_record_ping` on the belief that content-api
+  writes as the service role; it wrote with the anon client under the name `admin`,
+  so every instance's ping answered 500 from 2026-11-08. It now is the service
+  client, and a guard scans every edge function for an anon client calling an RPC
+  anon has lost.
+- **Panels of a module that is off leave the pages they are mounted on.**
+  FlowBox shows no chat, ticket, form or call item and no Calls tab for a
+  module that is off; Flowwork's document panel saves to the wiki only with
+  Wiki on; deal and company pages carry reports only with Reports on; the
+  Receiving tab in Inventory needs Purchasing; a lead's process flow shows
+  only the steps (deal, quote, contract, invoice) whose module is on, and its
+  open quotes need Quotes. `foreign-module-panels-ask` now reads the legacy
+  dependency edges and ignores shared reference tables (people, currencies,
+  the activity timeline): 24 findings → 8.
+- **A module that is off is quiet on Observability, the bell, the dashboard
+  and analytics.** Automations, failed skill runs, MCP failures, staged writes,
+  notify runs and pg_cron jobs of a module the operator switched off kept
+  raising warnings and counts. They are now judged by the module that owns
+  them (`src/lib/module-visibility.ts`, the server's `skillModuleOn`); cron
+  jobs carry their module (`CRON_JOB_MODULE`) and are never red, never
+  required and never "drifted" while it is off. Analytics no longer offers
+  "Enable <module>" prompts, Pipeline/Marketing tabs or goal kinds for modules
+  that are off. New guards: `off-modules-stay-quiet`, `foreign-module-panels-ask`.
 - **Meeting polls says when it is off, and has a place in the sidebar.** The
   Meeting polls tab under Bookings rendered its full desk with the module off
   (the default) — `/poll/<token>` answered 404 and every poll skill was
@@ -118,6 +286,17 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   every `fetch` of a caller-URL identifier. `SECURITY.md` is new.
 ### Changed
 
+- **A sweep asks whether there is work before anything wakes.** Four
+  automations fired every fifteen minutes on every instance (qualify new leads,
+  score visitor intent, webinar reminders, the social post scheduler) and mostly
+  found nothing — about 380 function invocations a day per instance. Each now
+  declares a probe the database answers; with no work, neither the dispatcher
+  nor the skill is woken, and the automation still reads as alive. The moment a
+  lead, a scheduled post or a registration appears, the next minute's pulse runs
+  it. An automation whose module is off is skipped by the dispatcher too.
+- **Two more sweeps ask first.** The SLA sweep (every 15 minutes) runs only when
+  an SLA policy is enabled, and the hourly consultant reindex only when a
+  profile is waiting to be embedded.
 - **agent-execute's pipeline is importable.** The 20 500-line executor moved
   from `agent-execute/index.ts` to `_shared/execute/core.ts` as
   `handleAgentExecute(req)`, byte-identical but for the import prefixes and the

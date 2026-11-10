@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "config-required"
 generated: true
-generated_at: "2026-10-27"
+generated_at: "2026-11-09"
 description: Create and manage bookings/appointments
 ---
 
@@ -13,7 +13,7 @@ description: Create and manage bookings/appointments
 
 > Create and manage bookings/appointments
 
-Ships with **11 agent skills**, **2 public blocks**, an **admin UI**.
+Ships with **11 agent skills**, **4 database tables**, **2 public blocks**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,7 @@ Ships with **11 agent skills**, **2 public blocks**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `content:receive`, `data:write`, `webhook:trigger` |
 | **MCP-exposed skills** | 11 |
-| **Owns tables** | — |
+| **Owns tables** | 4 |
 
 ## Integrations
 
@@ -44,12 +44,30 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `check_availability` | both | Check booking availability for a specific date. Use when: a customer wants to know if a slot is open; determining if a service can be booked; verifying potential appointment times. NOT for: creatin… |
 | `browse_services` | both | List the bookable services and experiences with price, duration and description — the source of truth for what something costs and how long it takes. Use when: a visitor asks what is offered, what … |
 | `manage_booking_availability` | internal | Manage booking hours and blocked dates. Use when: setting up service availability; blocking holiday dates; adjusting operating hours. NOT for: checking availability (check_availability); creating b… |
-| `manage_bookings` | internal | List, view, update status/no-show, assign staff, or cancel EXISTING bookings — find a customer\ |
+| `manage_bookings` | internal | List, view, update status/no-show, assign staff, or cancel EXISTING bookings — find a customer's booking by email or phone ("when is my appointment?", "cancel my booking"). Use when: a customer ask… |
 | `book_appointment_slot` | internal | PREFERRED way to book an appointment: books a service at a start time — the end is derived from the service duration and double-bookings are rejected. Use when: a customer/caller wants to book a ti… |
 | `join_booking_waitlist` | external | Put a customer on the waiting list for a fully booked day. Use when: check_availability shows no free times on the day the customer wants and they would take a cancellation. NOT for: a day that sti… |
 | `manage_booking_waitlist` | internal | Read the booking waiting list, or change the status of an entry. Use when: a time has opened up and you need to know who is waiting for that day, or an entry should be marked booked, expired or can… |
 | `manage_booking_service` | internal | Create, update, list or retire the services customers can book (booking_services): name, duration, price, colour, order. Use when: setting up booking on a new site (a fresh install has NO services,… |
-| `manage_staff_calendar` | internal | Per-staff booking calendars: a staff member\ |
+| `manage_staff_calendar` | internal | Per-staff booking calendars: a staff member's weekly working hours, time off, and which services they perform. A service with staff is booked per person — check_availability offers a time when any … |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.booking_availability`
+- `public.booking_blocked_dates`
+- `public.booking_services`
+- `public.bookings`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [lead-to-customer](../processes/lead-to-customer.md)
+- [book-to-meet](../processes/book-to-meet.md)
 
 ## File Map
 
@@ -58,8 +76,8 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | Module definition | `src/lib/modules/booking-module.ts` |
 | Hook | `src/hooks/useBookings.ts` |
 | Admin page | `src/pages/admin/BookingsPage.tsx` |
-| Public block | `src/components/public/blocks/BookingBlock.tsx` |
 | Public block | `src/components/public/blocks/SmartBookingBlock.tsx` |
+| Public block | `src/components/public/blocks/BookingBlock.tsx` |
 
 ## Contributing
 

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.87.1';
 import { getServiceClient } from '../_shared/supabase-clients.ts';
 import { fetchPublic } from '../_shared/net/outbound-url.ts';
+import { requireServiceOrStaff, unauthorized } from '../_shared/edge-auth.ts';
 import { BLOCK_TYPES_SCHEMA } from '../_shared/block-schema.ts';
 import { generateBrandingHints, extractBranding, type FirecrawlBranding } from '../_shared/extract-branding.ts';
 import { resolveAiConfig } from '../_shared/ai-config.ts';
@@ -197,6 +198,12 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Fetches any public URL and spends AI tokens on it: staff (the site
+  // migration wizard, company insights) or the platform (agent-execute's
+  // edge:migrate-page carries the service key). Anyone else was free to.
+  const auth = await requireServiceOrStaff(req, getServiceClient());
+  if (!auth.authorized) return unauthorized(corsHeaders);
 
   try {
     const body = await req.json();
@@ -440,10 +447,11 @@ serve(async (req) => {
           siteName: body.site_name,
         });
 
-        // Blind on this page. Speak the same envelope browser_fetch uses, so the
-        // admin panel's extension relay picks it up without knowing what a
-        // migration is — and an unattended agent still gets an honest refusal
-        // plus whatever little we did see.
+        // Blind on this page. Answer with the relay envelope: an agent with its
+        // own browser reads the page and calls back with relay_result, and an
+        // unattended agent still gets an honest refusal plus whatever little we
+        // did see. (The Chrome extension that once answered it automatically
+        // was retired with Browser Control, 2026-11-09.)
         if (observation.render.confidence === 'shell') {
           return new Response(JSON.stringify({
             success: false,

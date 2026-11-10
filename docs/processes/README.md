@@ -9,6 +9,12 @@ category: processes
 > **What is this?** A business process usually spans multiple modules. This folder maps which **business processes** FlowWink supports, which modules participate, and at what **maturity level** each one currently sits.
 >
 > **Audience (initially):** Internal — to keep track of what we can actually deliver in customer conversations. Excerpts can later be published or shared as PDF.
+>
+> **The printable map:** `npm run docs:process-map` writes `.qa-output/process-map/process-map.{html,pdf}` —
+> how the processes hand off to each other, one purchase traced from checkout to close, the module matrix
+> and a page per process, read from these docs. What no single doc states (families, hand-offs, the traced
+> purchase) is curated in `scripts/process-map/data.ts`; the guard `process-map-stays-true` keeps every
+> entry pointing at a doc or a source symbol that exists.
 
 ---
 
@@ -34,7 +40,7 @@ Fifteen processes, one platform. Each links to its own doc — one page per proc
 | **Plan-to-Produce** | L3 | **Lower ops cost** | Manufacturing, Products, Inventory, Purchasing | [plan-to-produce.md](./plan-to-produce.md) |
 | **Sign-to-Serve** | L3 | **Safer recurring revenue** | Deals, Quotes, Contracts, Subscriptions, Account portal, Tickets | [sign-to-serve.md](./sign-to-serve.md) |
 | **Plan-to-Deliver** | L3 | **Nothing stuck unseen** | Projects, Timesheets, FlowPilot | [plan-to-deliver.md](./plan-to-deliver.md) |
-| **Propose-to-Meet** | L1 | **More meetings, less thread** | Meeting Polls, Calendar, Booking, Email, FlowPilot | [propose-to-meet.md](./propose-to-meet.md) |
+| **Propose-to-Meet** | L3 | **More meetings, less thread** | Meeting Polls, Calendar, Booking, Email, FlowPilot | [propose-to-meet.md](./propose-to-meet.md) |
 
 ---
 

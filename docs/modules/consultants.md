@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Match consultant profiles against job descriptions with AI-powered scoring and cover letters
 ---
 
@@ -13,7 +13,7 @@ description: Match consultant profiles against job descriptions with AI-powered 
 
 > Match consultant profiles against job descriptions with AI-powered scoring and cover letters
 
-Ships with **7 agent skills**.
+Ships with **7 agent skills**, **3 database tables**.
 
 ## Quick Facts
 
@@ -26,7 +26,7 @@ Ships with **7 agent skills**.
 | **Core** | No |
 | **Capabilities** | `data:read`, `content:produce` |
 | **MCP-exposed skills** | 7 |
-| **Owns tables** | — |
+| **Owns tables** | 3 |
 
 ## Integrations
 
@@ -41,17 +41,33 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 |-------|-------|-------------|
 | `manage_consultant_profile` | internal | Manage consultant profiles: list, create, update, delete, deduplicate. Use when: adding a new consultant; updating skills or availability; cleaning up duplicate entries. NOT for: matching consultan… |
 | `match_consultant` | internal | Match consultants to a job description using AI. Use when: finding suitable candidates for an open position; a user provides a job description and needs recommendations; identifying best-fit consul… |
-| `consultant_checkin_update` | external | Save updated consultant profile information gathered during a check-in interview. |
+| `consultant_checkin_update` | external | Update a consultant's own profile during a check-in interview. Updates bio, summary, skills, availability, and experience. Use when: a consultant has completed a check-in conversation and you have … |
 | `reindex_consultants` | internal | Re-embed consultant profiles whose semantic-search index is stale. Use when: an automation or admin wants to refresh embeddings after bulk profile changes; keeping vector search up to date. NOT for… |
 | `manage_consultant_assignment` | internal | Track consultant assignments/engagements: which client a consultant works for, allocation %, rate, period, linked contract/SOW. Use when: staffing a consultant on a client engagement; updating or e… |
 | `consultant_utilization_report` | internal | Utilization report for the consultant pool: allocation % per consultant over a date window, with assignment breakdown — spot bench time and overbooking. Use when: "who is free next month?", staffin… |
 | `manage_consultant_rates` | internal | Per-skill hourly-rate matrix for consultants (e.g. React 1200 kr/h, DevOps 1400 kr/h) on top of the profile default rate. Use when: quoting engagements per competence, maintaining the rate card, co… |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.consultant_assignments`
+- `public.consultant_profiles`
+- `public.consultant_skill_rates`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
 
 ## Module API Contract
 
 **Input fields:** `job_description`, `max_results`
 
 **Output fields:** `success`, `matches`, `consultant_id`, `name`, `title`, `score`, `reasoning`, `tailored_summary`, `cover_letter`, `matching_skills`, `missing_skills`, `error`
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [hire-to-retire](../processes/hire-to-retire.md)
 
 ## File Map
 

@@ -117,13 +117,10 @@ export interface ModulesSettings {
   companies: ModuleConfig;
   ecommerce: ModuleConfig;
   developer: ModuleConfig;
-  /** @deprecated Merged into pages module */
-  globalElements: ModuleConfig;
   mediaLibrary: ModuleConfig;
   webinars: ModuleConfig;
   salesIntelligence: ModuleConfig;
   consultants: ModuleConfig;
-  browserControl: ModuleConfig;
   federation: ModuleConfig;
   paidGrowth: ModuleConfig;
   companyInsights: ModuleConfig;
@@ -325,16 +322,6 @@ export const defaultModulesSettings: ModulesSettings = {
     autonomy: 'config-required',
     adminUI: true,
   },
-  globalElements: {
-    enabled: false,
-    name: 'Global Elements',
-    description: 'Merged into Pages module — kept for backward compatibility',
-    icon: 'LayoutGrid',
-    category: 'system',
-    autonomy: 'config-required',
-    adminUI: false,
-    core: false,
-  },
   mediaLibrary: {
     enabled: true,
     name: 'Media Library',
@@ -380,15 +367,7 @@ export const defaultModulesSettings: ModulesSettings = {
     optionalIntegrations: ['openai', 'gemini'],
     publicAnonymization: 'full',
   },
-  browserControl: {
-    enabled: false,
-    name: 'Browser Control',
-    description: 'Chrome Extension relay for authenticated web browsing — read LinkedIn, X, and login-walled sites via your browser',
-    icon: 'Globe',
-    category: 'system',
-    autonomy: 'config-required',
-    adminUI: true,
-  },
+
   federation: {
     enabled: false,
     name: 'Agents',

@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "view-required"
 generated: true
-generated_at: "2026-10-02"
+generated_at: "2026-11-09"
 description: Return-merchandise-authorization flow with line-item tracking, approval, restock-on-receive, and refund processing.
 ---
 
@@ -13,7 +13,7 @@ description: Return-merchandise-authorization flow with line-item tracking, appr
 
 > Return-merchandise-authorization flow with line-item tracking, approval, restock-on-receive, and refund processing. Customers see their own returns; staff manages all.
 
-Ships with **8 agent skills**, an **admin UI**.
+Ships with **8 agent skills**, **2 database tables**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,8 @@ Ships with **8 agent skills**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `data:read`, `data:write` |
 | **MCP-exposed skills** | 8 |
-| **Owns tables** | — |
+| **Owns tables** | 2 |
+| **Requires modules** | `ecommerce` |
 
 ## Skills
 
@@ -37,18 +38,34 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 |-------|-------|-------------|
 | `create_return` | internal | Create a new return (RMA) for an existing order. Use when: creating a return, an RMA or a return authorization for an order; a customer or support agent requests a return, a refund or an exchange o… |
 | `request_return` | external | Categorized return reason |
-| `manage_return_item` | internal | Add/edit/remove line items on an existing return. Every line must match a line of the return\ |
+| `manage_return_item` | internal | Add/edit/remove line items on an existing return. Every line must match a line of the return's order (order_item_id, or product_id sold on that order): quantity is capped at what is left to return … |
 | `approve_return` | internal | Approve a requested return so the customer can ship it back. Use when: support/admin signs off on the RMA. NOT for: actually receiving goods (use receive_return). |
 | `receive_return` | internal | Mark an approved return as received. Nothing goes back into stock yet — inspect_return decides each line. Use when: warehouse confirms the package arrived. |
 | `refund_return` | internal | Process the refund for a received return. Use when: payment is being returned to the customer (Stripe, manual, or store-credit). |
 | `inspect_return` | internal | QC-inspect a received return: record inspection notes and set the restocking fee before refunding. Use when: goods arrived back and need checking; deciding a restocking fee. NOT for: refunding (ref… |
 | `return_reason_report` | internal | Return-reason analytics: counts and refunded value per reason_code over a period. Use when: spotting product quality issues, monthly returns review. NOT for: managing a single RMA (create_return/re… |
 
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.return_items`
+- `public.returns`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
+
 ## Module API Contract
 
 **Actions:** `create`, `approve`, `receive`, `refund`, `list`, `get`
 
 **Input fields:** `action`, `return_id`, `order_id`, `reason`, `refund_cents`, `refund_method`, `notes`
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [order-to-delivery](../processes/order-to-delivery.md)
+- [return-to-refund](../processes/return-to-refund.md)
 
 ## File Map
 

@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "view-required"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Dispatch on-site service orders: schedule technicians, track visits, capture signatures and auto-generate invoices on completion.
 ---
 
@@ -13,7 +13,7 @@ description: Dispatch on-site service orders: schedule technicians, track visits
 
 > Dispatch on-site service orders: schedule technicians, track visits, capture signatures and auto-generate invoices on completion.
 
-Ships with **9 agent skills**, an **admin UI**.
+Ships with **9 agent skills**, **4 database tables**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,7 @@ Ships with **9 agent skills**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `data:write`, `data:read` |
 | **MCP-exposed skills** | 9 |
-| **Owns tables** | — |
+| **Owns tables** | 4 |
 
 ## Skills
 
@@ -43,7 +43,18 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `manage_service_package` | internal | Reusable service package templates (predefined labor/material line bundles) and applying them to orders. Use when: standard jobs like "AC install" or "annual boiler service" should prefill order li… |
 | `link_service_order` | internal | Link a service order to a contract, project and/or deal (or unlink). Use when: on-site work is covered by a service contract, belongs to a project, or originates from a deal. NOT for: creating cont… |
 | `manage_recurring_service_order` | internal | Recurring service orders: set a recurrence rule on an order and auto-generate the next occurrences (daily cron). Use when: maintenance repeats weekly/monthly/quarterly/yearly. NOT for: recurring in… |
-| `service_order_to_invoice` | internal | Draft an invoice from a completed service order\ |
+| `service_order_to_invoice` | internal | Draft an invoice from a completed service order's line items. Use when: a service order is finished and the customer should be billed; the invoice_completed_service_orders automation calls this on … |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.service_order_lines`
+- `public.service_orders`
+- `public.service_packages`
+- `public.service_visits`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
 
 ## Module API Contract
 
@@ -52,6 +63,13 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 **Input fields:** `action`, `id`, `title`, `description`, `customer_name`, `customer_email`, `customer_phone`, `service_address`, `priority`, `status`, `scheduled_start`, `scheduled_end`, `assigned_to`, `technician_id`, `kind`, `quantity`, `unit_price`, `product_id`, `notes`
 
 **Output fields:** `success`, `data`, `error`
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [order-to-delivery](../processes/order-to-delivery.md)
+- [support-to-resolution](../processes/support-to-resolution.md)
 
 ## File Map
 

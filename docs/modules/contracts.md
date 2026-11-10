@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Contract lifecycle management with renewal tracking and document storage
 ---
 
@@ -13,7 +13,7 @@ description: Contract lifecycle management with renewal tracking and document st
 
 > Contract lifecycle management with renewal tracking and document storage
 
-Ships with **13 agent skills**, an **admin UI**.
+Ships with **13 agent skills**, **7 database tables**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,7 @@ Ships with **13 agent skills**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `data:write`, `data:read` |
 | **MCP-exposed skills** | 13 |
-| **Owns tables** | — |
+| **Owns tables** | 7 |
 
 ## Skills
 
@@ -38,7 +38,7 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `manage_contract_obligation` | internal | Track contract milestones/obligations (description, due date, status pending/met/overdue, responsible). Use when: adding or updating what a contract commits either party to. NOT for: the contract d… |
 | `manage_contract` | internal | Create, list, update, or search contracts. Use when: admin wants to create an agreement, find a contract by counterparty, change status, or update terms. NOT for: invoicing (use manage_invoice), pr… |
 | `list_contract_templates` | internal | List available contract templates (NDA, Service, MSA, SOW, etc) before creating a contract. Use when: agent or admin needs to create a contract and wants to discover existing templates instead of w… |
-| `manage_contract_template` | internal | Author the organisation\ |
+| `manage_contract_template` | internal | Author the organisation's own contract templates: get, create, update or archive the reusable agreement bodies that manage_contract renders into real contracts. IMPORTANT: load this skill's full in… |
 | `contract_renewal_check` | internal | Check for contracts expiring soon and alert. Use when: autonomous heartbeat checks for renewal deadlines, or admin asks "which contracts are expiring soon?". NOT for: creating contracts (use manage… |
 | `create_service_from_contract` | internal | Create the service (subscription, provider "contract") that a SIGNED, active contract should have — the repair door for a contract whose signing did not produce one. Use when: a signed contract is … |
 | `generate_contract_invoice` | internal | Generate a customer invoice for a contract (the CTR-YYYYMMDD-… series). Use when: a service/retainer agreement is due for billing (its recurring fee), after the contract is active. NOT for: subscri… |
@@ -48,6 +48,20 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `manage_contract_appendix` | internal | Manage the APPENDICES of one agreement — the numbered parts its own text references ("enligt Bilaga 1") and that the counterparty sees, and signs, on the public signing page. Two kinds in one numbe… |
 | `list_contract_documents` | internal | List archive documents FILED AGAINST a contract — correspondence, the countersigned PDF, supporting material. Use when: admin or agent asks "which documents are attached to contract X?", or wants t… |
 | `run_contract_billing` | internal | Invoice every active billing-enabled contract whose billing date has arrived. Use when: running the daily contract billing sweep — the Contract Billing automation calls this. Takes no arguments. NO… |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.contract_documents`
+- `public.contract_signatures`
+- `public.contract_templates`
+- `public.contract_versions`
+- `public.contracts`
+- `public.employment_contract_templates`
+- `public.employment_contracts`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
 
 ## Module API Contract
 
@@ -62,6 +76,8 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 This module participates in the following end-to-end business processes:
 
 - [hire-to-retire](../processes/hire-to-retire.md)
+- [quote-to-cash](../processes/quote-to-cash.md)
+- [sign-to-serve](../processes/sign-to-serve.md)
 
 ## File Map
 

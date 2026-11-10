@@ -9,6 +9,8 @@
  * Falls back to native-audio without tools if Gemini rejects the tools model.
  */
 
+import { getServiceClient } from '../_shared/supabase-clients.ts';
+import { checkWebhookSecret, loadWebhookSecret } from "../_shared/webhook-secret.ts";
 import { todayLine } from '../_shared/locale/today-line.ts';
 import { dateInZone } from '../_shared/locale/home.ts';
 import { loadHomeCached } from '../_shared/locale/load-home.ts';
@@ -60,7 +62,8 @@ interface VoiceSettings {
   aiReceptionistMode?: "native-audio" | "half-cascade";
   /**
    * 46elks WebSocket-number (E.164). Måste vara ett separat nummer som är
-   * konfigurerat i 46elks dashboard med `voice_start=wss://<project>.functions.supabase.co/voice-ingest/stream`.
+   * pekat mot `wss://<project>.supabase.co/functions/v1/voice-ingest/stream?secret=…` — det gör
+   * elks46-ingest (set_voice_start, target ai_stream) när röstinställningarna sparas.
    * Det publika DID:t bryggar in samtalet hit via `{connect: <wsNum>}`.
    */
   aiReceptionistWebsocketNumber?: string;
@@ -136,7 +139,7 @@ function serializeElks46(action: VoiceAction): { body: string; contentType: stri
     case "stream":
       // 46elks Realtime Voice API: a `stream` action does NOT exist as JSON.
       // We must bridge the public DID to a 46elks **websocket-number** which
-      // has its own `voice_start=wss://...` configured in the 46elks dashboard.
+      // has its own `voice_start=wss://…/stream?secret=…`, registered when the voice settings are saved.
       // The bridging itself is just a normal connect to that DID.
       payload = { connect: action.wsUrl };
       break;
@@ -199,8 +202,8 @@ async function decideAction(ctx: RoutingContext): Promise<VoiceAction> {
       const wsNum = (settings.aiReceptionistWebsocketNumber ?? "").trim();
       if (wsNum) {
         // Bridge the public DID into the 46elks websocket-number. That number
-        // must have voice_start=wss://<project>.functions.supabase.co/voice-ingest/stream
-        // configured in the 46elks dashboard (one-time setup).
+        // points at voice-ingest/stream?secret=… — registered by elks46-ingest
+        // (set_voice_start, target ai_stream) when the voice settings are saved.
         return { type: "stream", wsUrl: wsNum };
       }
       console.warn("[voice-ingest] AI receptionist enabled but no websocket-number configured — falling back to voicemail");
@@ -851,8 +854,16 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
 
-  // WebSocket upgrade for AI bridge
+  // WebSocket upgrade for AI bridge. 46elks opens the stream straight from the
+  // number's voice_start URL, so no call row exists to check it against; the
+  // gate is an opt-in secret in that URL (integrations.voice_stream.config.
+  // webhook_secret or VOICE_STREAM_SECRET). Configured → required, like every
+  // other channel ingest; unconfigured → accepted and logged (Law 4) — each
+  // stream opens a paid Gemini Live session, so set it (2026-11-09).
   if (url.pathname.endsWith("/stream") && req.headers.get("upgrade")?.toLowerCase() === "websocket") {
+    const streamCheck = checkWebhookSecret(req, await loadWebhookSecret(getServiceClient(), "voice_stream", Deno.env.get("VOICE_STREAM_SECRET")));
+    if (streamCheck === "mismatch") return new Response("unauthorized", { status: 401 });
+    if (streamCheck === "unconfigured") console.warn("[voice-ingest] stream secret not configured — anyone can open an AI voice session; save the voice settings (Voice → Settings) once and the websocket-number is re-registered with its secret");
     return await handleStreamSession(req);
   }
 
@@ -863,6 +874,15 @@ Deno.serve(async (req) => {
     );
 
     const providerHint = (url.searchParams.get("provider") as ProviderId | null) ?? "elks46";
+
+    // A forged call webhook writes calls into the log and steers where a call
+    // is routed: the provider's shared secret in the registered URL, exactly as
+    // elks46-ingest (2026-11-09). Unconfigured → accepted and logged (Law 4).
+    const secretCheck = checkWebhookSecret(req, await loadWebhookSecret(getServiceClient(), providerHint, Deno.env.get(`${providerHint.toUpperCase()}_WEBHOOK_SECRET`)));
+    if (secretCheck === "mismatch") {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (secretCheck === "unconfigured") console.warn(`[voice-ingest] ${providerHint} webhook secret not configured — anyone can POST call events here`);
 
     const ct = req.headers.get("content-type") ?? "";
     let body: FormData | Record<string, unknown>;

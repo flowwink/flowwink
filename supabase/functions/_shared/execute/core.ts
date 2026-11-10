@@ -100,6 +100,7 @@ import { handleEmailAdmins as hEmailAdmins } from '../handlers/email-admins.ts';
 import { handleDraftEmailReply } from '../handlers/draft-email-reply.ts';
 import { handleTranslatePage } from '../handlers/translate-page.ts';
 import { classifyCall, isDryRunRead } from '../skills/read-surface.ts';
+import { mustWaitForAPerson } from './high-stakes.ts';
 import { parseReport } from '../reports/blocks.ts';
 import { overviewDashboard } from '../reports/overview.ts';
 import { weeklyDigestReport, monthCloseReport, previousMonth, type ScheduledFormat } from '../reports/scheduled.ts';
@@ -1195,6 +1196,18 @@ export async function executeSkillRequest(input: ExecuteRequest, auth: ExecuteAu
     const planOnly = isDryRunRead(skill.name, args as Record<string, unknown>);
     if (planOnly && trustLevel === 'approve') trustLevel = 'notify';
 
+    // Nobody at the keyboard + a write its own definition calls high-risk or
+    // irreversible → it waits for a person (high-stakes.ts: the prompt-injection
+    // net — the model acts on text strangers wrote; only 'approve' is a gate it
+    // cannot pass alone). A person at the keyboard is the approval.
+    if (!planOnly && trustLevel !== 'approve' && mustWaitForAPerson({
+      agentType: agent_type, callerUserId: caller_user_id, scheduled,
+      toolDefinition: (skill as { tool_definition?: unknown }).tool_definition,
+      callKind: classifyCall(skill.name, args as Record<string, unknown>),
+    })) {
+      trustLevel = 'approve';
+    }
+
     if (trustLevel === 'approve' && !bypassApproval) {
       const activityId = await logActivity(supabase, {
         agent: agent_type, skill_id: skill.id, skill_name: skill.name,
@@ -1605,9 +1618,11 @@ export async function executeSkillRequest(input: ExecuteRequest, auth: ExecuteAu
       trace_id: trace_id || undefined,
       // 'notify' used to run exactly like 'auto' with nothing anywhere telling a
       // person. A notify run that did something (not failed, not refused, not a
-      // human-approved redemption) is marked so the cockpit and the bell show it
-      // until an admin acknowledges it.
-      ...(trustLevel === 'notify' && !handlerFailed && !handlerRefused && !bypassApproval ? { log_type: 'notify' } : {}),
+      // human-approved redemption, not a read) is marked so the cockpit and the
+      // bell show it until an admin acknowledges it. Notify is the default
+      // trust level, so without the read test a report someone opened counted
+      // as the agent having acted: 100 of liteit's 254 open rows, 2026-11-08.
+      ...(trustLevel === 'notify' && !handlerFailed && !handlerRefused && !bypassApproval && classifyCall(skill.name, args as Record<string, unknown>) !== 'read' ? { log_type: 'notify' } : {}),
     });
 
     // 5a. Close the staged operation's loop. The row carried status='executed'
@@ -1704,7 +1719,10 @@ const MODULE_HANDLER_TO_SETTING: Record<string, string> = {
   consultants: 'consultants',
   pages: 'pages',
   kb: 'knowledgeBase',
-  globalElements: 'globalElements',
+  // The handler name is a wire identifier (manage_global_blocks → module:globalElements);
+  // the module it belongs to is Pages. Mapping it to itself woke a module that no longer
+  // exists every time an agent touched the header (liteit carried it enabled, 2026-11-09).
+  globalElements: 'pages',
   deals: 'deals',
   companies: 'companies',
   forms: 'forms',

@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "content"
 autonomy: "config-required"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Create knowledge base articles
 ---
 
@@ -13,7 +13,7 @@ description: Create knowledge base articles
 
 > Create knowledge base articles
 
-Ships with **5 agent skills**, an **admin UI**.
+Ships with **5 agent skills**, **2 database tables**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,7 @@ Ships with **5 agent skills**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `content:receive`, `data:write` |
 | **MCP-exposed skills** | 5 |
-| **Owns tables** | — |
+| **Owns tables** | 2 |
 
 ## Skills
 
@@ -39,7 +39,23 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `manage_kb_article` | internal | Manage knowledge base articles: list, get, create, update, publish, unpublish. Every article has an audience: visibility="public" (visitors and the site chat) or "internal" (staff only — support pl… |
 | `kb_article_history` | internal | Version history for KB articles: list revisions, read an old revision, restore one. Every title/question/answer edit and every delete is captured automatically. Use when: reviewing what changed in … |
 | `kb_feedback_report` | internal | KB article feedback analytics: which articles get thumbs up/down from readers, which are auto-flagged as needing improvement, and clearing the flag after a rewrite. Use when: prioritizing KB rework… |
-| `knowledge_gap_report` | internal | Read-only: {chat:{questions,grounded,ungrounded,unknown,unanswered,top_sources[],gaps[{at,question,state,conversation_id}]}, email:{drafts,needs_person,ungrounded,unknown,gaps[]}, kb:{articles,publ… |
+| `knowledge_gap_report` | internal | Where the knowledge base fails the people asking: visitor questions the chat answered WITHOUT a retrieved source (or before receipts existed), inbound emails the responder could not answer from the… |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.kb_articles`
+- `public.kb_categories`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [content-to-conversion](../processes/content-to-conversion.md)
+- [support-to-resolution](../processes/support-to-resolution.md)
 
 ## File Map
 

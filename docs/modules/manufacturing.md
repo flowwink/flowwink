@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: MRP-light: Bills of Materials, Manufacturing Orders, component reservation, and the link from production demand to procurement.
 ---
 
@@ -13,7 +13,7 @@ description: MRP-light: Bills of Materials, Manufacturing Orders, component rese
 
 > MRP-light: Bills of Materials, Manufacturing Orders, component reservation, and the link from production demand to procurement.
 
-Ships with **17 agent skills**, an **admin UI**.
+Ships with **17 agent skills**, **4 database tables**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,7 @@ Ships with **17 agent skills**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `data:write`, `data:read` |
 | **MCP-exposed skills** | 17 |
-| **Owns tables** | — |
+| **Owns tables** | 4 |
 
 ## Skills
 
@@ -46,12 +46,23 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `list_manufacturing_orders` | internal | List Manufacturing Orders, optionally filtered by status. Read-only. Use when: building a dashboard, triaging the queue, or summarizing factory load. NOT for: detailed component view (read mo_compo… |
 | `manage_work_center` | internal | Manage work centers (production resources with an hourly cost + capacity). Use when: defining the shop floor (cutting, assembly, packing), setting labor rates. NOT for: routing steps (manage_routin… |
 | `manage_routing_operation` | internal | Manage the ordered routing operations of a BOM (which work center, how many minutes per unit). Use when: defining how a product is made step by step. NOT for: work centers (manage_work_center) or g… |
-| `generate_mo_work_orders` | internal | Materialise a manufacturing order\ |
+| `generate_mo_work_orders` | internal | Materialise a manufacturing order's work orders from its BOM routing, with planned minutes and labor cost. Use when: a MO is confirmed and you need the shop-floor task list + labor cost. NOT for: d… |
 | `progress_work_order` | internal | Run a manufacturing work order on the shop floor: start, pause, finish or cancel it, recording actual minutes and actual labor cost. Use when: reporting shop-floor progress or time spent on an oper… |
 | `record_quality_check` | internal | Record the result of a quality inspection on a work order (pass or fail), with the measured value. Use when: an operation that requires inspection has been checked, or a later check supersedes an e… |
 | `work_order_inspection_state` | internal | Read whether a work order needs a quality check, what the latest result was, and the whole check history. Use when: deciding whether an operation can be finished, or reporting why it cannot. NOT fo… |
 | `record_operation_scrap` | internal | Record units scrapped at one operation of a manufacturing order — what was started but will never be finished. Use when: parts crack, a batch fails, units are lost at a station. NOT for: a failed q… |
 | `mrp_reorder_run` | internal | Scan manufactured products (those with an active BOM) below their reordering rule and create draft manufacturing orders to replenish. The threshold is reorder_rules.min_qty with procurement_method=… |
+
+## Data Model
+
+Tables this module owns (declared by the module, or created in its migrations):
+
+- `public.bom_headers`
+- `public.bom_lines`
+- `public.manufacturing_orders`
+- `public.mo_components`
+
+All tables ship with Row-Level Security policies. See migration files for the exact rules.
 
 ## Module API Contract
 
@@ -60,6 +71,14 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 **Input fields:** `action`, `mo_id`, `bom_id`, `status`
 
 **Output fields:** `success`, `message`
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [procure-to-pay](../processes/procure-to-pay.md)
+- [order-to-delivery](../processes/order-to-delivery.md)
+- [plan-to-produce](../processes/plan-to-produce.md)
 
 ## File Map
 

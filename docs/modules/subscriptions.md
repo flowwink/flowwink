@@ -5,7 +5,7 @@ version: "2.0.0"
 category: "data"
 autonomy: "view-required"
 generated: true
-generated_at: "2026-10-08"
+generated_at: "2026-11-09"
 description: Recurring revenue lifecycle — active customers, MRR, churn, dunning, renewals, win-back
 ---
 
@@ -13,7 +13,7 @@ description: Recurring revenue lifecycle — active customers, MRR, churn, dunni
 
 > Recurring revenue lifecycle — active customers, MRR, churn, dunning, renewals, win-back
 
-Ships with **22 agent skills**, **1 database table**, an **admin UI**.
+Ships with **22 agent skills**, **6 database tables**, an **admin UI**.
 
 ## Quick Facts
 
@@ -26,7 +26,8 @@ Ships with **22 agent skills**, **1 database table**, an **admin UI**.
 | **Core** | No |
 | **Capabilities** | `data:read`, `data:write` |
 | **MCP-exposed skills** | 22 |
-| **Owns tables** | 1 |
+| **Owns tables** | 6 |
+| **Requires modules** | `invoicing` |
 
 ## Integrations
 
@@ -45,7 +46,7 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | `flag_at_risk_subscriptions` | internal | Sweep subscriptions and flag at-risk ones (past_due, scheduled cancel, low health). Use when: daily health check, before sending win-back. NOT for: reading current at-risk list (use list_subscripti… |
 | `record_churn_reason` | internal | Record why a customer churned (reason category + free-text feedback + NPS). Use when: customer cancels via portal, exit survey returned. NOT for: technical cancellation (use Stripe customer-portal … |
 | `manage_winback_campaign` | internal | Create or update a win-back campaign (the offer + email shown to churned/at-risk subscribers). Use when: setting up a retention offer after a churn event, or editing an existing one. NOT for: listi… |
-| `send_winback_campaign` | internal | Send a win-back campaign\ |
+| `send_winback_campaign` | internal | Send a win-back campaign's e-mail to churned (canceled) subscriptions that have not received it yet, and log each send in subscription_winback_sends (sent / simulated when no e-mail provider / fail… |
 | `list_winback_campaigns` | internal | List configured win-back campaigns (active or all). Use when: choosing which offer to send, auditing win-back program. NOT for: creating/editing a campaign (manage_winback_campaign) or sending it. |
 | `manage_subscription_plan` | internal | CRUD for reusable subscription plan templates (name/price/interval/trial/commitment). Use when: defining or changing the plans customers subscribe to. NOT for: creating a customer subscription (use… |
 | `create_manual_subscription` | internal | Create a recurring subscription billed by invoice (not via Stripe card). Use when: B2B customer signs a service plan paid by invoice (telecom plans, retainers, hosted services). NOT for: online car… |
@@ -64,9 +65,14 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 
 ## Data Model
 
-Tables created by this module (from migrations):
+Tables this module owns (declared by the module, or created in its migrations):
 
 - `public.canned_responses`
+- `public.subscription_churn_reasons`
+- `public.subscription_events`
+- `public.subscription_winback_campaigns`
+- `public.subscription_winback_sends`
+- `public.subscriptions`
 
 All tables ship with Row-Level Security policies. See migration files for the exact rules.
 
@@ -83,6 +89,8 @@ All tables ship with Row-Level Security policies. See migration files for the ex
 This module participates in the following end-to-end business processes:
 
 - [quote-to-cash](../processes/quote-to-cash.md)
+- [subscribe-to-renew](../processes/subscribe-to-renew.md)
+- [sign-to-serve](../processes/sign-to-serve.md)
 
 ## File Map
 

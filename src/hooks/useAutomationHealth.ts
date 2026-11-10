@@ -8,6 +8,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfDay, format } from 'date-fns';
+import { AUTOMATION_RUNNERS, isAutomationOverdue, judgeAutomationRuns } from '@/lib/alarm-rules';
+import { useActiveModules, skillShown } from '@/lib/module-visibility';
 
 export interface AutomationHealthItem {
   id: string;
@@ -57,13 +59,17 @@ async function fetchAutomationHealth(): Promise<AutomationHealthSummary> {
   const [automationsRes, activityRes] = await Promise.all([
     supabase
       .from('agent_automations')
-      .select('id, name, skill_name, trigger_type, enabled, run_count, last_triggered_at, last_error')
+      .select('id, name, skill_name, trigger_type, enabled, run_count, last_triggered_at, next_run_at, last_error')
       .order('created_at', { ascending: false }),
     supabase
       .from('agent_activity')
       .select('skill_name, status, created_at')
+      // The automation's own runs. An agent guessing a parameter on the same
+      // skill says nothing about the job.
+      .in('agent', [...AUTOMATION_RUNNERS])
       .gte('created_at', sevenDaysAgo.toISOString())
-      .order('created_at', { ascending: true }),
+      // Newest first: past PostgREST's row cap the oldest are what may go.
+      .order('created_at', { ascending: false }),
   ]);
 
   const automations = automationsRes.data || [];
@@ -76,11 +82,12 @@ async function fetchAutomationHealth(): Promise<AutomationHealthSummary> {
   }
 
   // Group activity by skill_name + day
-  const activityMap = new Map<string, { runs: Map<string, number>; errors: Map<string, number> }>();
+  const activityMap = new Map<string, { runs: Map<string, number>; errors: Map<string, number>; newest?: string }>();
   for (const a of activities) {
     const skill = a.skill_name || '';
     if (!activityMap.has(skill)) {
-      activityMap.set(skill, { runs: new Map(), errors: new Map() });
+      // The rows arrive newest first, so the first one seen is the newest run.
+      activityMap.set(skill, { runs: new Map(), errors: new Map(), newest: a.status });
     }
     const entry = activityMap.get(skill)!;
     const day = format(new Date(a.created_at), 'yyyy-MM-dd');
@@ -94,7 +101,7 @@ async function fetchAutomationHealth(): Promise<AutomationHealthSummary> {
   let totalErrors7d = 0;
 
   const items: AutomationHealthItem[] = automations.map((auto: any) => {
-    const skillData = activityMap.get(auto.skill_name || '') || { runs: new Map(), errors: new Map() };
+    const skillData = activityMap.get(auto.skill_name || '') || { runs: new Map<string, number>(), errors: new Map<string, number>(), newest: undefined };
     
     const dailyRuns = dayKeys.map(d => skillData.runs.get(d) || 0);
     const dailyErrors = dayKeys.map(d => skillData.errors.get(d) || 0);
@@ -107,18 +114,18 @@ async function fetchAutomationHealth(): Promise<AutomationHealthSummary> {
     const errorRate = runs7d > 0 ? errors7d / runs7d : 0;
 
     // Determine health
+    const verdict = judgeAutomationRuns({
+      runs: runs7d,
+      errors: errors7d,
+      newestStatus: skillData.newest,
+      lastError: auto.last_error,
+    });
     let health: AutomationHealthItem['health'] = 'healthy';
     if (!auto.enabled) {
       health = 'disabled';
-    } else if (errorRate > 0.5) {
-      health = 'error';
-    } else if (errorRate > 0.1 || auto.last_error) {
-      health = 'warning';
-    } else if (auto.trigger_type === 'cron' && auto.last_triggered_at) {
-      const lastRun = new Date(auto.last_triggered_at);
-      const hoursSince = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
-      if (hoursSince > 48) health = 'stale';
-    } else if (auto.trigger_type === 'cron' && !auto.last_triggered_at && auto.run_count === 0) {
+    } else if (verdict) {
+      health = verdict;
+    } else if (isAutomationOverdue(auto, now.getTime())) {
       health = 'stale';
     }
 
@@ -138,19 +145,17 @@ async function fetchAutomationHealth(): Promise<AutomationHealthSummary> {
     };
   });
 
-  const enabled = items.filter(i => i.enabled).length;
-  const healthy = items.filter(i => i.health === 'healthy').length;
-  const warning = items.filter(i => i.health === 'warning').length;
-  const erroring = items.filter(i => i.health === 'error').length;
-  const stale = items.filter(i => i.health === 'stale').length;
+  return summarize(items, totalRuns7d, totalErrors7d);
+}
 
+function summarize(items: AutomationHealthItem[], totalRuns7d: number, totalErrors7d: number): AutomationHealthSummary {
   return {
     total: items.length,
-    enabled,
-    healthy,
-    warning,
-    erroring,
-    stale,
+    enabled: items.filter(i => i.enabled).length,
+    healthy: items.filter(i => i.health === 'healthy').length,
+    warning: items.filter(i => i.health === 'warning').length,
+    erroring: items.filter(i => i.health === 'error').length,
+    stale: items.filter(i => i.health === 'stale').length,
     totalRuns7d,
     totalErrors7d,
     overallErrorRate: totalRuns7d > 0 ? totalErrors7d / totalRuns7d : 0,
@@ -158,10 +163,27 @@ async function fetchAutomationHealth(): Promise<AutomationHealthSummary> {
   };
 }
 
+/**
+ * An automation whose skill belongs to a module that is off is not shown and
+ * counts toward nothing (src/lib/module-visibility.ts). The module switch
+ * disables those automations, but a row that leaked — or one switched off
+ * with an old last_error — read as "warning" / "stale" on Observability and
+ * the dashboard for a module the operator had chosen not to run.
+ */
+export function withoutOffModules(summary: AutomationHealthSummary, active: Set<string>): AutomationHealthSummary {
+  const items = summary.items.filter((i) => skillShown(i.skillName, active));
+  if (items.length === summary.items.length) return summary;
+  const runs = items.reduce((s, i) => s + i.dailyRuns.reduce((a, b) => a + b, 0), 0);
+  const errors = items.reduce((s, i) => s + i.dailyErrors.reduce((a, b) => a + b, 0), 0);
+  return summarize(items, runs, errors);
+}
+
 export function useAutomationHealth() {
+  const active = useActiveModules();
   return useQuery({
     queryKey: ['automation-health'],
     queryFn: fetchAutomationHealth,
     refetchInterval: 30_000,
+    select: (data) => withoutOffModules(data, active),
   });
 }

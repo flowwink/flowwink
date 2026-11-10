@@ -53,8 +53,7 @@ const docAliases: Record<string, string[]> = {
   bookings: ['bookings.md', 'booking.md'],
   workspaceChat: ['workspace-chat.md'],
   fieldService: ['field-service.md'],
-  globalBlocks: ['global-elements.md', 'global-blocks.md'],
-  globalElements: ['global-elements.md'],
+  globalBlocks: ['global-blocks.md'],
   companyInsights: ['company-insights.md'],
   liveSupport: ['live-support.md'],
   fixedAssets: ['fixed-assets.md'],
@@ -63,7 +62,6 @@ const docAliases: Record<string, string[]> = {
   kb: ['knowledge-base.md', 'kb.md'],
   salesIntelligence: ['sales-intelligence.md'],
   siteMigration: ['site-migration.md'],
-  browserControl: ['browser-control.md'],
 };
 
 for (const mod of getAllUnifiedModules()) {

@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "insights"
 autonomy: "agent-capable"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Behavioral signals from anonymous browsing — identity stitching, rule-based scoring, and a per-lead visitor timeline in the CRM.
 ---
 
@@ -36,7 +36,7 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 | Skill | Scope | Description |
 |-------|-------|-------------|
 | `score_visitor_intent` | internal | Run visitor-intelligence rules to detect behavioral signals (return visits, pricing interest, deep engagement, reawakening) and bump lead scores. Use when: refreshing lead priority based on browsin… |
-| `get_visitor_timeline` | internal | Fetch a lead\ |
+| `get_visitor_timeline` | internal | Fetch a lead's recent browsing behavior: page views + fired signals in one chronological stream. Use when: preparing a sales call; explaining why a lead score changed; debugging tracking. NOT for: … |
 
 ## Module API Contract
 
@@ -45,6 +45,13 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 **Input fields:** `action`, `lead_id`
 
 **Output fields:** `success`, `message`, `error`
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [lead-to-customer](../processes/lead-to-customer.md)
+- [content-to-conversion](../processes/content-to-conversion.md)
 
 ## File Map
 

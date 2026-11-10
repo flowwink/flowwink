@@ -5,7 +5,7 @@ version: "1.0.0"
 category: "data"
 autonomy: "config-required"
 generated: true
-generated_at: "2026-09-30"
+generated_at: "2026-11-09"
 description: Manage media assets and files
 ---
 
@@ -35,12 +35,18 @@ External operators (FlowPilot, OpenClaw, Claude Desktop, custom MCP clients) can
 
 | Skill | Scope | Description |
 |-------|-------|-------------|
-| `media_browse` | internal | Browse, search, and manage media files in the media library. Supports listing, getting URLs, deleting files, clearing library, and importing an image from an external URL into storage (action=impor… |
+| `media_browse` | internal | Browse, search, and manage media files in the media library. Supports listing, getting URLs, deleting files, clearing library, importing an image or short video from an external URL (action=import_… |
 | `media_set_alt_text` | internal | Set or update the accessibility alt text for a media asset in the library. Use when: an image needs alt text for screen readers or SEO; auditing accessibility. NOT for: renaming files, editing imag… |
 | `media_find_usage` | internal | Find where a media asset is referenced across pages, blog posts, KB articles, and products. Use when: checking whether an image is safe to delete; auditing what uses a file. NOT for: full-text cont… |
 | `media_optimize` | internal | Generate optimized image variants (thumbnail + web size) for a media asset. Use when: an uploaded image lacks thumbnails; preparing images for fast page loads. NOT for: cropping (use the image edit… |
 | `search_unsplash` | internal | Search Unsplash for royalty-free stock photos. Use when: finding a hero/blog image by keyword. NOT for: fetching a known image URL (fetch_image_base64); the media library (manage_media). |
 | `fetch_image_base64` | internal | Download an image by URL and return it as base64 (used when exporting a site template so remote images are inlined). Use when: bundling external images. NOT for: searching stock photos (search_unsp… |
+
+## Used in Processes
+
+This module participates in the following end-to-end business processes:
+
+- [content-to-conversion](../processes/content-to-conversion.md)
 
 ## File Map
 

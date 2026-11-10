@@ -78,7 +78,6 @@ export { growthModule } from './growth-module';
 export { consultantsModule } from './consultants-module';
 
 // ── System / Integration ──
-export { browserControlModule } from './browser-control-module';
 export { federationModule } from './federation-module';
 
 export { composioModule } from './composio-module';
@@ -100,4 +99,3 @@ export { feedbackModule } from './feedback-module';
 export { reportsModule } from './reports-module';
 
 // ── Legacy (not in ModulesSettings — kept for registry compatibility) ──
-export { globalBlocksModule } from './global-blocks-module';

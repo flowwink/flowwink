@@ -68,6 +68,12 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   area's page: how many calls changed something, how many only looked, which
   agents did it and the skills they used most. A connected agent is shown by
   its own name (Hermes, Claude …) when Federation is on.
+- **Agent work shows what the checks flag.** The dashboard panel lists the
+  findings an agent starts its day from — operations (sales, receivables,
+  contracts, support, field service, automations, chat) and, when Accounting
+  is on, the books — highest severity first, each with a link to its area and
+  the skill that fixes it. A finding with no fix is marked as yours to decide.
+  Findings of the same kind (one overdue filing per month) fold into one row.
 - **The books can be kept somewhere else.** Accounting → Settings → Ledger:
   with "Kept in another system" (Fortnox, Visma …) FlowWink no longer books
   invoices, paid orders or vendor invoices by itself, and the books check stays
@@ -81,6 +87,11 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Fixed
 
+- **The receiving instance counts its own ping.** The feedback endpoint (www)
+  records its own daily ping without crossing content-api, and did so with a
+  hand-written upsert that never touched `ping_count`, so the fleet view read 1
+  for it however many days it had pinged. It now goes through
+  `feedback_record_ping`, the function every other instance's ping reaches.
 - **An invoice dated in a closed month is refused again.** Yesterday's change
   for books kept elsewhere let a sent invoice through whenever its booking
   failed, so one dated in a closed month was issued and left unbooked. Only

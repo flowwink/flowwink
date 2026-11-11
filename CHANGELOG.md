@@ -63,6 +63,11 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   has answered), and the calls that were refused or failed in the last seven
   days with the reason in words. Scheduled jobs and a person's own clicks are
   not counted, and a module that is off stays out of it.
+- **Agent work, by business area.** The dashboard panel now lists the week's
+  agent work per area (Sales, Invoicing, Bookings …) with a link to that
+  area's page: how many calls changed something, how many only looked, which
+  agents did it and the skills they used most. A connected agent is shown by
+  its own name (Hermes, Claude …) when Federation is on.
 - **The books can be kept somewhere else.** Accounting → Settings → Ledger:
   with "Kept in another system" (Fortnox, Visma …) FlowWink no longer books
   invoices, paid orders or vendor invoices by itself, and the books check stays
@@ -76,6 +81,11 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Fixed
 
+- **An invoice dated in a closed month is refused again.** Yesterday's change
+  for books kept elsewhere let a sent invoice through whenever its booking
+  failed, so one dated in a closed month was issued and left unbooked. Only
+  the missing accounting grant is let through now; a closed month refuses the
+  send and the invoice stays a draft. Found by the night's fresh install.
 - **Sending an invoice no longer needs the accounting grant.** A salesperson
   without it was refused ("Requires the accounting module") because the booking
   behind the send could not run. The invoice is sent, the booking is caught up.

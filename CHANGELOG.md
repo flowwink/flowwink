@@ -74,6 +74,16 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   is on, the books — highest severity first, each with a link to its area and
   the skill that fixes it. A finding with no fix is marked as yours to decide.
   Findings of the same kind (one overdue filing per month) fold into one row.
+- **Agent work for every role.** The panel is no longer the admin's alone: a
+  salesperson sees what the agents did in the sales chain, a support lead what
+  was done to the tickets. Every agent call is now stamped with the module
+  that owns its skill, and staff read the calls of the modules their role is
+  granted under Users → Role Permissions; flagged findings are scoped the same
+  way. Calls made before this update stay visible to admins only.
+- **Agent work opens the record.** A new "Latest changes" list in the panel
+  shows the last calls that changed something — skill, action, which agent —
+  and links straight to the lead, deal, company, contract, ticket, quote,
+  invoice, order, project, page, article or candidate it touched.
 - **The books can be kept somewhere else.** Accounting → Settings → Ledger:
   with "Kept in another system" (Fortnox, Visma …) FlowWink no longer books
   invoices, paid orders or vendor invoices by itself, and the books check stays
@@ -87,6 +97,56 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Fixed
 
+- **A plan step runs only when it carries what its skill needs.** A plan
+  writes each step's arguments before anything has been read, so a step whose
+  arguments come from a read was stored half-empty. On optic, FlowPilot's plan
+  for watching Peter's projects ran `comment_on_task` as `{kind: 'question'}`
+  twice a day and failed with "body is required", while the same heartbeat
+  asked the right question in its own turn. `advance_plan` now checks the
+  step's arguments against the skill's declared `required` list. A step that
+  leaves one empty is handed to the reasoning loop (`needs_reasoning`, step
+  `handed_off`). It is not run, not counted as a failure, and still finishes
+  the plan. A skill it cannot read runs as before.
+- **A blog post id that names nothing is "not found".** `manage_blog_posts`
+  update, publish, unpublish and delete with a `post_id` no post on the site
+  carries answered "Update post failed: Cannot coerce the result to a single
+  JSON object". Hermes got that nine times on www while setting covers on
+  another site's posts. It is now `NOT_FOUND`, never retried, and the hint
+  says to check which site the agent is connected to. Nothing is written. The
+  slug case was already handled (#998).
+- **Three morning reviews are reads.** `support_list_conversations`,
+  `deal_stale_check` and `lead_pipeline_review` only select, but no read rule
+  knew them. Each run by a connected agent was logged as "an agent acted on its
+  own", and a read-only key or FlowWork refused them. They now join the read
+  list. Their writing neighbours (`support_assign_conversation`, `add_lead`,
+  `manage_deal`) stay staged.
+- **Fewer wasted agent calls.** From what agents actually failed on across
+  four live sites: the blog skill now accepts the `id` it hands back itself
+  and says plainly when an address matches no post (it used to answer "post_id
+  or slug required" to both); a request that is still waiting for approval is
+  recorded as a refusal, not a failure, so it no longer counts toward
+  switching the skill off; and an unknown approvals action names the real ones.
+- **A monthly job is not "never ran" before its month has come.** Every
+  instance reported `purge-stale-prospects` (the 1st, 03:15) upstream as "never
+  ran" each night: its 1 November run was purged on the 4th, before the
+  history began keeping each job's last run (20261106080000), and it would have
+  stayed red until 1 December. The cron health judge now gives "never ran" a
+  verdict only once the complete run history covers the job's longest gap, an
+  upper bound read from the schedule (a month, a week, a day). It can only
+  withhold that verdict, and a failed run or a foreign host is red as before.
+- **A change is proved before it reaches the fleet.** The nightly fork sync
+  now installs main from zero and runs every process first, and syncs only
+  when that is green. Until now the sync ran hours before the proof, so a
+  faulty change could be live on every site before anything had tested it.
+- **A database or server change is proved before it is merged.** A pull
+  request that touches migrations, edge functions, skills or templates now
+  runs the whole process battery against a site installed from zero. Such
+  changes used to run for the first time the night after the merge.
+- **You are told when the sites were not updated.** The nightly sync waits
+  for the proof, so a failed proof deploys nothing — and used to say nothing.
+  An issue now opens when a sync did not go through or none has succeeded for
+  a day and a half, says which step to look at, and closes itself when a sync
+  succeeds.
 - **The receiving instance counts its own ping.** The feedback endpoint (www)
   records its own daily ping without crossing content-api, and did so with a
   hand-written upsert that never touched `ping_count`, so the fleet view read 1

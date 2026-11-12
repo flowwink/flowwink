@@ -16,8 +16,40 @@ name: Fresh install (nightly)
 
 on:
   schedule:
-    # 02:37 UTC — after the fork sync (01:23) and before the sandbox rebuild (04:00).
+    # 02:37 UTC on paper; GitHub's queue lands it around 10 UTC. This run is
+    # the day's second look at main. The proof a DEPLOY waits for is not this
+    # schedule: Nightly fork sync calls this workflow itself (workflow_call
+    # below) and syncs only what it proved.
     - cron: '37 2 * * *'
+  # Called by nightly-fork-sync.yml: the fleet is synced only after this is
+  # green on the main it is about to hand out (2026-11-11 — a change reached
+  # six sites on the night of 11-10 hours before this job found it red).
+  workflow_call:
+    inputs:
+      template:
+        type: string
+        default: flowwink-platform
+      country:
+        type: string
+        default: SE
+      stamp:
+        type: boolean
+        default: true
+      # What to install and prove. main for the night and the sync; a pull
+      # request's merge ref for pr-process-battery.yml.
+      ref:
+        type: string
+        default: main
+      # 'full' is the night. 'battery' leaves out the three browser steps
+      # (process views, view sweep, public blocks): a pull request that touches
+      # the database or the edge layer is judged on the server side, in minutes.
+      scope:
+        type: string
+        default: full
+    outputs:
+      proven_sha:
+        description: The commit of main this run installed from zero and proved.
+        value: ${{ jobs.fresh-install.outputs.proven_sha }}
   workflow_dispatch:
     inputs:
       template:
@@ -36,9 +68,12 @@ permissions:
   # Pull the Supabase images from ghcr.io as this repository, not anonymously.
   packages: read
 
+# One run per ref. main's runs queue (the sync's proof must never be cancelled
+# by the schedule's); a pull request's newer push replaces its older run and
+# never stands in main's queue.
 concurrency:
-  group: fresh-install-nightly
-  cancel-in-progress: false
+  group: fresh-install-${{ inputs.ref || 'main' }}
+  cancel-in-progress: ${{ (inputs.ref || 'main') != 'main' }}
 
 jobs:
   fresh-install:
@@ -46,6 +81,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'magnusfroste/flowwink' || vars.FLEET_WORKFLOWS == 'true'
     timeout-minutes: 75
+    outputs:
+      proven_sha: ${{ steps.proven.outputs.sha }}
     env:
       BATTERY_TEMPLATE: ${{ inputs.template || 'flowwink-platform' }}
       BATTERY_COUNTRY: ${{ inputs.country || 'SE' }}
@@ -57,8 +94,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ inputs.ref || 'main' }}
           fetch-depth: 0
+
+      # What this run proves is THIS commit — the caller compares main with it before it deploys.
+      - name: Note the commit under test
+        id: proven
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -85,7 +127,15 @@ jobs:
       # commits them after every merge. Stale here means that job failed, and the
       # fleet would deploy edge functions with yesterday's skill bundle.
       - name: Generated artifacts on main are fresh
+        if: (inputs.ref || 'main') == 'main'
         run: npx -y bun run scripts/generated-artifacts.ts --check-fresh
+
+      # A pull request never carries the artifacts (the bot commits them on
+      # main after the merge) — build them, so the edge functions serve THIS
+      # change's skills and automations.
+      - name: Generated artifacts — built for this ref
+        if: (inputs.ref || 'main') != 'main'
+        run: npx -y bun run scripts/generated-artifacts.ts --build
 
       # The Supabase images come from GitHub Container Registry, authenticated.
       # The CLI pulls anonymously from public.ecr.aws by default, and the runner's
@@ -172,11 +222,12 @@ jobs:
       # the person looking. Runs whenever the battery ran, red or green: a
       # process whose data is right but invisible is its own finding.
       - name: Process views — every outcome on the screen it belongs to
-        if: always() && steps.battery.outcome != 'skipped'
+        if: always() && steps.battery.outcome != 'skipped' && inputs.scope != 'battery'
         run: npm run qa:process-views
 
       # System Chrome is on the runner, so the sweep's default channel works.
       - name: View sweep — every route, every role
+        if: inputs.scope != 'battery'
         run: npm run qa:views -- --concurrency=2
 
       # The sweep LOADS pages; this SUBMITS them. Booking, form, webinar sign-up
@@ -185,7 +236,7 @@ jobs:
       # public booking block that threw in the browser lived for three weeks (#661).
       # if: always() — a red sweep must not hide whether a visitor can still book.
       - name: Public blocks — submitted as a visitor
-        if: always() && steps.battery.outcome != 'skipped'
+        if: always() && steps.battery.outcome != 'skipped' && inputs.scope != 'battery'
         run: npm run qa:public-blocks
 
       - name: Upload reports
@@ -214,7 +265,8 @@ jobs:
       # A race with a human merge is retried on a fresh fetch; a protected
       # branch that refuses the bot fails loudly rather than silently not stamping.
       - name: Commit the stamp to main
-        if: always() && steps.battery.outcome == 'success' && (github.event_name == 'schedule' || inputs.stamp)
+        # Only main is ever stamped — a pull request's ref must never be pushed to main.
+        if: always() && steps.battery.outcome == 'success' && (inputs.ref || 'main') == 'main' && (github.event_name == 'schedule' || inputs.stamp)
         run: |
           # GitHub's own Actions identity. "<name>@users.noreply.github.com" is
           # attributed to the REAL account <name> — "artifacts" and "nightly" are

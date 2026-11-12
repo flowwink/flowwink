@@ -589,6 +589,13 @@ beside its payload, so an operator branches instead of guessing:
   owner, never anon — behind **Activity** on the Agents page and
   `agent_day_report(agent, hours)` over MCP. `get_agent_trace` stays the
   per-run decision log.
+- **Agent work is read per module (2026-11-11, #869).** `logActivity` stamps
+  `agent_activity.module` with the skill's owning module (`ownerModuleOf`;
+  platform skills carry none), and an RLS policy lets staff read the rows of
+  the modules their role is granted (`can_access_module`). The dashboard's
+  Agent work panel reads the table directly, as the reader. A new writer of
+  skill calls goes through `logActivity`; a row without a module is the
+  admin's.
 - **`invite_colleague`** (platform, trust `approve`): an agent asks, a person
   approves under /admin/approvals, Supabase Auth mails the invitation and the
   functional role is granted on first sign-in. The edge function admits the
@@ -1016,12 +1023,26 @@ there is no shared dev backend to keep in step any more. **PR CI is offline** �
 type check, correctness lint, the ESLint ratchet (findings may only shrink — `npm run
 lint:ratchet`, baseline in src/lib/__tests__/fixtures/eslint-baseline.json), 3900
 unit/guardrail tests, skill linter, artifact freshness, build; a single business process
-does not earn a live step on every PR. The Docker image builds on release tags only.
+does not earn a live step on every PR. **A PR that touches the database or the edge layer
+is the exception (2026-11-11):** `pr-process-battery.yml` runs the fresh install itself
+(`workflow_call`, `scope: battery`: stack from zero, quiet, open access, the battery, the
+skill smoke, the MCP regression — no browser steps, no stamp) on the PR's merge ref when
+`supabase/migrations`, `supabase/functions`, the battery, a module's skills or a template
+changed. The Docker image builds on release tags only.
 **Fork syncs run once a day, at night** (`nightly-fork-sync.yml`, cron 20:53 UTC, which
 GitHub's queue lands around 01:30 UTC; one fork early = Actions → Nightly fork sync →
 Run workflow with `fork` and `force`, as optic got MFA on 2026-10-29): a sync is
 a production deploy, and deploying six times in an evening while an operator works
 is how "sometimes I get errors in the project view" happens (optic, 2026-09-04).
+**The sync waits for the proof (2026-11-11):** `nightly-fork-sync.yml` is gate →
+proof → sync. The proof is `fresh-install-nightly.yml` itself (`workflow_call`),
+and the sync runs only when it is green and main is still the proved commit
+(plus the bot's stamp); a red proof syncs nothing. `unproven: true` on a hand
+run is the one way around it. Before, the sync ran at ~01:30 UTC and the fresh
+install that would have caught a bad change at ~10 UTC.
+`proof-alert.yml` watches the result (decision in `scripts/proof-alert.mjs`): one
+issue, label `proof-red`, when the latest sync did not go through or none has
+succeeded for 36 hours; it closes itself on the next green sync.
 Fleet-only workflows (docker image, release, main-red alert, MCP regression) carry
 `if: github.repository == 'magnusfroste/flowwink'` so forks stop running them.
 

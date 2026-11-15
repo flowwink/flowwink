@@ -518,6 +518,18 @@ beside its payload, so an operator branches instead of guessing:
   RECEIVES: the public board at `/feedback`, `manage_feedback` (list /
   set_status / comment / delete / `instances` — the fleet that pings) and
   `/admin/feedback`. One code path for the admin form and an agent.
+  **The same report is one post (2026-11-15):** a report from an instance or
+  an agent joins the OPEN post that already carries its title
+  (`feedback_join_report`: `reports_count`, `reporters`), on the wire and on
+  the receiver itself; a person's post on the board is never merged. A
+  newborn instance (under 24 h) files no machine-room defect, and a test
+  stack tells the fleet nothing: `qa:prep` sets `feedback.share_usage` off
+  and every workflow that serves the edge functions passes
+  `FEEDBACK_SHARE_USAGE=false` — each CI run is a new instance, and for four
+  days they filed the battery's deliberate failures on www's board.
+  The fleet list forgets an instance that pinged once and has not been seen
+  for a week (`feedback_forget_one_time_instances`, in the nightly
+  `prune-logs` job) — a real instance pings daily; nothing names localhost.
 - **A need with alternatives is a capability (2026-11-07).** A module
   states `requiredCapabilities: ['email' | 'web:read' | 'web:search']`
   (`useModules.tsx`, `CAPABILITY_PROVIDERS`) and any provider of it
@@ -901,6 +913,21 @@ managed-ledger lessons still apply to every fork's Supabase integration:
   executable by authenticated, body without `service_role` / `has_role(` /
   `can_access_module(` / `is_staff(` / `auth.uid() =` — then check pg_policy,
   invoker-side functions, views, defaults and constraints before revoking.
+- **The logs are thinned; a change never is (2026-11-15).** `prune_logs()` runs
+  nightly (pg_cron `prune-logs`, bounded per night). What a row of
+  `agent_activity` PROVES decides how long it lives: a change is kept whole; a
+  lookup's answer is cut to its identifying fields after `answers_days` (30)
+  and the row goes after `rows_days` (90); a refused or failed call and a
+  scheduled tick (agent `cron`) go after `rows_days`. Never touched: a row an
+  objective counts, a row tied to an approval, an unacknowledged notify row, a
+  row of unknown kind. `kind` (read | write) is `classifyCall`'s verdict,
+  stamped by `logActivity`; an older row learns it from a stamped row of the
+  same shape. The dial is `site_settings.data_retention` (per instance,
+  Observability → Database size); `database_size_report()` is the read — size
+  against the quota (500 MB on Free), the largest tables, the last run. A new
+  journal table states its retention in `prune_logs` in the same PR; a new
+  writer of skill calls goes through `logActivity`, or its rows are never
+  thinned.
 - **A scheduled function admits three callers (2026-11-09).** The service
   key, a staff session, or `x-cron-secret` — a random secret the database
   makes in its own vault (`CRON_SECRET`, migration 20261109160000) and adds to

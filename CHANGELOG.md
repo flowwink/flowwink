@@ -57,6 +57,16 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Added
 
+- **The logs are thinned every night, and the database says how full it is.**
+  Nothing thinned the agent log: on one instance 92 % of its rows were scheduled
+  sweeps answering "nothing to do", kept since August. A change an agent or a
+  person made is kept whole; a lookup's answer is shortened after 30 days and
+  the row removed after 90, as are refused and failed calls and scheduled
+  ticks. Rows an objective counts, rows tied to an approval and rows of unknown
+  kind are never touched. Observability → **Database size** shows the size
+  against the quota, the largest tables and what the last night removed, and
+  carries the dial (days, quota, on/off) per instance.
+
 - **Invoices out to another bookkeeping system.** When the books are kept in
   Fortnox, Visma or elsewhere, the issued invoices can now be handed over:
   Invoices → *Export basis* downloads a period as a CSV file (one row per
@@ -104,6 +114,20 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   translatable and calls a paid invoice a receipt. The PDF is still in English.
 
 ### Fixed
+
+- **The fleet list forgets test stacks.** The endpoint's list of instances read
+  35 where 8 were real: the rest were test installs that pinged once. An
+  instance that pinged once and has not been seen for a week is now forgotten,
+  nightly; an instance that pings daily stays, wherever it runs.
+
+- **The feedback board no longer fills with the same report.** The public
+  board on the fleet's endpoint read 62 open bugs; 60 were three titles filed
+  four times a day by CI test stacks — every run is a new instance, fails
+  skills on purpose and reported it. A report from an instance now joins the
+  open post that already says it (the post shows "Reported N times"; a
+  person's post is never merged), existing duplicates are merged where nobody
+  voted or commented, an instance under a day old files no defect, and test
+  stacks send nothing.
 
 - **The Agent work panel counts the whole week.** It read the week's agent calls
   as rows and counted them in the browser, and the API answers at most a

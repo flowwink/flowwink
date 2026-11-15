@@ -57,6 +57,14 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Added
 
+- **Invoices out to another bookkeeping system.** When the books are kept in
+  Fortnox, Visma or elsewhere, the issued invoices can now be handed over:
+  Invoices → *Export basis* downloads a period as a CSV file (one row per
+  invoice line, with the buyer's organisation number) and marks the invoices as
+  handed over, so the next export offers only what is new. An agent or a bridge
+  does the same over the gateway (`list_invoice_basis`,
+  `mark_invoice_basis_exported`) and writes the other system's invoice number
+  back with `confirm_invoice_export` — the same invoice is never imported twice.
 - **Agent work on the dashboard.** A panel for an owner, not a developer: how
   much the agents did today and which ones, what is waiting for a person
   (operations an agent staged, questions an agent asked on a task that nobody
@@ -97,6 +105,17 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Fixed
 
+- **The Agent work panel counts the whole week.** It read the week's agent calls
+  as rows and counted them in the browser, and the API answers at most a
+  thousand rows: on an instance where the agents made more calls than that in
+  seven days, "This week, by area" and the refused and failed tiles were too
+  low, silently. The week is now counted in the database
+  (`agent_work_counts`, invoker rights — the reader's own sight decides what is
+  counted) and arrives as a few hundred groups whatever the volume.
+
+- **The Agent work panel downloads far less.** It used to fetch every call's
+  whole answer to show four numbers; it now reads only the fields it draws
+  (less than half the data on a test site, more where agents list a lot).
 - **A plan step runs only when it carries what its skill needs.** A plan
   writes each step's arguments before anything has been read, so a step whose
   arguments come from a read was stored half-empty. On optic, FlowPilot's plan

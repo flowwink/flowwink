@@ -28,6 +28,11 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Security
 
+- **A scheduled function refuses a call without credentials.** The week of
+  grace after the cron secret is over: a call that carries neither the service
+  key, a staff session nor the database's cron secret is answered 401. Until
+  now it was let through and logged.
+
 - **A scheduled call carries a secret the database made itself.** The nine
   functions pg_cron calls (the automation, event and signal dispatchers, the
   knowledge indexer, dunning, contract and subscription billing, quote-expiry
@@ -114,6 +119,47 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   translatable and calls a paid invoice a receipt. The PDF is still in English.
 
 ### Fixed
+
+- **The invoice PDF is in the customer's language.** Its labels were English
+  ("INVOICE", "BILL TO") whatever the customer ordered in. They are now the
+  `invoice.*` visitor texts the invoice page reads, in the order's language,
+  else the party's, else the site's, and a paid invoice, the order's receipt,
+  is headed RECEIPT with no due date. Ten keys are new (`invoice.billTo`,
+  `invoice.unitPrice` …): a site that wants them in its language adds them under
+  Visitor texts; until then they are English.
+- **Self-healing no longer takes a fixed skill away again.** An instance lost
+  `manage_blog_posts` for four days: calls failed one night, the fix was
+  deployed (which lifted the quarantine), and the next heartbeat quarantined
+  the fixed skill on the same old failures. Only fresh evidence counts now: a
+  failure from before the skill last changed (a deploy, or a person's
+  re-enable) ends the streak, and a streak whose newest failure is over a day
+  old is history. "… required for update" is read as the caller's missing
+  argument, not a broken skill.
+- **`check_operations` answers again.** The "idle, not overdue" rule was
+  declared for a text trigger type and called with the table's enum, so every
+  call raised "function … does not exist". The night's proof went red on it and
+  no instance was synced, so it reached nobody. The rule now answers for the
+  enum too, and the skill smoke treats a function SQL cannot find as a bug —
+  it had filed this one as a review item and stayed green.
+
+- **A sweep with no work is idle, not overdue.** `check_operations` told www,
+  optic and liteit every hour that 2–5 scheduled automations were overdue
+  (high). Each was a sweep with a work probe that found nothing to do: it keeps
+  its due time on purpose so it runs the minute work appears, and the
+  dispatcher notes it idle on every tick. `manage_automations list` now answers
+  `idle` for it, the admin's automation health no longer calls it stale, and
+  `check_operations` stops counting it — one rule in all three. When the
+  dispatcher stops, the note stops and the sweep is overdue again.
+
+- **A rule the database keeps no longer reads as a broken skill.** A taken
+  booking slot, a full or closed webinar and a vendor bill that is not yet
+  approved were answered by the database on purpose, but classified
+  `HANDLER_ERROR` — so three visitors in a row on a taken slot were a
+  self-healing streak that would switch the public booking off, and the process
+  battery's deliberate refusals were filed on the fleet's board as "Skill
+  failing" (51 posts). An `rpc:` skill's RAISE EXCEPTION (SQLSTATE P0001) or its
+  own `{ success: false, error }` is now `RULE_REFUSED` where no more specific
+  code fits; self-healing and the machine room skip it.
 
 - **The fleet list forgets test stacks.** The endpoint's list of instances read
   35 where 8 were real: the rest were test installs that pinged once. An

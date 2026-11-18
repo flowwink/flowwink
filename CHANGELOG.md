@@ -28,6 +28,12 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ### Security
 
+- **A scoped key is held to its scope in dispatch mode.** Over the native MCP
+  transport, `execute_skill` checked what the key's owner may run but not the
+  key's own scope: a key limited to `mcp:crm` or `skill:<name>` could run any
+  exposed skill when it connected with `?mode=dispatch`. The REST door and the
+  per-skill tools already checked it; the dispatch tool now does too.
+
 - **A scheduled function refuses a call without credentials.** The week of
   grace after the cron secret is over: a call that carries neither the service
   key, a staff session nor the database's cron secret is answered 401. Until
@@ -119,6 +125,111 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   translatable and calls a paid invoice a receipt. The PDF is still in English.
 
 ### Fixed
+
+- **A contact you create is the page you land on.** The pipeline is ordered by
+  score, so a contact created by hand (score 0) became the last card of its
+  column and could not be found on a long list. Creating a contact now opens
+  it, and "already exists" offers a link to the existing one.
+
+- **An invoice created by hand has a due date and the customer's name.** An
+  invoice made with New Invoice in the admin was born with no due date — so it
+  was never overdue and no reminder was ever sent — and without the customer's
+  name and e-mail on the invoice itself, so the customer's invoice page and PDF
+  did not name them. Every invoice now gets its due date from the payment terms
+  (30 days when none are stated) and its customer from the lead, whoever
+  creates it. A draft that already lacks a due date gets one when it is sent.
+- **Every "no" the gateway says is answered with a code and written down.** An
+  agent that ran a skill by a name that does not exist got one sentence back
+  and the call left no trace; so did a tool the connection does not carry, a
+  call outside the key's scope or the owner's reach, and a write on a read-only
+  key. Each is now one row in the agent log with a stable code, and the answer
+  carries `code`, `retryable` and `hint`. A name that is nearly right is
+  answered with the right one (`did_you_mean`); a skill whose module is
+  switched off says so; a skill called as a tool on a dispatch connection is
+  pointed at `execute_skill`. An unknown name no longer reads as a failing
+  skill: the three a day it took put "Skill failing: read_skill" on the fleet's
+  board. A connected agent's searches now show under its Activity (the row
+  lacked the key), and the gateway's lookups are thinned with the other logs.
+  The REST answer to an unknown tool no longer lists every tool name.
+
+- **A generic list is sized for the agent that reads it.** On a customer
+  instance an agent paged every project task 31 times to find one: a page of 50
+  was 58–71 KB of briefs and checklists, and a page of documents carried every
+  file's extracted text. Every `db:` skill's `list` (91 skills) now cuts a long
+  text to a preview and leaves a long structure out, naming both per row in
+  `_cut` (`get` returns a row whole, `full: true` lists rows whole, `fields`
+  picks the columns), and answers `total`, `offset`, `limit` and `next_offset`.
+  `updated_since` / `created_since` list what changed. A cut preview written
+  back as an update is refused, so a brief is never shortened by accident. An
+  offset past the last row is an empty page.
+- **The start of an id finds the row it belongs to.** A list filter on a uuid
+  column takes the first 8+ characters (`project_id: "f3b6fce9"` used to answer
+  Postgres' "invalid input syntax for type uuid") and names the whole id under
+  `id_prefix`. `get` by the start of an id, or by one padded with zeros, reads
+  the one row that starts so; `update` and `delete` never act on a guess and
+  answer with the id to re-send — the task rule, for every generic table.
+- **A search is found under the name the caller reaches for.** Four skill
+  schemas declared `search_query` while the engine read `search` alone: the
+  term was dropped as "not a column" and the whole list came back. `query`,
+  `search_query`, `q`, `search_term` and `keyword` are now the search. A
+  document is found by title, file name, description and extracted text (it was
+  file name only); a task by title and brief; a table that declares nothing by
+  what its rows are called. `manage_project_task` advertises `get`.
+- **A person can write a whole quote in the admin.** The quote editor had no
+  field for the title, the introduction or the terms the customer's page
+  shows — only an agent could set them — and the line description was squeezed
+  to a box too narrow to read. The editor is wider, the description has its own
+  row, and title, introduction and terms can be written; "Notes" is labelled
+  as internal, since the customer never sees it.
+
+- **A quote or invoice made by hand continues the same number series as one an
+  agent made.** The admin and the skills each kept their own count: a quote
+  created in the admin could get a number already in use (a second QUO-0001),
+  and an invoice was numbered INV-0007 from the admin but INV-2026-00007 from
+  an agent. There is one counter now, and it never answers a number that is
+  already taken. Invoices created in the admin follow the yearly series
+  (INV-2026-00045); numbers already issued are unchanged.
+
+- **An invoice an agent sends reaches the customer.** `manage_invoice send`
+  set the status to sent and e-mailed nobody; only the button in the admin
+  mailed the invoice. The skill now mails it (PDF attached, link to the
+  invoice page) and answers `email_sent` or `email_error`.
+- **The invoice says who it is from and how to pay.** The invoice page and the
+  PDF carried no seller name, organisation number or VAT number, and one way
+  to pay: a card button that failed on every instance without Stripe. They now
+  print the seller from Business Identity and the bankgiro / IBAN from
+  Invoices → E-invoice, with the invoice number as reference; the card button
+  shows only where a card can be taken.
+- **An invoice PDF no longer fails on one character.** A line or a note with a
+  character outside the PDF font (an arrow, an emoji) failed the whole PDF and
+  the invoice mail went out without its attachment. The PDF also printed
+  "Company" as the seller, an empty quantity on contract and subscription
+  invoices, and the due date under the table header.
+
+- **The customer sees what a quote is, whose it is and on what terms.** The
+  page behind the link in the quote mail showed a number, the lines and a
+  total — not the sender, the recipient, the title, the introduction or the
+  terms the seller had written. It shows them now.
+- **The signing page names both parties.** It read "Between you and" followed
+  by the reader's own name; it now reads the seller and the counterparty.
+
+- **A booking is confirmed to the customer whoever made it.** The confirmation
+  mail was sent by the page that booked; a booking an agent made over the
+  gateway gave the customer nothing, and no lead. An automation now confirms
+  every new booking, once (a booking the page already confirmed is not mailed
+  again; a cancelled or past one is not confirmed), and
+  `send_booking_confirmation` sends or re-sends it on request.
+- **Sending a contract for signature e-mails the counterparty.** The skill
+  issued the signing link and returned it; only the admin's button mailed it.
+  It now mails the counterparty and says whether it did (`email_sent`,
+  `email_error`).
+
+- **The log-thinning migration applies on an instance with history.** Its own
+  proof assumed a nearly empty log: on instances with ten to twenty thousand
+  old rows the proof's rows were not reached in one bounded batch, the proof
+  failed, and the migration — and every one after it — stayed unapplied for a
+  sync. The proof now runs only where there is no history (the fresh install),
+  and no longer does a night's deletes on a live instance to roll them back.
 
 - **The invoice PDF is in the customer's language.** Its labels were English
   ("INVOICE", "BILL TO") whatever the customer ordered in. They are now the

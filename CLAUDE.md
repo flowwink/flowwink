@@ -650,9 +650,82 @@ beside its payload, so an operator branches instead of guessing:
   another one or one that belongs elsewhere is refused (`ALREADY_EXISTS`), so
   the same basis is never imported twice. Invoices → **Export basis** is the
   same read as a CSV. Nothing names a ledger — the bridge lives outside.
+- **The mail is the process step's, not the browser's (2026-11-17).** What a
+  customer is sent when a step happens must go out whoever does the step — a
+  person in the admin, the public block, an agent on the gateway, an
+  automation. Two steps mailed only from the browser: a booking made by an
+  agent gave the customer no confirmation (and no lead), and
+  `send_contract_for_signature` issued the link and e-mailed nobody. Now the
+  automation `Booking confirmation to the customer` runs
+  `send_booking_confirmation` on `booking.created` (one mail per booking — the
+  stamp `confirmation_sent_at` is claimed before the send and released when
+  nothing went out; a cancelled or past booking is not confirmed; `resend:
+  true` is a person asking again), and `send_contract_for_signature` mails the
+  counterparty and answers `email_sent` / `email_error` like `manage_quote
+  send` (`email: false` only issues the link). The battery reads what the
+  customer got (`s.mail(recipient)` over `outbound_communications` — a send
+  without a provider is logged as simulated, row and text are real) and ticks a
+  dispatcher itself (`s.pulse('event-dispatcher')`); "no e-mail provider
+  locally" is not a reason to skip a mail step.
+  **And the customer's side is proven in a browser (`npm run qa:customer-path`,
+  nightly):** a step is done as the business does it, the mail is read out of
+  the rail, the link in it is opened with no session and the customer's action
+  is taken — the quote accepted, the agreement signed. The first run found a
+  quote page that showed neither sender, title nor TERMS (`get_public_quote`
+  returns a view and never carried them; the page had drawn them all along) and
+  a signing page that read "Between you and <the reader's own name>".
+  `business_name()` (open to a visitor: it answers the trading name only) is
+  the SQL twin of `orgNameFrom`. A new public token page gets a step there.
+  **The invoice (same day):** `manage_invoice send` set the status and mailed
+  nobody — it mails now and answers `email_sent` / `email_error` (`email:
+  false` only issues). The invoice page and the PDF say who is asking and how
+  to pay from the two rows the Peppol invoice prints from
+  (`company_profile`: legal name, org and VAT number; `einvoice`: bankgiro,
+  IBAN, BIC) — `invoice_seller_facts()` for the PDF, `get_invoice_payment_info
+  (p_token)` for whoever holds the link, reference = the invoice number. A card
+  button is drawn only where `create-invoice-payment` answers `{probe: true}`
+  with `available` (a key, and Stripe not switched off). **Stripe switched off
+  is the test mode:** `create-checkout` runs its sandbox (`sandboxMode`
+  defaults to "Stripe is off") and an invoice is then paid by bank. The PDF
+  draws every text through `winAnsi` (`_shared/invoices/winansi.ts`): one
+  arrow in a line used to fail the whole PDF and the mail went without it.
+- **And the staff's side is proven in a browser too (`npm run qa:staff-path`,
+  nightly, 2026-11-17):** a step signs in as an admin and does the process
+  with clicks — New Quote for a lead, title, line, terms, Save, Send to
+  Customer — then reads the row, the mail and the page the customer opens. The
+  quote editor (`QuoteDetailSheet`) had no title, introduction or terms (only
+  an agent could write what the customer's page shows) and drew the line
+  description as a 25 px box. "Internal notes" there are never shown to the
+  customer. The invoice step: New Invoice for a lead, a line, Save, Send,
+  Record Payment — and the customer reads their own name on the page. A click
+  shows "sent" a moment before the mail is in the rail: wait for the mail
+  (`mailTo`), never read it once. The contact step: New Contact, landing on
+  the contact (the pipeline is ordered by score, so a new one was the last
+  card of its column — `CreateLeadDialog` now opens it), Create deal. A
+  process a person does in the admin gets a step there.
+- **One number series per document (2026-11-17).** `next_document_number
+  (kind, prefix)` is the only source of a quote or invoice number — the admin,
+  every skill (`nextDocumentNumber` in core.ts), `quote-sign` and the invoicing
+  module's publish all ask it. It answers one above BOTH its counter and the
+  highest number the table carries, so nothing written past it (an import, a
+  restore) is ever answered again; invoices are `INV-YYYY-NNNNN`, one counter
+  row per business year (`invoice:<year>`). Before, the admin asked the
+  counter and the skills read "highest so far plus one": a quote made by hand
+  was a second QUO-0001, and an invoice was INV-0007 from the admin and
+  INV-2026-00007 from a skill. A guard discovers any `` `INV-${ `` /
+  `` `QUO-${ `` built in code. SUB-, CTR-, POS- and credit-note numbers are
+  their own series and stay.
 - **Born right (2026-10-27).** `manage_invoice create` without `due_date`
   gets one from the payment terms (`net30` → 30 days after the issue date,
-  30 when the terms say nothing). Every commercial `currency` column is
+  30 when the terms say nothing). **The rule is the row's since 2026-11-18**
+  (trigger `a_invoices_born_right`): the admin's New Invoice went round the
+  skill, so a hand-made invoice had no due date (never overdue, never
+  reminded) and no customer name or e-mail of its own (the invoice page and
+  the PDF print `invoices.customer_name`). On insert an invoice for a lead
+  takes the lead's name and e-mail where it has none; on insert, and again
+  when it is issued (draft → sent), a missing due date is counted from the
+  issue date. A written due date or customer is never touched; a credit note
+  gets none. Every commercial `currency` column is
   upper-cased by trigger and defaults to `business_currency()`
   (`subscriptions` used to default to `'usd'`). The visitor chat's
   `toolCallingEnabled` and `humanHandoffEnabled` are ON when absent (Law 4);
@@ -904,6 +977,17 @@ managed-ledger lessons still apply to every fork's Supabase integration:
   silently — missing functions, a missing `refund_return(...,p_final)`
   overload, admin functions stuck on pre-patch bodies — which is why bodies
   stay idempotent (`CREATE OR REPLACE`) too.
+- **A migration's proof must pass on an instance with history
+  (2026-11-17).** The proof in `20261115090000` ran `prune_logs()` — bounded,
+  oldest first — and then asserted on its own rows; on www, nordbrygg and
+  liteit those rows sat behind 10 000–22 000 real ones, the proof failed, and
+  that migration and every later one stayed unapplied after a green sync. The
+  fresh install cannot catch this: it is empty. A proof that calls a
+  housekeeping or batch function either isolates what it asserts on from the
+  instance's own rows, or does not run where there are any (`RAISE NOTICE`,
+  `RETURN`) — and it never does real work on live data just to roll it back.
+  After a sync, read the migration head on a live instance; a green sync says
+  the forks were pushed, not that their databases took the migrations.
 - **Name-only existence checks miss body/signature drift.** `pg_proc` by name
   says a function exists, not that its body is current or that an overload is
   present. Verify behavior (live call) or the specific signature, not just the name.
@@ -983,6 +1067,40 @@ managed-ledger lessons still apply to every fork's Supabase integration:
   (edge-bundled artifact, see Deployment above), so the button is for forcing
   it or for a frontend-only deploy that got ahead of the edge deploy. Neither
   touches `trust_level`, so runtime trust overrides survive a resync.
+- **A generic list is a listing (2026-11-18).** Every `db:` skill's `list`
+  (`executeGenericCrud`, rules in `_shared/execute/list-shape.ts`) cuts a text
+  over 240 characters to a 200-character preview with a marker and leaves a
+  longer array/object out, naming both per row in `_cut`; `get` returns the row
+  whole, `full: true` lists rows whole, `fields` picks columns (never past a
+  select mask). The answer carries `total` and `next_offset`; `updated_since` /
+  `created_since` are lower bounds. A preview written back is refused
+  (`INVALID_INPUT`). The start of an id (8+ hex characters) is a range filter
+  on any column the schema says is a uuid, and resolves a `get`; a write
+  answers "did you mean" and never acts on it. `search` reads its aliases
+  (`query`, `search_query`, `q` …) and matches `SEARCH_COLUMNS[table]`, else
+  the columns a row is called by. Measured on optic: 58–71 KB per page of 50
+  tasks, an agent paging the table 31 times. A new generic behaviour goes in
+  the engine, not in one skill's handler.
+- **The gateway has one way to say no (2026-11-18).** A call `mcp-server`
+  refuses BEFORE the executor — a name that is no skill, a tool the connection
+  does not carry (mcp-lite's "Method not found", answered through
+  `server.onError`), a call outside the key's scope or the owner's reach, a
+  write on a read-only key — goes through `refuse()`: one row in
+  `agent_activity`, then the envelope (`code`, `retryable`, `hint`,
+  `did_you_mean`). The texts and the row live in
+  `_shared/mcp/gateway-misses.ts`; a guard fails a refusal written by hand in
+  the gateway. An unknown name is filed under the step (`execute_skill` /
+  `read_skill`) with the name in `input.name` and `output.reason`
+  (`no_such_skill` | `module_off` | `not_on_this_connection` |
+  `skill_called_as_tool`); a refusal of a real skill is filed under that skill
+  with the NAMES of its arguments, never the values. Every code is in
+  `NOT_A_SKILL_FAULT` — a row without a code is read by its message, which is
+  how unknown `read_skill` names became "Skill failing: read_skill" upstream.
+  What agents look for and do not find: `select input->>'name', count(*) from
+  agent_activity where output->>'code' = 'NOT_FOUND' and skill_name in
+  ('execute_skill','read_skill') group by 1`. Every row the gateway writes
+  itself (`writeGatewayRow`) carries `api_key_id`, `module` and `kind`, as
+  `logActivity` does.
 - **Self-correcting RPC errors.** `agent-execute` enriches a PostgREST PGRST202
   ("function not found in schema cache" — the signature of wrong param NAMES)
   with the params the agent sent and the skill's declared parameters, so an

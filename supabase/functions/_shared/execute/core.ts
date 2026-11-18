@@ -159,6 +159,11 @@ import { executeAgentTrace } from '../handlers/agent-trace.ts';
 import { buildCrudErrorHint } from '../crud-error-hint.ts';
 import { resolveProjectTask, isUuid } from '../project-task-resolve.ts';
 import {
+  carriesCutMarker, idDidYouMean, isFullUuid, nextOffset, parseFieldList, searchColumnsFor,
+  searchOrFilter, slimListItems, uuidPrefixRange, SEARCH_ALIASES, DERIVED_SEARCH_COLUMNS,
+  type UuidRange,
+} from './list-shape.ts';
+import {
   AGENT_COMMENT_INTERVAL_MS, cadenceRefusalAnswer, decideTaskThreadCadence, nudgedTodayRefusal, personDisplayName,
   readTaskThread, readTaskThreadComments, threadAuthorFor, writePacedComment, type TaskCommentKind,
 } from '../handlers/task-thread-cadence.ts';
@@ -11423,6 +11428,20 @@ async function executeSendEmailToLead(
 // the order (matched on metadata.order_id), it is reused instead of duplicated.
 // Supports dry_run for safe preview.
 
+/**
+ * The next number of a document series — the database's one counter
+ * (next_document_number, 20261117180000). The admin has called it since
+ * 2026-07; the skills each read "the highest number so far, plus one" from the
+ * table, which never told the counter and which two callers at once answered
+ * alike: a person and an agent numbered past each other (a second QUO-0001),
+ * and an invoice was INV-0007 from the admin and INV-2026-00007 from a skill.
+ */
+async function nextDocumentNumber(supabase: SupabaseClient, kind: 'quote' | 'invoice', prefix: 'QUO' | 'INV'): Promise<string> {
+  const { data, error } = await supabase.rpc('next_document_number', { p_kind: kind, p_prefix: prefix });
+  if (error || !data) throw new Error(`Could not allocate a ${kind} number: ${error?.message ?? 'no number returned'}`);
+  return String(data);
+}
+
 async function executeSendInvoiceForOrder(
   supabase: SupabaseClient,
   args: Record<string, unknown>,
@@ -11599,14 +11618,7 @@ async function executeSendInvoiceForOrder(
     // Found by order-to-delivery QA 2026-07-09 (INV-0032 vs INV-2026-000NN).
     // The series year is the business's: on 1 Jan 00:30 in Stockholm the UTC
     // year was still last year, numbering a 2027 invoice into the 2026 series.
-    const yr = Number((await businessToday(supabase)).slice(0, 4));
-    const { data: lastInv } = await supabase.from('invoices')
-      .select('invoice_number').ilike('invoice_number', `INV-${yr}-%`)
-      .order('invoice_number', { ascending: false }).limit(1).maybeSingle();
-    let nextNum = 1;
-    const lm = String(lastInv?.invoice_number || '').match(/INV-\d{4}-(\d+)/);
-    if (lm) nextNum = parseInt(lm[1], 10) + 1;
-    const invoiceNumber = `INV-${yr}-${String(nextNum).padStart(5, '0')}`;
+    const invoiceNumber = await nextDocumentNumber(supabase, 'invoice', 'INV');
     const dueDate = businessDateIn((await loadHomeCached(supabase)).timeZone, Number(due_days) || 0);
 
     const { data: created, error: createErr } = await supabase
@@ -14313,16 +14325,7 @@ async function executeDbAction(
 
       // quotes.quote_number is NOT NULL with no default — the admin UI generates
       // QUO-NNNN client-side, so the skill path must too or create always fails.
-      const generateQuoteNumber = async (): Promise<string> => {
-        const { data } = await supabase.from('quotes')
-          .select('quote_number').order('created_at', { ascending: false }).limit(50);
-        let max = 0;
-        for (const row of (data || []) as Array<{ quote_number: string | null }>) {
-          const m = /(\d+)\s*$/.exec(row.quote_number || '');
-          if (m) max = Math.max(max, parseInt(m[1], 10));
-        }
-        return `QUO-${String(max + 1).padStart(4, '0')}`;
-      };
+      const generateQuoteNumber = (): Promise<string> => nextDocumentNumber(supabase, 'quote', 'QUO');
 
       // Build (and VALIDATE) the quote lines without touching the database.
       //
@@ -14684,14 +14687,7 @@ async function executeDbAction(
         // that case block, so regenerate here).
         // The series year is the business's: on 1 Jan 00:30 in Stockholm the UTC
     // year was still last year, numbering a 2027 invoice into the 2026 series.
-    const yr = Number((await businessToday(supabase)).slice(0, 4));
-        const { data: lastInv } = await supabase.from('invoices')
-          .select('invoice_number').ilike('invoice_number', `INV-${yr}-%`)
-          .order('invoice_number', { ascending: false }).limit(1).maybeSingle();
-        let nextNum = 1;
-        const m = String(lastInv?.invoice_number || '').match(/INV-\d{4}-(\d+)/);
-        if (m) nextNum = parseInt(m[1], 10) + 1;
-        const invoiceNumber = `INV-${yr}-${String(nextNum).padStart(5, '0')}`;
+    const invoiceNumber = await nextDocumentNumber(supabase, 'invoice', 'INV');
         const { data: inv, error: invErr } = await supabase.from('invoices').insert({
           invoice_number: invoiceNumber,
           customer_name: quote.customer_name || '',
@@ -15801,15 +15797,43 @@ async function executeDbAction(
           }).eq('id', contract.id);
         if (uErr) throw new Error(`Update contract failed: ${uErr.message}`);
 
-
-
+        // The counterparty is e-mailed the link — by the SKILL, as the quote's
+        // send does. Until 2026-11-17 only the admin's button mailed it: an agent
+        // that "sent" an agreement got a URL back and the counterparty got nothing.
+        // A contract that was already pending is a reminder.
+        const signingUrl = `${origin}/contract/${token}`;
+        let emailSent = false;
+        let emailError: string | undefined;
+        if ((args as { email?: unknown }).email === false) {
+          emailError = 'email: false was passed — no e-mail was sent.';
+        } else if (!contract.counterparty_email) {
+          emailError = 'The contract has no counterparty_email, so nobody could be e-mailed.';
+        } else {
+          try {
+            const mailRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/comms-send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+              body: JSON.stringify({ kind: 'contract_email', contract_id: contract.id, public_url: signingUrl, reminder: contract.status === 'pending_signature' }),
+            });
+            const mailBody = await mailRes.json().catch(() => ({}));
+            emailSent = mailRes.ok && (mailBody as { success?: boolean }).success === true;
+            if (!emailSent) emailError = String((mailBody as { error?: string }).error ?? `comms-send answered ${mailRes.status}`);
+          } catch (e) {
+            emailError = (e as Error).message;
+          }
+        }
 
         return {
           contract_id: contract.id,
           token,
-          url: `${origin}/contract/${token}`,
+          url: signingUrl,
           status: 'pending_signature',
           version: contract.version || 1,
+          email_sent: emailSent,
+          ...(emailSent ? { emailed_to: contract.counterparty_email } : {}),
+          ...(emailError ? { email_error: emailError } : {}),
+          note: emailSent ? 'The counterparty has been e-mailed the signing link.'
+            : 'The agreement awaits signature and the link works, but NO e-mail went out — pass the link on yourself, or fix the cause in email_error and send again.',
           ...(Array.isArray(readiness?.warnings) && readiness.warnings.length ? { warnings: readiness.warnings } : {}),
         };
       }
@@ -16078,21 +16102,7 @@ async function executeDbAction(
         const tax = Math.round(subtotal * Number(taxRate || 0));
         return { subtotal_cents: subtotal, tax_cents: tax, total_cents: subtotal + tax };
       };
-      const generateInvoiceNumber = async (): Promise<string> => {
-        // The series year is the business's: on 1 Jan 00:30 in Stockholm the UTC
-    // year was still last year, numbering a 2027 invoice into the 2026 series.
-    const yr = Number((await businessToday(supabase)).slice(0, 4));
-        const { data } = await supabase.from('invoices')
-          .select('invoice_number')
-          .ilike('invoice_number', `INV-${yr}-%`)
-          .order('invoice_number', { ascending: false }).limit(1).maybeSingle();
-        let next = 1;
-        if (data?.invoice_number) {
-          const m = String(data.invoice_number).match(/INV-\d{4}-(\d+)/);
-          if (m) next = parseInt(m[1], 10) + 1;
-        }
-        return `INV-${yr}-${String(next).padStart(5, '0')}`;
-      };
+      const generateInvoiceNumber = (): Promise<string> => nextDocumentNumber(supabase, 'invoice', 'INV');
 
       if (action === 'list') {
         const { status_filter, status, deal_id, lead_id, project_id, limit = 50 } = args as any;
@@ -16248,7 +16258,50 @@ async function executeDbAction(
           updated_at: new Date().toISOString(),
         }).eq('id', invoice_id).select('id, invoice_number, status, public_token').single();
         if (error) throw new Error(`Send invoice failed: ${error.message}`);
-        return { sent: true, invoice_id: data.id, invoice_number: data.invoice_number, status: data.status, public_token: data.public_token };
+
+        // The customer is e-mailed the invoice — by the SKILL, as the quote's and
+        // the agreement's send do. Until 2026-11-17 `send` set the status and
+        // mailed nobody: only the admin's button did, so an invoice an agent
+        // "sent" reached the customer first as a payment reminder.
+        const customerEmail = (args as { email?: unknown }).email === false ? null : await (async () => {
+          const { data: row, error: rErr } = await supabase.from('invoices').select('customer_email, leads(email)').eq('id', data.id).maybeSingle();
+          if (rErr) console.warn('[manage_invoice send] could not read the recipient:', rErr.message);
+          const lead = (row as { leads?: { email?: string | null } | Array<{ email?: string | null }> | null } | null)?.leads;
+          return (row as { customer_email?: string | null } | null)?.customer_email || (Array.isArray(lead) ? lead[0]?.email : lead?.email) || null;
+        })();
+        const origin = await resolveSiteUrl(supabase);
+        const invoiceUrl = origin && data.public_token ? `${origin.replace(/\/$/, '')}/invoice/${data.public_token}` : null;
+        let emailSent = false;
+        let emailError: string | undefined;
+        if ((args as { email?: unknown }).email === false) {
+          emailError = 'email: false was passed — no e-mail was sent.';
+        } else if (!customerEmail) {
+          emailError = 'The invoice has no customer_email (and its lead has none), so nobody could be e-mailed.';
+        } else if (!invoiceUrl) {
+          emailError = 'Public Site URL is not configured (Admin → Site Settings → General) — no link to the invoice could be built.';
+        } else {
+          try {
+            const mailRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/comms-send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+              body: JSON.stringify({ kind: 'invoice_email', invoice_id: data.id, public_url: invoiceUrl }),
+            });
+            const mailBody = await mailRes.json().catch(() => ({}));
+            emailSent = mailRes.ok && (mailBody as { success?: boolean }).success === true;
+            if (!emailSent) emailError = String((mailBody as { error?: string }).error ?? `comms-send answered ${mailRes.status}`);
+          } catch (e) {
+            emailError = (e as Error).message;
+          }
+        }
+        return {
+          sent: true, invoice_id: data.id, invoice_number: data.invoice_number, status: data.status, public_token: data.public_token,
+          ...(invoiceUrl ? { url: invoiceUrl } : {}),
+          email_sent: emailSent,
+          ...(emailSent ? { emailed_to: customerEmail } : {}),
+          ...(emailError ? { email_error: emailError } : {}),
+          note: emailSent ? 'The customer has been e-mailed the invoice with its PDF and the link to it.'
+            : 'The invoice is marked sent, but NO e-mail went out — pass the link on yourself, or fix the cause in email_error and send again.',
+        };
       }
 
       if (action === 'mark_paid') {
@@ -17220,17 +17273,19 @@ const TABLE_ID_ALIASES: Record<string, string[]> = {
   project_tasks: ['task_id'],
 };
 
-/** The column `search` matches, per table. A table without one refuses a search instead of returning everything. */
-const SEARCH_COLUMNS: Record<string, string> = {
-  projects: 'name',
-  project_tasks: 'title',
-  employees: 'name',
-  documents: 'file_name',
-  leads: 'name',
-  companies: 'name',
-  vendors: 'name',
-  products: 'name',
-  wiki_pages: 'title',
+/**
+ * The columns `search` matches, per table — any of them containing the term is
+ * a hit. A table not named here is searched by what its rows are called
+ * (DERIVED_SEARCH_COLUMNS, read from the table's real columns); one with none
+ * of those refuses a search instead of returning everything.
+ */
+const SEARCH_COLUMNS: Record<string, string[]> = {
+  projects: ['name', 'client_name', 'description'],
+  project_tasks: ['title', 'description'],
+  employees: ['name', 'email'],
+  // A document is found by its title, its file, its note — and by what it says.
+  documents: ['title', 'file_name', 'description', 'content_md'],
+  vendors: ['name'],
 };
 
 const COLUMN_ALIASES: Record<string, Record<string, string>> = {
@@ -17532,6 +17587,53 @@ async function executeGenericCrud(
     delete fields.task_title;
   }
 
+  // ── Every other table: the start of an id answers with the row it meant ────
+  // The same rule as a task's, for all generic tables. Hermes asked optic's
+  // archive for document `b0045441-0000-0000-0000-000000000000` — the eight
+  // characters it remembered, padded — and got "not found" with nothing to act
+  // on. A read of the one row that starts so is answered (and says which id it
+  // read); a write never acts on a guess and names the id to re-send.
+  const rowsStartingAs = async (sentId: string): Promise<{ id: string; label?: string | null }[] | null> => {
+    const range = uuidPrefixRange(sentId);
+    if (!range || !(await schemaUuidColumns(table)).includes('id')) return null;
+    const columns = (await schemaColumns())[table] ?? [];
+    const label = [...(SEARCH_COLUMNS[table] ?? []), ...DERIVED_SEARCH_COLUMNS].find((c) => columns.includes(c));
+    const { data, error } = await supabase.from(table).select(label ? `id, ${label}` : 'id')
+      .gte('id', range.lo).lte('id', range.hi).limit(6);
+    if (error) return null;
+    return ((data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
+      id: String(r.id), label: label && typeof r[label] === 'string' ? r[label] as string : null,
+    }));
+  };
+  let idReadFrom: string | undefined;
+  if (table !== 'project_tasks' && (action === 'get' || action === 'update' || action === 'delete')
+    && typeof id === 'string' && id.trim() && !isFullUuid(id)) {
+    const sentId = id.trim();
+    const candidates = await rowsStartingAs(sentId);
+    if (candidates) {
+      if (action === 'get' && candidates.length === 1) {
+        idReadFrom = sentId;
+        id = candidates[0].id;
+      } else {
+        return { ...idDidYouMean(table, sentId, candidates, 'partial_id'), table, action };
+      }
+    }
+  }
+
+  // A list cuts long values and marks the cut. Written back, the preview would
+  // replace the whole text for good — refused, with the way to the whole value.
+  if (action === 'create' || action === 'update') {
+    const previews = Object.entries(fields).filter(([k, v]) => !k.startsWith('_') && carriesCutMarker(v)).map(([k]) => k);
+    if (previews.length) {
+      return {
+        error: `${previews.join(', ')} ${previews.length === 1 ? 'carries' : 'carry'} a list's cut marker — that is a preview, not the whole value. Nothing was written.`,
+        code: 'INVALID_INPUT', retryable: true,
+        hint: `Read the row with get (or list with full: true), then send the whole ${previews.length === 1 ? 'value' : 'values'}.`,
+        table, action,
+      };
+    }
+  }
+
   const auditEnabled = !!auditCtx && ACCOUNTING_AUDIT_TABLES.has(table);
 
   // Sanitize payload for audit (remove agent-internal _ fields)
@@ -17548,7 +17650,12 @@ async function executeGenericCrud(
   try {
     switch (action) {
       case 'list': {
-        const { limit = 50, offset = 0, order_by = 'created_at', ascending = false, filters, search, ...rest } = fields;
+        const {
+          limit: sentLimit = 50, offset: sentOffset = 0, order_by: sentOrderBy, ascending = false, filters, search,
+          fields: sentFields, full, updated_since, created_since, ...rest
+        } = fields;
+        const limit = Math.max(1, Math.floor(Number(sentLimit)) || 50);
+        const offset = Math.max(0, Math.floor(Number(sentOffset)) || 0);
         // A field the caller hands to a list is a filter. The list used to read
         // `filters` alone and throw every other field away, so
         // manage_project_task list {project_id} answered with tasks from 94
@@ -17561,32 +17668,132 @@ async function executeGenericCrud(
             !k.startsWith('_') && v !== undefined && v !== null && typeof v !== 'object')),
           ...((filters && typeof filters === 'object') ? filters as Record<string, unknown> : {}),
         };
-        const searchTerm = typeof search === 'string' ? search.trim() : '';
-        if (searchTerm && !SEARCH_COLUMNS[table]) {
+
+        // The search, under the name the caller reached for. Four skill schemas
+        // declared `search_query` while the engine read `search` alone: the term
+        // was dropped as "not a column" and the whole list came back (Hermes on
+        // optic's documents, 2026-11). An alias that is a real column of the
+        // table stays a filter.
+        let searchTerm = typeof search === 'string' ? search.trim() : '';
+        let searchSentAs: string | undefined;
+        for (const alias of SEARCH_ALIASES) {
+          const sent = columnFilters[alias];
+          if (typeof sent !== 'string' || !sent.trim()) continue;
+          if (((await schemaColumns())[table] ?? []).includes(alias)) continue;
+          delete columnFilters[alias];
+          if (!searchTerm) { searchTerm = sent.trim(); searchSentAs = alias; }
+        }
+        const searchColumns = !searchTerm ? []
+          : SEARCH_COLUMNS[table] ?? searchColumnsFor(undefined, (await schemaColumns())[table] ?? []);
+        if (searchTerm && !searchColumns.length) {
           return { error: `search is not supported for ${table} — filter by a column instead (e.g. {"status": "active"}).`, table };
         }
+
+        // The start of an id finds the rows it belongs to. With answers the size
+        // a list used to be, a model keeps `f3b6fce9` and loses the rest; as a
+        // filter that was Postgres' "invalid input syntax for type uuid". Only
+        // on a column the schema says is a uuid — a text id is compared as text.
+        const idRanges: Record<string, UuidRange & { sent: string }> = {};
+        for (const [col, val] of Object.entries(columnFilters)) {
+          if (typeof val !== 'string' || isFullUuid(val)) continue;
+          const range = uuidPrefixRange(val);
+          if (!range || !(await schemaUuidColumns(table)).includes(col)) continue;
+          idRanges[col] = { ...range, sent: val };
+          delete columnFilters[col];
+        }
+
+        // "What changed since": a lower bound on the row's own timestamp.
+        const since: Record<string, string> = {};
+        for (const [param, col, sent] of [['updated_since', 'updated_at', updated_since], ['created_since', 'created_at', created_since]] as const) {
+          if (sent === undefined || sent === null || sent === '') continue;
+          const at = new Date(String(sent));
+          if (Number.isNaN(at.getTime())) {
+            return { error: `${param} takes a date or a timestamp (2026-11-17 or 2026-11-17T08:00:00Z); got "${String(sent)}".`, code: 'INVALID_INPUT', retryable: true, hint: `Send ${param} as an ISO date; the list then holds the rows whose ${col} is at or after it.`, table };
+          }
+          since[col] = at.toISOString();
+        }
+        const orderSent = typeof sentOrderBy === 'string' && sentOrderBy ? sentOrderBy : '';
+        let order_by = orderSent || (since.updated_at ? 'updated_at' : 'created_at');
+
+        // The columns: the caller's (`fields`), held to the ones it may read —
+        // a select mask is a ceiling `fields` never lifts.
+        const mask = TABLE_SELECT_MASKS[table];
+        const fieldsNamed = sentFields !== undefined && sentFields !== null && sentFields !== '';
+        let selected: string[] = [];
+        const unknownFields: string[] = [];
+        if (fieldsNamed) {
+          const allowed = mask ? mask.split(',').map((c) => c.trim()) : ((await schemaColumns())[table] ?? []);
+          const chosen = parseFieldList(sentFields, allowed);
+          selected = [...new Set([...chosen.select, ...(chosen.select.length ? Object.keys(idRanges) : [])])];
+          unknownFields.push(...chosen.unknown);
+        }
+
         // No column list is known here, so a field that is not a column is found
         // out by asking — and then named in the answer, never silently ignored.
         const ignored: string[] = [];
         for (let attempt = 0; attempt < 6; attempt++) {
-          let query = supabase.from(table).select(TABLE_SELECT_MASKS[table] ?? '*')
+          let query = supabase.from(table).select(selected.length ? selected.join(', ') : (mask ?? '*'), { count: 'exact' })
             .order(order_by, { ascending })
             .range(offset, offset + limit - 1);
           for (const [col, val] of Object.entries(columnFilters)) query = query.eq(col, val as string);
-          if (searchTerm) query = query.ilike(SEARCH_COLUMNS[table], `%${searchTerm.replace(/[%_]/g, (m) => `\\${m}`)}%`);
-          const { data, error } = await query;
+          for (const [col, range] of Object.entries(idRanges)) query = query.gte(col, range.lo).lte(col, range.hi);
+          for (const [col, at] of Object.entries(since)) query = query.gte(col, at);
+          if (searchTerm) query = query.or(searchOrFilter(searchColumns, searchTerm));
+          const { data, error, count: total } = await query;
           const unknown = error ? /column [\w.]*?\.?(\w+) does not exist/i.exec(error.message)?.[1] : undefined;
           if (unknown && unknown in columnFilters) {
             delete columnFilters[unknown];
             ignored.push(unknown);
             continue;
           }
+          if (unknown && unknown in since) {
+            delete since[unknown];
+            ignored.push(unknown === 'updated_at' ? 'updated_since' : 'created_since');
+            if (!orderSent) order_by = 'created_at';
+            continue;
+          }
+          if (unknown && selected.includes(unknown)) {
+            selected = selected.filter((c) => c !== unknown);
+            unknownFields.push(unknown);
+            continue;
+          }
+          // Counting makes PostgREST answer 416 for an offset past the last
+          // row. To a caller paging to the end that is an empty page, not a
+          // failure — and the answer still says how many rows there are.
+          if (error && (error.code === 'PGRST103' || /range not satisfiable/i.test(error.message))) {
+            const known = /only (\d+) rows?/.exec(String(error.details ?? ''));
+            return {
+              items: [], count: 0, total: known ? Number(known[1]) : null, offset, limit, next_offset: null, table,
+              ...(Object.keys(columnFilters).length ? { filtered_by: columnFilters } : {}),
+              note: 'offset is past the last row.',
+            };
+          }
           if (error) throw new Error(`List ${table} failed: ${error.message}`);
+          const rows = (data ?? []) as unknown as Record<string, unknown>[];
+          // A list is a listing: long values are cut and say so, `get` returns a
+          // row whole. A page of 50 tasks was 58–71 KB of briefs and checklists.
+          const shaped = full === true ? { items: rows, cut: [] as string[] } : slimListItems(rows, { keepNulls: selected.length > 0 });
+          const idPrefix = Object.fromEntries(Object.entries(idRanges).map(([col, range]) => [col, {
+            sent: range.sent,
+            matched: [...new Set(rows.map((r) => r[col]).filter((v) => typeof v === 'string'))],
+          }]));
+          const notes: string[] = [];
+          if (ignored.length) notes.push(`${ignored.join(', ')} ${ignored.length === 1 ? 'is' : 'are'} not ${ignored.length === 1 ? 'a column' : 'columns'} of ${table} and did not filter the list.`);
+          if (unknownFields.length) notes.push(`fields: ${unknownFields.join(', ')} ${unknownFields.length === 1 ? 'is' : 'are'} not ${unknownFields.length === 1 ? 'a column' : 'columns'} of ${table} that can be read.`);
+          if (shaped.cut.length) notes.push(`Long values are cut in a list (${shaped.cut.join(', ')}; each row names its own in _cut). get returns a row whole, full: true lists rows whole, fields: [...] picks the columns.`);
+          if ((args as Record<string, unknown>).action === 'search' && !searchTerm) notes.push(`A search is a list with a term: pass search: "<words>" (matches ${(SEARCH_COLUMNS[table] ?? DERIVED_SEARCH_COLUMNS).join(', ')}).`);
           return {
-            items: data || [], count: (data || []).length, table,
+            items: shaped.items, count: rows.length, total: total ?? null, offset, limit,
+            next_offset: nextOffset({ offset, limit, returned: rows.length, total: total ?? null }),
+            table,
             ...(Object.keys(columnFilters).length ? { filtered_by: columnFilters } : {}),
-            ...(searchTerm ? { search: { column: SEARCH_COLUMNS[table], term: searchTerm } } : {}),
-            ...(ignored.length ? { ignored_filters: ignored, note: `${ignored.join(', ')} ${ignored.length === 1 ? 'is' : 'are'} not ${ignored.length === 1 ? 'a column' : 'columns'} of ${table} and did not filter the list.` } : {}),
+            ...(Object.keys(idPrefix).length ? { id_prefix: idPrefix } : {}),
+            ...(Object.keys(since).length ? { since } : {}),
+            ...(searchTerm ? { search: { column: searchColumns[0], columns: searchColumns, term: searchTerm, ...(searchSentAs ? { sent_as: searchSentAs, parameter: 'search' } : {}) } } : {}),
+            ...(ignored.length ? { ignored_filters: ignored } : {}),
+            ...(unknownFields.length ? { unknown_fields: unknownFields } : {}),
+            ...(shaped.cut.length ? { cut_fields: shaped.cut } : {}),
+            ...(notes.length ? { note: notes.join(' ') } : {}),
           };
         }
         throw new Error(`List ${table} failed: too many fields that are not columns (${ignored.join(', ')})`);
@@ -17597,8 +17804,12 @@ async function executeGenericCrud(
         const { data, error } = await supabase.from(table)
           .select(TABLE_SELECT_MASKS[table] ?? '*').eq('id', id).maybeSingle();
         if (error) throw new Error(`Get ${table} failed: ${error.message}`);
-        if (!data) return { found: false, error: `${table} row ${id} not found` };
-        return { item: data, table };
+        if (!data) {
+          const candidates = typeof id === 'string' ? await rowsStartingAs(id) : null;
+          if (candidates?.length) return { found: false, ...idDidYouMean(table, id, candidates, 'not_found'), table, action };
+          return { found: false, error: `${table} row ${id} not found` };
+        }
+        return { item: data, table, ...(idReadFrom ? { resolved_id: { sent: idReadFrom, id } } : {}) };
       }
 
       case 'create': {
@@ -17731,6 +17942,13 @@ async function executeGenericCrud(
     }
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
+    // An update of an id that names no row: PostgREST's "cannot coerce the
+    // result to a single JSON object" says nothing an agent can act on. The
+    // rows that start as the id does are the answer.
+    if (action === 'update' && typeof id === 'string' && /single JSON object|multiple \(or no\) rows/i.test(errMsg)) {
+      const candidates = await rowsStartingAs(id).catch(() => null);
+      if (candidates?.length) return { ...idDidYouMean(table, id, candidates, 'not_found'), table, action };
+    }
     // The generic path used to stop at the driver's message. A model in a loop
     // answers a dead end by looking for another door — the same failure the
     // parameter-contract bounce exists to prevent — so the three write
@@ -17764,6 +17982,12 @@ async function executeGenericCrud(
 let _schemaCache: Record<string, string[]> | null = null;
 /** table → enum column → accepted values; PostgREST lists them per property. Filled with _schemaCache. */
 let _schemaEnums: Record<string, Record<string, string[]>> | null = null;
+/** table → its uuid columns; the columns the start of an id can be looked up in. Filled with _schemaCache. */
+let _schemaUuids: Record<string, string[]> | null = null;
+async function schemaUuidColumns(table: string): Promise<string[]> {
+  await schemaColumns();
+  return _schemaUuids?.[table] ?? [];
+}
 async function schemaColumns(): Promise<Record<string, string[]>> {
   if (_schemaCache) return _schemaCache;
   try {
@@ -17775,9 +17999,15 @@ async function schemaColumns(): Promise<Record<string, string[]>> {
     });
     if (!res.ok) return {};
     const spec = await res.json();
-    const defs = (spec?.definitions ?? {}) as Record<string, { properties?: Record<string, { enum?: unknown }> }>;
+    const defs = (spec?.definitions ?? {}) as Record<string, { properties?: Record<string, { enum?: unknown; format?: unknown }> }>;
     _schemaCache = Object.fromEntries(
       Object.entries(defs).map(([name, def]) => [name, Object.keys(def?.properties ?? {})]),
+    );
+    _schemaUuids = Object.fromEntries(
+      Object.entries(defs).map(([name, def]) => [
+        name,
+        Object.entries(def?.properties ?? {}).filter(([, p]) => p?.format === 'uuid').map(([col]) => col),
+      ]),
     );
     _schemaEnums = Object.fromEntries(
       Object.entries(defs).map(([name, def]) => [
@@ -19341,14 +19571,7 @@ async function executeRequestCompanyQuote(
 
   // quotes.quote_number is NOT NULL with no default — same QUO-NNNN scheme as
   // the manage_quote skill so the sequence stays uniform.
-  const { data: recent } = await supabase.from('quotes')
-    .select('quote_number').order('created_at', { ascending: false }).limit(50);
-  let max = 0;
-  for (const row of (recent || []) as Array<{ quote_number: string | null }>) {
-    const m = /(\d+)\s*$/.exec(row.quote_number || '');
-    if (m) max = Math.max(max, parseInt(m[1], 10));
-  }
-  const quoteNumber = `QUO-${String(max + 1).padStart(4, '0')}`;
+  const quoteNumber = await nextDocumentNumber(supabase, 'quote', 'QUO');
 
   const callerEmail = typeof (args as any)._caller_email === 'string' ? (args as any)._caller_email : '';
   const { data: created, error: insErr } = await supabase

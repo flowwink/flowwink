@@ -477,6 +477,17 @@ beside its payload, so an operator branches instead of guessing:
   nightly fresh install proves it first (`npm run qa:quiet` before `qa:prep`,
   `scripts/quiet-by-default.ts`): a red run means something alarms a virgin
   instance again.
+- **The briefing writes when the morning has news (2026-11-18).** A figure
+  is told when the briefing goes; it is a REASON to write only when it is
+  news (`reasonsToWrite`, `_shared/briefing/morning-news.ts`): an action
+  item, a finding, a lead in the last 24 hours, a post published since the
+  last briefing — not "published this week", told seven mornings. Traffic
+  has a floor (`TRAFFIC_FLOOR`, 100 page views): there is no trend against a
+  week under it (`null`, drawn as a dash — never an action item, never
+  health points), and a site under it in both weeks is not written to about
+  its traffic. Optic was mailed a yellow 50/100 for five mornings over "down
+  60%" on 19 page views. The row's `metrics.reasons` says why it was sent.
+  A new briefing figure states which of the two it is.
 - **The briefing is the business, Observability is the machine room
   (2026-11-08).** The Daily Briefing reads no platform health: a failing
   pg_cron job or skill was an action item its admins could do nothing about,
@@ -689,6 +700,75 @@ beside its payload, so an operator branches instead of guessing:
   defaults to "Stripe is off") and an invoice is then paid by bank. The PDF
   draws every text through `winAnsi` (`_shared/invoices/winansi.ts`): one
   arrow in a line used to fail the whole PDF and the mail went without it.
+- **A mail template is seeded in every language the platform speaks
+  (2026-11-19).** `resolve_email_template` walks recipient language → site
+  language → ANY active version, so a mail seeded in English only is English
+  for a Swedish customer. Eight core mails predated the en+sv rule (invoice,
+  quote, agreement, their reminders, booking and order confirmation) and got
+  their `sv` rows in `20261119200000` — inserted only where (name, 'sv') is
+  missing. A new template ships `en` AND `sv` in the same migration, with the
+  same placeholders (a guard compares them).
+- **The customer hears about their case (2026-11-18).** A support case told
+  its customer nothing: no receipt, and a staff reply was "in the portal",
+  where a customer entered by hand has no account. Two automations run
+  `send_ticket_update` (`comms-send` kind `ticket_update`): on `ticket.created`
+  the receipt with the case number, on `ticket.replied` the reply. Once each —
+  `tickets.ack_sent_at` and `ticket_comments.emailed_at` are claimed before
+  the send and given back when nothing went out. Nobody is mailed for: an
+  internal note, a customer's own comment, a back-dated (imported) reply, a
+  case that came in by e-mail (no automatic receipt — autoresponders), a
+  settled case, a case older than a day, or `tickets.customerEmailEnabled:
+  false`. `reply_to_ticket_via_email` stamps `emailed_at` itself. The words
+  are visitor texts (`ticket.mail.*`). The admin's box wrote every comment as
+  a public reply — it now makes the person choose "Reply to customer" or
+  "Internal note" and says who reads it; a new writer of a staff comment
+  states `is_internal` (a guard discovers the ones that do not).
+- **The customer portal shows what the customer has (2026-11-18).** `/account`
+  opened on Orders: a customer holding a service (a fibre agreement) was met by
+  "No orders yet — browse products", and had no page for their invoices or
+  their agreement ("Contracts" there is the EMPLOYEE's). It opens on an
+  overview now — what waits for them (invoice to pay, quote to answer,
+  agreement to sign) and what they have — and has `/account/invoices`,
+  `/account/agreements`, `/account/orders`. ONE rule says which rows are a
+  customer's: `portal_email()` (the account's CONFIRMED address — never the
+  token's bare claim) and `portal_company_ids()` (active `company_contacts`),
+  read by `my_account()`. A shop purchase is an `orders` row, a service is a
+  `subscriptions` row born from an agreement; the customer is the same person
+  either way, and the portal is shaped by what they hold, not by which module
+  is on. Only what was issued (never a draft), only the fields the mail
+  already carried, opening the same public page the mail linked to. A new
+  portal page reads `my_account()` or asks `portal_email()` — never
+  `auth.jwt() ->> 'email'` (unproven) or `profiles.email` (the holder's own to
+  edit). The last five readers of those (subscriptions, contracts, `my_quotes`,
+  `create_ticket_from_portal`, webinar registrations) moved 2026-11-19; a guard
+  scans every later migration for both shapes.
+- **The customer changes their own booking (2026-11-19).** The confirmation
+  mail said "contact us"; there was no link, no page and no way to move a
+  booking. A booking carries `manage_token`; the mail links to
+  `/my-booking/<key>` (appended where a template has no `{{manage_block}}`),
+  and whoever holds the key reads the booking (`get_booking_by_token` — a view,
+  never the row), moves it (`reschedule_booking_by_token`) or calls it off
+  (`cancel_booking_by_token`). The move is an UPDATE, so `booking_rules` judges
+  the new time as it judges a new booking; a refusal answers
+  `SLOT_UNAVAILABLE`. A move gives the confirmation and reminder stamps back
+  and raises `booking.rescheduled`, which two automations answer (a new
+  confirmation to the customer, a note to the admins). The page offers the
+  public block's own times (`booking_free_slots`). A step of the customer path
+  does it in a browser. The customer's own cancellation raises
+  `booking.cancelled_by_customer` (beside `booking.cancelled`, which only says
+  the slot is free) and an automation mails the admins.
+- **A purchase with Stripe off is a whole purchase (2026-11-19).** The
+  customer path buys in the shop as a visitor. Two finds: the page after the
+  purchase read `orders` directly, which a visitor may not, so every guest —
+  after Stripe too — stayed on "Awaiting payment…"; it asks
+  `get_order_confirmation(p_order_id | p_session_id)` now (the order's own key,
+  a view, polled while pending — realtime does not reach a visitor either). And
+  `create-checkout`'s test mode inserted the order as `paid`: `order.paid` is
+  raised on the UPDATE, so there was no receipt, no stock exit, and the order
+  was booked before it had a line. A test-mode order is born `pending`, gets
+  its lines, is then updated to `paid`, and the buyer is sent the order
+  confirmation as the Stripe webhook does. A new writer of a paid order
+  updates to `paid`; it never inserts one.
 - **And the staff's side is proven in a browser too (`npm run qa:staff-path`,
   nightly, 2026-11-17):** a step signs in as an admin and does the process
   with clicks — New Quote for a lead, title, line, terms, Save, Send to
@@ -701,8 +781,20 @@ beside its payload, so an operator branches instead of guessing:
   shows "sent" a moment before the mail is in the rail: wait for the mail
   (`mailTo`), never read it once. The contact step: New Contact, landing on
   the contact (the pipeline is ordered by score, so a new one was the last
-  card of its column — `CreateLeadDialog` now opens it), Create deal. A
-  process a person does in the admin gets a step there.
+  card of its column — `CreateLeadDialog` now opens it), Create deal. The case
+  step: New Ticket, an internal note, a reply — and the customer's two mails.
+  A process a person does in the admin gets a step there.
+- **Where an invoice came from is the business's note (2026-11-19).** Four
+  SQL writers (`generate_contract_invoice`, `generate_subscription_invoice`,
+  `pos_sale_to_invoice`, `bulk_invoice_from_timesheets`) and the admin's
+  timesheet dialog wrote "Generated from contract <uuid>" into
+  `invoices.notes` — the field the customer's page and PDF print. The rule is
+  the row's: trigger `aa_invoices_origin_is_internal` moves a "Generated from
+  …" / "Auto-generated …" line to `invoices.origin_note` (admin only) and
+  leaves the rest (a PO number, the period). A new writer needs to know
+  nothing; never print `origin_note` for a customer. Issued invoices were left
+  as sent. Open: the CTR-/SUB-/SO-/SUB-ADJ- numbers end in a RANDOM five
+  digits — not a running series.
 - **One number series per document (2026-11-17).** `next_document_number
   (kind, prefix)` is the only source of a quote or invoice number — the admin,
   every skill (`nextDocumentNumber` in core.ts), `quote-sign` and the invoicing

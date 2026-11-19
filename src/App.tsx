@@ -122,6 +122,9 @@ const CustomerAuthPage = lazy(() => import("./pages/account/CustomerAuthPage"));
 const ActivateAccountPage = lazy(() => import("./pages/account/ActivateAccountPage"));
 const AccountLayout = lazy(() => import("./pages/account/AccountLayout"));
 const CustomerOrdersPage = lazy(() => import("./pages/account/OrdersPage"));
+const AccountOverviewPage = lazy(() => import("./pages/account/AccountOverviewPage"));
+const MyInvoicesPage = lazy(() => import("./pages/account/MyInvoicesPage"));
+const MyAgreementsPage = lazy(() => import("./pages/account/MyAgreementsPage"));
 const AccountAssistantPage = lazy(() => import("./pages/account/AccountAssistantPage"));
 const AddressesPage = lazy(() => import("./pages/account/AddressesPage"));
 const WishlistPage = lazy(() => import("./pages/account/WishlistPage"));
@@ -182,6 +185,7 @@ const ContractsPage = lazy(() => import("./pages/admin/ContractsPage"));
 const ContractEditorPage = lazy(() => import("./pages/admin/ContractEditorPage"));
 const ContractTemplatesPage = lazy(() => import("./pages/admin/ContractTemplatesPage"));
 const PublicContractPage = lazy(() => import("./pages/PublicContractPage"));
+const PublicBookingPage = lazy(() => import("./pages/PublicBookingPage"));
 const HRPage = lazy(() => import("./pages/admin/HRPage"));
 const RecruitmentPage = lazy(() => import("./pages/admin/RecruitmentPage"));
 const CandidatePage = lazy(() => import("./pages/admin/CandidatePage"));
@@ -290,7 +294,10 @@ const router = createBrowserRouter([
         path: "/account",
         element: <AccountLayout />,
         children: [
-          { index: true, element: <CustomerOrdersPage /> },
+          { index: true, element: <AccountOverviewPage /> },
+          { path: "orders", element: <CustomerOrdersPage /> },
+          { path: "invoices", element: <MyInvoicesPage /> },
+          { path: "agreements", element: <MyAgreementsPage /> },
           { path: "assistant", element: <AccountAssistantPage /> },
           { path: "addresses", element: <AddressesPage /> },
           { path: "wishlist", element: <WishlistPage /> },
@@ -493,6 +500,7 @@ const router = createBrowserRouter([
       { path: "/admin/contracts/templates", element: <ContractTemplatesPage /> },
       { path: "/admin/contracts/:id", element: <ContractEditorPage /> },
       { path: "/contract/:token", element: <PublicContractPage /> },
+      { path: "/my-booking/:token", element: <PublicBookingPage /> },
       { path: "/contract/:token/certificate", element: <SignatureCertificatePage /> },
       { path: "/admin/hr", element: <HRPage /> },
       { path: "/admin/recruitment", element: <RecruitmentPage /> },

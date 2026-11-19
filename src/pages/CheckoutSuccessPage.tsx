@@ -4,6 +4,8 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomerFormat } from '@/hooks/useCustomerFormat';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
+import { useUiText } from '@/lib/ui-text';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -32,7 +34,7 @@ interface Order {
 const statusConfig: Record<OrderStatus, { icon: React.ReactNode; label: string; color: string }> = {
   pending: {
     icon: <Clock className="h-12 w-12 mx-auto text-yellow-500" />,
-    label: 'Awaiting payment...',
+    label: 'Awaiting payment…',
     color: 'text-yellow-500',
   },
   paid: {
@@ -54,6 +56,7 @@ const statusConfig: Record<OrderStatus, { icon: React.ReactNode; label: string; 
 
 export default function CheckoutSuccessPage() {
   const { formatCurrency, formatDateTime } = useCustomerFormat();
+  const t = useUiText();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -75,35 +78,33 @@ export default function CheckoutSuccessPage() {
       return;
     }
 
+    // The buyer reads their order by its own key — the order id (test mode) or
+    // the Stripe session they return with. A visitor may read no row of
+    // `orders`, so a direct read left every guest on "Awaiting payment…".
     const fetchOrder = async () => {
-      let query = supabase
-        .from('orders')
-        .select('id, status, total_cents, currency, customer_email, customer_name, created_at');
-
-      if (sandboxOrderId) {
-        query = query.eq('id', sandboxOrderId);
-      } else {
-        query = query.eq('stripe_checkout_id', sessionId!);
-      }
-
-      const { data: orderData } = await query.maybeSingle();
-
-      if (orderData) {
-        setOrder(orderData as Order);
-
-        const { data: items } = await supabase
-          .from('order_items')
-          .select('id, product_name, quantity, price_cents')
-          .eq('order_id', orderData.id);
-
-        if (items) {
-          setOrderItems(items);
-        }
+      const { data, error } = await supabase.rpc('get_order_confirmation' as never, {
+        p_order_id: sandboxOrderId ?? null,
+        p_session_id: sandboxOrderId ? null : sessionId,
+      } as never);
+      if (error) logger.error('Order confirmation read failed:', error);
+      const answer = data as (Order & { items?: OrderItem[] }) | null;
+      if (answer) {
+        setOrder(answer);
+        setOrderItems(answer.items ?? []);
       }
       setIsLoading(false);
+      return answer?.status ?? null;
     };
 
-    fetchOrder();
+    // A payment is confirmed a moment after the buyer is back; realtime does
+    // not reach a visitor either, so ask again until it is settled.
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const ask = async () => {
+      const status = await fetchOrder();
+      if ((status === null || status === 'pending') && ++tries < 40) timer = setTimeout(ask, 3000);
+    };
+    ask();
 
     // Watch the order this page is showing. Sandbox orders arrive via order_id
     // (no Stripe session), so filtering on stripe_checkout_id would never match
@@ -131,11 +132,20 @@ export default function CheckoutSuccessPage() {
       .subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [sessionId, sandboxOrderId]);
 
   const config = statusConfig[order?.status || 'pending'];
+  const status: OrderStatus = order?.status || 'pending';
+  // Literal calls: the visitor-text catalogue reads keys out of the source.
+  const statusLabel = ({
+    pending: t('checkout.status.pending', 'Awaiting payment…'),
+    paid: t('checkout.status.paid', 'Payment successful!'),
+    failed: t('checkout.status.failed', 'Payment failed'),
+    refunded: t('checkout.status.refunded', 'Refunded'),
+  } as Record<OrderStatus, string>)[status] ?? config.label;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -147,17 +157,17 @@ export default function CheckoutSuccessPage() {
             config.icon
           )}
           <CardTitle className="text-2xl">
-            {isLoading ? 'Loading...' : order?.status === 'paid' ? 'Thank you for your order!' : config.label}
+            {isLoading ? t('checkout.loading', 'Loading…') : order?.status === 'paid' ? t('checkout.thankYou', 'Thank you for your order!') : statusLabel}
           </CardTitle>
           <p className={`text-sm font-medium ${config.color}`}>
-            {!isLoading && config.label}
+            {!isLoading && statusLabel}
           </p>
         </CardHeader>
 
         <CardContent className="space-y-4">
           {order?.status === 'pending' && !isLoading && (
             <p className="text-center text-muted-foreground text-sm">
-              We are awaiting confirmation from Stripe. The page will update automatically.
+              {t('checkout.awaitingConfirmation', 'We are waiting for the payment to be confirmed. The page will update automatically.')}
             </p>
           )}
 
@@ -165,7 +175,7 @@ export default function CheckoutSuccessPage() {
             <>
               <Separator />
               <div className="space-y-3">
-                <h3 className="font-medium text-sm text-muted-foreground">Order Details</h3>
+                <h3 className="font-medium text-sm text-muted-foreground">{t('checkout.orderDetails', 'Order details')}</h3>
                 {orderItems.map((item) => (
                   <div key={item.id} className="flex justify-between items-center text-sm">
                     <span>
@@ -179,7 +189,7 @@ export default function CheckoutSuccessPage() {
               </div>
               <Separator />
               <div className="flex justify-between items-center font-semibold">
-                <span>Total</span>
+                <span>{t('checkout.total', 'Total')}</span>
                 <span className="text-lg">
                   {order && formatCurrency(order.total_cents, order.currency)}
                 </span>
@@ -189,9 +199,9 @@ export default function CheckoutSuccessPage() {
 
           {order && (
             <div className="text-xs text-muted-foreground space-y-1 pt-2">
-              <p>Email: {order.customer_email}</p>
-              {order.customer_name && <p>Name: {order.customer_name}</p>}
-              <p>Order date: {formatDateTime(order.created_at)}</p>
+              <p>{t('checkout.email', 'Email')}: {order.customer_email}</p>
+              {order.customer_name && <p>{t('checkout.name', 'Name')}: {order.customer_name}</p>}
+              <p>{t('checkout.orderDate', 'Order date')}: {formatDateTime(order.created_at)}</p>
             </div>
           )}
 
@@ -212,12 +222,12 @@ export default function CheckoutSuccessPage() {
           {order && (
             <Button asChild variant="outline" className="w-full">
               <a href={`/track/${order.id}?email=${encodeURIComponent(order.customer_email)}`}>
-                Track this order
+                {t('checkout.trackOrder', 'Track this order')}
               </a>
             </Button>
           )}
           <Button onClick={() => navigate('/')} className="w-full">
-            Back to Home
+            {t('checkout.backHome', 'Back to home')}
           </Button>
         </CardFooter>
       </Card>

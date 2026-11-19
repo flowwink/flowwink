@@ -553,6 +553,41 @@ const BOOKING_AUTOMATIONS: AutomationSeed[] = [
     skill_arguments: { booking_id: '{{event.payload.id}}' },
   },
   {
+    name: 'New confirmation when the customer moves a booking',
+    description:
+      'When a customer moves their booking from the link in the confirmation mail, e-mail them the confirmation of the new time. The move gives the confirmation stamp back, so this sends exactly one.',
+    trigger_type: 'event',
+    trigger_config: { event: 'booking.rescheduled' },
+    skill_name: 'send_booking_confirmation',
+    skill_arguments: { booking_id: '{{event.payload.id}}' },
+  },
+  {
+    name: 'Notify admins when a customer moves a booking',
+    description:
+      'When a customer moves their booking from the link in the confirmation mail, email every instance admin with who and the old and new time.',
+    trigger_type: 'event',
+    trigger_config: { event: 'booking.rescheduled' },
+    skill_name: 'email_admins',
+    skill_arguments: {
+      subject: 'Booking moved: {{event.payload.data.customer_name}} — {{event.payload.data.start_time}}',
+      html: '<p><strong>{{event.payload.data.customer_name}}</strong> ({{event.payload.data.customer_email}}) moved their booking from {{event.payload.data.previous_start_time}} to <strong>{{event.payload.data.start_time}}</strong>.</p><p><a href="/admin/bookings">Open bookings</a></p>',
+      source: 'booking.rescheduled',
+    },
+  },
+  {
+    name: 'Notify admins when a customer cancels a booking',
+    description:
+      'When a customer calls off their booking from the link in the confirmation mail, email every instance admin with who, when and what the customer wrote. A cancellation by staff or an agent sends nothing: they were there.',
+    trigger_type: 'event',
+    trigger_config: { event: 'booking.cancelled_by_customer' },
+    skill_name: 'email_admins',
+    skill_arguments: {
+      subject: 'Booking cancelled by the customer: {{event.payload.data.customer_name}} — {{event.payload.data.start_time}}',
+      html: '<p><strong>{{event.payload.data.customer_name}}</strong> ({{event.payload.data.customer_email}}) cancelled their booking at <strong>{{event.payload.data.start_time}}</strong>. The time is free again.</p><p>Their message: {{event.payload.data.reason}}</p><p><a href="/admin/bookings">Open bookings</a></p>',
+      source: 'booking.cancelled_by_customer',
+    },
+  },
+  {
     name: 'Notify admins on new booking',
     description:
       'When a booking is created (any writer — block, gateway, admin), email every instance admin with who, when and which service, linking the bookings page. Delivery is the email_admins platform skill; the outbound allowlist still guards pilot instances.',

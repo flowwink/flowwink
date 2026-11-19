@@ -11,6 +11,181 @@
       "fallback": "My agents"
     },
     {
+      "key": "account.agreements.empty",
+      "group": "account",
+      "fallback": "You have no agreements yet."
+    },
+    {
+      "key": "account.agreements.intro",
+      "group": "account",
+      "fallback": "The agreements between you and us — open one to read it, or to sign it if it is waiting for you."
+    },
+    {
+      "key": "account.agreements.open",
+      "group": "account",
+      "fallback": "Open"
+    },
+    {
+      "key": "account.agreements.sign",
+      "group": "account",
+      "fallback": "Read and sign"
+    },
+    {
+      "key": "account.agreements.signed",
+      "group": "account",
+      "fallback": "Signed"
+    },
+    {
+      "key": "account.agreements.status.active",
+      "group": "account",
+      "fallback": "In force"
+    },
+    {
+      "key": "account.agreements.status.ended",
+      "group": "account",
+      "fallback": "Ended"
+    },
+    {
+      "key": "account.agreements.status.toSign",
+      "group": "account",
+      "fallback": "Waiting for your signature"
+    },
+    {
+      "key": "account.agreements.title",
+      "group": "account",
+      "fallback": "My agreements"
+    },
+    {
+      "key": "account.agreements.until",
+      "group": "account",
+      "fallback": "Until"
+    },
+    {
+      "key": "account.invoices.due",
+      "group": "account",
+      "fallback": "Due"
+    },
+    {
+      "key": "account.invoices.empty",
+      "group": "account",
+      "fallback": "You have no invoices yet."
+    },
+    {
+      "key": "account.invoices.intro",
+      "group": "account",
+      "fallback": "What we have invoiced you — open one to see how to pay it or to download it."
+    },
+    {
+      "key": "account.invoices.open",
+      "group": "account",
+      "fallback": "Open"
+    },
+    {
+      "key": "account.invoices.pay",
+      "group": "account",
+      "fallback": "View and pay"
+    },
+    {
+      "key": "account.invoices.status.open",
+      "group": "account",
+      "fallback": "To pay"
+    },
+    {
+      "key": "account.invoices.status.overdue",
+      "group": "account",
+      "fallback": "Overdue"
+    },
+    {
+      "key": "account.invoices.status.paid",
+      "group": "account",
+      "fallback": "Paid"
+    },
+    {
+      "key": "account.invoices.status.partlyPaid",
+      "group": "account",
+      "fallback": "Partly paid"
+    },
+    {
+      "key": "account.invoices.title",
+      "group": "account",
+      "fallback": "My invoices"
+    },
+    {
+      "key": "account.overview.agreements",
+      "group": "account",
+      "fallback": "Your agreements"
+    },
+    {
+      "key": "account.overview.all",
+      "group": "account",
+      "fallback": "See all"
+    },
+    {
+      "key": "account.overview.answerQuote",
+      "group": "account",
+      "fallback": "Quote to answer: {title}"
+    },
+    {
+      "key": "account.overview.cases",
+      "group": "account",
+      "fallback": "Your open support requests"
+    },
+    {
+      "key": "account.overview.confirmEmail",
+      "group": "account",
+      "fallback": "Confirm your e-mail address to see your invoices, agreements and quotes here — use the link in the e-mail we sent when you registered."
+    },
+    {
+      "key": "account.overview.empty",
+      "group": "account",
+      "fallback": "There is nothing here yet. When we send you a quote, an agreement or an invoice — or you place an order — it shows up here."
+    },
+    {
+      "key": "account.overview.intro",
+      "group": "account",
+      "fallback": "What is waiting for you, and what you have with us."
+    },
+    {
+      "key": "account.overview.invoices",
+      "group": "account",
+      "fallback": "Your invoices"
+    },
+    {
+      "key": "account.overview.orders",
+      "group": "account",
+      "fallback": "Your orders"
+    },
+    {
+      "key": "account.overview.payInvoice",
+      "group": "account",
+      "fallback": "Invoice {number} to pay"
+    },
+    {
+      "key": "account.overview.service",
+      "group": "account",
+      "fallback": "Service"
+    },
+    {
+      "key": "account.overview.services",
+      "group": "account",
+      "fallback": "Your services"
+    },
+    {
+      "key": "account.overview.signAgreement",
+      "group": "account",
+      "fallback": "Agreement to sign: {title}"
+    },
+    {
+      "key": "account.overview.title",
+      "group": "account",
+      "fallback": "Overview"
+    },
+    {
+      "key": "account.overview.waiting",
+      "group": "account",
+      "fallback": "Waiting for you"
+    },
+    {
       "key": "account.quotes.answer",
       "group": "account",
       "fallback": "Read and answer"
@@ -149,6 +324,96 @@
       "key": "booking.intake_required",
       "group": "booking",
       "fallback": "Please answer"
+    },
+    {
+      "key": "booking.mail.manageLead",
+      "group": "booking",
+      "fallback": "Need another time, or cannot come?"
+    },
+    {
+      "key": "booking.mail.manageLink",
+      "group": "booking",
+      "fallback": "Change or cancel your booking"
+    },
+    {
+      "key": "booking.manage.bookedFor",
+      "group": "booking",
+      "fallback": "Booked for"
+    },
+    {
+      "key": "booking.manage.cancel",
+      "group": "booking",
+      "fallback": "Cancel the booking"
+    },
+    {
+      "key": "booking.manage.cancelled",
+      "group": "booking",
+      "fallback": "This booking is cancelled."
+    },
+    {
+      "key": "booking.manage.confirmCancel",
+      "group": "booking",
+      "fallback": "Yes, cancel the booking"
+    },
+    {
+      "key": "booking.manage.failed",
+      "group": "booking",
+      "fallback": "That did not work. Please try again, or contact us."
+    },
+    {
+      "key": "booking.manage.keep",
+      "group": "booking",
+      "fallback": "Keep the booking"
+    },
+    {
+      "key": "booking.manage.linkInvalid",
+      "group": "booking",
+      "fallback": "This booking link is not valid."
+    },
+    {
+      "key": "booking.manage.move",
+      "group": "booking",
+      "fallback": "Choose another time"
+    },
+    {
+      "key": "booking.manage.moved",
+      "group": "booking",
+      "fallback": "Your booking has been moved. We have sent you a new confirmation."
+    },
+    {
+      "key": "booking.manage.newDate",
+      "group": "booking",
+      "fallback": "New date"
+    },
+    {
+      "key": "booking.manage.notFound",
+      "group": "booking",
+      "fallback": "Booking not found"
+    },
+    {
+      "key": "booking.manage.reason",
+      "group": "booking",
+      "fallback": "Anything you want us to know? (optional)"
+    },
+    {
+      "key": "booking.manage.service",
+      "group": "booking",
+      "fallback": "Service"
+    },
+    {
+      "key": "booking.manage.title",
+      "group": "booking",
+      "fallback": "Your booking"
+    },
+    {
+      "key": "booking.manage.tooLate",
+      "group": "booking",
+      "fallback": "This booking can no longer be changed."
+    },
+    {
+      "key": "booking.manage.when",
+      "group": "booking",
+      "fallback": "When"
     },
     {
       "key": "booking.name",
@@ -486,6 +751,31 @@
       "fallback": "us"
     },
     {
+      "key": "cart.checkout",
+      "group": "cart",
+      "fallback": "Checkout"
+    },
+    {
+      "key": "cart.continueShopping",
+      "group": "cart",
+      "fallback": "Continue shopping"
+    },
+    {
+      "key": "cart.emptyHint",
+      "group": "cart",
+      "fallback": "Browse products and add them to your cart."
+    },
+    {
+      "key": "cart.summary",
+      "group": "cart",
+      "fallback": "Order summary"
+    },
+    {
+      "key": "cart.title",
+      "group": "cart",
+      "fallback": "Your cart"
+    },
+    {
       "key": "chat.assistantTitle",
       "group": "chat",
       "fallback": "AI Assistant"
@@ -654,6 +944,231 @@
       "key": "chat.welcome",
       "group": "chat",
       "fallback": "Hi! How can I help you today?"
+    },
+    {
+      "key": "checkout.address",
+      "group": "checkout",
+      "fallback": "Address"
+    },
+    {
+      "key": "checkout.address2",
+      "group": "checkout",
+      "fallback": "Address line 2"
+    },
+    {
+      "key": "checkout.address2Placeholder",
+      "group": "checkout",
+      "fallback": "Apartment, c/o (optional)"
+    },
+    {
+      "key": "checkout.addressPlaceholder",
+      "group": "checkout",
+      "fallback": "Street and number"
+    },
+    {
+      "key": "checkout.apply",
+      "group": "checkout",
+      "fallback": "Apply"
+    },
+    {
+      "key": "checkout.awaitingConfirmation",
+      "group": "checkout",
+      "fallback": "We are waiting for the payment to be confirmed. The page will update automatically."
+    },
+    {
+      "key": "checkout.back",
+      "group": "checkout",
+      "fallback": "Back"
+    },
+    {
+      "key": "checkout.backHome",
+      "group": "checkout",
+      "fallback": "Back to home"
+    },
+    {
+      "key": "checkout.cartEmpty",
+      "group": "checkout",
+      "fallback": "Your cart is empty"
+    },
+    {
+      "key": "checkout.cartEmptyHint",
+      "group": "checkout",
+      "fallback": "Add products to continue to checkout."
+    },
+    {
+      "key": "checkout.city",
+      "group": "checkout",
+      "fallback": "City"
+    },
+    {
+      "key": "checkout.country",
+      "group": "checkout",
+      "fallback": "Country"
+    },
+    {
+      "key": "checkout.deliveryAddress",
+      "group": "checkout",
+      "fallback": "Delivery address"
+    },
+    {
+      "key": "checkout.deliveryMethod",
+      "group": "checkout",
+      "fallback": "Delivery method"
+    },
+    {
+      "key": "checkout.discount",
+      "group": "checkout",
+      "fallback": "Discount"
+    },
+    {
+      "key": "checkout.discountApplied",
+      "group": "checkout",
+      "fallback": "Discount code {code} applied"
+    },
+    {
+      "key": "checkout.discountCode",
+      "group": "checkout",
+      "fallback": "Discount code"
+    },
+    {
+      "key": "checkout.discountFailed",
+      "group": "checkout",
+      "fallback": "Could not validate discount code"
+    },
+    {
+      "key": "checkout.discountInvalid",
+      "group": "checkout",
+      "fallback": "This code is not valid"
+    },
+    {
+      "key": "checkout.email",
+      "group": "checkout",
+      "fallback": "Email"
+    },
+    {
+      "key": "checkout.loading",
+      "group": "checkout",
+      "fallback": "Loading…"
+    },
+    {
+      "key": "checkout.name",
+      "group": "checkout",
+      "fallback": "Name"
+    },
+    {
+      "key": "checkout.namePlaceholder",
+      "group": "checkout",
+      "fallback": "Your name"
+    },
+    {
+      "key": "checkout.needAddress",
+      "group": "checkout",
+      "fallback": "Please enter your delivery address"
+    },
+    {
+      "key": "checkout.needNameEmail",
+      "group": "checkout",
+      "fallback": "Please enter name and email"
+    },
+    {
+      "key": "checkout.orderDate",
+      "group": "checkout",
+      "fallback": "Order date"
+    },
+    {
+      "key": "checkout.orderDetails",
+      "group": "checkout",
+      "fallback": "Order details"
+    },
+    {
+      "key": "checkout.orderPending",
+      "group": "checkout",
+      "fallback": "Order created — payment pending"
+    },
+    {
+      "key": "checkout.orderPlaced",
+      "group": "checkout",
+      "fallback": "Order placed successfully!"
+    },
+    {
+      "key": "checkout.pay",
+      "group": "checkout",
+      "fallback": "Pay"
+    },
+    {
+      "key": "checkout.paymentFailed",
+      "group": "checkout",
+      "fallback": "Could not initiate payment"
+    },
+    {
+      "key": "checkout.phone",
+      "group": "checkout",
+      "fallback": "Phone"
+    },
+    {
+      "key": "checkout.postalCode",
+      "group": "checkout",
+      "fallback": "Postal code"
+    },
+    {
+      "key": "checkout.preparing",
+      "group": "checkout",
+      "fallback": "Preparing payment…"
+    },
+    {
+      "key": "checkout.removeDiscount",
+      "group": "checkout",
+      "fallback": "Remove discount code"
+    },
+    {
+      "key": "checkout.shipping",
+      "group": "checkout",
+      "fallback": "Shipping"
+    },
+    {
+      "key": "checkout.status.failed",
+      "group": "checkout",
+      "fallback": "Payment failed"
+    },
+    {
+      "key": "checkout.status.paid",
+      "group": "checkout",
+      "fallback": "Payment successful!"
+    },
+    {
+      "key": "checkout.status.pending",
+      "group": "checkout",
+      "fallback": "Awaiting payment…"
+    },
+    {
+      "key": "checkout.status.refunded",
+      "group": "checkout",
+      "fallback": "Refunded"
+    },
+    {
+      "key": "checkout.thankYou",
+      "group": "checkout",
+      "fallback": "Thank you for your order!"
+    },
+    {
+      "key": "checkout.total",
+      "group": "checkout",
+      "fallback": "Total"
+    },
+    {
+      "key": "checkout.trackOrder",
+      "group": "checkout",
+      "fallback": "Track this order"
+    },
+    {
+      "key": "checkout.yourDetails",
+      "group": "checkout",
+      "fallback": "Your details"
+    },
+    {
+      "key": "checkout.yourOrder",
+      "group": "checkout",
+      "fallback": "Your order"
     },
     {
       "key": "comments.empty",
@@ -2484,6 +2999,41 @@
       "key": "terms.updated",
       "group": "terms",
       "fallback": "Updated"
+    },
+    {
+      "key": "ticket.mail.greeting",
+      "group": "ticket",
+      "fallback": "Hello,"
+    },
+    {
+      "key": "ticket.mail.greetingNamed",
+      "group": "ticket",
+      "fallback": "Hello {name},"
+    },
+    {
+      "key": "ticket.mail.receivedLead",
+      "group": "ticket",
+      "fallback": "Thank you for contacting {business}. We have received your request \"{subject}\" and will get back to you."
+    },
+    {
+      "key": "ticket.mail.receivedSubject",
+      "group": "ticket",
+      "fallback": "We have received your request [{number}]"
+    },
+    {
+      "key": "ticket.mail.reference",
+      "group": "ticket",
+      "fallback": "Your case number is {number}. Mention it if you contact us about this."
+    },
+    {
+      "key": "ticket.mail.replyLead",
+      "group": "ticket",
+      "fallback": "We have answered your case \"{subject}\":"
+    },
+    {
+      "key": "ticket.mail.replySubject",
+      "group": "ticket",
+      "fallback": "Re: {subject} [{number}]"
     },
     {
       "key": "youtube.defaultTitle",

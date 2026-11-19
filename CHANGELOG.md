@@ -8,6 +8,41 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ## [Unreleased]
 
+### Added
+
+- **The core customer mails exist in Swedish.** On an instance whose site
+  language is Swedish, the invoice, the quote, the agreement, their reminders,
+  the booking confirmation and the order confirmation existed in English only,
+  so a Swedish customer was mailed "Please find your invoice attached". Swedish
+  versions are seeded where an instance has none of its own.
+
+- **The cart, the checkout and the page after a purchase speak the site's
+  language.** Their texts were English built into the code; they are visitor
+  texts now (50 keys under `checkout.*` and `cart.*`), translated per instance
+  like the rest of the storefront.
+- **The business hears when a customer cancels a booking.** A customer who
+  moved their booking from the link told the admins; one who cancelled told
+  nobody. The admins are now mailed who, when and what the customer wrote.
+
+- **A purchase with Stripe off is a whole purchase.** Found by buying in the
+  shop in a browser as a visitor. The page after the purchase said "Awaiting
+  payment…" for a paid order, for every buyer without an account (also after a
+  Stripe payment): it read the orders table, which a visitor may not. It reads
+  the buyer's own order by its key now. And a test-mode order (Stripe switched
+  off) was born paid, which raised no "order paid": no receipt, no order
+  confirmation, no stock taken. It is created pending and then paid, like a
+  Stripe order, and the buyer gets both mails. The nightly customer path buys
+  in the shop.
+
+- **The customer changes their own booking.** The confirmation mail said
+  "contact us" and that was all: no link, no page, and no way to move a booking
+  at all. The mail now carries a link to the booking's own page
+  (`/my-booking/<key>`), where the customer picks another free time or cancels —
+  no account. A move meets every rule a new booking does (opening hours, blocked
+  days, capacity, the person's calendar), sends a new confirmation and tells the
+  admins; a cancellation frees the time and offers the waiting list, as before.
+  The nightly customer path does it in a browser.
+
 ### Removed
 
 - **The Global Elements module is gone.** It had no skills and no tables and was
@@ -27,6 +62,14 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   row and any automation that ran it.
 
 ### Security
+
+- **The portal trusts the confirmed address, everywhere.** Five older readers
+  decided "whose row is this" by the login token's e-mail claim (the address an
+  account was opened with, proven or not) or by the profile's e-mail (the
+  account holder's own to edit): a customer's services, agreements and quotes,
+  the case form in the portal, and webinar registrations. All five now ask the
+  account's confirmed address, as invoices and orders already did. Nothing
+  changes for an account whose address is confirmed.
 
 - **A scoped key is held to its scope in dispatch mode.** Over the native MCP
   transport, `execute_skill` checked what the key's owner may run but not the
@@ -125,6 +168,65 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   translatable and calls a paid invoice a receipt. The PDF is still in English.
 
 ### Fixed
+
+- **An invoice no longer tells the customer where it was generated from.** The
+  customer's invoice page and PDF read "Notes — Generated from contract
+  <internal id>" on invoices made from an agreement, a subscription period, a
+  till receipt or timesheets. That line now goes to an internal field shown
+  only in the admin; what a customer can use (a PO number, the period billed)
+  stays. Drafts are cleaned; an invoice already sent is left as it was sent.
+  The timesheet invoice also takes its number from the one invoice series.
+
+- **The Daily Briefing writes when the morning has news.** A small site was
+  mailed every morning: "Traffic down 60% vs last week — consider new content"
+  was an action item on 19 page views against 47, and cost ten health points;
+  and without it the mail went anyway, because one page view in 24 hours or a
+  blog post from earlier in the week counted as something to tell. Traffic now
+  has a floor — no trend is stated against a week under 100 page views, in the
+  mail, the chat message, the dashboard and the health score — and a figure is
+  a reason to write only when it is news: an action item, a finding, a lead, a
+  post published since the last briefing. Sites with real traffic are told
+  their day as before. The briefing's row records why it was sent
+  (`metrics.reasons`).
+
+- **The customer portal starts with what the customer has.** It opened on the
+  order list, so a customer with a service agreement and no shop purchases saw
+  "No orders yet — browse products" and a menu of Orders, Addresses and
+  Wishlist. The portal now opens on an overview — what is waiting for them (an
+  invoice to pay, a quote to answer, an agreement to sign) and what they have
+  — and the menu puts services, invoices and agreements before the shop.
+- **Customers can see their invoices and agreements in the portal.** Neither
+  had a page: invoices could not be read by a customer at all, and "Contracts"
+  showed an employee's own employment contract. Both open the same page the
+  e-mail linked to. An order placed as a guest now shows up once the same
+  person registers and confirms their e-mail address.
+
+- **One set of figures for the platform.** The agent's own instructions said
+  "500+ skills", the template blog posts and knowledge base "30+", one page of
+  the FlowWink template "60+ Modules" beside "68 modules", and the docs "70".
+  Everything now says 600+ skills and 68 modules, and the check that keeps the
+  advertised figures true reads the whole codebase instead of three folders.
+
+- **The heartbeat delivers again instead of scoring housekeeping.** On liteit
+  the weekly blog post stopped: every morning the heartbeat opened with
+  `evaluate_outcomes`, scored seven old rows and ran out of its token budget
+  (125–131k) before it wrote anything. The rows were instance-health and
+  integrity checks written under the `flowpilot` name — 105 of them unscored —
+  not decisions of the loop. `evaluate_outcomes` now hands the model only
+  actions that carry a run's trace, scores reads `neutral` itself (a read
+  changes nothing to judge), and returns five at a time instead of fifteen.
+
+- **A customer is told about their support case.** A case opened for a customer
+  sent them nothing, and the staff's reply was only visible in the customer
+  portal — where someone who wrote in through a form, or was entered by hand,
+  has no account. The customer is now e-mailed a receipt with the case number
+  when a case is opened, and each reply staff write. Internal notes are never
+  mailed; a case that came in by e-mail gets no automatic receipt. Switch it
+  off with the Tickets setting `customerEmailEnabled: false`.
+- **The case reply box says who will read it.** The box in the admin was
+  labelled "Add a comment…" and saved everything as a reply the customer could
+  see. It now has two modes, "Reply to customer" and "Internal note", and a
+  line that says where the text goes.
 
 - **A contact you create is the page you land on.** The pipeline is ordered by
   score, so a contact created by hand (score 0) became the last card of its

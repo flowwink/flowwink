@@ -153,6 +153,186 @@ describe('the invoice says who is asking and how to pay — and reaches the cust
   });
 
   it('the invoice is a step on the customer path', () => {
-    expect(read('scripts/customer-path/index.ts')).toMatch(/\[quoteAccepted, contractSigned, invoicePaid\]/);
+    expect(read('scripts/customer-path/index.ts')).toMatch(/\[quoteAccepted, contractSigned, invoicePaid, bookingChanged, shopPurchase, portalShowsWhatTheCustomerHas\]/);
+  });
+});
+
+describe('the customer hears about their case', () => {
+  // Found by doing support-to-resolution by hand in the admin (2026-11-18).
+  const mod = read('src/lib/modules/tickets-module.ts');
+  const handler = read('supabase/functions/comms-send/ticket_update.ts');
+  const sql = read('supabase/migrations/20261118120000_kunden-far-veta-om-sitt-arende.sql');
+  const drawer = read('src/components/admin/tickets/TicketDetailDrawer.tsx');
+
+  it('two automations answer a new case and a staff reply with the mail skill', () => {
+    for (const [event, arg] of [['ticket.created', "ticket_id: '{{event.payload.id}}'"], ['ticket.replied', "comment_id: '{{event.payload.id}}'"]] as const) {
+      const at = mod.indexOf(`trigger_config: { event: '${event}' }`);
+      expect(at, event).toBeGreaterThan(-1);
+      const seed = mod.slice(at, at + 300);
+      expect(seed, event).toMatch(/skill_name: 'send_ticket_update'/);
+      expect(seed, event).toContain(arg);
+    }
+    expect(read('supabase/functions/comms-send/index.ts')).toMatch(/send_ticket_update: 'ticket_update'/);
+  });
+
+  it('only a public reply by staff, written now and not already mailed, raises the event', () => {
+    const fn = sql.slice(sql.indexOf('FUNCTION public.emit_ticket_replied'));
+    expect(fn).toMatch(/NEW\.is_internal IS NOT TRUE/);
+    expect(fn).toMatch(/NEW\.author_type = 'agent'/);
+    expect(fn).toMatch(/NEW\.emailed_at IS NULL/);
+    expect(fn).toMatch(/NEW\.created_at > now\(\) - interval '10 minutes'/);
+  });
+
+  it('each mail is claimed before the send and given back when nothing went out', () => {
+    expect(handler).toMatch(/\.is\('ack_sent_at', null\)/);
+    expect(handler).toMatch(/\.is\('emailed_at', null\)/);
+    expect(handler).toMatch(/if \(release\) await release\(\)/);
+    // An internal note, a customer's own comment, a case that came in by mail: nobody is mailed.
+    for (const reason of ['internal_note', 'not_a_staff_reply', 'came_in_by_email', 'case_already_settled', 'not_a_new_case']) {
+      expect(handler, reason).toContain(`skipped('${reason}')`);
+    }
+  });
+
+  it('a reply already sent through the mailbox is not sent again', () => {
+    const core = read('supabase/functions/_shared/execute/core.ts');
+    const gmail = core.slice(core.indexOf('async function executeReplyToTicketViaEmail'));
+    const insert = gmail.slice(gmail.indexOf("from('ticket_comments').insert("), gmail.indexOf("from('ticket_comments').insert(") + 400);
+    expect(insert).toMatch(/emailed_at: new Date\(\)\.toISOString\(\)/);
+  });
+
+  it('the admin makes the person choose who reads it — a note is never a reply by default of a single box', () => {
+    expect(drawer).toMatch(/is_internal: commentKind === "note"/);
+    expect(drawer).not.toMatch(/placeholder="Add a comment\.\.\."/);
+    expect(drawer).toMatch(/E-mailed to \$\{ticket\.contact_email\}/);
+    expect(drawer).toMatch(/Nothing is e-mailed/);
+  });
+
+  it('every writer of a staff comment says whether it is internal — discovered, not listed', () => {
+    // A new writer of ticket_comments with author_type 'agent' that omits is_internal writes a public
+    // reply, and a public reply is mailed.
+    const sources = ['src/hooks/useTickets.ts', 'supabase/functions/_shared/execute/core.ts'].map(read).join('\n');
+    const inserts = [...sources.matchAll(/from\('ticket_comments'\)\s*\.insert\(\[?\{([\s\S]{0,400}?)\}\]?\)/g)].map((m) => m[1]);
+    expect(inserts.length).toBeGreaterThanOrEqual(2);
+    for (const body of inserts.filter((b) => /author_type: 'agent'/.test(b))) {
+      expect(body, body.slice(0, 120)).toMatch(/is_internal:/);
+    }
+  });
+
+  it('the battery and the staff path read what the customer got', () => {
+    const scenario = read('scripts/process-battery/scenarios/support-to-resolution.ts');
+    expect(scenario).toMatch(/the customer is mailed that the case was received/);
+    expect(scenario).toMatch(/the internal note is mailed to nobody/);
+    expect(scenario).toMatch(/a case that came in by mail gets no automatic receipt/);
+    expect(read('scripts/staff-path/index.ts')).toMatch(/\[quoteByHand, invoiceByHand, contactToDeal, ticketByHand\]/);
+  });
+});
+
+describe('the customer portal shows what the customer has', () => {
+  // Found by signing in to /account as a customer who holds a service agreement (2026-11-18).
+  const sql = read('supabase/migrations/20261118150000_portalen-visar-vad-kunden-har.sql');
+  const layout = read('src/pages/account/AccountLayout.tsx');
+  const app = read('src/App.tsx');
+
+  it('the portal opens on an overview, not on a shop\'s order list', () => {
+    expect(app).toMatch(/\{ index: true, element: <AccountOverviewPage \/> \}/);
+    for (const path of ['orders', 'invoices', 'agreements']) expect(app, path).toMatch(new RegExp(`\\{ path: "${path}", element: <`));
+    // What a customer holds comes before what a shop sells.
+    const nav = layout.slice(layout.indexOf('...overviewNav'), layout.indexOf('...profileNav'));
+    expect(nav.indexOf('servicesNav')).toBeLessThan(nav.indexOf('commerceNav'));
+    expect(nav.indexOf('invoicesNav')).toBeLessThan(nav.indexOf('commerceNav'));
+  });
+
+  it('one rule says which rows are the customer\'s: the confirmed e-mail and their companies', () => {
+    const email = sql.slice(sql.indexOf('FUNCTION public.portal_email'), sql.indexOf('FUNCTION public.portal_company_ids'));
+    expect(email).toMatch(/email_confirmed_at IS NOT NULL/);
+    const account = sql.slice(sql.indexOf('FUNCTION public.my_account'), sql.indexOf('── Orders'));
+    expect(account).toMatch(/v_email text := public\.portal_email\(\)/);
+    expect(account).toMatch(/v_companies uuid\[\] := public\.portal_company_ids\(\)/);
+    // Nothing reads the address out of the token itself, which an unconfirmed account also carries.
+    expect(account).not.toMatch(/auth\.jwt\(\)/);
+  });
+
+  it('the customer is shown only what was issued to them, and only as a signed-in person', () => {
+    const account = sql.slice(sql.indexOf('FUNCTION public.my_account'), sql.indexOf('── Orders'));
+    expect(account).toMatch(/i\.status::text NOT IN \('draft', 'cancelled'\)/);
+    expect(account).toMatch(/c\.status::text <> 'draft'/);
+    expect(account).toMatch(/IF v_uid IS NULL THEN\s+RAISE EXCEPTION/);
+    for (const fn of ['my_account()', 'portal_email()', 'portal_company_ids()']) {
+      expect(sql, fn).toContain(`REVOKE ALL ON FUNCTION public.${fn} FROM anon`);
+    }
+    // Internal fields stay inside: no notes, no owner, no customer e-mail of someone else's row.
+    for (const internal of ["'notes'", "'created_by'", "'customer_email'", "'signer_ip'", "'line_items'"]) {
+      expect(account, internal).not.toContain(internal);
+    }
+  });
+});
+
+describe('the customer can change their own booking', () => {
+  const mod = read('src/lib/modules/booking-module.ts');
+  const handler = read('supabase/functions/comms-send/booking_confirmation.ts');
+  const sql = read('supabase/migrations/20261119090000_kunden-andrar-sin-bokning.sql');
+
+  it('the confirmation links to the booking\'s own page, in every template', () => {
+    expect(handler).toMatch(/\/my-booking\/\$\{manageToken\}/);
+    expect(handler).toMatch(/manage_block:/);
+    // A template from before the link existed still carries it.
+    expect(handler).toMatch(/!templateHtml\.includes\(manageHref\)/);
+  });
+
+  it('a move is judged by the booking rules and confirmed anew', () => {
+    const fn = sql.slice(sql.indexOf('FUNCTION public.reschedule_booking_by_token'));
+    expect(fn).toMatch(/UPDATE public\.bookings/);
+    expect(fn).toMatch(/confirmation_sent_at = NULL/);
+    expect(fn).toMatch(/exclusion_violation/);
+    expect(fn).toMatch(/'booking\.rescheduled'/);
+    const seed = mod.slice(mod.indexOf("name: 'New confirmation when the customer moves a booking'"));
+    expect(seed.slice(0, 700)).toMatch(/trigger_config: \{ event: 'booking\.rescheduled' \}/);
+    expect(seed.slice(0, 700)).toMatch(/skill_name: 'send_booking_confirmation'/);
+  });
+
+  it('the key shows a view of the booking, never the row', () => {
+    const fn = sql.slice(sql.indexOf('FUNCTION public.get_booking_by_token'), sql.indexOf('FUNCTION public.cancel_booking_by_token'));
+    expect(fn).toMatch(/token_is_plausible\(p_token\)/);
+    expect(fn).not.toMatch(/customer_email|customer_phone|b\.notes/);
+  });
+});
+
+describe('a purchase with Stripe off is a whole purchase', () => {
+  // Found by buying in the shop in a browser, as a visitor (2026-11-19).
+  const checkout = read('supabase/functions/create-checkout/index.ts');
+  const page = read('src/pages/CheckoutSuccessPage.tsx');
+  const sandbox = checkout.slice(checkout.indexOf('if (sandboxMode) {'), checkout.indexOf('Stripe secret key not configured'));
+
+  it('a test-mode order is born pending and then paid, so order.paid is raised', () => {
+    const insert = sandbox.slice(sandbox.indexOf('.from("orders")'), sandbox.indexOf('.select()'));
+    expect(insert).toMatch(/status: "pending"/);
+    expect(insert).not.toMatch(/status: orderStatus/);
+    expect(sandbox.indexOf('.from("order_items").insert')).toBeLessThan(sandbox.indexOf('.update({ status: "paid" })'));
+  });
+
+  it('the buyer is sent the order confirmation, as after a Stripe payment', () => {
+    expect(sandbox).toMatch(/comms-send\?kind=order_confirmation/);
+  });
+
+  it('the confirmation page reads the order by its own key, never the table', () => {
+    expect(page).toMatch(/rpc\('get_order_confirmation'/);
+    expect(page).not.toMatch(/\.from\('orders'\)/);
+    expect(page).not.toMatch(/\.from\('order_items'\)/);
+  });
+});
+
+describe('the business hears when the customer calls off a booking', () => {
+  const mod = read('src/lib/modules/booking-module.ts');
+  const sql = read('supabase/migrations/20261119160000_foretaget-far-veta-nar-kunden-avbokar.sql');
+
+  it('the customer\'s own cancellation raises its own event, after the booking is off', () => {
+    expect(sql.indexOf("SET status = 'cancelled'")).toBeGreaterThan(-1);
+    expect(sql.indexOf("'booking.cancelled_by_customer'")).toBeGreaterThan(sql.indexOf("SET status = 'cancelled'"));
+  });
+
+  it('an automation mails the admins on it', () => {
+    const seed = mod.slice(mod.indexOf("name: 'Notify admins when a customer cancels a booking'"));
+    expect(seed.slice(0, 700)).toMatch(/trigger_config: \{ event: 'booking\.cancelled_by_customer' \}/);
+    expect(seed.slice(0, 700)).toMatch(/skill_name: 'email_admins'/);
   });
 });

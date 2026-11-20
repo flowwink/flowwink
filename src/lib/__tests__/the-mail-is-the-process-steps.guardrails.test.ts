@@ -223,7 +223,7 @@ describe('the customer hears about their case', () => {
     expect(scenario).toMatch(/the customer is mailed that the case was received/);
     expect(scenario).toMatch(/the internal note is mailed to nobody/);
     expect(scenario).toMatch(/a case that came in by mail gets no automatic receipt/);
-    expect(read('scripts/staff-path/index.ts')).toMatch(/\[quoteByHand, invoiceByHand, contactToDeal, ticketByHand\]/);
+    expect(read('scripts/staff-path/index.ts')).toMatch(/\[quoteByHand, invoiceByHand, invoiceForNewCustomer, contactToDeal, ticketByHand\]/);
   });
 });
 
@@ -334,5 +334,17 @@ describe('the business hears when the customer calls off a booking', () => {
     const seed = mod.slice(mod.indexOf("name: 'Notify admins when a customer cancels a booking'"));
     expect(seed.slice(0, 700)).toMatch(/trigger_config: \{ event: 'booking\.cancelled_by_customer' \}/);
     expect(seed.slice(0, 700)).toMatch(/skill_name: 'email_admins'/);
+  });
+});
+
+describe('what the code adds to a mail speaks the mail\'s language', () => {
+  // 2026-11-19: a Swedish booking confirmation carried "Join the meeting:".
+  const handler = read('supabase/functions/comms-send/booking_confirmation.ts');
+
+  it('the meeting link and the legacy note box are visitor texts, in the template\'s language', () => {
+    expect(handler).toMatch(/'booking\.mail\.joinMeeting', 'Join the meeting:'/);
+    expect(handler).toMatch(/meeting_block: meetingBlockIn\(tpl\.locale \?\? recipientLang\)/);
+    expect(handler).toMatch(/'booking\.mail\.yourNote', 'Your note:'/);
+    expect(handler).not.toMatch(/<strong>Join the meeting:<\/strong>/);
   });
 });

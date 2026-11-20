@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261119200000",
-      "migrations_count": 777,
+      "migration_head": "20261120090000",
+      "migrations_count": 779,
       "migrations": [
         {
           "version": "00000000000000",
@@ -3113,19 +3113,27 @@
         {
           "version": "20261119200000",
           "name": "karnmejlen-finns-pa-svenska"
+        },
+        {
+          "version": "20261119220000",
+          "name": "varje-fakturaserie-lopper"
+        },
+        {
+          "version": "20261120090000",
+          "name": "en-aterstallning-tar-inte-mejlmallarna"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:fab1639deb6e7fe04522c296b65584ff24e58f99b46b376ab7c609232d54b799",
+      "seed_hash": "sha256:ea30212f3653230e7615dcbbf841ca48ad64844ef279a249158a265985ce99af",
       "skill_count": 674,
       "module_count": 69
     },
     "edge_functions": {
       "count": 76,
-      "shared_hash": "sha256:e7437b07a3fa221450d0b11c0c6cecd39b80d80ce94a95aa07fa00a8f3fbc54f",
+      "shared_hash": "sha256:43795e450a041aa5bb65d81127ad3cf3ae1fa63b7564de1265447083945acf1e",
       "functions": {
-        "agent-execute": "sha256:a8eb4b28d817af298210e36dd615df6c51073a9c4360dc3fc33a2a841ab0d4a5",
+        "agent-execute": "sha256:5099051297018b4690eed7fdbadc3297904c4b89e7b14bad9eb11d62faacbac9",
         "agent-operate": "sha256:4320e02dd3e6a0a1706b42dc1905b631c61e6a4cbe3556c701f474c278c89e1a",
         "ai-task": "sha256:ce3aacdef625bba758f4323da3e49104a1b94a3d3d77d800e89dacd0b803d65e",
         "automation-dispatcher": "sha256:d905660cd907c6f1ef5c7cac0a97ed44a4e4187ef4d5179089fa2714b2751443",
@@ -3133,14 +3141,14 @@
         "chat-completion": "sha256:0d5dcfb6134a52f19a6f3bb2cd55c95af4cfce054fea2fc9a63abf3acaeb36fa",
         "chat-stt": "sha256:b67dd50ab6cad26f061b911a366607620aca8647977b2be8d4331b2ec51c4aa6",
         "check-secrets": "sha256:f902784792b71f22da5df6bbcf0069e27dfad9315a86e06460dd753ee7ab4b54",
-        "comms-send": "sha256:01b71eabcb494f8376165a7921e898e49aaf336bce9af3db862b6e43f23f5c7f",
+        "comms-send": "sha256:aba3c4c6b913bed699795f970cb4c5f8cec31f8f1b14fedfdec2359307b5b9c6",
         "composio-proxy": "sha256:6635c3a91cff990bed5a1e68f160c028e346c5c29d69935f496ac5af45f64b8d",
         "composio-webhook": "sha256:27f17b7198bfbab422931ef1c872da083299e095792e43b98b4154ec79c858ca",
         "consultant-match": "sha256:73a34fd5b974c44a2bfe54c42fc5b145a61710d8a9b45866d5a18cd21c44d2e7",
         "content-api": "sha256:fdefa5bea17c8e34446fac869a8ed0f59ec6187e44e7885f5b952f8594f321f1",
         "contract-billing-cron": "sha256:616b750ce0abd97453d47c2610f615e0f1f07a9128b8c8725af6e9fd7f3529bc",
-        "contract-sign": "sha256:f4af280386c03f0d21840d528e450208b682c81324e22780a662512eaea7d41f",
-        "create-checkout": "sha256:61c3c334f03d0482d221a3abdf838e07dbc14ec0d03b11d61a1d9bf93160303b",
+        "contract-sign": "sha256:756554a1cfff1a8d0370a28d30cbdd472db2d0408d51335b559f6cce6e2ee9a5",
+        "create-checkout": "sha256:faa3a75d33356071454efff92b6ff03b54d6c2c20f1b8b917ad98cdcd80c4412",
         "create-invoice-payment": "sha256:a46c82e437303cc1311748da524fa750c4b0068d2ff7e7dc17e365443a51e166",
         "create-user": "sha256:9f6d84e3e07c734a17b261551e1ca825cf84f4238c74d510c9e23de8b3805a61",
         "customer-signup": "sha256:a28e4a612842ca548e8dc645efdea5d9b16e209ceac2fa97177246d392a07724",
@@ -3178,7 +3186,7 @@
         "process-job-application": "sha256:00dc3927da3901fcad6066cb0b7b965a8cad288733e0c9d4f11519eb41b16856",
         "quote-expiry-reminders": "sha256:c41ef708741bb0c3fa6810d37a005b615b8db76b6bb39b53ba49e91b5f7f90d9",
         "quote-pay": "sha256:eac676922cee4e9ebe19650afd1ec708a48c2b3efd8d56d0f77654d21a272c00",
-        "quote-sign": "sha256:e953faec1ff99e7f2a5b1c86acda3dc932b65db0f731bc4124dd812e3f056736",
+        "quote-sign": "sha256:e7b34cc75b2be5c5f1a3d97afc979467ff190b9323f7930ec359a27d96a147a1",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
         "run-platform-tests": "sha256:96f822799b36326c3d087461ac76f4f7563104f08a77d4659fe0f821b9c7f935",
         "score-visitor-intent": "sha256:da5637476f5334696ed6b8007524182661416f19b2f1735227dcf0b8f0ee4143",

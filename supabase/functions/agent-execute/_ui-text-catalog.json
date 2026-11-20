@@ -1,6 +1,176 @@
 {
   "keys": [
     {
+      "key": "account.activate.acceptLead",
+      "group": "account",
+      "fallback": "Continue to activate your account and choose a password."
+    },
+    {
+      "key": "account.activate.acceptTitle",
+      "group": "account",
+      "fallback": "Accept your invitation"
+    },
+    {
+      "key": "account.activate.confirmPassword",
+      "group": "account",
+      "fallback": "Confirm password"
+    },
+    {
+      "key": "account.activate.continue",
+      "group": "account",
+      "fallback": "Continue"
+    },
+    {
+      "key": "account.activate.expiredLead",
+      "group": "account",
+      "fallback": "This activation link is no longer valid — it may already have been used, or it expired. Contact us and we will send a new one."
+    },
+    {
+      "key": "account.activate.expiredTitle",
+      "group": "account",
+      "fallback": "Invitation link expired"
+    },
+    {
+      "key": "account.activate.home",
+      "group": "account",
+      "fallback": "Back to homepage"
+    },
+    {
+      "key": "account.activate.mismatch",
+      "group": "account",
+      "fallback": "The passwords do not match."
+    },
+    {
+      "key": "account.activate.newPassword",
+      "group": "account",
+      "fallback": "New password"
+    },
+    {
+      "key": "account.activate.newPasswordLead",
+      "group": "account",
+      "fallback": "Continue to choose a new password for your account."
+    },
+    {
+      "key": "account.activate.newPasswordTitle",
+      "group": "account",
+      "fallback": "Set a new password"
+    },
+    {
+      "key": "account.activate.setLead",
+      "group": "account",
+      "fallback": "Choose a password to finish setting up your account."
+    },
+    {
+      "key": "account.activate.setTitle",
+      "group": "account",
+      "fallback": "Set your password"
+    },
+    {
+      "key": "account.activate.submit",
+      "group": "account",
+      "fallback": "Activate account"
+    },
+    {
+      "key": "account.activate.tooShort",
+      "group": "account",
+      "fallback": "Password must be at least 8 characters."
+    },
+    {
+      "key": "account.activate.verifying",
+      "group": "account",
+      "fallback": "Verifying your invitation…"
+    },
+    {
+      "key": "account.activate.welcome",
+      "group": "account",
+      "fallback": "Welcome — your account is ready."
+    },
+    {
+      "key": "account.addresses.add",
+      "group": "account",
+      "fallback": "Add address"
+    },
+    {
+      "key": "account.addresses.city",
+      "group": "account",
+      "fallback": "City"
+    },
+    {
+      "key": "account.addresses.country",
+      "group": "account",
+      "fallback": "Country"
+    },
+    {
+      "key": "account.addresses.default",
+      "group": "account",
+      "fallback": "Default"
+    },
+    {
+      "key": "account.addresses.edit",
+      "group": "account",
+      "fallback": "Edit address"
+    },
+    {
+      "key": "account.addresses.empty",
+      "group": "account",
+      "fallback": "No saved addresses"
+    },
+    {
+      "key": "account.addresses.emptyHint",
+      "group": "account",
+      "fallback": "Add an address to speed up checkout."
+    },
+    {
+      "key": "account.addresses.fullName",
+      "group": "account",
+      "fallback": "Full name"
+    },
+    {
+      "key": "account.addresses.label",
+      "group": "account",
+      "fallback": "Label"
+    },
+    {
+      "key": "account.addresses.labelExample",
+      "group": "account",
+      "fallback": "Home"
+    },
+    {
+      "key": "account.addresses.line1",
+      "group": "account",
+      "fallback": "Address line 1"
+    },
+    {
+      "key": "account.addresses.line2",
+      "group": "account",
+      "fallback": "Address line 2"
+    },
+    {
+      "key": "account.addresses.new",
+      "group": "account",
+      "fallback": "New address"
+    },
+    {
+      "key": "account.addresses.phone",
+      "group": "account",
+      "fallback": "Phone"
+    },
+    {
+      "key": "account.addresses.postalCode",
+      "group": "account",
+      "fallback": "Postal code"
+    },
+    {
+      "key": "account.addresses.title",
+      "group": "account",
+      "fallback": "Saved addresses"
+    },
+    {
+      "key": "account.addresses.update",
+      "group": "account",
+      "fallback": "Update address"
+    },
+    {
       "key": "account.agents.intro",
       "group": "account",
       "fallback": "Connect the AI assistant you already use. It works here as you, within your access."
@@ -61,6 +231,141 @@
       "fallback": "Until"
     },
     {
+      "key": "account.assistant.lead",
+      "group": "account",
+      "fallback": "Ask about your orders, invoices, subscriptions or bookings. The assistant sees your own account and can help you get things done."
+    },
+    {
+      "key": "account.assistant.leadNamed",
+      "group": "account",
+      "fallback": "Hi {name} — ask about your orders, invoices, subscriptions or bookings. The assistant sees your own account and can help you get things done."
+    },
+    {
+      "key": "account.auth.alreadyExists",
+      "group": "account",
+      "fallback": "An account with this email already exists"
+    },
+    {
+      "key": "account.auth.backToShop",
+      "group": "account",
+      "fallback": "Continue shopping"
+    },
+    {
+      "key": "account.auth.create",
+      "group": "account",
+      "fallback": "Create account"
+    },
+    {
+      "key": "account.auth.created",
+      "group": "account",
+      "fallback": "Account created! Please check your email to verify your account."
+    },
+    {
+      "key": "account.auth.emailInvalid",
+      "group": "account",
+      "fallback": "Please enter a valid email"
+    },
+    {
+      "key": "account.auth.lead",
+      "group": "account",
+      "fallback": "Sign in to see your orders, invoices, agreements and support requests."
+    },
+    {
+      "key": "account.auth.nameTooShort",
+      "group": "account",
+      "fallback": "Name must be at least 2 characters"
+    },
+    {
+      "key": "account.auth.password",
+      "group": "account",
+      "fallback": "Password"
+    },
+    {
+      "key": "account.auth.passwordHint",
+      "group": "account",
+      "fallback": "At least 6 characters"
+    },
+    {
+      "key": "account.auth.passwordTooShort",
+      "group": "account",
+      "fallback": "Password must be at least 6 characters"
+    },
+    {
+      "key": "account.auth.signIn",
+      "group": "account",
+      "fallback": "Sign in"
+    },
+    {
+      "key": "account.auth.wrongCredentials",
+      "group": "account",
+      "fallback": "Incorrect email or password"
+    },
+    {
+      "key": "account.browseProducts",
+      "group": "account",
+      "fallback": "Browse products"
+    },
+    {
+      "key": "account.cancel",
+      "group": "account",
+      "fallback": "Cancel"
+    },
+    {
+      "key": "account.help.about",
+      "group": "account",
+      "fallback": "About your service:"
+    },
+    {
+      "key": "account.help.created",
+      "group": "account",
+      "fallback": "Request created"
+    },
+    {
+      "key": "account.help.createdNumbered",
+      "group": "account",
+      "fallback": "Request {number} created"
+    },
+    {
+      "key": "account.help.details",
+      "group": "account",
+      "fallback": "Details (optional)"
+    },
+    {
+      "key": "account.help.detailsHint",
+      "group": "account",
+      "fallback": "Anything that helps us understand what is happening…"
+    },
+    {
+      "key": "account.help.issue",
+      "group": "account",
+      "fallback": "What is the issue?"
+    },
+    {
+      "key": "account.help.issueHint",
+      "group": "account",
+      "fallback": "e.g. No connection since this morning"
+    },
+    {
+      "key": "account.help.needSummary",
+      "group": "account",
+      "fallback": "Please add a short summary."
+    },
+    {
+      "key": "account.help.send",
+      "group": "account",
+      "fallback": "Send request"
+    },
+    {
+      "key": "account.help.teamSees",
+      "group": "account",
+      "fallback": "Our team will see which service this concerns."
+    },
+    {
+      "key": "account.help.title",
+      "group": "account",
+      "fallback": "Get help"
+    },
+    {
       "key": "account.invoices.due",
       "group": "account",
       "fallback": "Due"
@@ -109,6 +414,176 @@
       "key": "account.invoices.title",
       "group": "account",
       "fallback": "My invoices"
+    },
+    {
+      "key": "account.nav.addresses",
+      "group": "account",
+      "fallback": "Addresses"
+    },
+    {
+      "key": "account.nav.agents",
+      "group": "account",
+      "fallback": "My agents"
+    },
+    {
+      "key": "account.nav.agreements",
+      "group": "account",
+      "fallback": "My agreements"
+    },
+    {
+      "key": "account.nav.assistant",
+      "group": "account",
+      "fallback": "Assistant"
+    },
+    {
+      "key": "account.nav.attendance",
+      "group": "account",
+      "fallback": "Time clock"
+    },
+    {
+      "key": "account.nav.backToWork",
+      "group": "account",
+      "fallback": "Back to work"
+    },
+    {
+      "key": "account.nav.employmentContract",
+      "group": "account",
+      "fallback": "Employment contract"
+    },
+    {
+      "key": "account.nav.expenses",
+      "group": "account",
+      "fallback": "Expenses"
+    },
+    {
+      "key": "account.nav.invoices",
+      "group": "account",
+      "fallback": "My invoices"
+    },
+    {
+      "key": "account.nav.leave",
+      "group": "account",
+      "fallback": "Leave"
+    },
+    {
+      "key": "account.nav.orders",
+      "group": "account",
+      "fallback": "Orders"
+    },
+    {
+      "key": "account.nav.overview",
+      "group": "account",
+      "fallback": "Overview"
+    },
+    {
+      "key": "account.nav.payslips",
+      "group": "account",
+      "fallback": "Payslips"
+    },
+    {
+      "key": "account.nav.performance",
+      "group": "account",
+      "fallback": "Performance"
+    },
+    {
+      "key": "account.nav.profile",
+      "group": "account",
+      "fallback": "Profile"
+    },
+    {
+      "key": "account.nav.quotes",
+      "group": "account",
+      "fallback": "My quotes"
+    },
+    {
+      "key": "account.nav.services",
+      "group": "account",
+      "fallback": "My services"
+    },
+    {
+      "key": "account.nav.skills",
+      "group": "account",
+      "fallback": "Skills"
+    },
+    {
+      "key": "account.nav.support",
+      "group": "account",
+      "fallback": "Support requests"
+    },
+    {
+      "key": "account.nav.team",
+      "group": "account",
+      "fallback": "My Team"
+    },
+    {
+      "key": "account.nav.wishlist",
+      "group": "account",
+      "fallback": "Wishlist"
+    },
+    {
+      "key": "account.orders.delivered",
+      "group": "account",
+      "fallback": "Delivered"
+    },
+    {
+      "key": "account.orders.deliveryAddress",
+      "group": "account",
+      "fallback": "Delivery address"
+    },
+    {
+      "key": "account.orders.empty",
+      "group": "account",
+      "fallback": "No orders yet"
+    },
+    {
+      "key": "account.orders.emptyHint",
+      "group": "account",
+      "fallback": "When you place an order, it will appear here."
+    },
+    {
+      "key": "account.orders.failed",
+      "group": "account",
+      "fallback": "Failed"
+    },
+    {
+      "key": "account.orders.history",
+      "group": "account",
+      "fallback": "Order history"
+    },
+    {
+      "key": "account.orders.orderNumber",
+      "group": "account",
+      "fallback": "Order #{number}"
+    },
+    {
+      "key": "account.orders.packed",
+      "group": "account",
+      "fallback": "Packed"
+    },
+    {
+      "key": "account.orders.paid",
+      "group": "account",
+      "fallback": "Paid"
+    },
+    {
+      "key": "account.orders.pending",
+      "group": "account",
+      "fallback": "Pending"
+    },
+    {
+      "key": "account.orders.picked",
+      "group": "account",
+      "fallback": "Picked"
+    },
+    {
+      "key": "account.orders.refunded",
+      "group": "account",
+      "fallback": "Refunded"
+    },
+    {
+      "key": "account.orders.shipped",
+      "group": "account",
+      "fallback": "Shipped"
     },
     {
       "key": "account.overview.agreements",
@@ -186,6 +661,61 @@
       "fallback": "Waiting for you"
     },
     {
+      "key": "account.profile.account",
+      "group": "account",
+      "fallback": "Account"
+    },
+    {
+      "key": "account.profile.contactSupport",
+      "group": "account",
+      "fallback": "To delete your account or change your email, please contact support."
+    },
+    {
+      "key": "account.profile.email",
+      "group": "account",
+      "fallback": "Email"
+    },
+    {
+      "key": "account.profile.emailFixed",
+      "group": "account",
+      "fallback": "Email cannot be changed here."
+    },
+    {
+      "key": "account.profile.memberSince",
+      "group": "account",
+      "fallback": "Member since {date}"
+    },
+    {
+      "key": "account.profile.personal",
+      "group": "account",
+      "fallback": "Personal information"
+    },
+    {
+      "key": "account.profile.save",
+      "group": "account",
+      "fallback": "Save changes"
+    },
+    {
+      "key": "account.profile.saved",
+      "group": "account",
+      "fallback": "Profile updated"
+    },
+    {
+      "key": "account.profile.saveFailed",
+      "group": "account",
+      "fallback": "Could not update the profile"
+    },
+    {
+      "key": "account.profile.title",
+      "group": "account",
+      "fallback": "Profile settings"
+    },
+    {
+      "key": "account.profile.yourName",
+      "group": "account",
+      "fallback": "Your name"
+    },
+    {
       "key": "account.quotes.answer",
       "group": "account",
       "fallback": "Read and answer"
@@ -251,6 +781,216 @@
       "fallback": "Valid until"
     },
     {
+      "key": "account.services.commitment",
+      "group": "account",
+      "fallback": "Commitment"
+    },
+    {
+      "key": "account.services.empty",
+      "group": "account",
+      "fallback": "You have no active services yet."
+    },
+    {
+      "key": "account.services.getHelp",
+      "group": "account",
+      "fallback": "Get help with this service"
+    },
+    {
+      "key": "account.services.lead",
+      "group": "account",
+      "fallback": "The services you have with us — status, term, and support."
+    },
+    {
+      "key": "account.services.months",
+      "group": "account",
+      "fallback": "{count} months"
+    },
+    {
+      "key": "account.services.nextInvoice",
+      "group": "account",
+      "fallback": "Next invoice"
+    },
+    {
+      "key": "account.services.price",
+      "group": "account",
+      "fallback": "Price"
+    },
+    {
+      "key": "account.services.service",
+      "group": "account",
+      "fallback": "Service"
+    },
+    {
+      "key": "account.services.settingUp",
+      "group": "account",
+      "fallback": "We are setting up your service. You will see it go active once it is ready."
+    },
+    {
+      "key": "account.services.title",
+      "group": "account",
+      "fallback": "My services"
+    },
+    {
+      "key": "account.services.until",
+      "group": "account",
+      "fallback": "(until {date})"
+    },
+    {
+      "key": "account.signOut",
+      "group": "account",
+      "fallback": "Sign out"
+    },
+    {
+      "key": "account.support.category",
+      "group": "account",
+      "fallback": "Category"
+    },
+    {
+      "key": "account.support.description",
+      "group": "account",
+      "fallback": "Description"
+    },
+    {
+      "key": "account.support.descriptionHint",
+      "group": "account",
+      "fallback": "Tell us more — what happened, and what did you expect?"
+    },
+    {
+      "key": "account.support.empty",
+      "group": "account",
+      "fallback": "You have no support requests yet."
+    },
+    {
+      "key": "account.support.hide",
+      "group": "account",
+      "fallback": "Hide conversation"
+    },
+    {
+      "key": "account.support.lead",
+      "group": "account",
+      "fallback": "Follow your open requests and reply to our team"
+    },
+    {
+      "key": "account.support.new",
+      "group": "account",
+      "fallback": "New request"
+    },
+    {
+      "key": "account.support.newTitle",
+      "group": "account",
+      "fallback": "New support request"
+    },
+    {
+      "key": "account.support.noReplies",
+      "group": "account",
+      "fallback": "No replies yet."
+    },
+    {
+      "key": "account.support.opened",
+      "group": "account",
+      "fallback": "Opened {date} · priority: {priority}"
+    },
+    {
+      "key": "account.support.pageTitle",
+      "group": "account",
+      "fallback": "My support requests"
+    },
+    {
+      "key": "account.support.priority",
+      "group": "account",
+      "fallback": "Priority"
+    },
+    {
+      "key": "account.support.replyHint",
+      "group": "account",
+      "fallback": "Write a reply…"
+    },
+    {
+      "key": "account.support.send",
+      "group": "account",
+      "fallback": "Send reply"
+    },
+    {
+      "key": "account.support.subject",
+      "group": "account",
+      "fallback": "Subject"
+    },
+    {
+      "key": "account.support.subjectHint",
+      "group": "account",
+      "fallback": "Brief summary of your request"
+    },
+    {
+      "key": "account.support.submit",
+      "group": "account",
+      "fallback": "Submit request"
+    },
+    {
+      "key": "account.support.submitting",
+      "group": "account",
+      "fallback": "Submitting…"
+    },
+    {
+      "key": "account.support.team",
+      "group": "account",
+      "fallback": "Support"
+    },
+    {
+      "key": "account.support.title",
+      "group": "account",
+      "fallback": "Support requests"
+    },
+    {
+      "key": "account.support.view",
+      "group": "account",
+      "fallback": "View conversation"
+    },
+    {
+      "key": "account.support.you",
+      "group": "account",
+      "fallback": "You"
+    },
+    {
+      "key": "account.title",
+      "group": "account",
+      "fallback": "My Account"
+    },
+    {
+      "key": "account.welcomeBack",
+      "group": "account",
+      "fallback": "Welcome back, {name}"
+    },
+    {
+      "key": "account.wishlist.addedToCart",
+      "group": "account",
+      "fallback": "{product} added to cart"
+    },
+    {
+      "key": "account.wishlist.addToCart",
+      "group": "account",
+      "fallback": "Add to cart"
+    },
+    {
+      "key": "account.wishlist.alreadyInCart",
+      "group": "account",
+      "fallback": "Already in cart"
+    },
+    {
+      "key": "account.wishlist.empty",
+      "group": "account",
+      "fallback": "Your wishlist is empty"
+    },
+    {
+      "key": "account.wishlist.emptyHint",
+      "group": "account",
+      "fallback": "Save products you love for later."
+    },
+    {
+      "key": "account.wishlist.title",
+      "group": "account",
+      "fallback": "Wishlist ({count})"
+    },
+    {
       "key": "auth.session_ended",
       "group": "auth",
       "fallback": "Your previous session ended"
@@ -259,6 +999,31 @@
       "key": "auth.session_ended_hint",
       "group": "auth",
       "fallback": "Sign in again. If this keeps happening, send this line to your admin."
+    },
+    {
+      "key": "billing.interval.day",
+      "group": "billing",
+      "fallback": "day"
+    },
+    {
+      "key": "billing.interval.month",
+      "group": "billing",
+      "fallback": "month"
+    },
+    {
+      "key": "billing.interval.quarter",
+      "group": "billing",
+      "fallback": "quarter"
+    },
+    {
+      "key": "billing.interval.week",
+      "group": "billing",
+      "fallback": "week"
+    },
+    {
+      "key": "billing.interval.year",
+      "group": "billing",
+      "fallback": "year"
     },
     {
       "key": "blog.aboutAuthor",
@@ -316,14 +1081,34 @@
       "fallback": "Back"
     },
     {
+      "key": "booking.calendarMissing",
+      "group": "booking",
+      "fallback": "Online booking is not available here yet."
+    },
+    {
+      "key": "booking.calendarTitle",
+      "group": "booking",
+      "fallback": "Booking calendar"
+    },
+    {
       "key": "booking.email",
       "group": "booking",
       "fallback": "Email"
     },
     {
+      "key": "booking.fillRequired",
+      "group": "booking",
+      "fallback": "Please fill in the required fields"
+    },
+    {
       "key": "booking.intake_required",
       "group": "booking",
       "fallback": "Please answer"
+    },
+    {
+      "key": "booking.mail.joinMeeting",
+      "group": "booking",
+      "fallback": "Join the meeting:"
     },
     {
       "key": "booking.mail.manageLead",
@@ -334,6 +1119,11 @@
       "key": "booking.mail.manageLink",
       "group": "booking",
       "fallback": "Change or cancel your booking"
+    },
+    {
+      "key": "booking.mail.yourNote",
+      "group": "booking",
+      "fallback": "Your note:"
     },
     {
       "key": "booking.manage.bookedFor",
@@ -456,6 +1246,16 @@
       "fallback": "Your phone number"
     },
     {
+      "key": "booking.pickService",
+      "group": "booking",
+      "fallback": "Please select a service"
+    },
+    {
+      "key": "booking.request",
+      "group": "booking",
+      "fallback": "Request appointment"
+    },
+    {
       "key": "booking.selectDateTime",
       "group": "booking",
       "fallback": "Select Date & Time"
@@ -484,6 +1284,16 @@
       "key": "booking.submitted",
       "group": "booking",
       "fallback": "Booking Request Submitted!"
+    },
+    {
+      "key": "booking.submitting",
+      "group": "booking",
+      "fallback": "Submitting…"
+    },
+    {
+      "key": "booking.thanks",
+      "group": "booking",
+      "fallback": "Thank you! We will contact you to confirm your appointment."
     },
     {
       "key": "booking.waitlist.email",
@@ -761,9 +1571,39 @@
       "fallback": "Continue shopping"
     },
     {
+      "key": "cart.empty",
+      "group": "cart",
+      "fallback": "Your cart is empty"
+    },
+    {
       "key": "cart.emptyHint",
       "group": "cart",
       "fallback": "Browse products and add them to your cart."
+    },
+    {
+      "key": "cart.emptyStart",
+      "group": "cart",
+      "fallback": "Add products to get started"
+    },
+    {
+      "key": "cart.items",
+      "group": "cart",
+      "fallback": "{count} items"
+    },
+    {
+      "key": "cart.oneItem",
+      "group": "cart",
+      "fallback": "1 item"
+    },
+    {
+      "key": "cart.proceed",
+      "group": "cart",
+      "fallback": "Proceed to checkout"
+    },
+    {
+      "key": "cart.short",
+      "group": "cart",
+      "fallback": "Cart"
     },
     {
       "key": "cart.summary",
@@ -774,6 +1614,11 @@
       "key": "cart.title",
       "group": "cart",
       "fallback": "Your cart"
+    },
+    {
+      "key": "cart.total",
+      "group": "cart",
+      "fallback": "Total"
     },
     {
       "key": "chat.assistantTitle",
@@ -1256,6 +2101,16 @@
       "fallback": "This contract link is invalid or has expired."
     },
     {
+      "key": "contract.mail.signedBody",
+      "group": "contract",
+      "fallback": "Hi {name}, thank you for signing. A copy of the agreement is available through your own link."
+    },
+    {
+      "key": "contract.mail.signedSubject",
+      "group": "contract",
+      "fallback": "Agreement signed — {title}"
+    },
+    {
       "key": "contract.noContent",
       "group": "contract",
       "fallback": "No contract content provided."
@@ -1349,6 +2204,91 @@
       "key": "cookie.title",
       "group": "cookie",
       "fallback": "We use cookies"
+    },
+    {
+      "key": "documentSign.done",
+      "group": "documentSign",
+      "fallback": "Document signed"
+    },
+    {
+      "key": "documentSign.draw",
+      "group": "documentSign",
+      "fallback": "Draw"
+    },
+    {
+      "key": "documentSign.drawSignature",
+      "group": "documentSign",
+      "fallback": "Draw your signature"
+    },
+    {
+      "key": "documentSign.expired",
+      "group": "documentSign",
+      "fallback": "This signing link has expired. Please contact the sender for a new one."
+    },
+    {
+      "key": "documentSign.legal",
+      "group": "documentSign",
+      "fallback": "By signing, you agree that your electronic signature is the legal equivalent of a handwritten one for this document."
+    },
+    {
+      "key": "documentSign.loading",
+      "group": "documentSign",
+      "fallback": "Loading…"
+    },
+    {
+      "key": "documentSign.noLongerValid",
+      "group": "documentSign",
+      "fallback": "This signing link is no longer valid."
+    },
+    {
+      "key": "documentSign.sign",
+      "group": "documentSign",
+      "fallback": "Sign"
+    },
+    {
+      "key": "documentSign.signed",
+      "group": "documentSign",
+      "fallback": "Signed"
+    },
+    {
+      "key": "documentSign.signer",
+      "group": "documentSign",
+      "fallback": "Signer:"
+    },
+    {
+      "key": "documentSign.submit",
+      "group": "documentSign",
+      "fallback": "Sign document"
+    },
+    {
+      "key": "documentSign.thanks",
+      "group": "documentSign",
+      "fallback": "Thank you — the sender has been notified."
+    },
+    {
+      "key": "documentSign.type",
+      "group": "documentSign",
+      "fallback": "Type"
+    },
+    {
+      "key": "documentSign.typeFullName",
+      "group": "documentSign",
+      "fallback": "Type your full name"
+    },
+    {
+      "key": "documentSign.typeName",
+      "group": "documentSign",
+      "fallback": "Type your name"
+    },
+    {
+      "key": "documentSign.unavailable",
+      "group": "documentSign",
+      "fallback": "Link unavailable"
+    },
+    {
+      "key": "documentSign.view",
+      "group": "documentSign",
+      "fallback": "View document"
     },
     {
       "key": "error.description",
@@ -1836,9 +2776,19 @@
       "fallback": "For payment details, contact {email}."
     },
     {
+      "key": "invoice.payFailed",
+      "group": "invoice",
+      "fallback": "Could not start the payment"
+    },
+    {
       "key": "invoice.paymentConfirming",
       "group": "invoice",
       "fallback": "Payment received — confirming…"
+    },
+    {
+      "key": "invoice.pdfFailed",
+      "group": "invoice",
+      "fallback": "Could not download the PDF"
     },
     {
       "key": "invoice.qty",
@@ -1926,9 +2876,19 @@
       "fallback": "Search for questions or answers..."
     },
     {
+      "key": "key",
+      "group": "key",
+      "fallback": "fallback"
+    },
+    {
       "key": "language.switch",
       "group": "language",
       "fallback": "Change language"
+    },
+    {
+      "key": "mail.sentBy",
+      "group": "mail",
+      "fallback": "Sent by {business}"
     },
     {
       "key": "maintenance.adminSignIn",
@@ -2546,6 +3506,191 @@
       "fallback": "Open menu"
     },
     {
+      "key": "newsletter.confirmed.body",
+      "group": "newsletter",
+      "fallback": "Thank you for confirming your email. You are now subscribed to our newsletter."
+    },
+    {
+      "key": "newsletter.confirmed.home",
+      "group": "newsletter",
+      "fallback": "Back to the homepage"
+    },
+    {
+      "key": "newsletter.confirmed.title",
+      "group": "newsletter",
+      "fallback": "Subscription confirmed!"
+    },
+    {
+      "key": "newsletter.manage.access",
+      "group": "newsletter",
+      "fallback": "Access my data"
+    },
+    {
+      "key": "newsletter.manage.actions",
+      "group": "newsletter",
+      "fallback": "Your data"
+    },
+    {
+      "key": "newsletter.manage.checkEmail",
+      "group": "newsletter",
+      "fallback": "Check your email"
+    },
+    {
+      "key": "newsletter.manage.confirmDelete",
+      "group": "newsletter",
+      "fallback": "Are you sure you want to permanently delete all your data? This cannot be undone."
+    },
+    {
+      "key": "newsletter.manage.delete",
+      "group": "newsletter",
+      "fallback": "Delete all my data"
+    },
+    {
+      "key": "newsletter.manage.deleted",
+      "group": "newsletter",
+      "fallback": "Your data has been permanently deleted"
+    },
+    {
+      "key": "newsletter.manage.deletedBody",
+      "group": "newsletter",
+      "fallback": "You have been unsubscribed and all associated data has been removed from our systems."
+    },
+    {
+      "key": "newsletter.manage.deletedLead",
+      "group": "newsletter",
+      "fallback": "All your newsletter data has been permanently deleted."
+    },
+    {
+      "key": "newsletter.manage.deletedTitle",
+      "group": "newsletter",
+      "fallback": "Data deleted"
+    },
+    {
+      "key": "newsletter.manage.deleteFailed",
+      "group": "newsletter",
+      "fallback": "The deletion failed"
+    },
+    {
+      "key": "newsletter.manage.deleteWarning",
+      "group": "newsletter",
+      "fallback": "Deleting your data is permanent and cannot be undone. You will be unsubscribed from the newsletter and all activity data will be removed."
+    },
+    {
+      "key": "newsletter.manage.download",
+      "group": "newsletter",
+      "fallback": "Download my data"
+    },
+    {
+      "key": "newsletter.manage.downloaded",
+      "group": "newsletter",
+      "fallback": "Your data has been downloaded"
+    },
+    {
+      "key": "newsletter.manage.emailAddress",
+      "group": "newsletter",
+      "fallback": "Email address"
+    },
+    {
+      "key": "newsletter.manage.enterEmail",
+      "group": "newsletter",
+      "fallback": "Enter your email to access, export, or delete your newsletter subscription data"
+    },
+    {
+      "key": "newsletter.manage.error",
+      "group": "newsletter",
+      "fallback": "Something went wrong. Please try again later."
+    },
+    {
+      "key": "newsletter.manage.exportFailed",
+      "group": "newsletter",
+      "fallback": "The export failed"
+    },
+    {
+      "key": "newsletter.manage.gdprFooter",
+      "group": "newsletter",
+      "fallback": "This page allows you to exercise your rights under GDPR Article 15 (Right of Access) and Article 17 (Right to Erasure)."
+    },
+    {
+      "key": "newsletter.manage.gdprRight",
+      "group": "newsletter",
+      "fallback": "Under GDPR, you have the right to access and delete your personal data"
+    },
+    {
+      "key": "newsletter.manage.lead",
+      "group": "newsletter",
+      "fallback": "View, export, or delete your newsletter subscription data"
+    },
+    {
+      "key": "newsletter.manage.linkSent",
+      "group": "newsletter",
+      "fallback": "If this email is registered, you will receive a verification link to access your data."
+    },
+    {
+      "key": "newsletter.manage.name",
+      "group": "newsletter",
+      "fallback": "Name"
+    },
+    {
+      "key": "newsletter.manage.requestFailed",
+      "group": "newsletter",
+      "fallback": "The request failed"
+    },
+    {
+      "key": "newsletter.manage.status",
+      "group": "newsletter",
+      "fallback": "Status"
+    },
+    {
+      "key": "newsletter.manage.statusConfirmed",
+      "group": "newsletter",
+      "fallback": "Confirmed"
+    },
+    {
+      "key": "newsletter.manage.statusPending",
+      "group": "newsletter",
+      "fallback": "Not confirmed yet"
+    },
+    {
+      "key": "newsletter.manage.statusUnsubscribed",
+      "group": "newsletter",
+      "fallback": "Unsubscribed"
+    },
+    {
+      "key": "newsletter.manage.subscribedOn",
+      "group": "newsletter",
+      "fallback": "Subscribed"
+    },
+    {
+      "key": "newsletter.manage.subscription",
+      "group": "newsletter",
+      "fallback": "Your subscription"
+    },
+    {
+      "key": "newsletter.manage.title",
+      "group": "newsletter",
+      "fallback": "Manage your data"
+    },
+    {
+      "key": "newsletter.manage.unsubscribed",
+      "group": "newsletter",
+      "fallback": "You have been unsubscribed"
+    },
+    {
+      "key": "newsletter.manage.unsubscribeFailed",
+      "group": "newsletter",
+      "fallback": "Could not unsubscribe. Please try again."
+    },
+    {
+      "key": "newsletter.manage.verifyFailed",
+      "group": "newsletter",
+      "fallback": "Verification failed. Please try again."
+    },
+    {
+      "key": "newsletter.manage.verifying",
+      "group": "newsletter",
+      "fallback": "Verifying…"
+    },
+    {
       "key": "notFound.goBack",
       "group": "notFound",
       "fallback": "Go back"
@@ -2554,6 +3699,81 @@
       "key": "notFound.title",
       "group": "notFound",
       "fallback": "Page not found"
+    },
+    {
+      "key": "orderTracking.carrierPage",
+      "group": "orderTracking",
+      "fallback": "Carrier page"
+    },
+    {
+      "key": "orderTracking.description",
+      "group": "orderTracking",
+      "fallback": "Check the status of your order step by step."
+    },
+    {
+      "key": "orderTracking.inProgress",
+      "group": "orderTracking",
+      "fallback": "In progress…"
+    },
+    {
+      "key": "orderTracking.items",
+      "group": "orderTracking",
+      "fallback": "Items"
+    },
+    {
+      "key": "orderTracking.lead",
+      "group": "orderTracking",
+      "fallback": "Enter your order ID and the email used at checkout."
+    },
+    {
+      "key": "orderTracking.lookupFailed",
+      "group": "orderTracking",
+      "fallback": "Could not look up the order."
+    },
+    {
+      "key": "orderTracking.needBoth",
+      "group": "orderTracking",
+      "fallback": "Enter both order ID and email."
+    },
+    {
+      "key": "orderTracking.notFound",
+      "group": "orderTracking",
+      "fallback": "No order found matching that ID and email."
+    },
+    {
+      "key": "orderTracking.orderId",
+      "group": "orderTracking",
+      "fallback": "Order ID"
+    },
+    {
+      "key": "orderTracking.orderIdHint",
+      "group": "orderTracking",
+      "fallback": "e.g. 8f3a…"
+    },
+    {
+      "key": "orderTracking.placed",
+      "group": "orderTracking",
+      "fallback": "Placed {date}"
+    },
+    {
+      "key": "orderTracking.title",
+      "group": "orderTracking",
+      "fallback": "Track your order"
+    },
+    {
+      "key": "orderTracking.total",
+      "group": "orderTracking",
+      "fallback": "Total"
+    },
+    {
+      "key": "orderTracking.track",
+      "group": "orderTracking",
+      "fallback": "Track"
+    },
+    {
+      "key": "orderTracking.trackingNumber",
+      "group": "orderTracking",
+      "fallback": "Tracking number"
     },
     {
       "key": "page.backHome",
@@ -2601,6 +3821,41 @@
       "fallback": "Previous page"
     },
     {
+      "key": "portal.invite.accountReady",
+      "group": "portal",
+      "fallback": "Your account with {business} is ready"
+    },
+    {
+      "key": "portal.invite.accountSubject",
+      "group": "portal",
+      "fallback": "Access your account with {business}"
+    },
+    {
+      "key": "portal.invite.body",
+      "group": "portal",
+      "fallback": "Set a password to sign in and manage it in your account portal."
+    },
+    {
+      "key": "portal.invite.button",
+      "group": "portal",
+      "fallback": "Set your password"
+    },
+    {
+      "key": "portal.invite.ignore",
+      "group": "portal",
+      "fallback": "If you did not expect this, you can ignore this email."
+    },
+    {
+      "key": "portal.invite.serviceReady",
+      "group": "portal",
+      "fallback": "Your service with {business} is ready"
+    },
+    {
+      "key": "portal.invite.serviceSubject",
+      "group": "portal",
+      "fallback": "Access your service with {business}"
+    },
+    {
       "key": "quote.decline",
       "group": "quote",
       "fallback": "Decline"
@@ -2626,6 +3881,41 @@
       "fallback": "This quote link is invalid or has expired."
     },
     {
+      "key": "quote.mail.acceptedBody",
+      "group": "quote",
+      "fallback": "Hi {name}, we have received your acceptance and our team has been notified."
+    },
+    {
+      "key": "quote.mail.acceptedHeading",
+      "group": "quote",
+      "fallback": "Thank you for accepting quote {number}"
+    },
+    {
+      "key": "quote.mail.acceptedSubject",
+      "group": "quote",
+      "fallback": "Thank you — quote {number} accepted"
+    },
+    {
+      "key": "quote.mail.invoiceFollows",
+      "group": "quote",
+      "fallback": "An invoice ({number}) will be issued shortly. You will receive it separately."
+    },
+    {
+      "key": "quote.mail.invoiceLabel",
+      "group": "quote",
+      "fallback": "Invoice"
+    },
+    {
+      "key": "quote.mail.quoteLabel",
+      "group": "quote",
+      "fallback": "Quote"
+    },
+    {
+      "key": "quote.mail.totalLabel",
+      "group": "quote",
+      "fallback": "Total"
+    },
+    {
       "key": "quote.noItems",
       "group": "quote",
       "fallback": "No items"
@@ -2639,6 +3929,16 @@
       "key": "quote.optional",
       "group": "quote",
       "fallback": "Optional"
+    },
+    {
+      "key": "quote.payFailed",
+      "group": "quote",
+      "fallback": "Could not start the payment"
+    },
+    {
+      "key": "quote.payLater",
+      "group": "quote",
+      "fallback": "Online payment is not configured — the invoice will be sent separately."
     },
     {
       "key": "quote.paymentCancelled",
@@ -2759,6 +4059,31 @@
       "key": "room.view",
       "group": "room",
       "fallback": "View"
+    },
+    {
+      "key": "service.status.active",
+      "group": "service",
+      "fallback": "Active"
+    },
+    {
+      "key": "service.status.canceled",
+      "group": "service",
+      "fallback": "Ended"
+    },
+    {
+      "key": "service.status.pastDue",
+      "group": "service",
+      "fallback": "Payment due"
+    },
+    {
+      "key": "service.status.provisioning",
+      "group": "service",
+      "fallback": "Being set up"
+    },
+    {
+      "key": "service.status.trialing",
+      "group": "service",
+      "fallback": "Trial"
     },
     {
       "key": "shop.add",
@@ -2981,6 +4306,1376 @@
       "fallback": "Your name"
     },
     {
+      "key": "signature.area",
+      "group": "signature",
+      "fallback": "Signature drawing area"
+    },
+    {
+      "key": "staff.attendance.break",
+      "group": "staff",
+      "fallback": "Break (minutes)"
+    },
+    {
+      "key": "staff.attendance.breakTaken",
+      "group": "staff",
+      "fallback": "{minutes}m break"
+    },
+    {
+      "key": "staff.attendance.clockedIn",
+      "group": "staff",
+      "fallback": "Currently clocked in"
+    },
+    {
+      "key": "staff.attendance.clockIn",
+      "group": "staff",
+      "fallback": "Clock in"
+    },
+    {
+      "key": "staff.attendance.clockOut",
+      "group": "staff",
+      "fallback": "Clock out"
+    },
+    {
+      "key": "staff.attendance.employeesOnly",
+      "group": "staff",
+      "fallback": "Time & attendance is only available for employees."
+    },
+    {
+      "key": "staff.attendance.none",
+      "group": "staff",
+      "fallback": "No entries yet."
+    },
+    {
+      "key": "staff.attendance.notes",
+      "group": "staff",
+      "fallback": "Notes (optional)"
+    },
+    {
+      "key": "staff.attendance.notesPlaceholder",
+      "group": "staff",
+      "fallback": "What did you work on?"
+    },
+    {
+      "key": "staff.attendance.open",
+      "group": "staff",
+      "fallback": "open"
+    },
+    {
+      "key": "staff.attendance.recent",
+      "group": "staff",
+      "fallback": "Recent entries"
+    },
+    {
+      "key": "staff.attendance.since",
+      "group": "staff",
+      "fallback": "Since {time} — {duration}"
+    },
+    {
+      "key": "staff.attendance.title",
+      "group": "staff",
+      "fallback": "Time clock"
+    },
+    {
+      "key": "staff.common.add",
+      "group": "staff",
+      "fallback": "Add"
+    },
+    {
+      "key": "staff.common.back",
+      "group": "staff",
+      "fallback": "Back"
+    },
+    {
+      "key": "staff.common.cancel",
+      "group": "staff",
+      "fallback": "Cancel"
+    },
+    {
+      "key": "staff.common.date",
+      "group": "staff",
+      "fallback": "Date"
+    },
+    {
+      "key": "staff.common.dayMany",
+      "group": "staff",
+      "fallback": "{count} days"
+    },
+    {
+      "key": "staff.common.dayOne",
+      "group": "staff",
+      "fallback": "{count} day"
+    },
+    {
+      "key": "staff.common.description",
+      "group": "staff",
+      "fallback": "Description"
+    },
+    {
+      "key": "staff.common.edit",
+      "group": "staff",
+      "fallback": "Edit"
+    },
+    {
+      "key": "staff.common.hoursMinutes",
+      "group": "staff",
+      "fallback": "{hours} h {minutes} min"
+    },
+    {
+      "key": "staff.common.loading",
+      "group": "staff",
+      "fallback": "Loading…"
+    },
+    {
+      "key": "staff.common.minutes",
+      "group": "staff",
+      "fallback": "{minutes} min"
+    },
+    {
+      "key": "staff.common.name",
+      "group": "staff",
+      "fallback": "Name"
+    },
+    {
+      "key": "staff.common.noEmployee",
+      "group": "staff",
+      "fallback": "No employee record linked"
+    },
+    {
+      "key": "staff.common.noEmployeeHint",
+      "group": "staff",
+      "fallback": "Contact your administrator to link your account to an employee profile."
+    },
+    {
+      "key": "staff.common.period",
+      "group": "staff",
+      "fallback": "Period"
+    },
+    {
+      "key": "staff.common.save",
+      "group": "staff",
+      "fallback": "Save"
+    },
+    {
+      "key": "staff.common.saveChanges",
+      "group": "staff",
+      "fallback": "Save changes"
+    },
+    {
+      "key": "staff.common.saving",
+      "group": "staff",
+      "fallback": "Saving…"
+    },
+    {
+      "key": "staff.common.status",
+      "group": "staff",
+      "fallback": "Status"
+    },
+    {
+      "key": "staff.common.submitting",
+      "group": "staff",
+      "fallback": "Submitting…"
+    },
+    {
+      "key": "staff.common.type",
+      "group": "staff",
+      "fallback": "Type"
+    },
+    {
+      "key": "staff.contracts.awaitingEmployer",
+      "group": "staff",
+      "fallback": "Awaiting employer signature"
+    },
+    {
+      "key": "staff.contracts.hours",
+      "group": "staff",
+      "fallback": "Hours:"
+    },
+    {
+      "key": "staff.contracts.noEmployee",
+      "group": "staff",
+      "fallback": "No employee record found."
+    },
+    {
+      "key": "staff.contracts.none",
+      "group": "staff",
+      "fallback": "No contracts yet."
+    },
+    {
+      "key": "staff.contracts.notice",
+      "group": "staff",
+      "fallback": "Notice:"
+    },
+    {
+      "key": "staff.contracts.noticeDays",
+      "group": "staff",
+      "fallback": "{count} days"
+    },
+    {
+      "key": "staff.contracts.perMonth",
+      "group": "staff",
+      "fallback": "{amount}/mo"
+    },
+    {
+      "key": "staff.contracts.perWeek",
+      "group": "staff",
+      "fallback": "{hours}/wk"
+    },
+    {
+      "key": "staff.contracts.probationUntil",
+      "group": "staff",
+      "fallback": "Probation until:"
+    },
+    {
+      "key": "staff.contracts.read",
+      "group": "staff",
+      "fallback": "Read full contract"
+    },
+    {
+      "key": "staff.contracts.salary",
+      "group": "staff",
+      "fallback": "Salary:"
+    },
+    {
+      "key": "staff.contracts.sign",
+      "group": "staff",
+      "fallback": "Sign contract"
+    },
+    {
+      "key": "staff.contracts.starts",
+      "group": "staff",
+      "fallback": "starts {date}"
+    },
+    {
+      "key": "staff.contracts.status.active",
+      "group": "staff",
+      "fallback": "Active"
+    },
+    {
+      "key": "staff.contracts.status.draft",
+      "group": "staff",
+      "fallback": "Draft"
+    },
+    {
+      "key": "staff.contracts.status.expired",
+      "group": "staff",
+      "fallback": "Expired"
+    },
+    {
+      "key": "staff.contracts.status.sent",
+      "group": "staff",
+      "fallback": "To sign"
+    },
+    {
+      "key": "staff.contracts.status.signed",
+      "group": "staff",
+      "fallback": "Signed"
+    },
+    {
+      "key": "staff.contracts.status.terminated",
+      "group": "staff",
+      "fallback": "Terminated"
+    },
+    {
+      "key": "staff.contracts.subtitle",
+      "group": "staff",
+      "fallback": "Review and sign your employment contracts"
+    },
+    {
+      "key": "staff.contracts.title",
+      "group": "staff",
+      "fallback": "My contracts"
+    },
+    {
+      "key": "staff.contracts.type.contractor",
+      "group": "staff",
+      "fallback": "Contractor"
+    },
+    {
+      "key": "staff.contracts.type.fullTime",
+      "group": "staff",
+      "fallback": "Full time"
+    },
+    {
+      "key": "staff.contracts.type.partTime",
+      "group": "staff",
+      "fallback": "Part time"
+    },
+    {
+      "key": "staff.contracts.youSigned",
+      "group": "staff",
+      "fallback": "You signed {date}"
+    },
+    {
+      "key": "staff.expenses.amount",
+      "group": "staff",
+      "fallback": "Amount (incl. VAT)"
+    },
+    {
+      "key": "staff.expenses.category.lodging",
+      "group": "staff",
+      "fallback": "Lodging"
+    },
+    {
+      "key": "staff.expenses.category.meals",
+      "group": "staff",
+      "fallback": "Meals"
+    },
+    {
+      "key": "staff.expenses.category.other",
+      "group": "staff",
+      "fallback": "Other"
+    },
+    {
+      "key": "staff.expenses.category.software",
+      "group": "staff",
+      "fallback": "Software"
+    },
+    {
+      "key": "staff.expenses.category.supplies",
+      "group": "staff",
+      "fallback": "Supplies"
+    },
+    {
+      "key": "staff.expenses.category.travel",
+      "group": "staff",
+      "fallback": "Travel"
+    },
+    {
+      "key": "staff.expenses.categoryLabel",
+      "group": "staff",
+      "fallback": "Category"
+    },
+    {
+      "key": "staff.expenses.descriptionPlaceholder",
+      "group": "staff",
+      "fallback": "e.g. Client lunch in Stockholm"
+    },
+    {
+      "key": "staff.expenses.descriptionRequired",
+      "group": "staff",
+      "fallback": "Description required"
+    },
+    {
+      "key": "staff.expenses.invalidAmount",
+      "group": "staff",
+      "fallback": "Enter a valid amount"
+    },
+    {
+      "key": "staff.expenses.linkTip",
+      "group": "staff",
+      "fallback": "Tip: Ask your administrator to link your account to an employee profile so HR sees these in the same context."
+    },
+    {
+      "key": "staff.expenses.none",
+      "group": "staff",
+      "fallback": "No expenses yet."
+    },
+    {
+      "key": "staff.expenses.notSignedIn",
+      "group": "staff",
+      "fallback": "Not signed in"
+    },
+    {
+      "key": "staff.expenses.status.approved",
+      "group": "staff",
+      "fallback": "Approved"
+    },
+    {
+      "key": "staff.expenses.status.booked",
+      "group": "staff",
+      "fallback": "Booked"
+    },
+    {
+      "key": "staff.expenses.status.draft",
+      "group": "staff",
+      "fallback": "Draft"
+    },
+    {
+      "key": "staff.expenses.status.paid",
+      "group": "staff",
+      "fallback": "Paid"
+    },
+    {
+      "key": "staff.expenses.status.rejected",
+      "group": "staff",
+      "fallback": "Rejected"
+    },
+    {
+      "key": "staff.expenses.status.submitted",
+      "group": "staff",
+      "fallback": "Submitted"
+    },
+    {
+      "key": "staff.expenses.submit",
+      "group": "staff",
+      "fallback": "Submit expense"
+    },
+    {
+      "key": "staff.expenses.submitted",
+      "group": "staff",
+      "fallback": "Expense submitted"
+    },
+    {
+      "key": "staff.expenses.title",
+      "group": "staff",
+      "fallback": "My expenses"
+    },
+    {
+      "key": "staff.expenses.vendor",
+      "group": "staff",
+      "fallback": "Vendor (optional)"
+    },
+    {
+      "key": "staff.expenses.vendorPlaceholder",
+      "group": "staff",
+      "fallback": "e.g. SAS"
+    },
+    {
+      "key": "staff.leave.available",
+      "group": "staff",
+      "fallback": "{type}: {days} available"
+    },
+    {
+      "key": "staff.leave.cancelAction",
+      "group": "staff",
+      "fallback": "Cancel"
+    },
+    {
+      "key": "staff.leave.cancelConfirm",
+      "group": "staff",
+      "fallback": "Cancel this leave request?"
+    },
+    {
+      "key": "staff.leave.cancelled",
+      "group": "staff",
+      "fallback": "Leave request cancelled"
+    },
+    {
+      "key": "staff.leave.cancelling",
+      "group": "staff",
+      "fallback": "Cancelling…"
+    },
+    {
+      "key": "staff.leave.cancelRequest",
+      "group": "staff",
+      "fallback": "Cancel request"
+    },
+    {
+      "key": "staff.leave.cancelYes",
+      "group": "staff",
+      "fallback": "Yes, cancel"
+    },
+    {
+      "key": "staff.leave.cannotUndo",
+      "group": "staff",
+      "fallback": "This action cannot be undone."
+    },
+    {
+      "key": "staff.leave.editRequest",
+      "group": "staff",
+      "fallback": "Edit request"
+    },
+    {
+      "key": "staff.leave.editTitle",
+      "group": "staff",
+      "fallback": "Edit leave request"
+    },
+    {
+      "key": "staff.leave.endDate",
+      "group": "staff",
+      "fallback": "End date"
+    },
+    {
+      "key": "staff.leave.exceedsBalance",
+      "group": "staff",
+      "fallback": "exceeds your balance"
+    },
+    {
+      "key": "staff.leave.history",
+      "group": "staff",
+      "fallback": "History"
+    },
+    {
+      "key": "staff.leave.keep",
+      "group": "staff",
+      "fallback": "Keep request"
+    },
+    {
+      "key": "staff.leave.locked",
+      "group": "staff",
+      "fallback": "Locked — leave has started"
+    },
+    {
+      "key": "staff.leave.noAllocationForType",
+      "group": "staff",
+      "fallback": "no allocation set for this type"
+    },
+    {
+      "key": "staff.leave.noAllocationForYear",
+      "group": "staff",
+      "fallback": "No leave allocation set for {year}. Contact HR to get your annual quota."
+    },
+    {
+      "key": "staff.leave.noPast",
+      "group": "staff",
+      "fallback": "No past leave on record."
+    },
+    {
+      "key": "staff.leave.noUpcoming",
+      "group": "staff",
+      "fallback": "No upcoming leave."
+    },
+    {
+      "key": "staff.leave.ofTotal",
+      "group": "staff",
+      "fallback": "/ {total} days"
+    },
+    {
+      "key": "staff.leave.pendingDays",
+      "group": "staff",
+      "fallback": "{count} pending"
+    },
+    {
+      "key": "staff.leave.pickDates",
+      "group": "staff",
+      "fallback": "Pick dates"
+    },
+    {
+      "key": "staff.leave.reason",
+      "group": "staff",
+      "fallback": "Reason"
+    },
+    {
+      "key": "staff.leave.reasonOptional",
+      "group": "staff",
+      "fallback": "Reason (optional)"
+    },
+    {
+      "key": "staff.leave.reasonPlaceholder",
+      "group": "staff",
+      "fallback": "Short note"
+    },
+    {
+      "key": "staff.leave.request",
+      "group": "staff",
+      "fallback": "Request leave"
+    },
+    {
+      "key": "staff.leave.requesting",
+      "group": "staff",
+      "fallback": "Requesting"
+    },
+    {
+      "key": "staff.leave.startDate",
+      "group": "staff",
+      "fallback": "Start date"
+    },
+    {
+      "key": "staff.leave.status.approved",
+      "group": "staff",
+      "fallback": "Approved"
+    },
+    {
+      "key": "staff.leave.status.cancelled",
+      "group": "staff",
+      "fallback": "Cancelled"
+    },
+    {
+      "key": "staff.leave.status.denied",
+      "group": "staff",
+      "fallback": "Denied"
+    },
+    {
+      "key": "staff.leave.status.pending",
+      "group": "staff",
+      "fallback": "Pending review"
+    },
+    {
+      "key": "staff.leave.status.rejected",
+      "group": "staff",
+      "fallback": "Rejected"
+    },
+    {
+      "key": "staff.leave.submit",
+      "group": "staff",
+      "fallback": "Submit request"
+    },
+    {
+      "key": "staff.leave.submitted",
+      "group": "staff",
+      "fallback": "Leave request submitted"
+    },
+    {
+      "key": "staff.leave.type.other",
+      "group": "staff",
+      "fallback": "Other"
+    },
+    {
+      "key": "staff.leave.type.parental",
+      "group": "staff",
+      "fallback": "Parental"
+    },
+    {
+      "key": "staff.leave.type.sick",
+      "group": "staff",
+      "fallback": "Sick leave"
+    },
+    {
+      "key": "staff.leave.type.vacation",
+      "group": "staff",
+      "fallback": "Vacation"
+    },
+    {
+      "key": "staff.leave.upcoming",
+      "group": "staff",
+      "fallback": "Upcoming & active"
+    },
+    {
+      "key": "staff.leave.updated",
+      "group": "staff",
+      "fallback": "Leave request updated"
+    },
+    {
+      "key": "staff.leave.used",
+      "group": "staff",
+      "fallback": "Used {count}"
+    },
+    {
+      "key": "staff.payslip.advance",
+      "group": "staff",
+      "fallback": "Advance deduction"
+    },
+    {
+      "key": "staff.payslip.amount",
+      "group": "staff",
+      "fallback": "Amount"
+    },
+    {
+      "key": "staff.payslip.benefits",
+      "group": "staff",
+      "fallback": "Benefits"
+    },
+    {
+      "key": "staff.payslip.components",
+      "group": "staff",
+      "fallback": "Pay lines"
+    },
+    {
+      "key": "staff.payslip.deductions",
+      "group": "staff",
+      "fallback": "Deductions"
+    },
+    {
+      "key": "staff.payslip.employee",
+      "group": "staff",
+      "fallback": "Employee"
+    },
+    {
+      "key": "staff.payslip.employer",
+      "group": "staff",
+      "fallback": "Employer"
+    },
+    {
+      "key": "staff.payslip.employerContributions",
+      "group": "staff",
+      "fallback": "Employer contributions"
+    },
+    {
+      "key": "staff.payslip.grossToNet",
+      "group": "staff",
+      "fallback": "Gross to net"
+    },
+    {
+      "key": "staff.payslip.line",
+      "group": "staff",
+      "fallback": "Line"
+    },
+    {
+      "key": "staff.payslip.netPay",
+      "group": "staff",
+      "fallback": "Net pay"
+    },
+    {
+      "key": "staff.payslip.noComponents",
+      "group": "staff",
+      "fallback": "No pay lines."
+    },
+    {
+      "key": "staff.payslip.pensionEmployee",
+      "group": "staff",
+      "fallback": "Pension (employee)"
+    },
+    {
+      "key": "staff.payslip.pensionEmployer",
+      "group": "staff",
+      "fallback": "Pension (employer)"
+    },
+    {
+      "key": "staff.payslip.role",
+      "group": "staff",
+      "fallback": "Role"
+    },
+    {
+      "key": "staff.payslip.sickDeduction",
+      "group": "staff",
+      "fallback": "Sick deduction"
+    },
+    {
+      "key": "staff.payslip.sickPay",
+      "group": "staff",
+      "fallback": "Sick pay"
+    },
+    {
+      "key": "staff.payslip.socialFee",
+      "group": "staff",
+      "fallback": "Social fee"
+    },
+    {
+      "key": "staff.payslip.socialFeePct",
+      "group": "staff",
+      "fallback": "Social fee ({percent}%)"
+    },
+    {
+      "key": "staff.payslip.tax",
+      "group": "staff",
+      "fallback": "Preliminary tax (PAYE)"
+    },
+    {
+      "key": "staff.payslip.taxable",
+      "group": "staff",
+      "fallback": "Taxable"
+    },
+    {
+      "key": "staff.payslip.taxableBase",
+      "group": "staff",
+      "fallback": "Taxable base"
+    },
+    {
+      "key": "staff.payslip.taxCorrection",
+      "group": "staff",
+      "fallback": "Tax correction"
+    },
+    {
+      "key": "staff.payslip.taxShort",
+      "group": "staff",
+      "fallback": "Tax"
+    },
+    {
+      "key": "staff.payslip.type.benefit",
+      "group": "staff",
+      "fallback": "Benefit"
+    },
+    {
+      "key": "staff.payslip.type.bonus",
+      "group": "staff",
+      "fallback": "Bonus"
+    },
+    {
+      "key": "staff.payslip.type.deduction",
+      "group": "staff",
+      "fallback": "Deduction"
+    },
+    {
+      "key": "staff.payslip.type.overtime",
+      "group": "staff",
+      "fallback": "Overtime"
+    },
+    {
+      "key": "staff.payslip.type.salary",
+      "group": "staff",
+      "fallback": "Salary"
+    },
+    {
+      "key": "staff.payslip.yes",
+      "group": "staff",
+      "fallback": "Yes"
+    },
+    {
+      "key": "staff.payslip.ytd",
+      "group": "staff",
+      "fallback": "Year-to-date"
+    },
+    {
+      "key": "staff.payslip.ytdMonths",
+      "group": "staff",
+      "fallback": "Year-to-date ({count} months)"
+    },
+    {
+      "key": "staff.payslip.ytdOneMonth",
+      "group": "staff",
+      "fallback": "Year-to-date (1 month)"
+    },
+    {
+      "key": "staff.payslips.gross",
+      "group": "staff",
+      "fallback": "Gross"
+    },
+    {
+      "key": "staff.payslips.net",
+      "group": "staff",
+      "fallback": "Net"
+    },
+    {
+      "key": "staff.payslips.noEmployeeHint",
+      "group": "staff",
+      "fallback": "Your payslips will appear here once HR links your employee record to your account."
+    },
+    {
+      "key": "staff.payslips.none",
+      "group": "staff",
+      "fallback": "No payslips yet"
+    },
+    {
+      "key": "staff.payslips.noneHint",
+      "group": "staff",
+      "fallback": "Approved payroll runs will show up here."
+    },
+    {
+      "key": "staff.payslips.pageTitle",
+      "group": "staff",
+      "fallback": "My payslips · My Account"
+    },
+    {
+      "key": "staff.payslips.pageTitleOne",
+      "group": "staff",
+      "fallback": "Payslip · My Account"
+    },
+    {
+      "key": "staff.payslips.payslip",
+      "group": "staff",
+      "fallback": "Payslip"
+    },
+    {
+      "key": "staff.payslips.print",
+      "group": "staff",
+      "fallback": "Print / Save PDF"
+    },
+    {
+      "key": "staff.payslips.status.approved",
+      "group": "staff",
+      "fallback": "Approved"
+    },
+    {
+      "key": "staff.payslips.status.cancelled",
+      "group": "staff",
+      "fallback": "Cancelled"
+    },
+    {
+      "key": "staff.payslips.status.draft",
+      "group": "staff",
+      "fallback": "Draft"
+    },
+    {
+      "key": "staff.payslips.status.paid",
+      "group": "staff",
+      "fallback": "Paid"
+    },
+    {
+      "key": "staff.payslips.title",
+      "group": "staff",
+      "fallback": "My payslips"
+    },
+    {
+      "key": "staff.payslips.view",
+      "group": "staff",
+      "fallback": "View"
+    },
+    {
+      "key": "staff.performance.achievements",
+      "group": "staff",
+      "fallback": "Achievements:"
+    },
+    {
+      "key": "staff.performance.acknowledge",
+      "group": "staff",
+      "fallback": "Acknowledge"
+    },
+    {
+      "key": "staff.performance.agenda",
+      "group": "staff",
+      "fallback": "Agenda:"
+    },
+    {
+      "key": "staff.performance.category.business",
+      "group": "staff",
+      "fallback": "Business"
+    },
+    {
+      "key": "staff.performance.category.personal",
+      "group": "staff",
+      "fallback": "Personal"
+    },
+    {
+      "key": "staff.performance.category.professional",
+      "group": "staff",
+      "fallback": "Professional"
+    },
+    {
+      "key": "staff.performance.category.skill",
+      "group": "staff",
+      "fallback": "Skill"
+    },
+    {
+      "key": "staff.performance.due",
+      "group": "staff",
+      "fallback": "Due {date}"
+    },
+    {
+      "key": "staff.performance.employeesOnly",
+      "group": "staff",
+      "fallback": "Performance is available for employees only."
+    },
+    {
+      "key": "staff.performance.goalTitle",
+      "group": "staff",
+      "fallback": "Title"
+    },
+    {
+      "key": "staff.performance.improvements",
+      "group": "staff",
+      "fallback": "Improvements:"
+    },
+    {
+      "key": "staff.performance.meeting.cancelled",
+      "group": "staff",
+      "fallback": "Cancelled"
+    },
+    {
+      "key": "staff.performance.meeting.completed",
+      "group": "staff",
+      "fallback": "Completed"
+    },
+    {
+      "key": "staff.performance.meeting.scheduled",
+      "group": "staff",
+      "fallback": "Scheduled"
+    },
+    {
+      "key": "staff.performance.meetingsTitle",
+      "group": "staff",
+      "fallback": "Upcoming & past 1:1s"
+    },
+    {
+      "key": "staff.performance.myGoals",
+      "group": "staff",
+      "fallback": "My Goals"
+    },
+    {
+      "key": "staff.performance.newGoal",
+      "group": "staff",
+      "fallback": "New Goal"
+    },
+    {
+      "key": "staff.performance.nextPeriod",
+      "group": "staff",
+      "fallback": "Next period:"
+    },
+    {
+      "key": "staff.performance.noGoals",
+      "group": "staff",
+      "fallback": "No goals yet — add one to start tracking your development."
+    },
+    {
+      "key": "staff.performance.noMeetings",
+      "group": "staff",
+      "fallback": "No 1:1s scheduled."
+    },
+    {
+      "key": "staff.performance.noReviews",
+      "group": "staff",
+      "fallback": "No reviews yet."
+    },
+    {
+      "key": "staff.performance.period.adHoc",
+      "group": "staff",
+      "fallback": "Ad-hoc review"
+    },
+    {
+      "key": "staff.performance.period.annual",
+      "group": "staff",
+      "fallback": "Annual review"
+    },
+    {
+      "key": "staff.performance.period.other",
+      "group": "staff",
+      "fallback": "{type} review"
+    },
+    {
+      "key": "staff.performance.period.probation",
+      "group": "staff",
+      "fallback": "Probation review"
+    },
+    {
+      "key": "staff.performance.period.quarterly",
+      "group": "staff",
+      "fallback": "Quarterly review"
+    },
+    {
+      "key": "staff.performance.review.acknowledged",
+      "group": "staff",
+      "fallback": "Acknowledged"
+    },
+    {
+      "key": "staff.performance.review.completed",
+      "group": "staff",
+      "fallback": "Completed"
+    },
+    {
+      "key": "staff.performance.review.draft",
+      "group": "staff",
+      "fallback": "Draft"
+    },
+    {
+      "key": "staff.performance.review.employeeReview",
+      "group": "staff",
+      "fallback": "Awaiting your acknowledgement"
+    },
+    {
+      "key": "staff.performance.reviews",
+      "group": "staff",
+      "fallback": "Reviews"
+    },
+    {
+      "key": "staff.performance.subtitle",
+      "group": "staff",
+      "fallback": "Your goals, 1:1s and reviews"
+    },
+    {
+      "key": "staff.performance.tabGoals",
+      "group": "staff",
+      "fallback": "Goals ({count})"
+    },
+    {
+      "key": "staff.performance.tabMeetings",
+      "group": "staff",
+      "fallback": "1:1s ({count})"
+    },
+    {
+      "key": "staff.performance.tabReviews",
+      "group": "staff",
+      "fallback": "Reviews ({count})"
+    },
+    {
+      "key": "staff.performance.targetDate",
+      "group": "staff",
+      "fallback": "Target date"
+    },
+    {
+      "key": "staff.performance.title",
+      "group": "staff",
+      "fallback": "Performance"
+    },
+    {
+      "key": "staff.performance.update",
+      "group": "staff",
+      "fallback": "Update"
+    },
+    {
+      "key": "staff.performance.updateProgress",
+      "group": "staff",
+      "fallback": "Update progress"
+    },
+    {
+      "key": "staff.skills.addCertification",
+      "group": "staff",
+      "fallback": "Add certification"
+    },
+    {
+      "key": "staff.skills.certifications",
+      "group": "staff",
+      "fallback": "Certifications"
+    },
+    {
+      "key": "staff.skills.certName",
+      "group": "staff",
+      "fallback": "Name *"
+    },
+    {
+      "key": "staff.skills.employeesOnly",
+      "group": "staff",
+      "fallback": "Skills register is only available for employees."
+    },
+    {
+      "key": "staff.skills.expired",
+      "group": "staff",
+      "fallback": "Expired"
+    },
+    {
+      "key": "staff.skills.expires",
+      "group": "staff",
+      "fallback": "Expires"
+    },
+    {
+      "key": "staff.skills.expiresOn",
+      "group": "staff",
+      "fallback": "expires {date}"
+    },
+    {
+      "key": "staff.skills.expiringSoon",
+      "group": "staff",
+      "fallback": "Expiring soon"
+    },
+    {
+      "key": "staff.skills.issued",
+      "group": "staff",
+      "fallback": "Issued"
+    },
+    {
+      "key": "staff.skills.issuer",
+      "group": "staff",
+      "fallback": "Issuer"
+    },
+    {
+      "key": "staff.skills.level",
+      "group": "staff",
+      "fallback": "Level (1-5)"
+    },
+    {
+      "key": "staff.skills.levelAndYears",
+      "group": "staff",
+      "fallback": "Level {level}/5 · {years}y experience"
+    },
+    {
+      "key": "staff.skills.noCertifications",
+      "group": "staff",
+      "fallback": "No certifications."
+    },
+    {
+      "key": "staff.skills.noExpiry",
+      "group": "staff",
+      "fallback": "no expiry"
+    },
+    {
+      "key": "staff.skills.none",
+      "group": "staff",
+      "fallback": "No skills added yet."
+    },
+    {
+      "key": "staff.skills.select",
+      "group": "staff",
+      "fallback": "Select skill"
+    },
+    {
+      "key": "staff.skills.skill",
+      "group": "staff",
+      "fallback": "Skill"
+    },
+    {
+      "key": "staff.skills.title",
+      "group": "staff",
+      "fallback": "My skills"
+    },
+    {
+      "key": "staff.skills.valid",
+      "group": "staff",
+      "fallback": "Valid"
+    },
+    {
+      "key": "staff.skills.years",
+      "group": "staff",
+      "fallback": "Years"
+    },
+    {
+      "key": "staff.team.approve",
+      "group": "staff",
+      "fallback": "Approve"
+    },
+    {
+      "key": "staff.team.approveTitle",
+      "group": "staff",
+      "fallback": "Approve leave request"
+    },
+    {
+      "key": "staff.team.days",
+      "group": "staff",
+      "fallback": "Days"
+    },
+    {
+      "key": "staff.team.decisionSaved",
+      "group": "staff",
+      "fallback": "Decision saved"
+    },
+    {
+      "key": "staff.team.department",
+      "group": "staff",
+      "fallback": "Department"
+    },
+    {
+      "key": "staff.team.employee",
+      "group": "staff",
+      "fallback": "Employee"
+    },
+    {
+      "key": "staff.team.jobTitle",
+      "group": "staff",
+      "fallback": "Title"
+    },
+    {
+      "key": "staff.team.none",
+      "group": "staff",
+      "fallback": "No direct reports yet."
+    },
+    {
+      "key": "staff.team.noPending",
+      "group": "staff",
+      "fallback": "No requests waiting for your decision."
+    },
+    {
+      "key": "staff.team.note",
+      "group": "staff",
+      "fallback": "Note (optional)"
+    },
+    {
+      "key": "staff.team.notePlaceholderApprove",
+      "group": "staff",
+      "fallback": "e.g. Enjoy your time off!"
+    },
+    {
+      "key": "staff.team.notePlaceholderReject",
+      "group": "staff",
+      "fallback": "Reason for rejection…"
+    },
+    {
+      "key": "staff.team.pending",
+      "group": "staff",
+      "fallback": "Pending approvals"
+    },
+    {
+      "key": "staff.team.recent",
+      "group": "staff",
+      "fallback": "Recent decisions"
+    },
+    {
+      "key": "staff.team.reject",
+      "group": "staff",
+      "fallback": "Reject"
+    },
+    {
+      "key": "staff.team.rejectTitle",
+      "group": "staff",
+      "fallback": "Reject leave request"
+    },
+    {
+      "key": "staff.team.status.active",
+      "group": "staff",
+      "fallback": "Active"
+    },
+    {
+      "key": "staff.team.status.onLeave",
+      "group": "staff",
+      "fallback": "On leave"
+    },
+    {
+      "key": "staff.team.status.terminated",
+      "group": "staff",
+      "fallback": "Terminated"
+    },
+    {
+      "key": "staff.team.title",
+      "group": "staff",
+      "fallback": "My team"
+    },
+    {
+      "key": "stock.getNotified",
+      "group": "stock",
+      "fallback": "Get notified when this product is back in stock"
+    },
+    {
+      "key": "stock.inStock",
+      "group": "stock",
+      "fallback": "In stock"
+    },
+    {
+      "key": "stock.low",
+      "group": "stock",
+      "fallback": "Low stock"
+    },
+    {
+      "key": "stock.notifyFailed",
+      "group": "stock",
+      "fallback": "Could not save your request. Please try again."
+    },
+    {
+      "key": "stock.notifyMe",
+      "group": "stock",
+      "fallback": "Notify me"
+    },
+    {
+      "key": "stock.notifySaved",
+      "group": "stock",
+      "fallback": "We will notify you when it is back!"
+    },
+    {
+      "key": "stock.onlyLeft",
+      "group": "stock",
+      "fallback": "Only {count} left"
+    },
+    {
+      "key": "stock.out",
+      "group": "stock",
+      "fallback": "Out of stock"
+    },
+    {
+      "key": "stock.preorder",
+      "group": "stock",
+      "fallback": "Pre-order"
+    },
+    {
+      "key": "stock.saving",
+      "group": "stock",
+      "fallback": "Saving…"
+    },
+    {
+      "key": "stock.willEmail",
+      "group": "stock",
+      "fallback": "We will email you when this is back in stock:"
+    },
+    {
+      "key": "survey.already",
+      "group": "survey",
+      "fallback": "This survey has already been submitted. Thank you!"
+    },
+    {
+      "key": "survey.expired",
+      "group": "survey",
+      "fallback": "This survey link has expired."
+    },
+    {
+      "key": "survey.failed",
+      "group": "survey",
+      "fallback": "Your answer could not be saved. Please try again."
+    },
+    {
+      "key": "survey.notLikely",
+      "group": "survey",
+      "fallback": "Not at all likely"
+    },
+    {
+      "key": "survey.optional",
+      "group": "survey",
+      "fallback": "Optional"
+    },
+    {
+      "key": "survey.submit",
+      "group": "survey",
+      "fallback": "Submit feedback"
+    },
+    {
+      "key": "survey.thanks",
+      "group": "survey",
+      "fallback": "Thanks — your feedback was recorded."
+    },
+    {
+      "key": "survey.unavailable",
+      "group": "survey",
+      "fallback": "We could not load this survey."
+    },
+    {
+      "key": "survey.veryLikely",
+      "group": "survey",
+      "fallback": "Extremely likely"
+    },
+    {
       "key": "terms.empty",
       "group": "terms",
       "fallback": "No terms have been published yet."
@@ -2999,6 +5694,31 @@
       "key": "terms.updated",
       "group": "terms",
       "fallback": "Updated"
+    },
+    {
+      "key": "ticket.category.billing",
+      "group": "ticket",
+      "fallback": "Billing"
+    },
+    {
+      "key": "ticket.category.bug",
+      "group": "ticket",
+      "fallback": "Something is not working"
+    },
+    {
+      "key": "ticket.category.feature",
+      "group": "ticket",
+      "fallback": "A wish"
+    },
+    {
+      "key": "ticket.category.other",
+      "group": "ticket",
+      "fallback": "Other"
+    },
+    {
+      "key": "ticket.category.question",
+      "group": "ticket",
+      "fallback": "Question"
     },
     {
       "key": "ticket.mail.greeting",
@@ -3034,6 +5754,56 @@
       "key": "ticket.mail.replySubject",
       "group": "ticket",
       "fallback": "Re: {subject} [{number}]"
+    },
+    {
+      "key": "ticket.priority.high",
+      "group": "ticket",
+      "fallback": "High"
+    },
+    {
+      "key": "ticket.priority.low",
+      "group": "ticket",
+      "fallback": "Low"
+    },
+    {
+      "key": "ticket.priority.medium",
+      "group": "ticket",
+      "fallback": "Medium"
+    },
+    {
+      "key": "ticket.priority.urgent",
+      "group": "ticket",
+      "fallback": "Urgent"
+    },
+    {
+      "key": "ticket.status.closed",
+      "group": "ticket",
+      "fallback": "Closed"
+    },
+    {
+      "key": "ticket.status.inProgress",
+      "group": "ticket",
+      "fallback": "In progress"
+    },
+    {
+      "key": "ticket.status.new",
+      "group": "ticket",
+      "fallback": "New"
+    },
+    {
+      "key": "ticket.status.open",
+      "group": "ticket",
+      "fallback": "Open"
+    },
+    {
+      "key": "ticket.status.resolved",
+      "group": "ticket",
+      "fallback": "Resolved"
+    },
+    {
+      "key": "ticket.status.waiting",
+      "group": "ticket",
+      "fallback": "Waiting"
     },
     {
       "key": "youtube.defaultTitle",

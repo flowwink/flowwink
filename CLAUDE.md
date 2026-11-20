@@ -700,6 +700,17 @@ beside its payload, so an operator branches instead of guessing:
   defaults to "Stripe is off") and an invoice is then paid by bank. The PDF
   draws every text through `winAnsi` (`_shared/invoices/winansi.ts`): one
   arrow in a line used to fail the whole PDF and the mail went without it.
+- **A visitor text ships its Swedish line (2026-11-19).** `t('key',
+  'English')` was English on a Swedish site until someone ran
+  `translate_ui_text`, and every key added after that stayed English (LiteIT,
+  site language sv: 193 of 611 keys). `resolveUiText` now ends on the
+  platform's own pack: instance overlay → instance flat layer →
+  `PLATFORM_UI_TEXT[lang]` (`_shared/locale/ui-text-pack-sv.ts`) → the
+  call-site English. A new `t()` key gets its line in the pack in the same PR,
+  same placeholders (`platform-speaks-swedish` compares the pack with the
+  catalogue, both ways). The customer path's text matches take both
+  languages: run it once with `site_languages.default = 'sv'` when a customer
+  page changes.
 - **A mail template is seeded in every language the platform speaks
   (2026-11-19).** `resolve_email_template` walks recipient language → site
   language → ANY active version, so a mail seeded in English only is English
@@ -708,6 +719,15 @@ beside its payload, so an operator branches instead of guessing:
   their `sv` rows in `20261119200000` — inserted only where (name, 'sv') is
   missing. A new template ships `en` AND `sv` in the same migration, with the
   same placeholders (a guard compares them).
+- **A reset does not take the mail templates (2026-11-20).**
+  `sandbox_reset_wipe` emptied `email_templates` every night and migrations
+  never seed twice: sandbox had NO templates and mailed the built-in English.
+  `seed_platform_email_templates()` is the one reseedable home of every
+  template the platform ships (en + sv, inserted only where missing);
+  the sandbox wipe calls it, `reset_site_data` keeps the table. A migration
+  that seeds a template redefines that function in the same file (a guard).
+  The same goes for any platform configuration only a migration seeds: a wipe
+  either keeps its table or can put it back.
 - **The customer hears about their case (2026-11-18).** A support case told
   its customer nothing: no receipt, and a staff reply was "in the portal",
   where a customer entered by hand has no account. Two automations run
@@ -783,6 +803,10 @@ beside its payload, so an operator branches instead of guessing:
   the contact (the pipeline is ordered by score, so a new one was the last
   card of its column — `CreateLeadDialog` now opens it), Create deal. The case
   step: New Ticket, an internal note, a reply — and the customer's two mails.
+  The new-customer step (2026-11-19): New Invoice and New Quote listed existing
+  contacts only; `CustomerPicker` takes a name and e-mail in place and
+  `ensureCustomerLead` (`src/lib/customer-choice.ts`) makes the contact with the
+  draft, reusing the one that already has the address.
   A process a person does in the admin gets a step there.
 - **Where an invoice came from is the business's note (2026-11-19).** Four
   SQL writers (`generate_contract_invoice`, `generate_subscription_invoice`,
@@ -793,8 +817,15 @@ beside its payload, so an operator branches instead of guessing:
   …" / "Auto-generated …" line to `invoices.origin_note` (admin only) and
   leaves the rest (a PO number, the period). A new writer needs to know
   nothing; never print `origin_note` for a customer. Issued invoices were left
-  as sent. Open: the CTR-/SUB-/SO-/SUB-ADJ- numbers end in a RANDOM five
-  digits — not a running series.
+  as sent.
+- **Every billing series runs in order (2026-11-19).** CTR-/SUB-/SUB-ADJ-/SO-
+  invoices ended in five RANDOM digits. `next_invoice_series_number(prefix)`
+  answers `PREFIX-YYYY-NNNNN` from `document_counters` (key
+  `invoice:<prefix>:<year>`, floored on the table like the INV series), for
+  the platform's own billing functions only — no EXECUTE for a session, since
+  a customer reaches it through `change_subscription`. INV- stays
+  `next_document_number`, POS- its sequence. A new kind of generated invoice
+  takes a prefix here; a guard fails `random()` beside an invoice number.
 - **One number series per document (2026-11-17).** `next_document_number
   (kind, prefix)` is the only source of a quote or invoice number — the admin,
   every skill (`nextDocumentNumber` in core.ts), `quote-sign` and the invoicing
@@ -805,8 +836,8 @@ beside its payload, so an operator branches instead of guessing:
   counter and the skills read "highest so far plus one": a quote made by hand
   was a second QUO-0001, and an invoice was INV-0007 from the admin and
   INV-2026-00007 from a skill. A guard discovers any `` `INV-${ `` /
-  `` `QUO-${ `` built in code. SUB-, CTR-, POS- and credit-note numbers are
-  their own series and stay.
+  `` `QUO-${ `` built in code. SUB-, CTR-, SO-, POS- and credit-note numbers are
+  their own series (running since 2026-11-19, see below).
 - **Born right (2026-10-27).** `manage_invoice create` without `due_date`
   gets one from the payment terms (`net30` → 30 days after the issue date,
   30 when the terms say nothing). **The rule is the row's since 2026-11-18**
@@ -1033,7 +1064,14 @@ edge deploy → the first admin visit syncs. **Automations ride the same rail
 sync inserts the missing ones for enabled modules — by name only, never
 updating (a retuned cron survives), each name once (`site_settings.seeded_automations`
 remembers, so a deleted automation stays deleted). Before, only a browser
-bootstrap seeded them, and "Feedback ping" reached no live instance. Verified 2026-10-16 on sandbox and
+bootstrap seeded them, and "Feedback ping" reached no live instance. **So does
+the modules row (2026-11-19):** the bundle's catalogue carries each module's
+`defaultEnabled` (read from `defaultModulesSettings`), and the sync first runs
+`ensure_modules_settings` with it — absent keys only — so a module added after
+an instance's birth reaches one no admin opens (MJP had no `feedback` key). A
+catalogue module the row lacks is known and off to `manage_modules`, never
+"unknown"; a read action of an approve-level skill (`manage_modules list`)
+passes the trust gate. Verified 2026-10-16 on sandbox and
 www: `manage_booking_service` (#637, 2026-10-06) was refreshed on 10-07 and
 10-09 with nobody running a sync; the deployed sha, main's artifact and the
 `skills_artifact_sha` stamp are identical. Two things that mislead: the stamp

@@ -29,6 +29,7 @@ import { retiredSkillResult } from '../skills/retired-skills.ts';
 import { hideSkills, isMissingQuarantineColumn, isQuarantined } from '../skills/skill-visibility.ts';
 import { isIdleScheduledRun, declaredWorkDone } from '../activity/work-done.ts';
 import { stampAgentError, classifyRuleRefusal, RAISE_EXCEPTION_SQLSTATE } from '../agent-errors.ts';
+import { applyBodyEdits, readBodyEdits } from '../wiki/body-edits.ts';
 import { scheduleState, SCHEDULE_STATE_LEGEND, type ScheduledAutomation } from '../automations/schedule-state.ts';
 import { fetchPublic } from '../net/outbound-url.ts';
 import { classifySkillModule } from '../mcp/groups.ts';
@@ -136,7 +137,9 @@ async function pageLanguageVersions(
     ...((siblingRows ?? []) as SiblingHead[]).map((r) => ({ locale: r.locale, status: r.status, source: 'row', slug: r.slug })),
   ];
 }
-import { handleTranslateUiText } from '../handlers/translate-ui-text.ts';
+import { handleTranslateUiText, type UiTextCatalog } from '../handlers/translate-ui-text.ts';
+import type { TranslateSiteArgs } from '../handlers/translate-site.ts';
+import { handleTranslateSite } from '../handlers/translate-site-run.ts';
 import { handleReplyToEmail } from '../handlers/reply-to-email.ts';
 import { handler as hEnrichCompanyProfile } from '../handlers/enrich-company-profile.ts';
 import { handler as hExtractReceipt } from '../handlers/extract-receipt.ts';
@@ -151,8 +154,10 @@ import { handler as hFetchImage } from '../handlers/fetch-image.ts';
 import { handler as hTestAiConnection } from '../handlers/test-ai-connection.ts';
 import { handler as hUpdateAutonomyCron } from '../handlers/update-autonomy-cron.ts';
 import { executeCheckIntegrations } from '../handlers/check-integrations.ts';
+import { executeManageMcpSources, executeMcpSourceTool } from '../handlers/mcp-sources.ts';
 import { describeWebLayer } from '../web/layer.ts';
 import { executeDescribeBlocks } from '../handlers/describe-blocks.ts';
+import { envelopeOf, readEnvelopeArgs } from '../blocks/envelope.ts';
 // describe_blocks' other half: "what can I build" ↔ "what did I build".
 import { executeInspectRenderedPage } from '../handlers/inspect-rendered-page.ts';
 import { executeAgentTrace } from '../handlers/agent-trace.ts';
@@ -255,6 +260,7 @@ const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   'internal:describe_blocks': ({ args }) => executeDescribeBlocks(args),
   'internal:inspect_rendered_page': ({ supabase, args }) => executeInspectRenderedPage(supabase, args),
   'internal:check_integrations': ({ supabase, args }) => executeCheckIntegrations(supabase, args),
+  'internal:manage_mcp_sources': ({ supabase, args }) => executeManageMcpSources(supabase, args),
   'internal:web_providers_status': ({ supabase }) => describeWebLayer(supabase),
   'internal:get_agent_trace': ({ supabase, args }) => executeAgentTrace(supabase, args),
   'internal:agent_day_report': ({ supabase, args }) => executeAgentDayReport(supabase, args),
@@ -282,6 +288,7 @@ const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   'internal:convert_translation_groups': ({ supabase, args }) => handleConvertTranslationGroups(supabase, args as ConvertGroupsArgs),
   'internal:list_stale_translations': ({ supabase, args }) => handleListStaleTranslations(supabase, args as ListStaleArgs),
   'internal:translate_ui_text': ({ supabase, args }) => handleTranslateUiText(supabase, args as any, bundledUiTextCatalog as any),
+  'internal:translate_site': ({ supabase, args }) => handleTranslateSite(supabase, args as TranslateSiteArgs, bundledUiTextCatalog as UiTextCatalog),
   'internal:performance_mode_status': async ({ supabase }) => {
     const { data: pm, error: pmErr } = await supabase.rpc('performance_mode_status');
     return pmErr ? { success: false, error: pmErr.message } : { success: true, ...(pm as Record<string, unknown>) };
@@ -517,6 +524,8 @@ import { businessDateIn, businessPeriod, dateInZone, homeFormat, startOfBusiness
 import { businessToday, loadHomeCached } from '../locale/load-home.ts';
 import { handleGetBusinessHome, handleSetBusinessHome, type SetBusinessHomeArgs } from '../handlers/business-home.ts';
 import { loadHome } from '../locale/load-home.ts';
+import { loadUiText as loadUiTextForMail } from '../locale/load-ui-text.ts';
+import { resolveUiText as resolveUiTextForMail } from '../locale/ui-text.ts';
 import { isExtractable } from '../documents/extractable.ts';
 
 // ─── Skill → owning module (rollsvepet #102) ─────────────────────────────
@@ -1441,6 +1450,11 @@ export async function executeSkillRequest(input: ExecuteRequest, auth: ExecuteAu
 
       } else if (handler.startsWith('webhook:')) {
         result = await executeWebhook(supabase, args);
+
+      } else if (handler.startsWith('mcp:')) {
+        // A tool of an external MCP server an admin connected (#862): one
+        // outbound tools/call, the source's key read from the vault.
+        result = await executeMcpSourceTool(supabase, handler, args);
 
       } else if (handler.startsWith('responses:')) {
         const peerName = handler.replace('responses:', '');
@@ -6878,19 +6892,49 @@ async function executePagesAction(
           };
         }
 
+        // The envelope (next to type and data): surface, anchor, per-width overrides.
+        const addEnvelope = readEnvelopeArgs(args as Record<string, unknown>, String(block_type));
+        if (addEnvelope.problems.length) {
+          return {
+            error: `Block envelope refused: ${addEnvelope.problems.join('; ')}`,
+            code: 'INVALID_INPUT', retryable: false,
+            hint: 'describe_blocks returns the envelope with every answer.',
+            status: 'validation_failed',
+          };
+        }
+        Object.assign(newBlock, addEnvelope.set);
+
         const pos = position !== undefined ? Math.min(position, blocks.length) : blocks.length;
         blocks.splice(pos, 0, newBlock);
         await supabase.from('pages')
           .update({ content_json: blocks, updated_at: new Date().toISOString() })
           .eq('id', resolvedPageId);
-        return { page_id: resolvedPageId, block_id: newBlock.id, type: block_type, position: pos, total_blocks: blocks.length };
+        return {
+          page_id: resolvedPageId, block_id: newBlock.id, type: block_type, position: pos, total_blocks: blocks.length,
+          ...envelopeOf(newBlock as Record<string, unknown>),
+          ...(addEnvelope.notes.length ? { notes: addEnvelope.notes } : {}),
+        };
       }
 
       if (action === 'update') {
-        const { block_id, block_data } = args as any;
+        const { block_id } = args as any;
+        const updateArgs = args as Record<string, unknown>;
+        const envelopeOnly = !updateArgs.block_data
+          && ['responsive', 'sectionBackground', 'anchorId'].some((key) => key in updateArgs);
+        // An envelope-only update (hide on phones, another surface) changes no field of the block.
+        const block_data = envelopeOnly ? {} : updateArgs.block_data;
         if (!block_id || !block_data) throw new Error('block_id and block_data required');
         const idx = blocks.findIndex((b: any) => b.id === block_id);
         if (idx === -1) throw new Error(`Block not found: ${block_id}`);
+        const updateEnvelope = readEnvelopeArgs(args as Record<string, unknown>, String(blocks[idx].type));
+        if (updateEnvelope.problems.length) {
+          return {
+            error: `Block envelope refused: ${updateEnvelope.problems.join('; ')}`,
+            code: 'INVALID_INPUT', retryable: false,
+            hint: 'describe_blocks returns the envelope with every answer. Send a key as null to clear it.',
+            status: 'validation_failed',
+          };
+        }
 
         // Merge first, then validate the merged result.
         // block_data accepts BOTH shapes: a bare data-fields object, or a full
@@ -6943,11 +6987,17 @@ async function executePagesAction(
           };
         }
 
+        Object.assign(_mergedBlock, updateEnvelope.set);
+        for (const key of updateEnvelope.clear) delete (_mergedBlock as Record<string, unknown>)[key];
         blocks[idx] = _mergedBlock;
         await supabase.from('pages')
           .update({ content_json: blocks, updated_at: new Date().toISOString() })
           .eq('id', resolvedPageId);
-        return { page_id: resolvedPageId, block_id, type: blocks[idx].type, status: 'updated' };
+        return {
+          page_id: resolvedPageId, block_id, type: blocks[idx].type, status: 'updated',
+          ...envelopeOf(blocks[idx] as Record<string, unknown>),
+          ...(updateEnvelope.notes.length ? { notes: updateEnvelope.notes } : {}),
+        };
       }
 
       if (action === 'get_block') {
@@ -6955,7 +7005,7 @@ async function executePagesAction(
         if (!block_id) throw new Error('block_id is required');
         const block = blocks.find((b: any) => b.id === block_id);
         if (!block) throw new Error(`Block not found: ${block_id}`);
-        return { page_id: resolvedPageId, block_id, type: block.type, data: block.data };
+        return { page_id: resolvedPageId, block_id, type: block.type, data: block.data, ...envelopeOf(block as Record<string, unknown>) };
       }
 
       if (action === 'remove') {
@@ -7959,6 +8009,26 @@ async function executeWikiAction(
       }
     }
 
+    // Nothing bears ALL the terms. The partial fallback further down ranks
+    // pages by how many terms they bear — but it ranked `data`, and `data` came
+    // from the AND query, so it was always empty and the fallback never ran:
+    // eight words describing a product found nothing while two of them alone
+    // found the page (optic, 2026-11-20). Ask for ANY term, then let the same
+    // ranking decide; the answer says it is a partial match.
+    if ((data || []).length === 0 && terms.length > 1) {
+      let q = supabase.from('wiki_pages').select('slug, title, updated_at, content_md, all_tags');
+      if (tagFilter) q = q.contains('all_tags', [tagFilter]);
+      const anyTerm = terms.flatMap((t) => {
+        const safe = sanitizeOrTerm(t);
+        return [`title.ilike.%${safe}%`, `content_md.ilike.%${safe}%`];
+      }).join(',');
+      const any = await q.or(anyTerm).limit(Math.max(limit * 5, 50));
+      if (!any.error && (any.data || []).length > 0) {
+        data = any.data;
+        effectiveTerms = terms;
+      }
+    }
+
     const lowerTerms = effectiveTerms.map((t) => t.toLowerCase());
     const scored = (data || []).map((p: any) => {
       const title = String(p.title || '').toLowerCase();
@@ -7990,15 +8060,33 @@ async function executeWikiAction(
       .filter((r) => r.matched > 0)
       .sort((a, b) => b.score - a.score)).slice(0, limit);
 
+    // The excerpt is where the page says it, not how the page begins: the
+    // first 240 characters of a 98 KB reference document say nothing about
+    // why it matched.
+    const excerptAt = (md: string): string => {
+      const lower = md.toLowerCase();
+      const hits = lowerTerms.map((t) => lower.indexOf(t)).filter((i) => i >= 0);
+      const at = hits.length ? Math.min(...hits) : -1;
+      if (at <= 80) return md.slice(0, 240);
+      return `…${md.slice(at - 80, at + 160)}${at + 160 < md.length ? '…' : ''}`;
+    };
+    const allMatched = scored.length > 0;
     return {
-      matches: rows.map(({ p }) => ({
-        slug: p.slug,
-        title: p.title,
-        updated_at: p.updated_at,
-        excerpt: String(p.content_md || '').slice(0, 240),
-        all_tags: p.all_tags ?? [],
-        url: `/admin/wiki/${p.slug}`,
-      })),
+      matches: rows.map(({ p, matched }) => {
+        const hay = `${String(p.title || '')} ${String(p.content_md || '')}`.toLowerCase();
+        return {
+          slug: p.slug,
+          title: p.title,
+          updated_at: p.updated_at,
+          excerpt: excerptAt(String(p.content_md || '')),
+          ...(allMatched ? {} : { matched_terms: lowerTerms.filter((t) => hay.includes(t)), matched }),
+          all_tags: p.all_tags ?? [],
+          url: `/admin/wiki/${p.slug}`,
+        };
+      }),
+      ...(rows.length && !allMatched
+        ? { match: 'some_terms', note: `No page bears all ${lowerTerms.length} terms — these bear some of them, most first. A shorter query is a sharper one; find_in_content finds an exact phrase.` }
+        : rows.length ? { match: 'all_terms' } : {}),
     };
   }
 
@@ -8163,15 +8251,45 @@ async function executeWikiAction(
     // The wiki_page_revisions row is written by the trg_wiki_pages_revision
     // BEFORE UPDATE trigger (20260708070000_wiki-parity-r7.sql), so an append
     // is captured in history exactly like any other update — no extra write.
+    // replace: change part of the body without sending the body. The stored
+    // text is read, each { find, with } applied to it, and the result written
+    // once — one call, one revision, and nothing the edit did not name is
+    // typed again (_shared/wiki/body-edits.ts has the measurement).
+    const edits = readBodyEdits((args as any).replace);
+    if (edits && hasContentMd) {
+      return {
+        error: 'content_md and replace were both sent — content_md replaces the whole body, so the edits would have nothing to apply to.',
+        code: 'INVALID_INPUT',
+        retryable: true,
+        hint: 'Send replace alone to change part of the page, or content_md alone to rewrite it.',
+      };
+    }
     let appended = false;
-    if (appendMd && !hasContentMd) {
+    let replaced: Array<{ find: string; replaced: number }> | null = null;
+    if ((appendMd || edits) && !hasContentMd) {
       const { data: existing, error: readErr } = await supabase
         .from('wiki_pages').select('content_md').eq('slug', slug).maybeSingle();
       if (readErr) throw new Error(`update wiki failed: ${readErr.message}`);
       if (!existing) throw new Error(`No wiki page with slug "${slug}" — use action=list or search_wiki to find the right slug.`);
-      const base = String(existing.content_md || '').replace(/\s+$/, '');
-      patch.content_md = base ? `${base}\n\n${appendMd}` : appendMd;
-      appended = true;
+      let body = String(existing.content_md || '');
+      if (edits) {
+        const outcome = applyBodyEdits(body, edits);
+        if (!outcome.ok) {
+          // The caller's text, not the skill: never a streak toward self-healing.
+          return { slug, error: outcome.error, code: 'INVALID_INPUT', retryable: true, hint: outcome.hint, failed_edits: outcome.failed };
+        }
+        body = outcome.body;
+        replaced = outcome.applied;
+      }
+      // Both modes fall into the one write below, so the revision trigger
+      // sees an edit, an append, or both, as it sees any other update.
+      if (appendMd && !hasContentMd) {
+        const base = body.replace(/\s+$/, '');
+        patch.content_md = base ? `${base}\n\n${appendMd}` : appendMd;
+        appended = true;
+      } else {
+        patch.content_md = body;
+      }
     }
     if (Object.keys(patch).length === 0) throw new Error('nothing to update');
     patch.updated_by = (args as any)._caller_user_id ?? null;
@@ -8184,8 +8302,10 @@ async function executeWikiAction(
       ...data,
       url: `/admin/wiki/${data.slug}`,
       status: 'updated',
-      mode: appended ? 'append' : (hasContentMd ? 'replace' : 'metadata'),
-      ...(appended ? { note: 'Appended to the end of the existing body — nothing existing was replaced.' } : {}),
+      mode: replaced ? (appended ? 'edit+append' : 'edit') : appended ? 'append' : (hasContentMd ? 'replace' : 'metadata'),
+      ...(replaced ? { edits: replaced, replaced: replaced.reduce((n, e) => n + e.replaced, 0) } : {}),
+      ...(replaced && !appended ? { note: 'Only the named text was changed — the rest of the body is as it was.' } : {}),
+      ...(appended && !replaced ? { note: 'Appended to the end of the existing body — nothing existing was replaced.' } : {}),
       ...(hasContentMd && appendMd ? { note: 'content_md was sent, so the WHOLE body was replaced; append_md was ignored.' } : {}),
     };
   }
@@ -8200,7 +8320,7 @@ async function executeWikiAction(
 
   return {
     error: `Unknown wiki action: ${action}. Valid actions: list, get, create, update, delete.`,
-    hint: 'To label a page, update it: tags replaces its labels, add_tags adds to them. To add a section, update with append_md.',
+    hint: 'To label a page, update it: tags replaces its labels, add_tags adds to them. To add a section, update with append_md; to change a phrase, update with replace: [{ find, with }].',
   };
 }
 
@@ -9681,16 +9801,32 @@ async function executeBlogAction(
 
   // browse_blog — list published posts for visitors
   if (skillName === 'browse_blog') {
-    const { search, limit = 5 } = args as any;
+    const a = args as Record<string, unknown>;
+    // `search` is the parameter; an agent also reaches for `query` — which was
+    // read by nobody, so "posts about Edge Colocation" answered every post
+    // there is and the caller took the list for the matches (optic,
+    // 2026-11-19). The aliases the generic list reads are read here too.
+    const aliased = SEARCH_ALIASES.map((k) => a[k]).find((v) => typeof v === 'string' && v.trim());
+    const search = String((typeof a.search === 'string' && a.search.trim() ? a.search : aliased) ?? '').trim();
+    const limit = Math.min(Math.max(Number(a.limit) || 5, 1), 100);
     let query = supabase.from('blog_posts')
       .select('id, title, slug, excerpt, featured_image, published_at, reading_time_minutes')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(limit);
-    if (search) query = query.ilike('title', `%${search}%`);
+    // Title or excerpt — what a visitor sees in the list. The body is
+    // find_in_content's (every post, every status, with the place it says it).
+    if (search) query = query.or(searchOrFilter(['title', 'excerpt'], search));
     const { data, error } = await query;
     if (error) throw new Error(`Browse blog failed: ${error.message}`);
-    return { posts: data || [] };
+    return {
+      posts: data || [],
+      ...(search ? { search, searched: ['title', 'excerpt'] } : {}),
+      // The pointer names an internal skill, so a visitor's chat is not given it.
+      ...(search && !(data || []).length
+        ? { note: `No published post has this in its title or excerpt.${a._public_chat === true ? '' : ' To find a phrase inside post bodies, use find_in_content.'}` }
+        : {}),
+    };
   }
 
   // manage_blog_categories
@@ -15457,24 +15593,29 @@ async function executeDbAction(
                 // total_cents — line_total_cents does not exist, the query
                 // failed unread, and the vendor got a PO with no lines (2026-10-31).
 
-                // A supplier reads this: the business's grouping and decimals.
-                const poFmt = homeFormat(await loadHomeCached(supabase), 'en');
+                // A supplier reads this: the business's grouping and decimals, in
+                // the site's language (it was English for every vendor).
+                const poTexts = await loadUiTextForMail(supabase);
+                const t = resolveUiTextForMail(poTexts.map, poTexts.siteLang, poTexts.siteLang);
+                const poFmt = homeFormat(await loadHomeCached(supabase), poTexts.siteLang);
                 const lineItems = (lines || []).map((l: any) =>
-                  `• ${l.description}: ${l.quantity}x @ ${poFmt.money(l.unit_price_cents, po.currency)} = ${poFmt.money(l.total_cents, po.currency)}`
+                  `• ${l.description}: ${l.quantity} × ${poFmt.money(l.unit_price_cents, po.currency)} = ${poFmt.money(l.total_cents, po.currency)}`
                 ).join('\n');
 
                 const emailBody = [
-                  `Purchase Order: ${po.po_number}`, `Date: ${po.order_date}`,
-                  po.expected_delivery ? `Expected Delivery: ${po.expected_delivery}` : '',
-                  '', 'Items:', lineItems, '',
-                  `Total: ${poFmt.money(po.total_cents, po.currency)}`,
-                  po.notes ? `\nNotes: ${po.notes}` : '',
+                  `${t('po.mail.number', 'Purchase order')}: ${po.po_number}`,
+                  `${t('po.mail.date', 'Date')}: ${poFmt.date(po.order_date)}`,
+                  po.expected_delivery ? `${t('po.mail.expected', 'Expected delivery')}: ${poFmt.date(po.expected_delivery)}` : '',
+                  '', `${t('po.mail.items', 'Items')}:`, lineItems, '',
+                  `${t('po.mail.total', 'Total')}: ${poFmt.money(po.total_cents, po.currency)}`,
+                  po.notes ? `\n${t('po.mail.notes', 'Notes')}: ${po.notes}` : '',
                 ].filter(Boolean).join('\n');
+                const poSubject = t('po.mail.subject', 'Purchase order {number}').replace('{number}', String(po.po_number));
 
                 const emailRes = await fetch(`${supabaseUrl}/functions/v1/composio-proxy`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${serviceKey}` },
-                  body: JSON.stringify({ action: 'gmail_send', params: { to: vendorEmail, subject: `Purchase Order ${po.po_number}`, body: emailBody } }),
+                  body: JSON.stringify({ action: 'gmail_send', params: { to: vendorEmail, subject: poSubject, body: emailBody } }),
                 });
                 const emailData = await emailRes.json();
                 emailSent = emailRes.ok && !emailData.error;

@@ -287,6 +287,26 @@ The `/rest/execute` endpoint mirrors the MCP tool surface but over plain HTTP PO
 
 **`manage_wiki_page` create** — requires `content_md` (markdown body). Empty bodies are rejected at the handler level to prevent blank pages.
 
+**`manage_wiki_page` update — `replace` (2026-11-21)** — `replace: [{ find, with,
+all? }]` changes named text in place: the stored body is read, each edit applied
+in order, and the result written once (one revision). `find` is exact and must
+occur once unless `all: true`; any edit that cannot apply refuses the whole call
+(`INVALID_INPUT`, `failed_edits`). Not together with `content_md`; with
+`append_md` it edits first. Never rewrite a page to change a phrase — on optic a
+98 KB page was re-sent in four 25 KB calls, three times (`_shared/wiki/body-edits.ts`).
+
+**`find_in_content` — where do we say this (2026-11-21)** — a platform read
+(`rpc:find_in_content`, params `p_text`, `p_sources`, `p_limit`): the exact
+phrase, case-insensitive, across `page | blog_post | kb_article | wiki_page |
+translation`, counted in the database before the limit cuts, each match with
+`occurrences`, `fields`, `snippets` and `edit_with`. It is the literal twin of
+`search_knowledge` (ranked, by meaning): a rename needs every occurrence, a
+question needs the best few. `json_strings(jsonb)` is the walk it reads rich
+text with — a Tiptap sentence with a bold word in it is one string. A new
+content table joins the function's `leaves` and the seed's enum in the same PR
+(a guard compares them). `search_wiki` says `match: all_terms | some_terms`;
+`browse_blog` searches title and excerpt and reads `query` as `search`.
+
 **`manage_company`** — B2B master data lives on `companies`: `org_number`, `vat_number`, `parent_company_id` (subsidiary hierarchy; self-parent rejected), `employee_count`, `annual_revenue_cents`, `credit_limit_cents`, `account_owner`, `tags` (text[]). Use `find_duplicate_companies` before creating a company that might already exist (identical domain scores 1.0).
 
 **`refund_return`** — supports **partial refunds**: each call adds `refund_cents` to the running total; the expected total is Σ(return_items qty × unit_refund_cents) − `restocking_fee_cents`. Over-refunds are rejected. The RMA closes when the total is reached or `p_final: true` is passed. Set the restocking fee via `inspect_return` (QC step, only valid in status `received`).
@@ -352,6 +372,21 @@ still gates visibility. Addresses: `/blog/<slug>` in the site language,
 languages: "all", publish: true)` backfills; `manage_blog_posts update` only
 re-translates stale units. See docs/architecture/page-translations.md §9.
 
+**`translate_site` — a language in one call (2026-11-20).** Adding a language
+was a checklist (enable_language, translate_page per page from the browser, then
+posts, products, attributes, translate_ui_text). `translate_site(locale)` does it:
+declares the language, lists what is missing or stale
+(`list_stale_translations`, per string by hash — a hand-polished translation is
+never redone), translates + publishes item by item through `translate_content`
+inside a time budget (default 100 s), then the interface texts once the content
+is all in (never for a language `PLATFORM_UI_TEXT` speaks). The state is the
+content; `site_settings.translation_sweep` only records `running | done | stuck`
+per language, and the automation "Finish site translations" (probe
+`translation_sweep_running`) continues with `continue: true`. Three identical
+failures in a row end a run, and a run that moves nothing is `stuck` — left for a
+person, never retried every ten minutes. Adding a language under Site settings
+starts it. Changing `site_languages.default` stays a separate launch decision.
+
 **`manage_product` / products in every language** — the same overlay model
 (§10, and Shopify's): a product is written ONCE in `products.locale`; `languages`
 (array or `"all"`) on create/update translates `name` and `description` into
@@ -367,6 +402,33 @@ Variant labels (attribute names and values) are site-wide overlays, entity
 product's translation carries the attributes its variants use
 (`variant_labels` in the answer), one attribute alone is `translate_content(entity:
 "product_attribute", attribute_id)`.
+
+**Block envelope: `responsive` (2026-11-20, #939)** — next to `type` and `data`,
+`{ sm?, md?, lg? }` (phones below 768 px, tablets 768–1023, desktops 1024 up), each
+`{ hidden?: true, columns?: 1–6, align?: left|center|right }`. `hidden` and `align`
+(TEXT alignment) go on the block's shell in `BlockRenderer`; `columns` reaches the
+grid blocks only (`GRID_BLOCK_TYPES`), each of which adds `useResponsiveGrid()` to
+its grid element. The RULES live in `_shared/blocks/envelope.ts` (shared with the
+executor); the CLASSES in `src/lib/block-responsive.ts`, spelled out in full because
+Tailwind reads `src/` only — never assemble one from parts. `manage_page_blocks`
+add/update take `responsive`, `sectionBackground` and `anchorId` beside
+`block_data` (an update may carry only these; `null` clears); a wrong width or key
+is refused (`INVALID_INPUT`), `columns` on a non-grid block is stored with a note.
+A new grid block joins the list AND reads the hook — a guard counts both.
+
+**`inspect_rendered_page` → `width_check` (2026-11-20, #940)** — layout takes
+a browser and the edge runtime has none, so the measurement is taken in the page
+editor ("Check widths", `PageWidthCheck.tsx` + `src/lib/page-width-check.ts`): the
+preview is drawn in an off-screen frame at 390, 768 and 1280 px in the browser of
+the person at the keyboard and measured — `wider_than_screen` (judged by each
+element's right EDGE: the site clips its own overflow, so a page never "scrolls
+sideways"), `cut_off` (clipped text without an ellipsis), `squeezed` (text in a box
+under 44 px). Each finding names its block. Kept in `page_width_checks` (its own
+table: a measurement is not an edit of the page) through
+`record_page_width_check`; the sensor returns it with `stale` when the page was
+saved since, or `never_checked`. An agent cannot take one — it asks a person.
+Three false "Fits." are pinned by tests: measuring after the frame was removed,
+before the lazily loaded blocks had drawn, and a frame hidden with `visibility`.
 
 **`site_branding_update`** — non-destructive (only passed fields change) and
 theme-aware: `logo_dark_url` / `primary_color_dark` are what the header, footer and
@@ -398,6 +460,13 @@ beside its payload, so an operator branches instead of guessing:
   pair), `FORBIDDEN`, `NOT_FOUND`, `ALREADY_EXISTS`, `INVALID_INPUT`,
   `APPROVAL_REQUIRED`, `TRANSIENT`, `HANDLER_ERROR`, `RETENTION_LOCKED`,
   `RULE_REFUSED`. A handler's own `code`/`hint` wins over the classifier.
+  **A lookup miss is not a broken skill either (2026-11-21):** a handler that
+  answers `found: false`, or a message shaped "No <thing> with / matching /
+  named / found for …", is `NOT_FOUND` (`stampAgentError`, the last
+  alternative of the NOT_FOUND rule). Two probes for wiki pages that did not
+  exist were HANDLER_ERROR on optic; a third would have quarantined
+  `manage_wiki_page`. Answer a miss with `found: false` — not with a new noun
+  in the classifier.
   **A rule the database keeps is not a broken skill (2026-11-15):** an `rpc:`
   skill whose function says no — a RAISE EXCEPTION (SQLSTATE `P0001`) or its
   own `{ success: false, error }` — answers `RULE_REFUSED` where the message
@@ -711,6 +780,13 @@ beside its payload, so an operator branches instead of guessing:
   catalogue, both ways). The customer path's text matches take both
   languages: run it once with `site_languages.default = 'sv'` when a customer
   page changes.
+- **The business is told in the site's language too (2026-11-20).** A notice
+  to the admins (a booking made, moved or called off by the customer, a quote
+  or agreement answered) is `renderAdminNotice` (`_shared/notices/admin-notice.ts`):
+  visitor texts `admin.mail.*`, times on the business's clock, a link that is
+  absolute or absent. `email_admins` with `notice` + `booking_id` writes it; an
+  automation never carries an English subject in its arguments. A new admin
+  notice is a kind there, not HTML in an edge function.
 - **A mail template is seeded in every language the platform speaks
   (2026-11-19).** `resolve_email_template` walks recipient language → site
   language → ANY active version, so a mail seeded in English only is English
@@ -728,6 +804,13 @@ beside its payload, so an operator branches instead of guessing:
   that seeds a template redefines that function in the same file (a guard).
   The same goes for any platform configuration only a migration seeds: a wipe
   either keeps its table or can put it back.
+  **2026-11-21:** seven more were gone on sandbox (stock locations, trash
+  sources, outreach country policy, HR rule templates, statement sections,
+  cron cadence, partner titles), and `reset_site_data` took the automations —
+  which the sync never re-adds — and ten tables the sandbox wipe keeps. Both
+  KEEP lists carry them now; `resets-keep-platform-config` holds that the site
+  reset keeps everything the sandbox wipe keeps. A new table a migration seeds
+  with platform rows joins both lists in the same PR.
 - **The customer hears about their case (2026-11-18).** A support case told
   its customer nothing: no receipt, and a staff reply was "in the portal",
   where a customer entered by hand has no account. Two automations run
@@ -749,7 +832,8 @@ beside its payload, so an operator branches instead of guessing:
   their agreement ("Contracts" there is the EMPLOYEE's). It opens on an
   overview now — what waits for them (invoice to pay, quote to answer,
   agreement to sign) and what they have — and has `/account/invoices`,
-  `/account/agreements`, `/account/orders`. ONE rule says which rows are a
+  `/account/agreements`, `/account/orders`, `/account/bookings` (2026-11-20: a booking's
+  manage link only while it is ahead). ONE rule says which rows are a
   customer's: `portal_email()` (the account's CONFIRMED address — never the
   token's bare claim) and `portal_company_ids()` (active `company_contacts`),
   read by `my_account()`. A shop purchase is an `orders` row, a service is a
@@ -861,6 +945,24 @@ beside its payload, so an operator branches instead of guessing:
   before concluding it is late, then `manage_statutory_filing record` with the
   agency reference (only what a person said was filed; a recorded filing
   silences the calendar).
+
+**External MCP sources (2026-11-20, #862 part 2).** The platform is an MCP
+CLIENT too: an admin connects another system's MCP server under Integrations →
+Connected MCP servers (`mcp_sources`), and the tools they choose become rows in
+`agent_skills` with `origin: 'mcp'` and handler `mcp:<source id>/<tool>`
+(`_shared/mcp/client.ts`, `_shared/mcp/sources.ts`, `_shared/handlers/mcp-sources.ts`).
+The NAME carries the read/write verdict the rest of the platform reads:
+`query_<slug>__<tool>` is a read everywhere (`classifyCall`), `ext_<slug>__<tool>`
+is a high-stakes write (trust `approve`, only on a source opened for writing).
+The key is in the vault (`mcp_source:<id>`): `set_mcp_source_key` (admin),
+`mcp_source_key` (service role only) — never a column, a setting or a skill
+argument. At call time the STORED choice is the authority, not the skill row
+(`SOURCE_DISABLED`, `TOOL_NOT_CHOSEN`, `SOURCE_READ_ONLY` are refusals). The
+client goes through `fetchPublic`, follows no redirect, times out at 25 s and
+caps the answer; the answer is marked `untrusted`. `manage_mcp_sources`
+(list | check | set_tools) is `notify` with `risk: 'high'`, so an unattended
+`set_tools` waits for a person. No line names a bookkeeping system — a guard
+reads for it. docs/operators/external-mcp-sources.md.
 
 **`manage_journal_entry` + bank events — the rule loop** — a booking of a
 bank event answers `rule_suggestion` when no rule or vendor default decided

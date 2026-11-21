@@ -8,7 +8,56 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
 
 ## [Unreleased]
 
+### Fixed
+- Visitor texts in the page blocks and customer pages follow the site's language: 90 hardcoded English texts — the newsletter, map, webinar, booking, knowledge-base, AI assistant, carousel, handbook and countdown blocks, the whole signature certificate page, the customer sign-in and signing pages — are visitor texts with Swedish lines. The scanner also counts a destructured default (`title = "Subscribe…",`), the shape that hid 18 of them. 22 remain, on pages a visitor does not reach (staff sign-in, setup, the platform's own pricing page).
+- A reset keeps the platform's own configuration: sandbox, rebuilt every night, had no stock locations, trash sources, outreach country policy, HR rule templates, year-end statement sections, cron cadence profiles or partner titles — the wipe emptied them and only a migration seeds them. The admin's "Reset site data" also emptied the automations (which the skill sync never re-adds), journals, tax boxes, pipeline stages, business hours and units. Both wipes keep those tables now; the seven are refilled where they are empty.
+- The wiki search answers a long query: when no page bore every word it answered nothing, because the ranking of partial matches was given the rows of the all-words query — always none. It now asks for pages bearing any of the words, most first, says `match: "some_terms"`, and the excerpt is the text around the hit instead of the page's first 240 characters.
+- `browse_blog` reads `query` as `search` (it was read by nobody, so a search answered every post there is) and matches the excerpt as well as the title.
+- Looking for something that is not there no longer counts against the skill: an agent asking the wiki whether a page exists before creating it was answered `HANDLER_ERROR`, and three such answers in a row would have switched `manage_wiki_page` off for every agent. A handler that answers `found: false`, or a message of the shape "No <thing> with / matching / named …", is `NOT_FOUND` — the caller's miss, never a streak toward self-healing.
+- Mail to people outside the business speaks the site's language: the signature request ("Signature requested — …") and the purchase order to a vendor were English on every site. The signature request also wrote the document title and the sender's message into its HTML unescaped, and fell back to another site's address when the site had none — it now escapes both and sends nothing (422) without the site's own address.
+- The business's own notices speak the site's language: a new, moved or customer-cancelled booking, an accepted or declined quote and a signed or declined agreement were mailed to the admins in English, the booking ones with a raw UTC timestamp and a relative link. One renderer (`_shared/notices/admin-notice.ts`, texts `admin.mail.*` with Swedish lines) writes them on the business's clock with an absolute link; `email_admins` takes `notice` + `booking_id`, and quote-sign / contract-sign send through it to every admin (they mailed the first five profiles). Live automation rows move to the new arguments only while they carry the seeded text.
+
+- **The site's menu no longer runs past the right edge on tablets.** The header
+  switched to the menu button at one fixed width (768 px); a site with seven
+  menu items and a cart drew its last item and its theme, account and cart
+  buttons past the edge at 800 px, where the site clips them away. The menu now
+  measures whether it fits beside the logo and folds into the menu button when
+  it does not, at any width. Found by "Check widths" on its first run.
+
 ### Added
+- **A phrase can be found everywhere it stands, and changed where it stands.** `find_in_content` is one read across website pages, blog posts, KB articles, wiki pages and the translation overlays: the exact phrase, every occurrence counted, with the text around each hit and the skill that edits that kind of content — what a renamed product or a withdrawn claim needs. And `manage_wiki_page` update takes `replace: [{ find, with, all? }]`: the stored page is read, only the named text is changed, and it is written once — a long page is no longer sent again to change a sentence. An edit whose text is not in the page, or stands several times, is refused and nothing is written.
+- `translate_site(locale)`: the whole site into a language in one call — declares the language, translates and publishes every page, post, product, category and variant label that is missing or stale in it, then the interface texts (not for Swedish, which the platform speaks). Time-boxed runs; the probed automation "Finish site translations" carries on every ten minutes, and a language that cannot move (no AI provider) is marked stuck instead of retried. Adding a language under Site settings starts it, and the language shows its progress; "Translate the site" replaces the browser loop over pages.
+- The customer portal shows the customer's bookings (`/account/bookings`, and the coming ones on the overview): `my_account()` carries `bookings` — the customer's own (by `portal_email()`), the last 90 days and ahead — with the same change-or-cancel link the confirmation mail carries, only on a coming booking. The customer path checks it, and that another customer sees none.
+
+- **Another system's MCP server can be connected as a source of skills.** A
+  business that keeps its books (or stock, or anything else) in another
+  product connects that product's MCP bridge under Integrations → Connected
+  MCP servers: address, key, and which of its tools the agent may use. Each
+  chosen tool becomes a skill — a read runs by itself, a write waits for a
+  person on every call and exists only on a source opened for writing. The key
+  is kept in the vault, read by the platform alone. No system-specific code:
+  the platform does not know which system it is talking to (#862).
+
+- **A page can be checked at the widths people read it in.** The page editor
+  has a "Check widths" button: the page — with unsaved changes too — is drawn
+  at phone, tablet and desktop width in your browser and measured. What sticks
+  out past the screen, text that is cut off and text squeezed into a box too
+  narrow to read are listed with the block they sit in. The measurement is
+  kept with the page, and an agent reads it through `inspect_rendered_page`
+  (`width_check`) — with a note when the page has been saved since (#940).
+
+## [4.1.0] - 2026-11-20
+
+### Added
+
+- **A block can be set per screen width.** Every block takes `responsive`
+  on its envelope: hide it on phones, tablets or desktops, align its text, and
+  — on the eleven grid blocks (features, team, testimonials, pricing, gallery,
+  products …) — choose the number of columns at each width. In the page
+  editor it is the "Per screen width" button on a block; an agent sets it with
+  `manage_page` or `manage_page_blocks` (`describe_blocks` returns the rule).
+  A single-block add or update can now also set the section surface and the
+  anchor, which only a whole-page write could before.
 
 - **An employee's own pages follow the site's language.** Leave, the time
   clock, expenses, payslips, skills, goals and reviews, the employment
@@ -86,79 +135,6 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   admins; a cancellation frees the time and offers the waiting list, as before.
   The nightly customer path does it in a browser.
 
-### Removed
-
-- **The "auto-pay delay" in the shop's sandbox mode is gone.** The slider
-  promised that a test order would be paid after N days; nothing ever paid it,
-  so a value above zero left the order pending for ever. A test-mode order is
-  paid at once. No instance had it set.
-
-- **The Global Elements module is gone.** It had no skills and no tables and was
-  hidden ("merged into Pages"); its one effect was to be switched on by accident
-  whenever an agent edited the header. Headers and footers are unchanged — they
-  are Pages' `manage_global_blocks`.
-- **Browser Control is retired.** The module was a Chrome-extension relay for
-  reading pages behind a login (LinkedIn, X) through an admin's browser. Nobody
-  used it, it was off by default, and agents with their own browser do that job
-  better and hand the result in over MCP. Gone: the module, the extension and its
-  download, the chat's relay code (never wired), and the `browser-fetch` edge
-  function. Its skill `browser_fetch` only forwarded public pages to web-scrape,
-  so a call to it now answers "retired, use `scrape_url`". FlowPilot's system
-  prompt told it to read every URL with `browser_fetch` while the off-by-default
-  module hid that skill; it names `scrape_url` now. A migration removes the
-  module from each instance's settings and access matrix and disables the skill
-  row and any automation that ran it.
-
-### Security
-
-- **The portal trusts the confirmed address, everywhere.** Five older readers
-  decided "whose row is this" by the login token's e-mail claim (the address an
-  account was opened with, proven or not) or by the profile's e-mail (the
-  account holder's own to edit): a customer's services, agreements and quotes,
-  the case form in the portal, and webinar registrations. All five now ask the
-  account's confirmed address, as invoices and orders already did. Nothing
-  changes for an account whose address is confirmed.
-
-- **A scoped key is held to its scope in dispatch mode.** Over the native MCP
-  transport, `execute_skill` checked what the key's owner may run but not the
-  key's own scope: a key limited to `mcp:crm` or `skill:<name>` could run any
-  exposed skill when it connected with `?mode=dispatch`. The REST door and the
-  per-skill tools already checked it; the dispatch tool now does too.
-
-- **A scheduled function refuses a call without credentials.** The week of
-  grace after the cron secret is over: a call that carries neither the service
-  key, a staff session nor the database's cron secret is answered 401. Until
-  now it was let through and logged.
-
-- **A scheduled call carries a secret the database made itself.** The nine
-  functions pg_cron calls (the automation, event and signal dispatchers, the
-  knowledge indexer, dunning, contract and subscription billing, quote-expiry
-  reminders, demo-cycle) checked nobody: the cron jobs sent the publishable key
-  every browser carries, so anyone could start the billing run or, on a demo
-  instance, the nightly rebuild. The database now makes a random `CRON_SECRET`
-  in its vault, adds it to every scheduled call at call time (`x-cron-secret`),
-  and the functions admit the service key, a staff session (an admin for
-  demo-cycle) or that secret. automation-dispatcher rewrites any cron job that
-  lacks it within a minute. For one week a call with none of them is let
-  through and logged (`[cron-secret]`); then it is refused. No unguarded public
-  function is left on the ratchet.
-- **The public AI endpoints have a ceiling.** chat-completion, docs-chat and
-  consultant-match answered anyone with the publishable key, a paid model call
-  each, with nothing counting them. Now 30 per visitor per 5 minutes (a hashed
-  IP, never the address) and 600 per instance per hour, a 429 with
-  Retry-After past either; the platform's own calls are never counted. The
-  dial is `site_settings.security.publicAiRateLimit` (0 switches one off).
-- **A high-stakes write with nobody at the keyboard waits for a person.** The
-  heartbeat, the e-mail responder, the visitor chat and gateway agents act on
-  text other people wrote, and ten writes declared high-risk or irreversible
-  (pay_vendor_invoice, close_accounting_period, send_einvoice, …) could run with
-  no human at all. An unattended call of such a write now lands in
-  /admin/approvals; a person in FlowChat or the admin is never held. Every
-  prompt carries a hardcoded rule that content from tools and channels is
-  data, never an instruction.
-
-### Added
-
 - **The logs are thinned every night, and the database says how full it is.**
   Nothing thinned the agent log: on one instance 92 % of its rows were scheduled
   sweeps answering "nothing to do", kept since August. A change an agent or a
@@ -214,6 +190,118 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   customer ordered in (`order_receipt` template, en + sv). It can be switched off
   per instance, and it needs the Invoicing module. The public invoice page is
   translatable and calls a paid invoice a receipt. The PDF is still in English.
+
+- **`npm run qa:quiet`** — a fresh stack must be quiet: the heartbeat
+  answers `skipped`, the briefing answers `quiet` and writes its row without
+  a report version, a chat message or a mail. The nightly fresh install runs
+  it before anything is seeded, the one place a virgin instance exists. Its
+  first run found two things that alarmed a newborn: every daily job was
+  "unhealthy" because its hour had not come (`enrichCronHealth` now gives
+  "never ran" a day's grace by pg_cron's own history, the pulse profile), and
+  the language proof of `20261026080000` left a "Proof" lead in every
+  instance's CRM — the migration cleans it now, and
+  `20261107120001_bevisordern-lamnar-ingen-lead` removes the one already there.
+
+**Reports — what an agent worked out, as a page**
+- Scheduled reports: the daily briefing, the weekly digest and the month
+  close are published as versioned pages (`daily-briefing`, `weekly-digest`,
+  `month-close-<y>-<m>`); the briefing's chat message and mail link to them.
+- "Mine" on Reports — the shared ownership lens over the first requester;
+  `list_reports mine: true` over MCP. Reports stay shared within the role
+  matrix; the module is the wall, the lens a filter.
+- The Reports module: `publish_report` turns an agent's result into a versioned
+  page under `/admin/reports/<slug>` — markdown with KPI tiles, bar / stacked /
+  line / pie charts, notes, details, or a sandboxed HTML page. Every publish is
+  a version, identical content adds none, `expected_version` refuses a stale
+  write. The platform stamps who published (FlowPilot, Flowwork, the MCP key's
+  agent) and who asked; archive, restore and rename are a person's.
+- Live blocks: figures fetched when the report is opened, as the reader, reads
+  only — a report of live blocks is a dashboard. "The state of things" /
+  "Läget just nu" is the standard one, published by FlowPilot in the site's
+  language and kept present by a daily automation.
+- A report about a company, a deal or a project is shown on that page; the
+  accounting workspace lists the reports written for the books.
+
+**Workspaces**
+- Accounting, HR, Sales and Support get their own left menu; the FlowWink
+  sidebar folds to a rail and the person's gesture is remembered — no setting.
+  Employees reach their own pages (expenses, timesheets, leave, payslips) under
+  My account.
+
+**Users and the platform**
+- The agent's day: **Activity** per connected agent on the Agents page (calls,
+  outcomes, skills, reports, steps — an admin's or the owner's read) and
+  `agent_day_report` over MCP. The activity log carries the agent's key id as
+  a column now, set on every logged call and backfilled.
+- The MCP door is judged on its body: the admin's address probe, the
+  Connect-agent wizard's **Test the connection** and the nightly MCP regression
+  (`MCP_PROBE_SITES`, every site's `/mcp`) all make a real `initialize` and
+  read the decoded answer — a header probe had passed a `/mcp` that answered
+  plain JSON labelled gzip for a week.
+- Last sign-in and last activity on the Users table, and in `users_list`.
+- Module automations follow the edge deploy: the first admin visit inserts the
+  ones a module is missing, by name, once — a retuned schedule or a deleted
+  automation is left alone.
+
+### Changed
+
+- **A sweep asks whether there is work before anything wakes.** Four
+  automations fired every fifteen minutes on every instance (qualify new leads,
+  score visitor intent, webinar reminders, the social post scheduler) and mostly
+  found nothing — about 380 function invocations a day per instance. Each now
+  declares a probe the database answers; with no work, neither the dispatcher
+  nor the skill is woken, and the automation still reads as alive. The moment a
+  lead, a scheduled post or a registration appears, the next minute's pulse runs
+  it. An automation whose module is off is skipped by the dispatcher too.
+- **Two more sweeps ask first.** The SLA sweep (every 15 minutes) runs only when
+  an SLA policy is enabled, and the hourly consultant reindex only when a
+  profile is waiting to be embedded.
+- **agent-execute's pipeline is importable.** The 20 500-line executor moved
+  from `agent-execute/index.ts` to `_shared/execute/core.ts` as
+  `handleAgentExecute(req)`, byte-identical but for the import prefixes and the
+  wrapper; `index.ts` is the HTTP door, `serve(handleAgentExecute)`. Nothing
+  behaves differently. It is the first step toward running a skill in-process
+  from the ReAct loop, the gateway and the dispatchers instead of over an HTTP
+  hop inside the same project (one invocation per tool call, not two; one auth
+  gate, not two). The 169 guards, scripts and docs that read the pipeline's
+  source read the new path; the edge type-check baseline carries the file under
+  its new name.
+- **The executor runs in-process for FlowPilot and the gateway.** The step
+  after the move: the core answers `executeSkillRequest(body, auth)` →
+  `{ status, body }` instead of `handleAgentExecute(req)` → `Response`, and
+  the HTTP door keeps only what the wire needs (the auth header, CORS, the
+  `async: true` handoff). The request contract is `_shared/execute/types.ts`
+  (no imports). The MCP
+  gateway's `executeSkill` calls it directly, and the ReAct loop runs it
+  through `ReasonConfig.runSkill`, which the heartbeat, workspace-chat and
+  agent-operate pass, instead of `fetch(.../functions/v1/agent-execute)`:
+  one fewer edge invocation per tool call (a heartbeat with ten tool calls
+  was eleven invocations on a 500K/month budget), no second auth gate, the
+  JSON once. Measured on a local stack (`browse_blog`, n=40): through the
+  gateway p50 68 ms before, 59 ms after — the hop's ~10 ms gone; direct
+  unchanged at ~20 ms; what remains above direct is the gateway's own
+  per-call work (key lookup, catalog). Behaviour is a move,
+  not a change — the request still takes one JSON round trip at the door, so
+  a handler never mutates the caller's own arguments. The dispatchers that
+  rely on `async: true` and the other HTTP callers are unchanged. The 165
+  guards that read the executor as text read the core.
+
+- **`internal:` handlers are a registry, not a chain.** The executor's 77
+  `else if (handler === 'internal:…')` arms (`_shared/execute/core.ts`) are one typed `INTERNAL_HANDLERS`
+  map (`InternalCtx` names what a handler may read of the request) and one
+  dispatch line; the four long arms (`read_sie_file`, `comment_on_task`,
+  `set_performance_mode`, `set_skill_trust`) are named functions. A guard
+  now discovers every `internal:` handler in the seeds and requires a registry
+  entry (or a response adapter, or the reconciliation prefix) — the 19 guards
+  that each pinned one arm by name read the registry key instead.
+- **Developer has three doors, Skills one page.** `/admin/developer` is
+  MCP Keys · Content API · Webhooks, each introduced by who it is for; the
+  Content API explorer runs as the signed-in person (so "requires auth"
+  endpoints answer) and its docs link exists. Skill control (enable, MCP
+  exposure, definition) moved from Developer to `/admin/skills` → **Manage**
+  beside **Browse**, with a sidebar entry under System beside Modules; `?tab=mcp-skills`
+  redirects. Removed: the mock "Dev Tools" tab, the n8n template brochure,
+  the explorer's third copy of the MCP client config (the wizard has it).
 
 ### Fixed
 
@@ -669,125 +757,6 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   does not match instead of reusing it (subscriptions already on the old price
   keep it). Guard `price-period-from-the-product` scans every file for the
   shape `type === 'recurring'` beside a hard-coded month.
-### Security
-
-- **react-router 7.** `react-router-dom` 6.30 → 7.18 closes the two
-  moderate react-router advisories (open redirect via a backslash in `<Link>` /
-  `useNavigate`, constructor injection via `deserializeErrors`). The app runs
-  one data router (`createBrowserRouter` in `App.tsx`) with absolute paths only
-  — no splat routes, no relative links — so v7's one behavioural change
-  (relative paths inside splat routes) has nothing to move. `npm audit
-  --omit=dev`: 2 moderate left, both satori under `@vercel/og`.
-
-- **zod 4.** The last high advisory in the production tree (zod `<4.6.6`:
-  memory exhaustion validating oversized constrained collections) is gone:
-  `zod` 3.25 → 4.6, `@hookform/resolvers` 3 → 5, and the edge `ai-task`
-  schemas from esm.sh 3.23 → 4.6. What zod 4 changed, applied: `z.record`
-  takes its key schema (22 sites), `ZodError.errors` is `.issues` (5), a form
-  whose schema carries defaults types its input and output apart. And one
-  change no test would have caught: zod 4's `.uuid()` checks the RFC version
-  bits and refuses ids the baseline seeds into every database
-  (`aaaaaaa1-0000-0000-0000-000000000001`, `11111111-…`, `…00c0de`) — all 70
-  id checks use `z.guid()`, zod 3's rule exactly, and the guard
-  `ids-are-guids` keeps the strict form out. `npm audit --omit=dev`: 4
-  moderate left (react-router 7, satori under @vercel/og).
-
-- **Production dependencies without a known high or critical advisory but two.**
-  `npm audit --omit=dev` went from 18 (1 critical, 7 high) to 5 (1 high, 4
-  moderate). `vitest` and `jsdom` were in `dependencies` and dragged the whole
-  vite / esbuild / rollup tool chain into the production tree — they are
-  `devDependencies` now, and the critical one left with them. `pdfjs-dist` 5 → 6
-  (arbitrary JavaScript on opening a malicious PDF; the chat attachment reader,
-  text extraction proved on a two-page PDF), `react-router-dom` 6.30.6, and
-  patched copies of `lodash`, `ws`, `yaml`, `picomatch`, `fflate` and
-  `postcss-selector-parser` pinned through `overrides`. Left, each its own
-  change: `zod` 4 (high; 62 files), `react-router` 7 (moderate; a router major),
-  and `satori` under `@vercel/og` — 1.0.3 requires `fs` in its edge build, which
-  the edge runtime does not have, so the OG cards stay on 0.6.8 until a release
-  that runs there.
-
-- **The method that should have caught it, repaired.** The weekly security
-  scan had been red since its first run (2026-10-26) on `npm audit`, before the
-  guardrails step ever ran, and nothing watched the workflow; the five tool
-  functions sat in the public-functions guard's known-debt list for 40 days
-  with a green badge beside them. Now the scan is two jobs (advisories and
-  guardrails — one never hides the other), the guardrails job runs EVERY
-  guardrail test instead of a hand list of nine (40 security-shaped guards were
-  outside it), and each job that fails opens or updates one issue (label
-  `security-red`) and closes it when green. The known-debt list carries a
-  clock: a name may stay `KNOWN_UNGATED` for 60 days, then the guard is red with
-  the two ways out named — gate it or prove it visitor-facing by design. A
-  CodeQL workflow (javascript-typescript, security-extended) runs on every PR
-  and weekly; it is one more reader, not the method — Deno's request sources
-  are not modelled there, which is why the repo's own guards exist.
-- **Outbound URLs are judged before they are fetched (SSRF, CWE-918).** An
-  independent researcher (Riddhish Lichade) reported that `extract-pdf-text`,
-  `web-scrape` and `browser-fetch` were reachable without a caller check and
-  fetched a caller-supplied URL as given, returning the body — and an edge
-  function runs inside the project's network, where `SUPABASE_URL` is the
-  internal gateway on a self-hosted instance. Confirmed on a local stack: the
-  runtime fetched `http://kong:8000/rest/v1/` with a 200. Now one rule,
-  `_shared/net/outbound-url.ts`: http(s) only, no credentials, no single-label
-  or local hostname, every resolved address outside the private, loopback,
-  link-local, CGNAT, multicast and reserved ranges (IPv4 and IPv6, mapped forms
-  included), redirects followed by hand and re-judged, at most five; a name that
-  cannot be resolved is refused (`URL_NOT_ALLOWED`). Applied at every
-  content-URL sink: the web layer's reader (so Firecrawl and Jina never read a
-  private target on our behalf either), web-scrape's sitemap and site detection,
-  extract-pdf-text, browser-fetch, process-image, the image and résumé
-  handlers, media import from URL, site-scrape and migrate-page. The five tool
-  functions on paid keys (`web-scrape`, `browser-fetch`, `web-search`,
-  `extract-pdf-text`, `process-image`) now verify their caller
-  (`requireServiceOrStaff`: the service key or a staff session) and left the
-  public-functions ratchet. An admin's own configured endpoints (webhooks, A2A
-  peers, a local STT server) are not judged — they are the operator's network by
-  design; `OUTBOUND_FETCH_ALLOW_PRIVATE=true` lifts the address check for an
-  intranet deployment. Guard `outbound-urls-are-public` holds the rule and scans
-  every `fetch` of a caller-URL identifier. `SECURITY.md` is new.
-### Changed
-
-- **A sweep asks whether there is work before anything wakes.** Four
-  automations fired every fifteen minutes on every instance (qualify new leads,
-  score visitor intent, webinar reminders, the social post scheduler) and mostly
-  found nothing — about 380 function invocations a day per instance. Each now
-  declares a probe the database answers; with no work, neither the dispatcher
-  nor the skill is woken, and the automation still reads as alive. The moment a
-  lead, a scheduled post or a registration appears, the next minute's pulse runs
-  it. An automation whose module is off is skipped by the dispatcher too.
-- **Two more sweeps ask first.** The SLA sweep (every 15 minutes) runs only when
-  an SLA policy is enabled, and the hourly consultant reindex only when a
-  profile is waiting to be embedded.
-- **agent-execute's pipeline is importable.** The 20 500-line executor moved
-  from `agent-execute/index.ts` to `_shared/execute/core.ts` as
-  `handleAgentExecute(req)`, byte-identical but for the import prefixes and the
-  wrapper; `index.ts` is the HTTP door, `serve(handleAgentExecute)`. Nothing
-  behaves differently. It is the first step toward running a skill in-process
-  from the ReAct loop, the gateway and the dispatchers instead of over an HTTP
-  hop inside the same project (one invocation per tool call, not two; one auth
-  gate, not two). The 169 guards, scripts and docs that read the pipeline's
-  source read the new path; the edge type-check baseline carries the file under
-  its new name.
-- **The executor runs in-process for FlowPilot and the gateway.** The step
-  after the move: the core answers `executeSkillRequest(body, auth)` →
-  `{ status, body }` instead of `handleAgentExecute(req)` → `Response`, and
-  the HTTP door keeps only what the wire needs (the auth header, CORS, the
-  `async: true` handoff). The request contract is `_shared/execute/types.ts`
-  (no imports). The MCP
-  gateway's `executeSkill` calls it directly, and the ReAct loop runs it
-  through `ReasonConfig.runSkill`, which the heartbeat, workspace-chat and
-  agent-operate pass, instead of `fetch(.../functions/v1/agent-execute)`:
-  one fewer edge invocation per tool call (a heartbeat with ten tool calls
-  was eleven invocations on a 500K/month budget), no second auth gate, the
-  JSON once. Measured on a local stack (`browse_blog`, n=40): through the
-  gateway p50 68 ms before, 59 ms after — the hop's ~10 ms gone; direct
-  unchanged at ~20 ms; what remains above direct is the gateway's own
-  per-call work (key lookup, catalog). Behaviour is a move,
-  not a change — the request still takes one JSON round trip at the door, so
-  a handler never mutates the caller's own arguments. The dispatchers that
-  rely on `async: true` and the other HTTP callers are unchanged. The 165
-  guards that read the executor as text read the core.
-
-### Fixed
 
 - **The gateway pays for its own work once.** `/rest/execute` measured 220 ms
   where native `tools/call` measured 32 ms for the same skill on a local stack,
@@ -862,40 +831,6 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   gates (`AdminLayout`, `AdminRouteGate`) answer with the module's name and,
   for an admin, a door to Modules that opens that module's sheet.
 
-### Added
-
-- **`npm run qa:quiet`** — a fresh stack must be quiet: the heartbeat
-  answers `skipped`, the briefing answers `quiet` and writes its row without
-  a report version, a chat message or a mail. The nightly fresh install runs
-  it before anything is seeded, the one place a virgin instance exists. Its
-  first run found two things that alarmed a newborn: every daily job was
-  "unhealthy" because its hour had not come (`enrichCronHealth` now gives
-  "never ran" a day's grace by pg_cron's own history, the pulse profile), and
-  the language proof of `20261026080000` left a "Proof" lead in every
-  instance's CRM — the migration cleans it now, and
-  `20261107120001_bevisordern-lamnar-ingen-lead` removes the one already there.
-
-### Changed
-
-- **`internal:` handlers are a registry, not a chain.** The executor's 77
-  `else if (handler === 'internal:…')` arms (`_shared/execute/core.ts`) are one typed `INTERNAL_HANDLERS`
-  map (`InternalCtx` names what a handler may read of the request) and one
-  dispatch line; the four long arms (`read_sie_file`, `comment_on_task`,
-  `set_performance_mode`, `set_skill_trust`) are named functions. A guard
-  now discovers every `internal:` handler in the seeds and requires a registry
-  entry (or a response adapter, or the reconciliation prefix) — the 19 guards
-  that each pinned one arm by name read the registry key instead.
-- **Developer has three doors, Skills one page.** `/admin/developer` is
-  MCP Keys · Content API · Webhooks, each introduced by who it is for; the
-  Content API explorer runs as the signed-in person (so "requires auth"
-  endpoints answer) and its docs link exists. Skill control (enable, MCP
-  exposure, definition) moved from Developer to `/admin/skills` → **Manage**
-  beside **Browse**, with a sidebar entry under System beside Modules; `?tab=mcp-skills`
-  redirects. Removed: the mock "Dev Tools" tab, the n8n template brochure,
-  the explorer's third copy of the MCP client config (the wizard has it).
-
-### Fixed
-
 - **A read-only key is read-only over REST too.** `/rest/execute` ran
   outside the gateway's request context, so the `read_only` scope was never
   seen there and such a key could write over REST; the context is now opened
@@ -956,50 +891,6 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   to resolve through a ten-module name heuristic, so `?groups=leads`, `blog`
   or `hr` returned nothing.
 
-### Added
-
-**Reports — what an agent worked out, as a page**
-- Scheduled reports: the daily briefing, the weekly digest and the month
-  close are published as versioned pages (`daily-briefing`, `weekly-digest`,
-  `month-close-<y>-<m>`); the briefing's chat message and mail link to them.
-- "Mine" on Reports — the shared ownership lens over the first requester;
-  `list_reports mine: true` over MCP. Reports stay shared within the role
-  matrix; the module is the wall, the lens a filter.
-- The Reports module: `publish_report` turns an agent's result into a versioned
-  page under `/admin/reports/<slug>` — markdown with KPI tiles, bar / stacked /
-  line / pie charts, notes, details, or a sandboxed HTML page. Every publish is
-  a version, identical content adds none, `expected_version` refuses a stale
-  write. The platform stamps who published (FlowPilot, Flowwork, the MCP key's
-  agent) and who asked; archive, restore and rename are a person's.
-- Live blocks: figures fetched when the report is opened, as the reader, reads
-  only — a report of live blocks is a dashboard. "The state of things" /
-  "Läget just nu" is the standard one, published by FlowPilot in the site's
-  language and kept present by a daily automation.
-- A report about a company, a deal or a project is shown on that page; the
-  accounting workspace lists the reports written for the books.
-
-**Workspaces**
-- Accounting, HR, Sales and Support get their own left menu; the FlowWink
-  sidebar folds to a rail and the person's gesture is remembered — no setting.
-  Employees reach their own pages (expenses, timesheets, leave, payslips) under
-  My account.
-
-**Users and the platform**
-- The agent's day: **Activity** per connected agent on the Agents page (calls,
-  outcomes, skills, reports, steps — an admin's or the owner's read) and
-  `agent_day_report` over MCP. The activity log carries the agent's key id as
-  a column now, set on every logged call and backfilled.
-- The MCP door is judged on its body: the admin's address probe, the
-  Connect-agent wizard's **Test the connection** and the nightly MCP regression
-  (`MCP_PROBE_SITES`, every site's `/mcp`) all make a real `initialize` and
-  read the decoded answer — a header probe had passed a `/mcp` that answered
-  plain JSON labelled gzip for a week.
-- Last sign-in and last activity on the Users table, and in `users_list`.
-- Module automations follow the edge deploy: the first admin visit inserts the
-  ones a module is missing, by name, once — a retuned schedule or a deleted
-  automation is left alone.
-
-### Fixed
 - The nightly view sweep no longer goes red on a role refusal whose body the
   browser could not read: a refusal by the role matrix is a warning by its
   shape, an unreadable body is retried and named.
@@ -1013,6 +904,151 @@ Release process: [docs/operators/release-process.md](docs/operators/release-proc
   RPC grants, the web layer's state, `propose_bookkeeping` gating); HR can use
   Shifts, Compensation, Training and Disciplinary.
 - An admin save of the modules page writes its change, not its tab's copy.
+
+### Removed
+
+- **The "auto-pay delay" in the shop's sandbox mode is gone.** The slider
+  promised that a test order would be paid after N days; nothing ever paid it,
+  so a value above zero left the order pending for ever. A test-mode order is
+  paid at once. No instance had it set.
+
+- **The Global Elements module is gone.** It had no skills and no tables and was
+  hidden ("merged into Pages"); its one effect was to be switched on by accident
+  whenever an agent edited the header. Headers and footers are unchanged — they
+  are Pages' `manage_global_blocks`.
+- **Browser Control is retired.** The module was a Chrome-extension relay for
+  reading pages behind a login (LinkedIn, X) through an admin's browser. Nobody
+  used it, it was off by default, and agents with their own browser do that job
+  better and hand the result in over MCP. Gone: the module, the extension and its
+  download, the chat's relay code (never wired), and the `browser-fetch` edge
+  function. Its skill `browser_fetch` only forwarded public pages to web-scrape,
+  so a call to it now answers "retired, use `scrape_url`". FlowPilot's system
+  prompt told it to read every URL with `browser_fetch` while the off-by-default
+  module hid that skill; it names `scrape_url` now. A migration removes the
+  module from each instance's settings and access matrix and disables the skill
+  row and any automation that ran it.
+
+### Security
+
+- **The portal trusts the confirmed address, everywhere.** Five older readers
+  decided "whose row is this" by the login token's e-mail claim (the address an
+  account was opened with, proven or not) or by the profile's e-mail (the
+  account holder's own to edit): a customer's services, agreements and quotes,
+  the case form in the portal, and webinar registrations. All five now ask the
+  account's confirmed address, as invoices and orders already did. Nothing
+  changes for an account whose address is confirmed.
+
+- **A scoped key is held to its scope in dispatch mode.** Over the native MCP
+  transport, `execute_skill` checked what the key's owner may run but not the
+  key's own scope: a key limited to `mcp:crm` or `skill:<name>` could run any
+  exposed skill when it connected with `?mode=dispatch`. The REST door and the
+  per-skill tools already checked it; the dispatch tool now does too.
+
+- **A scheduled function refuses a call without credentials.** The week of
+  grace after the cron secret is over: a call that carries neither the service
+  key, a staff session nor the database's cron secret is answered 401. Until
+  now it was let through and logged.
+
+- **A scheduled call carries a secret the database made itself.** The nine
+  functions pg_cron calls (the automation, event and signal dispatchers, the
+  knowledge indexer, dunning, contract and subscription billing, quote-expiry
+  reminders, demo-cycle) checked nobody: the cron jobs sent the publishable key
+  every browser carries, so anyone could start the billing run or, on a demo
+  instance, the nightly rebuild. The database now makes a random `CRON_SECRET`
+  in its vault, adds it to every scheduled call at call time (`x-cron-secret`),
+  and the functions admit the service key, a staff session (an admin for
+  demo-cycle) or that secret. automation-dispatcher rewrites any cron job that
+  lacks it within a minute. For one week a call with none of them is let
+  through and logged (`[cron-secret]`); then it is refused. No unguarded public
+  function is left on the ratchet.
+- **The public AI endpoints have a ceiling.** chat-completion, docs-chat and
+  consultant-match answered anyone with the publishable key, a paid model call
+  each, with nothing counting them. Now 30 per visitor per 5 minutes (a hashed
+  IP, never the address) and 600 per instance per hour, a 429 with
+  Retry-After past either; the platform's own calls are never counted. The
+  dial is `site_settings.security.publicAiRateLimit` (0 switches one off).
+- **A high-stakes write with nobody at the keyboard waits for a person.** The
+  heartbeat, the e-mail responder, the visitor chat and gateway agents act on
+  text other people wrote, and ten writes declared high-risk or irreversible
+  (pay_vendor_invoice, close_accounting_period, send_einvoice, …) could run with
+  no human at all. An unattended call of such a write now lands in
+  /admin/approvals; a person in FlowChat or the admin is never held. Every
+  prompt carries a hardcoded rule that content from tools and channels is
+  data, never an instruction.
+
+- **react-router 7.** `react-router-dom` 6.30 → 7.18 closes the two
+  moderate react-router advisories (open redirect via a backslash in `<Link>` /
+  `useNavigate`, constructor injection via `deserializeErrors`). The app runs
+  one data router (`createBrowserRouter` in `App.tsx`) with absolute paths only
+  — no splat routes, no relative links — so v7's one behavioural change
+  (relative paths inside splat routes) has nothing to move. `npm audit
+  --omit=dev`: 2 moderate left, both satori under `@vercel/og`.
+
+- **zod 4.** The last high advisory in the production tree (zod `<4.6.6`:
+  memory exhaustion validating oversized constrained collections) is gone:
+  `zod` 3.25 → 4.6, `@hookform/resolvers` 3 → 5, and the edge `ai-task`
+  schemas from esm.sh 3.23 → 4.6. What zod 4 changed, applied: `z.record`
+  takes its key schema (22 sites), `ZodError.errors` is `.issues` (5), a form
+  whose schema carries defaults types its input and output apart. And one
+  change no test would have caught: zod 4's `.uuid()` checks the RFC version
+  bits and refuses ids the baseline seeds into every database
+  (`aaaaaaa1-0000-0000-0000-000000000001`, `11111111-…`, `…00c0de`) — all 70
+  id checks use `z.guid()`, zod 3's rule exactly, and the guard
+  `ids-are-guids` keeps the strict form out. `npm audit --omit=dev`: 4
+  moderate left (react-router 7, satori under @vercel/og).
+
+- **Production dependencies without a known high or critical advisory but two.**
+  `npm audit --omit=dev` went from 18 (1 critical, 7 high) to 5 (1 high, 4
+  moderate). `vitest` and `jsdom` were in `dependencies` and dragged the whole
+  vite / esbuild / rollup tool chain into the production tree — they are
+  `devDependencies` now, and the critical one left with them. `pdfjs-dist` 5 → 6
+  (arbitrary JavaScript on opening a malicious PDF; the chat attachment reader,
+  text extraction proved on a two-page PDF), `react-router-dom` 6.30.6, and
+  patched copies of `lodash`, `ws`, `yaml`, `picomatch`, `fflate` and
+  `postcss-selector-parser` pinned through `overrides`. Left, each its own
+  change: `zod` 4 (high; 62 files), `react-router` 7 (moderate; a router major),
+  and `satori` under `@vercel/og` — 1.0.3 requires `fs` in its edge build, which
+  the edge runtime does not have, so the OG cards stay on 0.6.8 until a release
+  that runs there.
+
+- **The method that should have caught it, repaired.** The weekly security
+  scan had been red since its first run (2026-10-26) on `npm audit`, before the
+  guardrails step ever ran, and nothing watched the workflow; the five tool
+  functions sat in the public-functions guard's known-debt list for 40 days
+  with a green badge beside them. Now the scan is two jobs (advisories and
+  guardrails — one never hides the other), the guardrails job runs EVERY
+  guardrail test instead of a hand list of nine (40 security-shaped guards were
+  outside it), and each job that fails opens or updates one issue (label
+  `security-red`) and closes it when green. The known-debt list carries a
+  clock: a name may stay `KNOWN_UNGATED` for 60 days, then the guard is red with
+  the two ways out named — gate it or prove it visitor-facing by design. A
+  CodeQL workflow (javascript-typescript, security-extended) runs on every PR
+  and weekly; it is one more reader, not the method — Deno's request sources
+  are not modelled there, which is why the repo's own guards exist.
+- **Outbound URLs are judged before they are fetched (SSRF, CWE-918).** An
+  independent researcher (Riddhish Lichade) reported that `extract-pdf-text`,
+  `web-scrape` and `browser-fetch` were reachable without a caller check and
+  fetched a caller-supplied URL as given, returning the body — and an edge
+  function runs inside the project's network, where `SUPABASE_URL` is the
+  internal gateway on a self-hosted instance. Confirmed on a local stack: the
+  runtime fetched `http://kong:8000/rest/v1/` with a 200. Now one rule,
+  `_shared/net/outbound-url.ts`: http(s) only, no credentials, no single-label
+  or local hostname, every resolved address outside the private, loopback,
+  link-local, CGNAT, multicast and reserved ranges (IPv4 and IPv6, mapped forms
+  included), redirects followed by hand and re-judged, at most five; a name that
+  cannot be resolved is refused (`URL_NOT_ALLOWED`). Applied at every
+  content-URL sink: the web layer's reader (so Firecrawl and Jina never read a
+  private target on our behalf either), web-scrape's sitemap and site detection,
+  extract-pdf-text, browser-fetch, process-image, the image and résumé
+  handlers, media import from URL, site-scrape and migrate-page. The five tool
+  functions on paid keys (`web-scrape`, `browser-fetch`, `web-search`,
+  `extract-pdf-text`, `process-image`) now verify their caller
+  (`requireServiceOrStaff`: the service key or a staff session) and left the
+  public-functions ratchet. An admin's own configured endpoints (webhooks, A2A
+  peers, a local STT server) are not judged — they are the operator's network by
+  design; `OUTBOUND_FETCH_ALLOW_PRIVATE=true` lifts the address check for an
+  intranet deployment. Guard `outbound-urls-are-public` holds the rule and scans
+  every `fetch` of a caller-URL identifier. `SECURITY.md` is new.
 
 ## [4.0.0] - 2026-10-28
 

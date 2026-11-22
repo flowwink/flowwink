@@ -3237,7 +3237,11 @@
                   },
                   "limit": {
                     "type": "number",
-                    "description": "Max results (default 5, max 100)"
+                    "description": "Max results (default 5, max 100). Over 10 posts are listed by slug, title and date only."
+                  },
+                  "full": {
+                    "type": "boolean",
+                    "description": "Excerpt and image for every post of a list over 10 (default false)."
                   }
                 }
               }
@@ -8417,6 +8421,14 @@
                       "pending"
                     ],
                     "description": "Filter by delivery status. \"simulated\" = no provider configured, message logged but not actually sent."
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "outbound",
+                      "inbound"
+                    ],
+                    "description": "Sent by the business (outbound) or received from someone (inbound mail). Default: both. For \"what came in\", pass inbound — there is no status \"received\"."
                   },
                   "recipient": {
                     "type": "string",
@@ -19786,7 +19798,7 @@
                   },
                   "budget_seconds": {
                     "type": "integer",
-                    "description": "Seconds this call may spend (default 100, at most 120)."
+                    "description": "Seconds this call may spend (default 60, at most 100)."
                   }
                 }
               }
@@ -21626,6 +21638,10 @@
               "parameters": {
                 "type": "object",
                 "properties": {
+                  "budget_seconds": {
+                    "type": "integer",
+                    "description": "Seconds this call may spend (default 60, at most 110). What it did is saved; `remaining` says how many strings are left — call again until it is 0."
+                  },
                   "locale": {
                     "type": "string",
                     "description": "Target language tag, e.g. \"sv\""
@@ -21896,7 +21912,11 @@
                   },
                   "limit": {
                     "type": "number",
-                    "description": "Max chunks to return (default 8, max 20)"
+                    "description": "Max chunks to return (default 8, max 20). The three best are whole, the rest previews."
+                  },
+                  "full": {
+                    "type": "boolean",
+                    "description": "Every hit whole instead of previews after the third (default false)."
                   },
                   "sources": {
                     "type": "array",

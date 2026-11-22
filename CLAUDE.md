@@ -213,6 +213,26 @@ read the executor as text read `_shared/execute/core.ts`.
 - `ai-call.ts`, `ai-config.ts`, `ai-providers.ts` — AI provider abstraction
 - `token-tracking.ts`, `trace.ts`, `agent-audit.ts` — observability
 
+**A read tool answer is folded (2026-11-21).** Every ReAct step resends the
+whole conversation, and a tool's answer stayed in it whole: on the fleet's
+heartbeats one large answer early cost 5–10 000 tokens on every later step, and
+LiteIT stopped at its token budget two mornings out of four.
+`foldReadToolResults` (`_shared/pilot/fold-tool-results.ts`, called before every
+model call in `reason.ts`) keeps the last two tool turns whole and replaces an
+older answer over 1 500 characters with its beginning and a note; `NEVER_FOLD`
+(a skill's instructions, the soul, an objective) stays. Measured by replay:
+20–25 % fewer prompt tokens. `ReasonConfig.foldToolResults: false` opts a run
+out. A skill whose answer an agent must hold for many steps returns ids and
+names early in its answer — the beginning is what survives.
+
+**A read answers what the question needs (2026-11-22).** Folding reaches an
+answer only once it is two turns old; a four-step run carries its first step's
+answers almost to the end. `_shared/skills/lean-answers.ts`: `browse_blog` over
+ten posts is slug, title and date; `search_knowledge` is its three best hits
+whole and the rest previews (`cut: true`). `full: true` is the way out of both,
+and the answer says so. A new read that can return many rows or long texts
+states what a LONG answer leaves out — the generic `db:` list already does.
+
 ### The Agent Harness (platform spine)
 
 The components above plus the ReAct loop, Skill Relevance Engine, trust dial, cadence/
@@ -306,6 +326,10 @@ text with — a Tiptap sentence with a bold word in it is one string. A new
 content table joins the function's `leaves` and the seed's enum in the same PR
 (a guard compares them). `search_wiki` says `match: all_terms | some_terms`;
 `browse_blog` searches title and excerpt and reads `query` as `search`.
+A colleague's agent reaches it through `blog` (`SKILL_OWNER_MODULE_OVERRIDES`):
+a platform seed with no owner module is admin-only for an agent whose owner
+is not an admin, and the agent it was built for (owner: sales + marketing)
+never saw it. A new platform read meant for staff agents gets its module there.
 
 **`manage_company`** — B2B master data lives on `companies`: `org_number`, `vat_number`, `parent_company_id` (subsidiary hierarchy; self-parent rejected), `employee_count`, `annual_revenue_cents`, `credit_limit_cents`, `account_owner`, `tags` (text[]). Use `find_duplicate_companies` before creating a company that might already exist (identical domain scores 1.0).
 
@@ -386,6 +410,12 @@ per language, and the automation "Finish site translations" (probe
 failures in a row end a run, and a run that moves nothing is `stuck` — left for a
 person, never retried every ten minutes. Adding a language under Site settings
 starts it. Changing `site_languages.default` stays a separate launch decision.
+**The first real run was stopped at 76 s (sandbox, 2026-11-21,
+WORKER_RESOURCE_LIMIT):** content was done in 34 s, the 1 300 interface texts
+were not, and both savers wrote only at the end. Now the sweep row is written
+`running` BEFORE the work, `translate_ui_text` saves after every wave of three
+batches inside `budget_seconds` and answers `remaining`, and the default budget
+is 60 s. A long job on the edge saves as it goes and records that it has begun.
 
 **`manage_product` / products in every language** — the same overlay model
 (§10, and Shopify's): a product is written ONCE in `products.locale`; `languages`

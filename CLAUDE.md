@@ -1019,6 +1019,34 @@ restore and rename are a person's (`report_person_*` refuse the service role),
 and what a person renamed an agent's next version keeps (`kept_person_fields`).
 docs/modules/reports.md.
 
+**`manage_site_settings` — the settings catalogue (2026-11-22).** Every
+`site_settings` key is described in `_shared/settings/catalog.ts`: purpose,
+fields, module, the admin page, the skill to prefer, and `access` (`write` |
+`person` | `internal` | `secret`). `action: describe` hands it to an agent;
+`get`/`get_all` hide credential fields (`[hidden]`); `update` refuses an
+unknown key (`UNKNOWN_SETTING`, `did_you_mean`), bookkeeping
+(`SETTING_NOT_WRITABLE`), a `person` setting without a person at the keyboard
+(`PERSON_REQUIRED`) and a credential in the value (`SECRET_FIELD`). Update
+merges top-level fields only. A new setting is described in the same PR —
+`settings-catalog-covers-every-key` scans the code
+(`scripts/lib/scan-settings-keys.mjs`) and fails on an undescribed key. A
+setting an owner would ask an agent to set gets its `fields`.
+
+**An event offered is an event raised (2026-11-22).** A survey trigger or an
+event automation waits for a name; five of six survey triggers were names
+nothing raised. `scripts/lib/scan-raised-events.mjs` finds every
+`emit_platform_event` name (literal, or `'<entity>.' || NEW.status` over an
+`IN` list); `offered-events-are-raised` fails an offer that is not among them.
+Surveys: `queue_event_surveys(p_event, p_entity_id)` queues per campaign,
+`send_due_surveys` mails at `send_after`. **One bus for webhooks too:**
+`event-dispatcher` hands every processed event a webhook subscribes to to
+`send-webhook` (`via: 'bus'`), which signs and delivers; a direct call
+(browser `triggerWebhook`, an edge function) puts the event ON the bus — or,
+for an event in `_shared/events/platform-raised.ts`, leaves it to the bus —
+and never runs automations itself. A function never posts to `webhooks` on its
+own (`one-event-bus`); a new `emit_platform_event` name joins that list in the
+same PR.
+
 **`manage_kb_article` get** — accepts `article_id`, `slug` or `title` (NOT `id`). Title resolves case-insensitively (exact, then unique prefix); ambiguous titles error with guidance. Safe pattern for certainty: `list`/search first, then `get` by slug.
 
 **`upload_document`** — binary mode requires `mime_type` alongside `content_base64`; text mode uses `content_text`.

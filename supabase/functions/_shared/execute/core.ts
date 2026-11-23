@@ -6,6 +6,7 @@
 // in-process. The HTTP function (agent-execute/index.ts) is a thin wrapper:
 // parse the auth header → this → wrap in a Response. The JSON bundles stay in
 // agent-execute/ (scripts/generated-artifacts.ts writes them there).
+import { describeSettings, judgeSettingWrite, redactSetting, SETTINGS_CATALOG } from '../settings/catalog.ts';
 import { shapeBlogList, shapeKnowledgeHits } from '../skills/lean-answers.ts';
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { ExecuteAuth, ExecuteOutcome, ExecuteRequest } from './types.ts';
@@ -60,7 +61,7 @@ import { hslTripletToHex } from '../email-shell.ts';
 import { screeningQuestionsOf } from '../recruitment/application-intake.ts';
 import { planFormDelivery } from '../forms/delivery-plan.ts';
 import { invoiceAmountsFromOrder, orderIsPaid } from '../invoice-from-order.ts';
-import { isModuleEnabled } from '../modules.ts';
+import { isModuleEnabled, loadEnabledModules } from '../modules.ts';
 import {
   type AuditContext,
   ACCOUNTING_AUDIT_TABLES,
@@ -12640,12 +12641,21 @@ async function executeDbAction(
 
       const { action = 'update', key, value } = args as any;
 
+      // What the platform can be set to — every setting, its fields and who
+      // may change it (_shared/settings/catalog.ts). Read it before writing.
+      if (action === 'describe') {
+        const on = await loadEnabledModules(supabase).catch(() => null);
+        return describeSettings(typeof key === 'string' && key ? key : undefined, (m) => (on ? on(m) : true));
+      }
+
+      // Credentials never leave in an answer: a secret setting reads "[hidden]",
+      // and a field that names a key, token or password inside one does too.
       if (action === 'get_all') {
         const { data, error } = await supabase.from('site_settings').select('key, value');
         if (error) throw new Error(`Get settings failed: ${error.message}`);
         const settings: Record<string, unknown> = {};
-        for (const row of (data || [])) settings[row.key] = row.value;
-        return { settings };
+        for (const row of (data || [])) settings[row.key] = redactSetting(row.key, row.value);
+        return { settings, note: 'manage_site_settings action: "describe" says what each setting and field means.' };
       }
 
       if (action === 'get') {
@@ -12653,11 +12663,20 @@ async function executeDbAction(
         const { data, error } = await supabase.from('site_settings')
           .select('key, value').eq('key', key).maybeSingle();
         if (error) throw new Error(`Get setting failed: ${error.message}`);
-        return data || { key, value: null, exists: false };
+        if (!data) {
+          const known = Boolean(SETTINGS_CATALOG[key]);
+          return { key, value: null, exists: false, ...(known ? { setting: describeSettings(key).setting } : judgeSettingWrite(key, null, true)) };
+        }
+        return { key: data.key, value: redactSetting(data.key, data.value), setting: describeSettings(data.key).setting };
       }
 
       // update (default)
       if (!key) throw new Error('key is required for update');
+      // Unknown keys, the platform's bookkeeping, credentials and the security
+      // dials without a person at the keyboard are refused — before anything
+      // is read or written. An agent wrote `site_name`, which nothing reads.
+      const verdict = judgeSettingWrite(String(key), value, Boolean((args as Record<string, unknown>)._attended));
+      if (!verdict.ok) return { status: 'refused', code: verdict.code, retryable: false, hint: verdict.hint, ...(verdict.did_you_mean ? { did_you_mean: verdict.did_you_mean } : {}) };
       // An object setting is a dial board (chat, branding, store, …): update
       // MERGES the given keys into what is stored, so flipping one flag never
       // wipes the rest — {key:'chat', value:{toolCallingEnabled:true}} used to
@@ -17386,11 +17405,20 @@ async function executeFlowtableField(
 // (found live 2026-07-05) — any whitelisted table with credential/secret
 // columns MUST get an explicit safe column list here.
 const TABLE_SELECT_MASKS: Record<string, string> = {
+  // The signing secret is written, never read back (manage_webhook).
+  webhooks:
+    'id, name, url, events, is_active, headers, created_at, updated_at, created_by, last_triggered_at, failure_count',
   support_agents:
     'id, user_id, status, current_conversations, max_conversations, last_seen_at, supported_channels, voice_enabled, voice_routing_mode, created_at, updated_at',
 };
 
 const GENERIC_CRUD_TABLES = new Set([
+  // Configuration an owner sets in the admin, reachable by an agent too
+  // (2026-11-22): quote and deal templates, product categories, expense rates,
+  // bank accounts, outgoing webhooks and the role → module matrix. Each has a
+  // skill that says what it is (manage_quote_template … manage_role_access).
+  'quote_templates', 'product_categories', 'deal_templates', 'expense_rate_tables',
+  'bank_accounts', 'webhooks', 'role_module_access',
   'employees', 'leave_requests', 'projects', 'project_tasks',
   'time_entries', 'contracts', 'contract_documents',
   'expenses', 'expense_reports', 'expense_attachments', 'expense_payments',
@@ -17594,6 +17622,16 @@ function stripInternalFields(data: Record<string, unknown>): Record<string, unkn
     if (!key.startsWith('_')) out[key] = val;
   }
   return out;
+}
+
+/** Tables whose unique, required `slug` is made from `name` when a create omits it. */
+const SLUG_FROM_NAME = new Set(['product_categories', 'tags']);
+
+/** A row as an answer: a write-only column (a webhook's signing secret) says only that it is set. */
+function withoutWriteOnly(table: string, row: unknown): unknown {
+  if (table !== 'webhooks' || !row || typeof row !== 'object') return row;
+  const { secret, ...rest } = row as Record<string, unknown>;
+  return { ...rest, has_secret: typeof secret === 'string' && secret.length > 0 };
 }
 
 async function executeGenericCrud(
@@ -18041,6 +18079,10 @@ async function executeGenericCrud(
       case 'create': {
         const { limit: _l, offset: _o, order_by: _ob, ascending: _a, filters: _f, ...insertData } = fields;
         const cleanInsert = stripInternalFields(insertData);
+        // A table whose address is unique and required gets one from the name.
+        if (SLUG_FROM_NAME.has(table) && !cleanInsert.slug && typeof cleanInsert.name === 'string') {
+          cleanInsert.slug = slugify(cleanInsert.name);
+        }
         if ((insertData as any)._caller_user_id && !cleanInsert.created_by) {
           cleanInsert.created_by = (insertData as any)._caller_user_id;
         }
@@ -18090,7 +18132,7 @@ async function executeGenericCrud(
             before: null, after: createdItem, success: true,
           });
         }
-        return { created: true, item: createdItem, table };
+        return { created: true, item: withoutWriteOnly(table, createdItem), table };
       }
 
       case 'update': {
@@ -18138,7 +18180,7 @@ async function executeGenericCrud(
             request_payload: auditPayload, before, after: updatedItem, success: true,
           });
         }
-        return { updated: true, item: updatedItem, table };
+        return { updated: true, item: withoutWriteOnly(table, updatedItem), table };
       }
 
       case 'delete': {

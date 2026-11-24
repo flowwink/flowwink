@@ -232,6 +232,11 @@ ten posts is slug, title and date; `search_knowledge` is its three best hits
 whole and the rest previews (`cut: true`). `full: true` is the way out of both,
 and the answer says so. A new read that can return many rows or long texts
 states what a LONG answer leaves out — the generic `db:` list already does.
+**FlowPilot's own `search_skills` (2026-11-23)** answers `PILOT_SEARCH_LIMIT`
+(10) hits, the first `PILOT_FULL_CONTRACTS` (3) whole and the rest one line with
+`contract` saying how to get it; a search by exact name answers that skill
+whole (`buildSkillCatalog(..., { fullContracts })`, `_shared/skills/dispatch.ts`).
+The gateway calls it without the option and keeps every contract.
 
 ### The Agent Harness (platform spine)
 
@@ -873,7 +878,13 @@ beside its payload, so an operator branches instead of guessing:
   already carried, opening the same public page the mail linked to. A new
   portal page reads `my_account()` or asks `portal_email()` — never
   `auth.jwt() ->> 'email'` (unproven) or `profiles.email` (the holder's own to
-  edit). The last five readers of those (subscriptions, contracts, `my_quotes`,
+  edit). **A customer who holds something gets a way in (2026-11-24):**
+  `invite_customer_to_portal` (subscription, contact or address; once per
+  address) runs on `subscription.created`, and a signed agreement invites
+  through `contract-sign` — both through `provisionPortalAccount`. The portal's
+  shop entries (orders, addresses, wishlist) follow `useStorefront()`, never
+  the e-commerce module alone: that module is the product catalogue a service
+  business keeps on with `store.storefront: false`. The last five readers of those (subscriptions, contracts, `my_quotes`,
   `create_ticket_from_portal`, webinar registrations) moved 2026-11-19; a guard
   scans every later migration for both shapes.
 - **The customer changes their own booking (2026-11-19).** The confirmation
@@ -1305,6 +1316,29 @@ managed-ledger lessons still apply to every fork's Supabase integration:
   executable by authenticated, body without `service_role` / `has_role(` /
   `can_access_module(` / `is_staff(` / `auth.uid() =` — then check pg_policy,
   invoker-side functions, views, defaults and constraints before revoking.
+- **Every door asks who is calling (2026-11-24).** Every edge function is
+  deployed `--no-verify-jwt`, so each decides for itself: a scheduled or
+  admin function calls `requireScheduledCaller` (role `admin` when it changes
+  the platform), a public AI door `publicAiLimit`, a link page a token a
+  database function judges, a webhook its signature. `every-door-asks` finds
+  a function with none of these and fails unless `OPEN_BY_DESIGN` names it
+  with why. A function never takes the account it acts for from the body.
+- **A customer is not staff (2026-11-24).** Customers have accounts since
+  #1087, so `authenticated` includes them: a policy for staff asks
+  `is_staff(auth.uid())`, never `auth.uid() IS NOT NULL` or `true`. An
+  approval is decided only by `resolve_approval` / `advance_approval_step`;
+  the row's guard (`approval_requests_guard`) takes the deciding role from the
+  rule, refuses a browser's decision and refuses anyone but an admin approving
+  his own request. A secret column (a meeting password) is left out of the
+  column grant, not filtered in the page.
+- **An address is not a credential (2026-11-23).** A link about an e-mail
+  address — unsubscribe, "manage my data" — carries `addressToken(email)`
+  (`_shared/email/address-token.ts`, HMAC with the service key, derived and
+  never stored) and the handler checks it with `addressTokenMatches` before it
+  reads or writes. The key leaves the platform only inside a mail to that
+  address, never in an answer: `newsletter/gdpr` returned it "for development"
+  and anyone who knew an address could read and delete that subscriber. A new
+  public action keyed by an address signs its link the same way.
 - **The logs are thinned; a change never is (2026-11-15).** `prune_logs()` runs
   nightly (pg_cron `prune-logs`, bounded per night). What a row of
   `agent_activity` PROVES decides how long it lives: a change is kept whole; a

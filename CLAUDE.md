@@ -1057,6 +1057,10 @@ for an event in `_shared/events/platform-raised.ts`, leaves it to the bus —
 and never runs automations itself. A function never posts to `webhooks` on its
 own (`one-event-bus`); a new `emit_platform_event` name joins that list in the
 same PR.
+**The row raises it (2026-11-24):** publish, deal, record-created, subscriber
+and form events are triggers (`20261124130000`), not the admin's save; an
+offered webhook event is raised by the platform or sits on the shrinking
+`ADMIN_ONLY` list (`a-webhook-event-goes-out-whoever-did-it`).
 
 **`manage_kb_article` get** — accepts `article_id`, `slug` or `title` (NOT `id`). Title resolves case-insensitively (exact, then unique prefix); ambiguous titles error with guidance. Safe pattern for certainty: `list`/search first, then `get` by slug.
 
@@ -1323,6 +1327,13 @@ managed-ledger lessons still apply to every fork's Supabase integration:
   database function judges, a webhook its signature. `every-door-asks` finds
   a function with none of these and fails unless `OPEN_BY_DESIGN` names it
   with why. A function never takes the account it acts for from the body.
+- **A skill the agent writes reaches no further than the platform
+  (2026-11-24).** `skill_create` / `skill_update` take a prompt (`ai-task:`)
+  or the exact handler of an existing platform skill
+  (`_shared/skills/agent-made-skills.ts`); only a prompt may be `external` /
+  `both`; a platform skill's handler is never rewritten from a conversation.
+  A new reach into the data is a platform change in a PR, never a skill an
+  agent writes. The `webhook:` handler is retired.
 - **A customer is not staff (2026-11-24).** Customers have accounts since
   #1087, so `authenticated` includes them: a policy for staff asks
   `is_staff(auth.uid())`, never `auth.uid() IS NOT NULL` or `true`. An

@@ -13,7 +13,7 @@ import { isOpenAiReasoningModel } from '../ai-providers.ts';
 import { calculateNextRun, isSupportedCron, readCronExpression, readCronTimeZone } from '../cron/next-run.ts';
 import { loadHomeCached } from '../locale/load-home.ts';
 import { cadenceRefusal } from './cadence.ts';
-import { hideSkills, selfHealCandidates } from '../skills/skill-visibility.ts';
+import { hideSkills, NOT_A_SKILL_FAULT, selfHealCandidates } from '../skills/skill-visibility.ts';
 import { isReadCall } from '../skills/read-surface.ts';
 import { agentSkillScope, judgeAgentSkillHandler } from '../skills/agent-made-skills.ts';
 
@@ -1440,26 +1440,34 @@ export async function handleAutomationDelete(supabase: any, args: { automation_i
 
 // ─── Reflection ───────────────────────────────────────────────────────────────
 
-export async function handleReflect(supabase: any, args: { focus?: string }) {
+/** How many automations / objectives a reflection lists by name (the rest are counted). */
+export const REFLECT_LIST_LIMIT = 15;
+
+export async function handleReflect(supabase: any, args: { focus?: string; full?: boolean }) {
   const since = new Date();
   since.setDate(since.getDate() - 7);
 
   const { data: recentActivity } = await supabase
     .from('agent_activity')
-    .select('skill_name, status, duration_ms, error_message, created_at')
+    .select('skill_name, status, duration_ms, error_message, created_at, code:output->>code')
     .gte('created_at', since.toISOString())
     .order('created_at', { ascending: false })
     .limit(100);
 
   const activities = recentActivity || [];
+  // A miss, a refusal or a caller's mistake is not the skill failing
+  // (NOT_A_SKILL_FAULT — the rule self-healing reads). Nordbrygg: a miscopied
+  // task id answered NOT_FOUND, and every reflection wrote "comment_on_task
+  // fails frequently" into memory for two months, which the next heartbeat
+  // read back and re-sent.
   const skillStats: Record<string, { count: number; errors: number; avg_ms: number; last_error?: string }> = {};
   for (const a of activities) {
     const name = a.skill_name || 'unknown';
     if (!skillStats[name]) skillStats[name] = { count: 0, errors: 0, avg_ms: 0 };
     skillStats[name].count++;
-    if (a.status === 'failed') {
+    if (a.status === 'failed' && !(a.code && NOT_A_SKILL_FAULT.has(a.code))) {
       skillStats[name].errors++;
-      skillStats[name].last_error = a.error_message;
+      skillStats[name].last_error = a.error_message ? String(a.error_message).slice(0, 200) : a.error_message;
     }
     if (a.duration_ms) {
       skillStats[name].avg_ms = Math.round(
@@ -1498,19 +1506,42 @@ export async function handleReflect(supabase: any, args: { focus?: string }) {
     }, { onConflict: 'key' });
   }
 
+  // A reflection is read by the model at the end of a heartbeat, so it is
+  // never folded: it answered every registered skill (~650 rows, ~80 000
+  // characters, ~20 000 tokens) and every automation and objective whole —
+  // a third of the run's budget, on the step that writes the summary
+  // (prompt_sizes on www and nordbrygg, 2026-11-25). It answers counts, the
+  // skills it judged, and the first REFLECT_LIST_LIMIT automations and
+  // objectives in one line each; `full: true` is the way to the whole lists.
+  type SkillRow = { enabled?: boolean };
+  type AutomationRow = { name?: string; enabled?: boolean; skill_name?: string; run_count?: number };
+  type ObjectiveRow = { goal?: string; status?: string };
+  const enabledSkills = ((allSkills || []) as SkillRow[]).filter((s) => s.enabled);
+  const compactAutomations = ((automations || []) as AutomationRow[]).map((a) => ({
+    name: a.name, enabled: a.enabled, skill: a.skill_name, runs: a.run_count,
+  }));
+  const compactObjectives = ((objectives || []) as ObjectiveRow[]).map((o) => ({
+    goal: String(o.goal ?? '').slice(0, 140), status: o.status,
+  }));
+  const lean = !args.full;
   return {
     period: '7 days',
     total_actions: activities.length,
     skill_usage: skillStats,
     registered_skills: allSkills?.length || 0,
+    enabled_skills: enabledSkills.length,
+    unused_enabled_skills: unusedSkills.length,
     active_automations: automations?.filter((a: any) => a.enabled).length || 0,
     total_automations: automations?.length || 0,
     active_objectives: objectives?.filter((o: any) => o.status === 'active').length || 0,
-    skills: allSkills || [],
-    automations: automations || [],
-    objectives: objectives || [],
+    automations: lean ? compactAutomations.slice(0, REFLECT_LIST_LIMIT) : automations || [],
+    objectives: lean ? compactObjectives.slice(0, REFLECT_LIST_LIMIT) : objectives || [],
+    ...(lean ? {} : { skills: allSkills || [] }),
     suggestions,
     auto_persisted_learnings: learnings.length,
+    ...(lean && ((automations?.length || 0) > REFLECT_LIST_LIMIT || (objectives?.length || 0) > REFLECT_LIST_LIMIT || (allSkills?.length || 0) > 0)
+      ? { note: `Counts and the first ${REFLECT_LIST_LIMIT} automations and objectives; the registered skills are counted, not listed. reflect({ full: true }) answers every list whole.` }
+      : {}),
   };
 }
 
@@ -1825,7 +1856,7 @@ export async function handleEvaluateOutcomes(supabase: any, args: {
 
   const correlationContext = {
     total_page_views_7d: viewsResult.data?.length || 0,
-    top_pages: Object.entries(pageViewCounts).sort((a, b) => b[1] - a[1]).slice(0, 10),
+    top_pages: Object.entries(pageViewCounts).sort((a, b) => b[1] - a[1]).slice(0, 5),
     new_leads_7d: leadsResult.data?.length || 0,
     new_subscribers_7d: subscriberResult.count || 0,
     lead_sources: [...new Set((leadsResult.data || []).map((l: any) => l.source))],
@@ -1875,13 +1906,27 @@ export async function handleEvaluateOutcomes(supabase: any, args: {
     .order('created_at', { ascending: false })
     .limit(10);
 
-  const recentLearnings = (learnings || []).map((l: any) => ({
-    skill: l.value?.skill,
-    outcome: l.value?.outcome,
-    lesson: l.value?.lesson,
-    data: l.value?.data,
-    date: l.created_at?.slice(0, 10),
-  }));
+  // What the model is asked to judge is these activities (2026-11-25). The
+  // answer carried the scorecard of every skill scored lately (23–32 on the
+  // fleet) and ten learnings with the model's own outcome_data inside — about
+  // 12 600 characters at the heartbeat's first step, resent on every step
+  // until folded. The scorecard and the learnings now speak of the skills
+  // being judged, plus any skill flagged as underperforming; a learning is
+  // its lesson, not the data it was written from.
+  const judged = new Set(enrichedActivities.map((a: { skill_name: string }) => a.skill_name));
+  const relevantScorecard = Object.fromEntries(
+    Object.entries(scorecard).filter(([name]) => judged.has(name) || underperformingSkills.includes(name)),
+  );
+  type LearningRow = { created_at?: string; value?: { skill?: string; outcome?: string; lesson?: string } | null };
+  const recentLearnings = ((learnings || []) as LearningRow[])
+    .filter((l) => typeof l.value?.skill === 'string' && judged.has(l.value.skill))
+    .slice(0, 5)
+    .map((l) => ({
+      skill: l.value?.skill,
+      outcome: l.value?.outcome,
+      lesson: l.value?.lesson,
+      date: l.created_at?.slice(0, 10),
+    }));
 
   return {
     status: 'pending_evaluation',
@@ -1890,7 +1935,7 @@ export async function handleEvaluateOutcomes(supabase: any, args: {
     escalated_skills: escalatedSkills.length > 0 ? escalatedSkills : undefined,
     activities: enrichedActivities,
     correlation_data: correlationContext,
-    skill_scorecard: scorecard,
+    skill_scorecard: relevantScorecard,
     underperforming_skills: underperformingSkills.length > 0 ? underperformingSkills : undefined,
     recent_learnings: recentLearnings.length ? recentLearnings : undefined,
     eval_window_hours: EVAL_WINDOW_HOURS,

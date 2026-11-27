@@ -3,8 +3,8 @@
   "schema_version": 1,
   "layers": {
     "schema": {
-      "migration_head": "20261125010000",
-      "migrations_count": 795,
+      "migration_head": "20261125200000",
+      "migrations_count": 796,
       "migrations": [
         {
           "version": "00000000000000",
@@ -3185,19 +3185,23 @@
         {
           "version": "20261125010000",
           "name": "fyra-dorrar-till-for-kunder"
+        },
+        {
+          "version": "20261125200000",
+          "name": "ett-avslaget-utlagg-gar-att-ratta"
         }
       ]
     },
     "skills": {
-      "seed_hash": "sha256:2d619b547e95821da901b527853b42a80e72745708d06b1f85a2168694d8efa8",
-      "skill_count": 689,
+      "seed_hash": "sha256:4af554fab82983891a297a1c4032e1b5d90ecbacaffb01124ab7e42b07a2b1f9",
+      "skill_count": 690,
       "module_count": 69
     },
     "edge_functions": {
       "count": 76,
-      "shared_hash": "sha256:913ec56d3d9f8ed3791ad3fc6b76e72af5da09706ca5c922a6a228f6ff452f0c",
+      "shared_hash": "sha256:6339c3c6bb7fb8b3ad87f196a0ab5703dac46a1253ac10a6f9cf61a918748235",
       "functions": {
-        "agent-execute": "sha256:943ad86260d7a239c5d3b1fb59c1ee1475dcd6a11febf5f005a40296da0f2fc7",
+        "agent-execute": "sha256:e6fd72a731358b1c6f1a13c65fabe29053bd015e626ea597c8cd640b2885e7a3",
         "agent-operate": "sha256:4320e02dd3e6a0a1706b42dc1905b631c61e6a4cbe3556c701f474c278c89e1a",
         "ai-task": "sha256:ce3aacdef625bba758f4323da3e49104a1b94a3d3d77d800e89dacd0b803d65e",
         "automation-dispatcher": "sha256:d905660cd907c6f1ef5c7cac0a97ed44a4e4187ef4d5179089fa2714b2751443",
@@ -3229,7 +3233,7 @@
         "event-dispatcher": "sha256:76c874f968faf15771dad8a67b1f49fb1e45f21c2fcf3c38f3d57f70853d2a2f",
         "extract-pdf-text": "sha256:fb2e1a10f79fb0b150cd547a08fc3b1e11b79c09771f2d13d748c08b4e93f34c",
         "federation-invite-peer": "sha256:475817522c4d1b7a2faed2a0a4fbe03ac5f340479eb246febe0456f3d0596b21",
-        "flowpilot-heartbeat": "sha256:e8ed5cccbe3195607541336148c611b4b9a0dfcc2e653ae11c6d9c5cc4f214ba",
+        "flowpilot-heartbeat": "sha256:28a5690bb04a67a7406c1c732b0d51d98c0c276807974cd860095fef621b7bf2",
         "flowpilot-lifecycle": "sha256:dfaa3e933957a65712d535071db0a4a7389de20418fb725a186039a462b22ee8",
         "gatewayapi-ingest": "sha256:d6f74c384f0baac936737762d330c470636502afcc9af418b1c43db26134e4fe",
         "generate-invoice-pdf": "sha256:e339f734b02238e900c1a4160b9645e8e24867c2aaf03af7768b07dd62546312",
@@ -3252,7 +3256,7 @@
         "quote-pay": "sha256:eac676922cee4e9ebe19650afd1ec708a48c2b3efd8d56d0f77654d21a272c00",
         "quote-sign": "sha256:efcc488ed630f2e861be848ef6e951bddd0ab43ae0ef98b67b8f5d6061ffc541",
         "run-autonomy-tests": "sha256:53426062cbb9c3c6963f6c807c77176ca89f56aea35b7bfab3e84e4dff087cd2",
-        "run-platform-tests": "sha256:2a959463dabd7107a17bd21114108e286332728efeb77a6fa20ca5b076fd5ad3",
+        "run-platform-tests": "sha256:e93d33edbd2e5ec84d54ecc18e22c1dc23b451a7eddaeb5aa8472ec400d0d325",
         "score-visitor-intent": "sha256:738f28de67a80a134e6f6c9402ecbe6bf544614e2be2a9302d0ba9825c139c89",
         "send-webhook": "sha256:74cc6afea0a1395dd562aaa2667c9daf9ed8c7dabf8768c59f88836cf89b44bc",
         "setup-database": "sha256:8073c508db4d8dcb71fa9949b06a50068125c4a3e86d6d5c33334840bf4f91da",

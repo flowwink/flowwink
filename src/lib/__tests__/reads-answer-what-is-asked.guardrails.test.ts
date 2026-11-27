@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  BLOG_LIST_WHOLE_UP_TO, KNOWLEDGE_PREVIEW_CHARS, KNOWLEDGE_WHOLE_HITS, shapeBlogList, shapeKnowledgeHits,
+  BLOG_LIST_WHOLE_UP_TO, KNOWLEDGE_PREVIEW_CHARS, KNOWLEDGE_WHOLE_HITS, KNOWLEDGE_BEST_HIT_MAX_CHARS, auditPostList, shapeBlogList, shapeKnowledgeHits,
 } from '../../../supabase/functions/_shared/skills/lean-answers';
 
 const read = (p: string) => readFileSync(join(__dirname, '../../..', p), 'utf-8');
@@ -59,7 +59,7 @@ describe('a knowledge search', () => {
     // Every hit keeps its title and address: the breadth is not what is cut.
     expect(r.results.map((h) => h.url)).toEqual(hits.map((h) => h.url));
     expect(JSON.stringify(r).length).toBeLessThan(JSON.stringify(hits).length / 2);
-    expect(r.note).toMatch(/8 more are previews/);
+    expect(r.note).toMatch(/8 were cut/);
   });
 
   it('a short hit is never marked cut, and three hits carry no note', () => {
@@ -67,9 +67,33 @@ describe('a knowledge search', () => {
     expect(shapeKnowledgeHits([hit(0), hit(1), hit(2)]).note).toBeUndefined();
   });
 
+  it('a best hit that is a whole page keeps its first 2 500 characters (www, 2026-11-26: 17 000 chars)', () => {
+    const r = shapeKnowledgeHits([hit(0, 6000), hit(1, 900)]);
+    expect(r.results[0].cut).toBe(true);
+    expect(r.results[0].content.length).toBeLessThanOrEqual(KNOWLEDGE_BEST_HIT_MAX_CHARS + 1);
+    expect(r.results[1].cut).toBeUndefined();
+  });
+
   it('full: true returns every hit whole', () => {
     const r = shapeKnowledgeHits(Array.from({ length: 11 }, (_, i) => hit(i)), { full: true });
     expect(r.results.every((h) => h.content.length === 2500)).toBe(true);
+  });
+});
+
+describe('a blog audit', () => {
+  it('lists the posts with a finding and counts the clean ones (liteit, 2026-11-26: 12 400 chars of nothing to fix)', () => {
+    const posts = Array.from({ length: 12 }, (_, i) => ({ slug: `p${i}`, words: 800 }));
+    const r = auditPostList(posts, [{ slug: 'p3' }, { slug: 'p3' }], false);
+    expect(r.posts.map((p) => p.slug)).toEqual(['p3']);
+    expect(r.clean_posts).toBe(11);
+    expect(r.note).toMatch(/full: true/);
+    expect(auditPostList(posts, [], true).posts).toHaveLength(12);
+    expect(auditPostList(posts, [], false)).toMatchObject({ posts: [], clean_posts: 12 });
+  });
+  it('the handler uses it and the skill declares full', () => {
+    const core = read('supabase/functions/_shared/execute/core.ts');
+    expect(core).toMatch(/\.\.\.auditPostList\(perPost, findings, full === true\)/);
+    expect(read('src/lib/modules/blog-module.ts')).toMatch(/List every post with its measures/);
   });
 });
 

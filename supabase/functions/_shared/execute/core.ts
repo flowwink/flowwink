@@ -7,7 +7,8 @@
 // parse the auth header → this → wrap in a Response. The JSON bundles stay in
 // agent-execute/ (scripts/generated-artifacts.ts writes them there).
 import { describeSettings, judgeSettingWrite, redactSetting, SETTINGS_CATALOG } from '../settings/catalog.ts';
-import { shapeBlogList, shapeKnowledgeHits } from '../skills/lean-answers.ts';
+import { shapeBlogList, shapeKnowledgeHits, auditPostList } from '../skills/lean-answers.ts';
+import { KNOWLEDGE_SOURCE_MODULE, narrowKnowledgeSources } from '../skills/knowledge-reach.ts';
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { ExecuteAuth, ExecuteOutcome, ExecuteRequest } from './types.ts';
 import { blocksShapeError, normalizeBlockData, normalizeBlocks, validateBlockData } from '../normalize-blocks.ts';
@@ -61,6 +62,8 @@ import { hslTripletToHex } from '../email-shell.ts';
 import { screeningQuestionsOf } from '../recruitment/application-intake.ts';
 import { planFormDelivery } from '../forms/delivery-plan.ts';
 import { invoiceAmountsFromOrder, orderIsPaid } from '../invoice-from-order.ts';
+import { leanBoardPosts, leanInstances, LEAN_BOARD_NOTE } from '../feedback/lean-board.ts';
+import { executeCronHealthReport } from '../handlers/cron-health-report.ts';
 import { isModuleEnabled, loadEnabledModules } from '../modules.ts';
 import {
   type AuditContext,
@@ -327,6 +330,7 @@ const INTERNAL_HANDLERS: Record<string, InternalHandler> = {
   'internal:build_site_step': ({ supabase, args }) => executeCopilotAction(supabase, args),
   // Multi-skill: get_company_profile / update_company_profile
   'internal:company_profile': ({ supabase, args, skill }) => executeCompanyProfile(supabase, args, skill.name),
+  'internal:cron_health_report': ({ supabase, args }) => executeCronHealthReport(supabase, args),
   'internal:get_customer_360': ({ supabase, args }) => executeCustomer360(supabase, args),
   // Multi-skill router: dispatches on the skill name (the edge function
   // used the _skill field the edge: dispatch injected for the same purpose).
@@ -5862,8 +5866,9 @@ async function executeFeedbackAction(
     }
 
     case 'manage_feedback': {
-      const a = args as { action?: string; post_id?: string; board?: string; status?: string; origin_site_url?: string; note?: string; limit?: number };
+      const a = args as { action?: string; post_id?: string; board?: string; status?: string; origin_site_url?: string; note?: string; limit?: number; full?: boolean };
       const action = String(a.action ?? 'list');
+      const fullListing = a.full === true;
       if (action === 'instances') {
         const { data, error } = await supabase.from('feedback_instances')
           .select('instance_id, site_url, site_name, app, skills_sha, migration_head, modules_enabled, module_count, first_seen_at, last_seen_at, ping_count')
@@ -5873,7 +5878,7 @@ async function executeFeedbackAction(
         const weekAgo = Date.now() - 7 * 86400000;
         const versions: Record<string, number> = {};
         for (const r of rows) versions[r.skills_sha ?? 'unknown'] = (versions[r.skills_sha ?? 'unknown'] ?? 0) + 1;
-        return { instances: rows, total: rows.length, active_7d: rows.filter((r) => Date.parse(r.last_seen_at) >= weekAgo).length, versions };
+        return { instances: leanInstances(rows as unknown as Array<Record<string, unknown>>, fullListing), total: rows.length, active_7d: rows.filter((r) => Date.parse(r.last_seen_at) >= weekAgo).length, versions, ...(fullListing ? {} : { note: LEAN_BOARD_NOTE }) };
       }
       if (action === 'list') {
         const lim = Math.min(Math.max(Number(a.limit) || 50, 1), 200);
@@ -5885,7 +5890,7 @@ async function executeFeedbackAction(
         if (a.origin_site_url) q = q.eq('origin_site_url', String(a.origin_site_url));
         const { data, error } = await q;
         if (error) throw new Error(`Feedback list failed: ${error.message}`);
-        return { posts: data ?? [], count: (data ?? []).length };
+        return { posts: leanBoardPosts((data ?? []) as Array<Record<string, unknown>>, fullListing), count: (data ?? []).length, ...(fullListing ? {} : { note: LEAN_BOARD_NOTE }) };
       }
       if (action === 'clusters') {
         // Triage: the same defect from several instances is one problem.
@@ -9724,7 +9729,7 @@ async function executeBlogAction(
   // cleans up with calls instead of judgement, and the heartbeat sees when the
   // blog thins out.
   if (skillName === 'audit_blog') {
-    const { limit = 200, include_drafts = true } = args as any;
+    const { limit = 200, include_drafts = true, full = false } = args as any;
     const lim = Math.min(Math.max(Number(limit) || 200, 1), 500);
     let q = supabase.from('blog_posts')
       .select('id, title, slug, status, locale, published_at, created_at, content_json, featured_image, featured_image_alt, meta_json')
@@ -9803,7 +9808,10 @@ async function executeBlogAction(
       },
       findings,
       duplicate_clusters: clusters,
-      posts: perPost,
+      // A clean post is counted, not described (2026-11-26): liteit's audit
+      // listed all its posts with their measures, 12 400 characters, to say
+      // there was nothing to fix. `full: true` lists them all.
+      ...auditPostList(perPost, findings, full === true),
       hint: findings.length
         ? 'Each finding names its fix. Order: duplicates to draft (keep the first), then the thin and wrong-language posts rewritten with manage_blog_posts update (content in markdown — a body under the floor is refused there too), then the images. The identity\'s content angles say what to write NEXT; audit_blog says what to fix FIRST.'
         : 'Nothing to fix: every post clears the floor, no re-worded titles, no ruled-out claims.',
@@ -19281,12 +19289,39 @@ async function executeSearchKnowledge(
     }
   }
 
+  // A person's agent searches what the person may open (knowledge-reach.ts):
+  // the service client sees every source, so the module question is asked here.
+  const callerUserId = typeof args._caller_user_id === 'string' && args._caller_user_id ? args._caller_user_id : null;
+  let leftOut: string[] = [];
+  if (callerUserId) {
+    const candidates = sources ?? SEARCHABLE_KNOWLEDGE_SOURCES;
+    const verdict = new Map<string, boolean>();
+    for (const mod of new Set(candidates.map((s) => KNOWLEDGE_SOURCE_MODULE[s]).filter(Boolean))) {
+      const { data, error } = await supabase.rpc('can_access_module', { _user_id: callerUserId, _module_id: mod });
+      if (error) console.error('search_knowledge: can_access_module failed — source left out', mod, error.message);
+      verdict.set(mod, !error && data === true);
+    }
+    const narrowed = narrowKnowledgeSources(candidates, (mod) => verdict.get(mod) === true);
+    leftOut = narrowed.left_out;
+    if (!narrowed.sources.length) {
+      return {
+        success: true,
+        count: 0,
+        results: [],
+        left_out: leftOut,
+        note: 'The person this agent acts for has access to none of these knowledge sources. An admin grants them under Users → Role Permissions.',
+      };
+    }
+    sources = narrowed.sources;
+  }
+
   const queryEmbedding = await embedQuery(supabase, query); // null → text-only (Law 4)
   const chunks = await retrieve(supabase, { query, k, tokenBudget: 6000, sources, queryEmbedding });
 
   return {
     success: true,
     count: chunks.length,
+    ...(leftOut.length ? { left_out: leftOut } : {}),
     ranking: queryEmbedding ? 'hybrid (semantic + keyword)' : 'keyword-only (no embedding provider)',
     // The best hits whole, the rest as previews — the ranking says which matter.
     ...shapeKnowledgeHits(chunks.map((c) => ({
